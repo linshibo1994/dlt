@@ -42,6 +42,21 @@ python3 hybrid_predictor.py --quick -c 3
 python3 hybrid_predictor.py --stable -p 150
 ```
 
+### 4. 复式投注预测（🆕最新功能）
+```bash
+# 🎲 复式投注预测（如6+2, 7+5组合）
+python3 compound_predictor.py -p 3000 -c "6+2,7+5" -m hybrid --explain
+
+# 🚀 预设策略复式投注
+python3 compound_helper.py -s balanced -p 2000
+
+# 💰 复式投注成本分析
+python3 compound_helper.py --cost
+
+# 🎯 交互式复式投注
+python3 compound_helper.py -i
+```
+
 ### 4. 传统分析预测
 ```bash
 # 马尔可夫链预测
@@ -59,6 +74,13 @@ python3 dlt_analyzer.py full -d data/dlt_data_all.csv -p 300 -n 5
 |------|----------|----------|----------|
 | **advanced_hybrid_analyzer.py** | 7种数学模型综合分析 | 统计学+概率论+马尔可夫链+贝叶斯+冷热号+周期性+相关性 | 专业预测分析 |
 | **hybrid_predictor.py** | 简化预测接口 | 快速预测、最稳定预测、详细分析模式 | 日常使用 |
+
+### 🎲 复式投注预测系统（🆕最新功能）
+
+| 工具 | 功能描述 | 核心特点 | 使用场景 |
+|------|----------|----------|----------|
+| **compound_predictor.py** | 复式投注预测器 | 任意期数+任意前区后区数量+双重预测引擎 | 复式投注预测 |
+| **compound_helper.py** | 复式投注助手 | 预设策略+交互模式+成本分析 | 复式投注辅助 |
 
 ### 📊 传统分析系统
 
@@ -151,7 +173,90 @@ python3 hybrid_predictor.py --quick -d data/dlt_data_all.csv -c 5
 python3 hybrid_predictor.py
 ```
 
-### 2. 📊 数据爬取与管理
+### 2. 🎲 复式投注预测系统（🆕最新功能）
+
+#### A. 复式预测器 (compound_predictor.py)
+
+**功能：** 支持任意期数分析，生成任意注数的任意前区+后区数量组合
+
+**基本语法：**
+```bash
+python3 compound_predictor.py [选项]
+```
+
+**参数说明：**
+- `-d, --data`: 数据文件路径
+- `-p, --periods`: 分析期数（建议1000-5000期）
+- `-c, --combinations`: 复式组合，格式：6+2,7+3,8+4
+- `-m, --method`: 预测方法（hybrid: 高级混合分析, markov: 马尔可夫链）
+- `--explain`: 显示详细分析过程
+
+**使用示例：**
+```bash
+# 基于3000期数据，生成6+2和7+5两注复式
+python3 compound_predictor.py -p 3000 -c "6+2,7+5" -m hybrid --explain
+
+# 使用马尔可夫链方法预测8+3复式
+python3 compound_predictor.py -p 2000 -c "8+3" -m markov --explain
+
+# 多种复式组合预测
+python3 compound_predictor.py -p 1500 -c "6+2,7+3,8+2,9+3" -m hybrid
+
+# 大复式预测（高投入）
+python3 compound_predictor.py -p 5000 -c "12+4,15+5" -m hybrid --explain
+```
+
+#### B. 复式助手 (compound_helper.py)
+
+**功能：** 提供预设策略、交互模式和成本分析的简化接口
+
+**基本语法：**
+```bash
+python3 compound_helper.py [选项]
+```
+
+**参数说明：**
+- `-i, --interactive`: 交互模式
+- `-s, --strategy`: 预设策略（conservative/balanced/aggressive/mega）
+- `-p, --periods`: 分析期数
+- `-m, --method`: 预测方法
+- `-c, --combinations`: 自定义组合
+- `--cost`: 显示成本分析
+
+**使用示例：**
+```bash
+# 交互模式（推荐新手）
+python3 compound_helper.py -i
+
+# 预设策略
+python3 compound_helper.py -s conservative -p 1000  # 保守型（6+2, 6+3）
+python3 compound_helper.py -s balanced -p 2000     # 平衡型（7+2, 7+3, 8+2）
+python3 compound_helper.py -s aggressive -p 3000   # 激进型（8+3, 9+3, 10+4）
+python3 compound_helper.py -s mega -p 5000         # 超级型（12+4, 15+5）
+
+# 成本分析
+python3 compound_helper.py --cost
+
+# 自定义组合
+python3 compound_helper.py -c "10+4,12+5" -p 3000 -m hybrid
+```
+
+**复式投注成本表：**
+```
+组合     总注数       投注成本     适用场景
+6+2      6           18元         小复式，适合新手
+7+2      21          63元         中小复式
+7+3      63          189元        中复式
+8+2      56          168元        中复式
+8+3      168         504元        大复式
+9+3      252         756元        大复式
+10+3     360         1,080元      大复式
+10+4     2,160       6,480元      超大复式
+12+4     4,950       14,850元     超大复式
+15+5     30,030      90,090元     巨型复式
+```
+
+### 3. 📊 数据爬取与管理
 
 #### A. 数据爬取 (dlt_analyzer.py crawl)
 
@@ -665,6 +770,9 @@ dlt-analyzer/
 ├── 🔬 高级混合分析系统
 │   ├── advanced_hybrid_analyzer.py    # 7种数学模型综合分析器
 │   └── hybrid_predictor.py           # 简化预测接口
+├── 🎲 复式投注预测系统（🆕最新功能）
+│   ├── compound_predictor.py         # 复式投注预测器
+│   └── compound_helper.py            # 复式投注助手
 ├── 📊 传统分析系统
 │   ├── dlt_analyzer.py              # 主分析器（15个子功能）
 │   ├── basic_analyzer.py            # 基础统计分析
@@ -680,6 +788,7 @@ dlt-analyzer/
 ├── 📊 输出目录
 │   ├── output/
 │   │   ├── hybrid/                  # 高级混合分析结果
+│   │   ├── compound/                # 复式投注预测结果
 │   │   ├── basic/                   # 基础分析结果
 │   │   ├── advanced/                # 高级分析结果
 │   │   └── charts/                  # 图表文件
@@ -688,7 +797,8 @@ dlt-analyzer/
 │   └── README.md                    # 项目文档
 └── 📖 文档
     ├── 高级混合分析技术文档.md      # 技术实现文档
-    └── 高级混合分析使用文档.md      # 详细使用文档
+    ├── 高级混合分析使用文档.md      # 详细使用文档
+    └── 复式投注预测使用文档.md      # 复式投注使用文档
 ```
 
 ## 🎯 使用建议
@@ -714,6 +824,18 @@ python3 hybrid_predictor.py --stable -p 150
 
 # 多注预测（增加中奖概率）
 python3 advanced_hybrid_analyzer.py -p 100 -c 5 --explain
+```
+
+#### 🎲 复式投注预测（🆕新功能）
+```bash
+# 保守型复式投注（低成本）
+python3 compound_helper.py -s conservative -p 1000
+
+# 平衡型复式投注（中等成本）
+python3 compound_helper.py -s balanced -p 2000
+
+# 自定义复式组合
+python3 compound_predictor.py -p 3000 -c "6+2,7+3" -m hybrid --explain
 ```
 
 #### 📊 传统分析（备选方案）
@@ -747,6 +869,7 @@ python3 dlt_analyzer.py mixed -d data/dlt_data_all.csv -p 200 -n 5
 
 - [高级混合分析技术文档.md](高级混合分析技术文档.md) - 详细技术实现
 - [高级混合分析使用文档.md](高级混合分析使用文档.md) - 详细使用指南
+- [复式投注预测使用文档.md](复式投注预测使用文档.md) - 复式投注详细使用指南
 
 ## 📞 免责声明
 

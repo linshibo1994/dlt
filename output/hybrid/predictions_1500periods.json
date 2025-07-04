@@ -1,0 +1,30 @@
+{
+  "timestamp": "2025-06-30T17:09:21.248191",
+  "periods": 1500,
+  "model_weights": {
+    "statistical": 0.15,
+    "probability": 0.2,
+    "markov": 0.25,
+    "bayesian": 0.15,
+    "hot_cold": 0.15,
+    "cycle": 0.1,
+    "correlation": 0.0
+  },
+  "predictions": [
+    {
+      "index": 1,
+      "front_balls": [
+        15,
+        18,
+        20,
+        22,
+        29
+      ],
+      "back_balls": [
+        7,
+        10
+      ],
+      "formatted": "前区 15 18 20 22 29 | 后区 07 10"
+    }
+  ]
+}
