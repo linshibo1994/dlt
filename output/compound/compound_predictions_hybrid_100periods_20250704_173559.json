@@ -1,0 +1,33 @@
+{
+  "timestamp": "2025-07-04T17:35:59.949895",
+  "method": "hybrid",
+  "periods": 100,
+  "total_predictions": 1,
+  "predictions": [
+    {
+      "index": 1,
+      "combination": "6+3",
+      "front_count": 6,
+      "back_count": 3,
+      "front_balls": [
+        10,
+        15,
+        20,
+        21,
+        22,
+        29
+      ],
+      "back_balls": [
+        1,
+        4,
+        10
+      ],
+      "total_combinations": 18,
+      "investment_cost": 54
+    }
+  ],
+  "summary": {
+    "total_combinations": 18,
+    "total_cost": 54
+  }
+}

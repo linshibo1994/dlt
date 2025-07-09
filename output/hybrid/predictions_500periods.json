@@ -1,6 +1,6 @@
 {
-  "timestamp": "2025-07-05T17:38:23.347137",
-  "periods": 1000,
+  "timestamp": "2025-07-05T17:43:52.593093",
+  "periods": 500,
   "model_weights": {
     "statistical": 0.1,
     "probability": 0.1,
@@ -14,17 +14,17 @@
     {
       "index": 1,
       "front_balls": [
-        11,
         15,
         20,
         21,
-        22
+        22,
+        29
       ],
       "back_balls": [
         1,
         7
       ],
-      "formatted": "前区 11 15 20 21 22 | 后区 01 07"
+      "formatted": "前区 15 20 21 22 29 | 后区 01 07"
     }
   ]
 }

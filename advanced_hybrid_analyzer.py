@@ -38,15 +38,15 @@ class AdvancedHybridAnalyzer:
         if not os.path.exists(output_dir):
             os.makedirs(output_dir)
         
-        # 模型权重配置（基于技术文档）
+        # 模型权重配置（用户自定义）
         self.model_weights = {
-            'statistical': 0.15,    # 统计学分析
-            'probability': 0.20,    # 概率论分析
-            'markov': 0.25,         # 马尔可夫链分析（最高权重）
-            'bayesian': 0.15,       # 贝叶斯分析
-            'hot_cold': 0.15,       # 冷热号分析
+            'statistical': 0.10,    # 统计学分析
+            'probability': 0.10,    # 概率论分析
+            'markov': 0.30,         # 马尔可夫链分析（最高权重）
+            'bayesian': 0.20,       # 贝叶斯分析
+            'hot_cold': 0.10,       # 冷热号分析
             'cycle': 0.10,          # 周期性分析
-            'correlation': 0.00     # 相关性分析（验证用）
+            'correlation': 0.10     # 相关性分析
         }
         
         # 稳定性阈值配置
@@ -767,24 +767,27 @@ class AdvancedHybridAnalyzer:
         if explain:
             print("   📊 多模型评分计算:")
 
-        # 1. 统计学模型评分 (15%)
-        self._apply_statistical_scoring(front_scores, back_scores, hybrid_analysis['statistical'], 0.15, explain)
+        # 1. 统计学模型评分 (10%)
+        self._apply_statistical_scoring(front_scores, back_scores, hybrid_analysis['statistical'], 0.10, explain)
 
-        # 2. 概率论模型评分 (20%)
-        self._apply_probability_scoring(front_scores, back_scores, hybrid_analysis['probability'], 0.20, explain)
+        # 2. 概率论模型评分 (10%)
+        self._apply_probability_scoring(front_scores, back_scores, hybrid_analysis['probability'], 0.10, explain)
 
-        # 3. 马尔可夫链模型评分 (25%)
+        # 3. 马尔可夫链模型评分 (30%)
         self._apply_markov_scoring(front_scores, back_scores, hybrid_analysis['markov'],
-                                 latest_front, latest_back, 0.25, explain)
+                                 latest_front, latest_back, 0.30, explain)
 
-        # 4. 贝叶斯模型评分 (15%)
-        self._apply_bayesian_scoring(front_scores, back_scores, hybrid_analysis['bayesian'], 0.15, explain)
+        # 4. 贝叶斯模型评分 (20%)
+        self._apply_bayesian_scoring(front_scores, back_scores, hybrid_analysis['bayesian'], 0.20, explain)
 
-        # 5. 冷热号模型评分 (15%)
-        self._apply_hot_cold_scoring(front_scores, back_scores, hybrid_analysis['hot_cold'], 0.15, explain)
+        # 5. 冷热号模型评分 (10%)
+        self._apply_hot_cold_scoring(front_scores, back_scores, hybrid_analysis['hot_cold'], 0.10, explain)
 
         # 6. 周期性模型评分 (10%)
         self._apply_cycle_scoring(front_scores, back_scores, hybrid_analysis['cycle'], 0.10, explain)
+
+        # 7. 相关性模型评分 (10%)
+        self._apply_correlation_scoring(front_scores, back_scores, hybrid_analysis['correlation'], 0.10, explain)
 
         return front_scores, back_scores
 
@@ -888,6 +891,59 @@ class AdvancedHybridAnalyzer:
 
         if explain:
             print(f"     ✓ 周期性评分 (权重: {weight:.0%})")
+
+    def _apply_correlation_scoring(self, front_scores, back_scores, analysis, weight, explain=True):
+        """应用相关性评分"""
+        # 基于特征重要性的评分
+        feature_importance = analysis.get('特征重要性', {})
+
+        # 根据特征重要性调整评分
+        if '前区和值' in feature_importance:
+            importance = feature_importance['前区和值']
+            # 基于和值重要性调整中间号码的权重
+            for ball in range(15, 25):
+                front_scores[ball] += weight * importance * 0.1
+
+        if '前区奇数比例' in feature_importance:
+            importance = feature_importance['前区奇数比例']
+            # 基于奇偶重要性调整奇数号码的权重
+            for ball in range(1, 36, 2):  # 奇数
+                front_scores[ball] += weight * importance * 0.05
+
+        if '前区大数比例' in feature_importance:
+            importance = feature_importance['前区大数比例']
+            # 基于大小数重要性调整大数号码的权重
+            for ball in range(18, 36):  # 大数
+                front_scores[ball] += weight * importance * 0.05
+
+        if '后区和值' in feature_importance:
+            importance = feature_importance['后区和值']
+            # 基于后区和值重要性调整中间号码的权重
+            for ball in range(5, 9):
+                back_scores[ball] += weight * importance * 0.1
+
+        if '后区奇数比例' in feature_importance:
+            importance = feature_importance['后区奇数比例']
+            # 基于奇偶重要性调整奇数号码的权重
+            for ball in range(1, 13, 2):  # 奇数
+                back_scores[ball] += weight * importance * 0.05
+
+        if '后区大数比例' in feature_importance:
+            importance = feature_importance['后区大数比例']
+            # 基于大小数重要性调整大数号码的权重
+            for ball in range(7, 13):  # 大数
+                back_scores[ball] += weight * importance * 0.05
+
+        # 如果没有特征重要性数据，使用默认的相关性评分
+        if not feature_importance:
+            # 基于历史相关性的简单评分
+            for ball in range(1, 36):
+                front_scores[ball] += weight * 0.01  # 均匀分布
+            for ball in range(1, 13):
+                back_scores[ball] += weight * 0.01  # 均匀分布
+
+        if explain:
+            print(f"     ✓ 相关性评分 (权重: {weight:.0%})")
 
     def _select_numbers_with_diversity(self, front_scores, back_scores, prediction_num, used_combinations):
         """带多样性的号码选择"""

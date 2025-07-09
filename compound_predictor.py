@@ -263,14 +263,52 @@ class CompoundPredictor:
         """计算简化马尔可夫链评分"""
         scores = {i: 0.0 for i in range(1, max_ball + 1)}
 
+        # 基于当前号码计算转移概率
+        total_score = 0.0
         for current_ball in current_balls:
             if current_ball in transitions:
                 total_transitions = sum(transitions[current_ball].values())
-                for next_ball, count in transitions[current_ball].items():
-                    scores[next_ball] += count / total_transitions if total_transitions > 0 else 0
+                if total_transitions > 0:
+                    for next_ball, count in transitions[current_ball].items():
+                        transition_prob = count / total_transitions
+                        scores[next_ball] += transition_prob
+                        total_score += transition_prob
 
-        # 如果没有转移概率，使用均匀分布
-        if all(score == 0 for score in scores.values()):
+        # 如果有转移概率，进行归一化
+        if total_score > 0:
+            for ball in scores:
+                scores[ball] = scores[ball] / len(current_balls)  # 平均化
+
+        # 如果没有转移概率或评分都为0，使用基于历史频率的评分
+        if all(score == 0 for score in scores.values()) or total_score == 0:
+            # 计算历史频率作为备选评分
+            frequency_scores = self._calculate_frequency_scores(transitions, max_ball)
+            scores = frequency_scores
+
+        # 添加随机扰动，避免总是选择相同的号码
+        import random
+        for ball in scores:
+            # 添加小幅随机扰动（±5%）
+            random_factor = 1 + (random.random() - 0.5) * 0.1
+            scores[ball] *= random_factor
+
+        return scores
+
+    def _calculate_frequency_scores(self, transitions, max_ball):
+        """基于历史频率计算评分"""
+        frequency = {i: 0 for i in range(1, max_ball + 1)}
+
+        # 统计每个号码作为目标号码的总频率
+        for from_ball, to_balls in transitions.items():
+            for to_ball, count in to_balls.items():
+                frequency[to_ball] += count
+
+        # 转换为概率
+        total_frequency = sum(frequency.values())
+        if total_frequency > 0:
+            scores = {ball: freq / total_frequency for ball, freq in frequency.items()}
+        else:
+            # 如果没有频率数据，使用均匀分布
             uniform_score = 1.0 / max_ball
             scores = {i: uniform_score for i in range(1, max_ball + 1)}
 
@@ -298,19 +336,57 @@ class CompoundPredictor:
     
     def _select_top_numbers(self, scores, count, max_ball):
         """选择评分最高的指定数量号码"""
+        import random
+
         # 按评分排序
         sorted_scores = sorted(scores.items(), key=lambda x: x[1], reverse=True)
-        
-        # 选择前count个号码
-        selected = [ball for ball, score in sorted_scores[:count]]
-        
+
+        # 使用概率选择而不是直接选择最高分
+        selected = []
+        available_balls = list(range(1, max_ball + 1))
+
+        # 创建权重列表
+        weights = []
+        balls = []
+        for ball, score in sorted_scores:
+            if ball in available_balls:
+                weights.append(max(score, 0.001))  # 确保权重为正
+                balls.append(ball)
+
+        # 加权随机选择
+        for _ in range(count):
+            if not balls:
+                break
+
+            # 计算累积权重
+            total_weight = sum(weights)
+            if total_weight <= 0:
+                # 如果权重都为0，随机选择
+                selected_ball = random.choice(balls)
+            else:
+                # 加权随机选择
+                r = random.uniform(0, total_weight)
+                cumulative = 0
+                selected_ball = balls[0]  # 默认选择
+
+                for i, weight in enumerate(weights):
+                    cumulative += weight
+                    if r <= cumulative:
+                        selected_ball = balls[i]
+                        break
+
+            # 添加到选中列表并从可选列表中移除
+            selected.append(selected_ball)
+            ball_index = balls.index(selected_ball)
+            balls.pop(ball_index)
+            weights.pop(ball_index)
+
         # 如果数量不足，随机补充
         if len(selected) < count:
             remaining = [i for i in range(1, max_ball + 1) if i not in selected]
-            import random
             random.shuffle(remaining)
             selected.extend(remaining[:count - len(selected)])
-        
+
         return sorted(selected[:count])
     
     def _calculate_total_combinations(self, front_count, back_count):

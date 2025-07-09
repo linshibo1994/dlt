@@ -1,0 +1,67 @@
+{
+  "timestamp": "2025-07-08T09:53:01.381874",
+  "method": "hybrid",
+  "periods": 3000,
+  "total_predictions": 2,
+  "predictions": [
+    {
+      "index": 1,
+      "combination": "10+4",
+      "front_count": 10,
+      "back_count": 4,
+      "front_balls": [
+        1,
+        6,
+        7,
+        13,
+        16,
+        18,
+        20,
+        21,
+        26,
+        27
+      ],
+      "back_balls": [
+        5,
+        6,
+        9,
+        10
+      ],
+      "total_combinations": 1512,
+      "investment_cost": 4536
+    },
+    {
+      "index": 2,
+      "combination": "12+5",
+      "front_count": 12,
+      "back_count": 5,
+      "front_balls": [
+        5,
+        8,
+        9,
+        16,
+        21,
+        23,
+        24,
+        26,
+        29,
+        33,
+        34,
+        35
+      ],
+      "back_balls": [
+        1,
+        2,
+        4,
+        6,
+        8
+      ],
+      "total_combinations": 7920,
+      "investment_cost": 23760
+    }
+  ],
+  "summary": {
+    "total_combinations": 9432,
+    "total_cost": 28296
+  }
+}
