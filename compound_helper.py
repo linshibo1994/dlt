@@ -7,7 +7,7 @@
 """
 
 import sys
-from compound_predictor import CompoundPredictor
+from predictors import CompoundPredictor
 
 
 class CompoundHelper:
@@ -186,7 +186,8 @@ def main():
     # 创建助手
     helper = CompoundHelper(args.data)
     
-    if not helper.predictor.hybrid_analyzer:
+    if not helper.predictor.df is not None:
+        print("数据加载失败")
         return
     
     if args.interactive:

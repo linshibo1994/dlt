@@ -1,5 +1,5 @@
 {
-  "timestamp": "2025-07-05T17:44:17.772830",
+  "timestamp": "2025-07-09T20:40:38.868177",
   "periods": 1500,
   "model_weights": {
     "statistical": 0.1,
@@ -15,16 +15,16 @@
       "index": 1,
       "front_balls": [
         4,
+        11,
         15,
-        17,
         20,
         22
       ],
       "back_balls": [
         4,
-        7
+        5
       ],
-      "formatted": "前区 04 15 17 20 22 | 后区 04 07"
+      "formatted": "前区 04 11 15 20 22 | 后区 04 05"
     }
   ]
 }
