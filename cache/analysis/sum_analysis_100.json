@@ -1,0 +1,25 @@
+{
+  "front_sum_stats": {
+    "mean": 97.47,
+    "std": 24.77759269985686,
+    "min": "49",
+    "max": "163",
+    "median": 97.0
+  },
+  "back_sum_stats": {
+    "mean": 13.55,
+    "std": 4.765238713852644,
+    "min": "3",
+    "max": "23",
+    "median": 13.0
+  },
+  "total_sum_stats": {
+    "mean": 111.02,
+    "std": 25.107759756696737,
+    "min": "64",
+    "max": "182",
+    "median": 114.5
+  },
+  "analysis_periods": 100,
+  "timestamp": "2025-07-12T20:08:01.460864"
+}

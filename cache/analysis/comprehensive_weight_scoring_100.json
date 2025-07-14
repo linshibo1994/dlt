@@ -1,0 +1,861 @@
+{
+  "comprehensive_scores": {
+    "front_scores": {
+      "1": {
+        "total_score": 0.03,
+        "detail_scores": {
+          "frequency": 0.0,
+          "hot_cold": 0.2,
+          "missing": 0.0,
+          "markov": 0,
+          "bayesian": 0,
+          "correlation": 0
+        }
+      },
+      "2": {
+        "total_score": 0.03,
+        "detail_scores": {
+          "frequency": 0.0,
+          "hot_cold": 0.2,
+          "missing": 0.0,
+          "markov": 0,
+          "bayesian": 0,
+          "correlation": 0
+        }
+      },
+      "3": {
+        "total_score": 0.03,
+        "detail_scores": {
+          "frequency": 0.0,
+          "hot_cold": 0.2,
+          "missing": 0.0,
+          "markov": 0,
+          "bayesian": 0,
+          "correlation": 0
+        }
+      },
+      "4": {
+        "total_score": 0.03,
+        "detail_scores": {
+          "frequency": 0.0,
+          "hot_cold": 0.2,
+          "missing": 0.0,
+          "markov": 0,
+          "bayesian": 0,
+          "correlation": 0
+        }
+      },
+      "5": {
+        "total_score": 0.03,
+        "detail_scores": {
+          "frequency": 0.0,
+          "hot_cold": 0.2,
+          "missing": 0.0,
+          "markov": 0,
+          "bayesian": 0,
+          "correlation": 0
+        }
+      },
+      "6": {
+        "total_score": 0.03,
+        "detail_scores": {
+          "frequency": 0.0,
+          "hot_cold": 0.2,
+          "missing": 0.0,
+          "markov": 0,
+          "bayesian": 0,
+          "correlation": 0
+        }
+      },
+      "7": {
+        "total_score": 0.03,
+        "detail_scores": {
+          "frequency": 0.0,
+          "hot_cold": 0.2,
+          "missing": 0.0,
+          "markov": 0,
+          "bayesian": 0,
+          "correlation": 0
+        }
+      },
+      "8": {
+        "total_score": 0.03,
+        "detail_scores": {
+          "frequency": 0.0,
+          "hot_cold": 0.2,
+          "missing": 0.0,
+          "markov": 0,
+          "bayesian": 0,
+          "correlation": 0
+        }
+      },
+      "9": {
+        "total_score": 0.03,
+        "detail_scores": {
+          "frequency": 0.0,
+          "hot_cold": 0.2,
+          "missing": 0.0,
+          "markov": 0,
+          "bayesian": 0,
+          "correlation": 0
+        }
+      },
+      "10": {
+        "total_score": 0.03,
+        "detail_scores": {
+          "frequency": 0.0,
+          "hot_cold": 0.2,
+          "missing": 0.0,
+          "markov": 0,
+          "bayesian": 0,
+          "correlation": 0
+        }
+      },
+      "11": {
+        "total_score": 0.03,
+        "detail_scores": {
+          "frequency": 0.0,
+          "hot_cold": 0.2,
+          "missing": 0.0,
+          "markov": 0,
+          "bayesian": 0,
+          "correlation": 0
+        }
+      },
+      "12": {
+        "total_score": 0.03,
+        "detail_scores": {
+          "frequency": 0.0,
+          "hot_cold": 0.2,
+          "missing": 0.0,
+          "markov": 0,
+          "bayesian": 0,
+          "correlation": 0
+        }
+      },
+      "13": {
+        "total_score": 0.03,
+        "detail_scores": {
+          "frequency": 0.0,
+          "hot_cold": 0.2,
+          "missing": 0.0,
+          "markov": 0,
+          "bayesian": 0,
+          "correlation": 0
+        }
+      },
+      "14": {
+        "total_score": 0.03,
+        "detail_scores": {
+          "frequency": 0.0,
+          "hot_cold": 0.2,
+          "missing": 0.0,
+          "markov": 0,
+          "bayesian": 0,
+          "correlation": 0
+        }
+      },
+      "15": {
+        "total_score": 0.03,
+        "detail_scores": {
+          "frequency": 0.0,
+          "hot_cold": 0.2,
+          "missing": 0.0,
+          "markov": 0,
+          "bayesian": 0,
+          "correlation": 0
+        }
+      },
+      "16": {
+        "total_score": 0.03,
+        "detail_scores": {
+          "frequency": 0.0,
+          "hot_cold": 0.2,
+          "missing": 0.0,
+          "markov": 0,
+          "bayesian": 0,
+          "correlation": 0
+        }
+      },
+      "17": {
+        "total_score": 0.03,
+        "detail_scores": {
+          "frequency": 0.0,
+          "hot_cold": 0.2,
+          "missing": 0.0,
+          "markov": 0,
+          "bayesian": 0,
+          "correlation": 0
+        }
+      },
+      "18": {
+        "total_score": 0.03,
+        "detail_scores": {
+          "frequency": 0.0,
+          "hot_cold": 0.2,
+          "missing": 0.0,
+          "markov": 0,
+          "bayesian": 0,
+          "correlation": 0
+        }
+      },
+      "19": {
+        "total_score": 0.03,
+        "detail_scores": {
+          "frequency": 0.0,
+          "hot_cold": 0.2,
+          "missing": 0.0,
+          "markov": 0,
+          "bayesian": 0,
+          "correlation": 0
+        }
+      },
+      "20": {
+        "total_score": 0.03,
+        "detail_scores": {
+          "frequency": 0.0,
+          "hot_cold": 0.2,
+          "missing": 0.0,
+          "markov": 0,
+          "bayesian": 0,
+          "correlation": 0
+        }
+      },
+      "21": {
+        "total_score": 0.03,
+        "detail_scores": {
+          "frequency": 0.0,
+          "hot_cold": 0.2,
+          "missing": 0.0,
+          "markov": 0,
+          "bayesian": 0,
+          "correlation": 0
+        }
+      },
+      "22": {
+        "total_score": 0.03,
+        "detail_scores": {
+          "frequency": 0.0,
+          "hot_cold": 0.2,
+          "missing": 0.0,
+          "markov": 0,
+          "bayesian": 0,
+          "correlation": 0
+        }
+      },
+      "23": {
+        "total_score": 0.03,
+        "detail_scores": {
+          "frequency": 0.0,
+          "hot_cold": 0.2,
+          "missing": 0.0,
+          "markov": 0,
+          "bayesian": 0,
+          "correlation": 0
+        }
+      },
+      "24": {
+        "total_score": 0.03,
+        "detail_scores": {
+          "frequency": 0.0,
+          "hot_cold": 0.2,
+          "missing": 0.0,
+          "markov": 0,
+          "bayesian": 0,
+          "correlation": 0
+        }
+      },
+      "25": {
+        "total_score": 0.03,
+        "detail_scores": {
+          "frequency": 0.0,
+          "hot_cold": 0.2,
+          "missing": 0.0,
+          "markov": 0,
+          "bayesian": 0,
+          "correlation": 0
+        }
+      },
+      "26": {
+        "total_score": 0.03,
+        "detail_scores": {
+          "frequency": 0.0,
+          "hot_cold": 0.2,
+          "missing": 0.0,
+          "markov": 0,
+          "bayesian": 0,
+          "correlation": 0
+        }
+      },
+      "27": {
+        "total_score": 0.03,
+        "detail_scores": {
+          "frequency": 0.0,
+          "hot_cold": 0.2,
+          "missing": 0.0,
+          "markov": 0,
+          "bayesian": 0,
+          "correlation": 0
+        }
+      },
+      "28": {
+        "total_score": 0.03,
+        "detail_scores": {
+          "frequency": 0.0,
+          "hot_cold": 0.2,
+          "missing": 0.0,
+          "markov": 0,
+          "bayesian": 0,
+          "correlation": 0
+        }
+      },
+      "29": {
+        "total_score": 0.03,
+        "detail_scores": {
+          "frequency": 0.0,
+          "hot_cold": 0.2,
+          "missing": 0.0,
+          "markov": 0,
+          "bayesian": 0,
+          "correlation": 0
+        }
+      },
+      "30": {
+        "total_score": 0.03,
+        "detail_scores": {
+          "frequency": 0.0,
+          "hot_cold": 0.2,
+          "missing": 0.0,
+          "markov": 0,
+          "bayesian": 0,
+          "correlation": 0
+        }
+      },
+      "31": {
+        "total_score": 0.03,
+        "detail_scores": {
+          "frequency": 0.0,
+          "hot_cold": 0.2,
+          "missing": 0.0,
+          "markov": 0,
+          "bayesian": 0,
+          "correlation": 0
+        }
+      },
+      "32": {
+        "total_score": 0.03,
+        "detail_scores": {
+          "frequency": 0.0,
+          "hot_cold": 0.2,
+          "missing": 0.0,
+          "markov": 0,
+          "bayesian": 0,
+          "correlation": 0
+        }
+      },
+      "33": {
+        "total_score": 0.03,
+        "detail_scores": {
+          "frequency": 0.0,
+          "hot_cold": 0.2,
+          "missing": 0.0,
+          "markov": 0,
+          "bayesian": 0,
+          "correlation": 0
+        }
+      },
+      "34": {
+        "total_score": 0.03,
+        "detail_scores": {
+          "frequency": 0.0,
+          "hot_cold": 0.2,
+          "missing": 0.0,
+          "markov": 0,
+          "bayesian": 0,
+          "correlation": 0
+        }
+      },
+      "35": {
+        "total_score": 0.03,
+        "detail_scores": {
+          "frequency": 0.0,
+          "hot_cold": 0.2,
+          "missing": 0.0,
+          "markov": 0,
+          "bayesian": 0,
+          "correlation": 0
+        }
+      }
+    },
+    "back_scores": {
+      "1": {
+        "total_score": 0.03,
+        "detail_scores": {
+          "frequency": 0.0,
+          "hot_cold": 0.2,
+          "missing": 0.0,
+          "markov": 0,
+          "bayesian": 0,
+          "correlation": 0
+        }
+      },
+      "2": {
+        "total_score": 0.03,
+        "detail_scores": {
+          "frequency": 0.0,
+          "hot_cold": 0.2,
+          "missing": 0.0,
+          "markov": 0,
+          "bayesian": 0,
+          "correlation": 0
+        }
+      },
+      "3": {
+        "total_score": 0.03,
+        "detail_scores": {
+          "frequency": 0.0,
+          "hot_cold": 0.2,
+          "missing": 0.0,
+          "markov": 0,
+          "bayesian": 0,
+          "correlation": 0
+        }
+      },
+      "4": {
+        "total_score": 0.03,
+        "detail_scores": {
+          "frequency": 0.0,
+          "hot_cold": 0.2,
+          "missing": 0.0,
+          "markov": 0,
+          "bayesian": 0,
+          "correlation": 0
+        }
+      },
+      "5": {
+        "total_score": 0.03,
+        "detail_scores": {
+          "frequency": 0.0,
+          "hot_cold": 0.2,
+          "missing": 0.0,
+          "markov": 0,
+          "bayesian": 0,
+          "correlation": 0
+        }
+      },
+      "6": {
+        "total_score": 0.03,
+        "detail_scores": {
+          "frequency": 0.0,
+          "hot_cold": 0.2,
+          "missing": 0.0,
+          "markov": 0,
+          "bayesian": 0,
+          "correlation": 0
+        }
+      },
+      "7": {
+        "total_score": 0.03,
+        "detail_scores": {
+          "frequency": 0.0,
+          "hot_cold": 0.2,
+          "missing": 0.0,
+          "markov": 0,
+          "bayesian": 0,
+          "correlation": 0
+        }
+      },
+      "8": {
+        "total_score": 0.03,
+        "detail_scores": {
+          "frequency": 0.0,
+          "hot_cold": 0.2,
+          "missing": 0.0,
+          "markov": 0,
+          "bayesian": 0,
+          "correlation": 0
+        }
+      },
+      "9": {
+        "total_score": 0.03,
+        "detail_scores": {
+          "frequency": 0.0,
+          "hot_cold": 0.2,
+          "missing": 0.0,
+          "markov": 0,
+          "bayesian": 0,
+          "correlation": 0
+        }
+      },
+      "10": {
+        "total_score": 0.03,
+        "detail_scores": {
+          "frequency": 0.0,
+          "hot_cold": 0.2,
+          "missing": 0.0,
+          "markov": 0,
+          "bayesian": 0,
+          "correlation": 0
+        }
+      },
+      "11": {
+        "total_score": 0.03,
+        "detail_scores": {
+          "frequency": 0.0,
+          "hot_cold": 0.2,
+          "missing": 0.0,
+          "markov": 0,
+          "bayesian": 0,
+          "correlation": 0
+        }
+      },
+      "12": {
+        "total_score": 0.03,
+        "detail_scores": {
+          "frequency": 0.0,
+          "hot_cold": 0.2,
+          "missing": 0.0,
+          "markov": 0,
+          "bayesian": 0,
+          "correlation": 0
+        }
+      }
+    }
+  },
+  "front_ranking": [
+    [
+      1,
+      {
+        "total_score": 0.03,
+        "detail_scores": {
+          "frequency": 0.0,
+          "hot_cold": 0.2,
+          "missing": 0.0,
+          "markov": 0,
+          "bayesian": 0,
+          "correlation": 0
+        }
+      }
+    ],
+    [
+      2,
+      {
+        "total_score": 0.03,
+        "detail_scores": {
+          "frequency": 0.0,
+          "hot_cold": 0.2,
+          "missing": 0.0,
+          "markov": 0,
+          "bayesian": 0,
+          "correlation": 0
+        }
+      }
+    ],
+    [
+      3,
+      {
+        "total_score": 0.03,
+        "detail_scores": {
+          "frequency": 0.0,
+          "hot_cold": 0.2,
+          "missing": 0.0,
+          "markov": 0,
+          "bayesian": 0,
+          "correlation": 0
+        }
+      }
+    ],
+    [
+      4,
+      {
+        "total_score": 0.03,
+        "detail_scores": {
+          "frequency": 0.0,
+          "hot_cold": 0.2,
+          "missing": 0.0,
+          "markov": 0,
+          "bayesian": 0,
+          "correlation": 0
+        }
+      }
+    ],
+    [
+      5,
+      {
+        "total_score": 0.03,
+        "detail_scores": {
+          "frequency": 0.0,
+          "hot_cold": 0.2,
+          "missing": 0.0,
+          "markov": 0,
+          "bayesian": 0,
+          "correlation": 0
+        }
+      }
+    ],
+    [
+      6,
+      {
+        "total_score": 0.03,
+        "detail_scores": {
+          "frequency": 0.0,
+          "hot_cold": 0.2,
+          "missing": 0.0,
+          "markov": 0,
+          "bayesian": 0,
+          "correlation": 0
+        }
+      }
+    ],
+    [
+      7,
+      {
+        "total_score": 0.03,
+        "detail_scores": {
+          "frequency": 0.0,
+          "hot_cold": 0.2,
+          "missing": 0.0,
+          "markov": 0,
+          "bayesian": 0,
+          "correlation": 0
+        }
+      }
+    ],
+    [
+      8,
+      {
+        "total_score": 0.03,
+        "detail_scores": {
+          "frequency": 0.0,
+          "hot_cold": 0.2,
+          "missing": 0.0,
+          "markov": 0,
+          "bayesian": 0,
+          "correlation": 0
+        }
+      }
+    ],
+    [
+      9,
+      {
+        "total_score": 0.03,
+        "detail_scores": {
+          "frequency": 0.0,
+          "hot_cold": 0.2,
+          "missing": 0.0,
+          "markov": 0,
+          "bayesian": 0,
+          "correlation": 0
+        }
+      }
+    ],
+    [
+      10,
+      {
+        "total_score": 0.03,
+        "detail_scores": {
+          "frequency": 0.0,
+          "hot_cold": 0.2,
+          "missing": 0.0,
+          "markov": 0,
+          "bayesian": 0,
+          "correlation": 0
+        }
+      }
+    ],
+    [
+      11,
+      {
+        "total_score": 0.03,
+        "detail_scores": {
+          "frequency": 0.0,
+          "hot_cold": 0.2,
+          "missing": 0.0,
+          "markov": 0,
+          "bayesian": 0,
+          "correlation": 0
+        }
+      }
+    ],
+    [
+      12,
+      {
+        "total_score": 0.03,
+        "detail_scores": {
+          "frequency": 0.0,
+          "hot_cold": 0.2,
+          "missing": 0.0,
+          "markov": 0,
+          "bayesian": 0,
+          "correlation": 0
+        }
+      }
+    ],
+    [
+      13,
+      {
+        "total_score": 0.03,
+        "detail_scores": {
+          "frequency": 0.0,
+          "hot_cold": 0.2,
+          "missing": 0.0,
+          "markov": 0,
+          "bayesian": 0,
+          "correlation": 0
+        }
+      }
+    ],
+    [
+      14,
+      {
+        "total_score": 0.03,
+        "detail_scores": {
+          "frequency": 0.0,
+          "hot_cold": 0.2,
+          "missing": 0.0,
+          "markov": 0,
+          "bayesian": 0,
+          "correlation": 0
+        }
+      }
+    ],
+    [
+      15,
+      {
+        "total_score": 0.03,
+        "detail_scores": {
+          "frequency": 0.0,
+          "hot_cold": 0.2,
+          "missing": 0.0,
+          "markov": 0,
+          "bayesian": 0,
+          "correlation": 0
+        }
+      }
+    ]
+  ],
+  "back_ranking": [
+    [
+      1,
+      {
+        "total_score": 0.03,
+        "detail_scores": {
+          "frequency": 0.0,
+          "hot_cold": 0.2,
+          "missing": 0.0,
+          "markov": 0,
+          "bayesian": 0,
+          "correlation": 0
+        }
+      }
+    ],
+    [
+      2,
+      {
+        "total_score": 0.03,
+        "detail_scores": {
+          "frequency": 0.0,
+          "hot_cold": 0.2,
+          "missing": 0.0,
+          "markov": 0,
+          "bayesian": 0,
+          "correlation": 0
+        }
+      }
+    ],
+    [
+      3,
+      {
+        "total_score": 0.03,
+        "detail_scores": {
+          "frequency": 0.0,
+          "hot_cold": 0.2,
+          "missing": 0.0,
+          "markov": 0,
+          "bayesian": 0,
+          "correlation": 0
+        }
+      }
+    ],
+    [
+      4,
+      {
+        "total_score": 0.03,
+        "detail_scores": {
+          "frequency": 0.0,
+          "hot_cold": 0.2,
+          "missing": 0.0,
+          "markov": 0,
+          "bayesian": 0,
+          "correlation": 0
+        }
+      }
+    ],
+    [
+      5,
+      {
+        "total_score": 0.03,
+        "detail_scores": {
+          "frequency": 0.0,
+          "hot_cold": 0.2,
+          "missing": 0.0,
+          "markov": 0,
+          "bayesian": 0,
+          "correlation": 0
+        }
+      }
+    ],
+    [
+      6,
+      {
+        "total_score": 0.03,
+        "detail_scores": {
+          "frequency": 0.0,
+          "hot_cold": 0.2,
+          "missing": 0.0,
+          "markov": 0,
+          "bayesian": 0,
+          "correlation": 0
+        }
+      }
+    ],
+    [
+      7,
+      {
+        "total_score": 0.03,
+        "detail_scores": {
+          "frequency": 0.0,
+          "hot_cold": 0.2,
+          "missing": 0.0,
+          "markov": 0,
+          "bayesian": 0,
+          "correlation": 0
+        }
+      }
+    ],
+    [
+      8,
+      {
+        "total_score": 0.03,
+        "detail_scores": {
+          "frequency": 0.0,
+          "hot_cold": 0.2,
+          "missing": 0.0,
+          "markov": 0,
+          "bayesian": 0,
+          "correlation": 0
+        }
+      }
+    ]
+  ],
+  "weights_used": {
+    "frequency": 0.2,
+    "hot_cold": 0.15,
+    "missing": 0.15,
+    "markov": 0.25,
+    "bayesian": 0.15,
+    "correlation": 0.1
+  },
+  "analysis_periods": 100,
+  "timestamp": "2025-07-12T20:08:01.483495"
+}

@@ -1,0 +1,1997 @@
+{
+  "timestamp": "2025-07-12T16:55:00.764841",
+  "learning_history": [
+    {
+      "total_periods": 50,
+      "total_wins": 2,
+      "win_rate": 0.04,
+      "total_score": 2.0,
+      "average_score": 0.04,
+      "predictor_performance": {
+        "traditional_frequency": {
+          "total_predictions": 7,
+          "total_score": 0.0,
+          "win_count": 0,
+          "recent_scores": "deque([0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], maxlen=20)",
+          "confidence": 0.1
+        },
+        "traditional_hot_cold": {
+          "total_predictions": 7,
+          "total_score": 0.0,
+          "win_count": 0,
+          "recent_scores": "deque([0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], maxlen=20)",
+          "confidence": 0.1
+        },
+        "traditional_missing": {
+          "total_predictions": 7,
+          "total_score": 0.0,
+          "win_count": 0,
+          "recent_scores": "deque([0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], maxlen=20)",
+          "confidence": 0.1
+        },
+        "advanced_markov": {
+          "total_predictions": 7,
+          "total_score": 0.0,
+          "win_count": 0,
+          "recent_scores": "deque([0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], maxlen=20)",
+          "confidence": 0.1
+        },
+        "advanced_bayesian": {
+          "total_predictions": 8,
+          "total_score": 1.0,
+          "win_count": 1,
+          "recent_scores": "deque([0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], maxlen=20)",
+          "confidence": 0.1
+        },
+        "advanced_ensemble": {
+          "total_predictions": 7,
+          "total_score": 1.0,
+          "win_count": 1,
+          "recent_scores": "deque([0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0], maxlen=20)",
+          "confidence": 0.1
+        },
+        "super_predictor": {
+          "total_predictions": 7,
+          "total_score": 0.0,
+          "win_count": 0,
+          "recent_scores": "deque([0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], maxlen=20)",
+          "confidence": 0.1
+        }
+      },
+      "bandit_final_values": "[0.         0.         0.         0.         0.0125     0.01428571\n 0.        ]",
+      "bandit_final_counts": "[7. 7. 7. 7. 8. 7. 7.]",
+      "detailed_results": [
+        {
+          "period": 1,
+          "issue": "24129",
+          "date": "2024-11-06",
+          "selected_predictor": "traditional_frequency",
+          "predicted_front": [
+            "4",
+            "18",
+            "19",
+            "25",
+            "33"
+          ],
+          "predicted_back": [
+            "9",
+            "10"
+          ],
+          "actual_front": [
+            7,
+            19,
+            30,
+            31,
+            34
+          ],
+          "actual_back": [
+            5,
+            7
+          ],
+          "front_hits": 1,
+          "back_hits": 0,
+          "prize_level": "未中奖",
+          "score": 0.0,
+          "confidence": 0.1,
+          "cumulative_score": 0.0,
+          "win_rate": 0.0,
+          "bandit_values": "[0. 0. 0. 0. 0. 0. 0.]",
+          "bandit_counts": "[1. 0. 0. 0. 0. 0. 0.]"
+        },
+        {
+          "period": 2,
+          "issue": "24128",
+          "date": "2024-11-04",
+          "selected_predictor": "traditional_hot_cold",
+          "predicted_front": [
+            "11",
+            "13",
+            "25",
+            "31",
+            "33"
+          ],
+          "predicted_back": [
+            "2",
+            "7"
+          ],
+          "actual_front": [
+            3,
+            7,
+            10,
+            29,
+            31
+          ],
+          "actual_back": [
+            1,
+            3
+          ],
+          "front_hits": 1,
+          "back_hits": 0,
+          "prize_level": "未中奖",
+          "score": 0.0,
+          "confidence": 0.1,
+          "cumulative_score": 0.0,
+          "win_rate": 0.0,
+          "bandit_values": "[0. 0. 0. 0. 0. 0. 0.]",
+          "bandit_counts": "[1. 1. 0. 0. 0. 0. 0.]"
+        },
+        {
+          "period": 3,
+          "issue": "24127",
+          "date": "2024-11-02",
+          "selected_predictor": "traditional_missing",
+          "predicted_front": [
+            "1",
+            "8",
+            "13",
+            "23",
+            "26"
+          ],
+          "predicted_back": [
+            "5",
+            "8"
+          ],
+          "actual_front": [
+            2,
+            3,
+            10,
+            16,
+            28
+          ],
+          "actual_back": [
+            7,
+            10
+          ],
+          "front_hits": 0,
+          "back_hits": 0,
+          "prize_level": "未中奖",
+          "score": 0.0,
+          "confidence": 0.1,
+          "cumulative_score": 0.0,
+          "win_rate": 0.0,
+          "bandit_values": "[0. 0. 0. 0. 0. 0. 0.]",
+          "bandit_counts": "[1. 1. 1. 0. 0. 0. 0.]"
+        },
+        {
+          "period": 4,
+          "issue": "24126",
+          "date": "2024-10-30",
+          "selected_predictor": "advanced_markov",
+          "predicted_front": [
+            "4",
+            "16",
+            "21",
+            "29",
+            "30"
+          ],
+          "predicted_back": [
+            "3",
+            "8"
+          ],
+          "actual_front": [
+            2,
+            10,
+            17,
+            28,
+            34
+          ],
+          "actual_back": [
+            7,
+            8
+          ],
+          "front_hits": 0,
+          "back_hits": 1,
+          "prize_level": "未中奖",
+          "score": 0.0,
+          "confidence": 0.1,
+          "cumulative_score": 0.0,
+          "win_rate": 0.0,
+          "bandit_values": "[0. 0. 0. 0. 0. 0. 0.]",
+          "bandit_counts": "[1. 1. 1. 1. 0. 0. 0.]"
+        },
+        {
+          "period": 5,
+          "issue": "24125",
+          "date": "2024-10-28",
+          "selected_predictor": "advanced_bayesian",
+          "predicted_front": [
+            "15",
+            "18",
+            "21",
+            "25",
+            "29"
+          ],
+          "predicted_back": [
+            "5",
+            "9"
+          ],
+          "actual_front": [
+            10,
+            14,
+            19,
+            24,
+            26
+          ],
+          "actual_back": [
+            1,
+            10
+          ],
+          "front_hits": 0,
+          "back_hits": 0,
+          "prize_level": "未中奖",
+          "score": 0.0,
+          "confidence": 0.1,
+          "cumulative_score": 0.0,
+          "win_rate": 0.0,
+          "bandit_values": "[0. 0. 0. 0. 0. 0. 0.]",
+          "bandit_counts": "[1. 1. 1. 1. 1. 0. 0.]"
+        },
+        {
+          "period": 6,
+          "issue": "24124",
+          "date": "2024-10-26",
+          "selected_predictor": "advanced_ensemble",
+          "predicted_front": [
+            "4",
+            "11",
+            "13",
+            "16",
+            "27"
+          ],
+          "predicted_back": [
+            "2",
+            "7"
+          ],
+          "actual_front": [
+            2,
+            3,
+            7,
+            10,
+            25
+          ],
+          "actual_back": [
+            1,
+            11
+          ],
+          "front_hits": 0,
+          "back_hits": 0,
+          "prize_level": "未中奖",
+          "score": 0.0,
+          "confidence": 0.1,
+          "cumulative_score": 0.0,
+          "win_rate": 0.0,
+          "bandit_values": "[0. 0. 0. 0. 0. 0. 0.]",
+          "bandit_counts": "[1. 1. 1. 1. 1. 1. 0.]"
+        },
+        {
+          "period": 7,
+          "issue": "24123",
+          "date": "2024-10-23",
+          "selected_predictor": "super_predictor",
+          "predicted_front": [
+            "2",
+            "3",
+            "5",
+            "6",
+            "34"
+          ],
+          "predicted_back": [
+            "6",
+            "11"
+          ],
+          "actual_front": [
+            3,
+            9,
+            16,
+            30,
+            31
+          ],
+          "actual_back": [
+            8,
+            9
+          ],
+          "front_hits": 1,
+          "back_hits": 0,
+          "prize_level": "未中奖",
+          "score": 0.0,
+          "confidence": 0.1,
+          "cumulative_score": 0.0,
+          "win_rate": 0.0,
+          "bandit_values": "[0. 0. 0. 0. 0. 0. 0.]",
+          "bandit_counts": "[1. 1. 1. 1. 1. 1. 1.]"
+        },
+        {
+          "period": 8,
+          "issue": "24122",
+          "date": "2024-10-21",
+          "selected_predictor": "traditional_frequency",
+          "predicted_front": [
+            "1",
+            "12",
+            "27",
+            "31",
+            "35"
+          ],
+          "predicted_back": [
+            "7",
+            "8"
+          ],
+          "actual_front": [
+            5,
+            6,
+            9,
+            15,
+            17
+          ],
+          "actual_back": [
+            3,
+            10
+          ],
+          "front_hits": 0,
+          "back_hits": 0,
+          "prize_level": "未中奖",
+          "score": 0.0,
+          "confidence": 0.1,
+          "cumulative_score": 0.0,
+          "win_rate": 0.0,
+          "bandit_values": "[0. 0. 0. 0. 0. 0. 0.]",
+          "bandit_counts": "[2. 1. 1. 1. 1. 1. 1.]"
+        },
+        {
+          "period": 9,
+          "issue": "24121",
+          "date": "2024-10-19",
+          "selected_predictor": "traditional_hot_cold",
+          "predicted_front": [
+            "10",
+            "11",
+            "15",
+            "19",
+            "25"
+          ],
+          "predicted_back": [
+            "1",
+            "11"
+          ],
+          "actual_front": [
+            7,
+            15,
+            18,
+            24,
+            33
+          ],
+          "actual_back": [
+            4,
+            5
+          ],
+          "front_hits": 1,
+          "back_hits": 0,
+          "prize_level": "未中奖",
+          "score": 0.0,
+          "confidence": 0.1,
+          "cumulative_score": 0.0,
+          "win_rate": 0.0,
+          "bandit_values": "[0. 0. 0. 0. 0. 0. 0.]",
+          "bandit_counts": "[2. 2. 1. 1. 1. 1. 1.]"
+        },
+        {
+          "period": 10,
+          "issue": "24120",
+          "date": "2024-10-16",
+          "selected_predictor": "traditional_missing",
+          "predicted_front": [
+            "5",
+            "9",
+            "11",
+            "33",
+            "35"
+          ],
+          "predicted_back": [
+            "8",
+            "9"
+          ],
+          "actual_front": [
+            4,
+            12,
+            17,
+            23,
+            27
+          ],
+          "actual_back": [
+            2,
+            8
+          ],
+          "front_hits": 0,
+          "back_hits": 1,
+          "prize_level": "未中奖",
+          "score": 0.0,
+          "confidence": 0.1,
+          "cumulative_score": 0.0,
+          "win_rate": 0.0,
+          "bandit_values": "[0. 0. 0. 0. 0. 0. 0.]",
+          "bandit_counts": "[2. 2. 2. 1. 1. 1. 1.]"
+        },
+        {
+          "period": 11,
+          "issue": "24119",
+          "date": "2024-10-14",
+          "selected_predictor": "advanced_markov",
+          "predicted_front": [
+            "3",
+            "6",
+            "7",
+            "14",
+            "22"
+          ],
+          "predicted_back": [
+            "9",
+            "11"
+          ],
+          "actual_front": [
+            6,
+            12,
+            28,
+            30,
+            33
+          ],
+          "actual_back": [
+            2,
+            7
+          ],
+          "front_hits": 1,
+          "back_hits": 0,
+          "prize_level": "未中奖",
+          "score": 0.0,
+          "confidence": 0.1,
+          "cumulative_score": 0.0,
+          "win_rate": 0.0,
+          "bandit_values": "[0. 0. 0. 0. 0. 0. 0.]",
+          "bandit_counts": "[2. 2. 2. 2. 1. 1. 1.]"
+        },
+        {
+          "period": 12,
+          "issue": "24118",
+          "date": "2024-10-12",
+          "selected_predictor": "advanced_bayesian",
+          "predicted_front": [
+            "1",
+            "12",
+            "16",
+            "24",
+            "28"
+          ],
+          "predicted_back": [
+            "5",
+            "10"
+          ],
+          "actual_front": [
+            1,
+            3,
+            9,
+            16,
+            19
+          ],
+          "actual_back": [
+            5,
+            11
+          ],
+          "front_hits": 2,
+          "back_hits": 1,
+          "prize_level": "九等奖",
+          "score": 1.0,
+          "confidence": 0.1,
+          "cumulative_score": 1.0,
+          "win_rate": 0.08333333333333333,
+          "bandit_values": "[0.   0.   0.   0.   0.05 0.   0.  ]",
+          "bandit_counts": "[2. 2. 2. 2. 2. 1. 1.]"
+        },
+        {
+          "period": 13,
+          "issue": "24117",
+          "date": "2024-10-09",
+          "selected_predictor": "advanced_ensemble",
+          "predicted_front": [
+            "6",
+            "13",
+            "15",
+            "17",
+            "31"
+          ],
+          "predicted_back": [
+            "8",
+            "10"
+          ],
+          "actual_front": [
+            2,
+            10,
+            22,
+            26,
+            28
+          ],
+          "actual_back": [
+            2,
+            4
+          ],
+          "front_hits": 0,
+          "back_hits": 0,
+          "prize_level": "未中奖",
+          "score": 0.0,
+          "confidence": 0.1,
+          "cumulative_score": 1.0,
+          "win_rate": 0.07692307692307693,
+          "bandit_values": "[0.   0.   0.   0.   0.05 0.   0.  ]",
+          "bandit_counts": "[2. 2. 2. 2. 2. 2. 1.]"
+        },
+        {
+          "period": 14,
+          "issue": "24116",
+          "date": "2024-10-07",
+          "selected_predictor": "super_predictor",
+          "predicted_front": [
+            "11",
+            "14",
+            "17",
+            "19",
+            "30"
+          ],
+          "predicted_back": [
+            "4",
+            "11"
+          ],
+          "actual_front": [
+            1,
+            3,
+            6,
+            16,
+            25
+          ],
+          "actual_back": [
+            1,
+            11
+          ],
+          "front_hits": 0,
+          "back_hits": 1,
+          "prize_level": "未中奖",
+          "score": 0.0,
+          "confidence": 0.1,
+          "cumulative_score": 1.0,
+          "win_rate": 0.07142857142857142,
+          "bandit_values": "[0.   0.   0.   0.   0.05 0.   0.  ]",
+          "bandit_counts": "[2. 2. 2. 2. 2. 2. 2.]"
+        },
+        {
+          "period": 15,
+          "issue": "24115",
+          "date": "2024-10-05",
+          "selected_predictor": "traditional_frequency",
+          "predicted_front": [
+            "5",
+            "10",
+            "16",
+            "20",
+            "23"
+          ],
+          "predicted_back": [
+            "4",
+            "6"
+          ],
+          "actual_front": [
+            3,
+            4,
+            12,
+            19,
+            24
+          ],
+          "actual_back": [
+            8,
+            12
+          ],
+          "front_hits": 0,
+          "back_hits": 0,
+          "prize_level": "未中奖",
+          "score": 0.0,
+          "confidence": 0.1,
+          "cumulative_score": 1.0,
+          "win_rate": 0.06666666666666667,
+          "bandit_values": "[0.   0.   0.   0.   0.05 0.   0.  ]",
+          "bandit_counts": "[3. 2. 2. 2. 2. 2. 2.]"
+        },
+        {
+          "period": 16,
+          "issue": "24114",
+          "date": "2024-09-30",
+          "selected_predictor": "traditional_hot_cold",
+          "predicted_front": [
+            "1",
+            "6",
+            "10",
+            "11",
+            "22"
+          ],
+          "predicted_back": [
+            "9",
+            "12"
+          ],
+          "actual_front": [
+            12,
+            27,
+            30,
+            34,
+            35
+          ],
+          "actual_back": [
+            5,
+            11
+          ],
+          "front_hits": 0,
+          "back_hits": 0,
+          "prize_level": "未中奖",
+          "score": 0.0,
+          "confidence": 0.1,
+          "cumulative_score": 1.0,
+          "win_rate": 0.0625,
+          "bandit_values": "[0.   0.   0.   0.   0.05 0.   0.  ]",
+          "bandit_counts": "[3. 3. 2. 2. 2. 2. 2.]"
+        },
+        {
+          "period": 17,
+          "issue": "24113",
+          "date": "2024-09-28",
+          "selected_predictor": "traditional_missing",
+          "predicted_front": [
+            "6",
+            "10",
+            "12",
+            "27",
+            "34"
+          ],
+          "predicted_back": [
+            "6",
+            "8"
+          ],
+          "actual_front": [
+            16,
+            18,
+            25,
+            26,
+            33
+          ],
+          "actual_back": [
+            4,
+            8
+          ],
+          "front_hits": 0,
+          "back_hits": 1,
+          "prize_level": "未中奖",
+          "score": 0.0,
+          "confidence": 0.1,
+          "cumulative_score": 1.0,
+          "win_rate": 0.058823529411764705,
+          "bandit_values": "[0.   0.   0.   0.   0.05 0.   0.  ]",
+          "bandit_counts": "[3. 3. 3. 2. 2. 2. 2.]"
+        },
+        {
+          "period": 18,
+          "issue": "24112",
+          "date": "2024-09-25",
+          "selected_predictor": "advanced_markov",
+          "predicted_front": [
+            "1",
+            "19",
+            "23",
+            "24",
+            "29"
+          ],
+          "predicted_back": [
+            "1",
+            "11"
+          ],
+          "actual_front": [
+            5,
+            15,
+            24,
+            31,
+            34
+          ],
+          "actual_back": [
+            3,
+            10
+          ],
+          "front_hits": 1,
+          "back_hits": 0,
+          "prize_level": "未中奖",
+          "score": 0.0,
+          "confidence": 0.1,
+          "cumulative_score": 1.0,
+          "win_rate": 0.05555555555555555,
+          "bandit_values": "[0.   0.   0.   0.   0.05 0.   0.  ]",
+          "bandit_counts": "[3. 3. 3. 3. 2. 2. 2.]"
+        },
+        {
+          "period": 19,
+          "issue": "24111",
+          "date": "2024-09-23",
+          "selected_predictor": "advanced_bayesian",
+          "predicted_front": [
+            "4",
+            "17",
+            "21",
+            "23",
+            "35"
+          ],
+          "predicted_back": [
+            "2",
+            "3"
+          ],
+          "actual_front": [
+            3,
+            9,
+            19,
+            27,
+            30
+          ],
+          "actual_back": [
+            7,
+            11
+          ],
+          "front_hits": 0,
+          "back_hits": 0,
+          "prize_level": "未中奖",
+          "score": 0.0,
+          "confidence": 0.1,
+          "cumulative_score": 1.0,
+          "win_rate": 0.05263157894736842,
+          "bandit_values": "[0.         0.         0.         0.         0.03333333 0.\n 0.        ]",
+          "bandit_counts": "[3. 3. 3. 3. 3. 2. 2.]"
+        },
+        {
+          "period": 20,
+          "issue": "24110",
+          "date": "2024-09-21",
+          "selected_predictor": "advanced_ensemble",
+          "predicted_front": [
+            "1",
+            "8",
+            "15",
+            "16",
+            "34"
+          ],
+          "predicted_back": [
+            "8",
+            "12"
+          ],
+          "actual_front": [
+            1,
+            7,
+            8,
+            18,
+            28
+          ],
+          "actual_back": [
+            4,
+            12
+          ],
+          "front_hits": 2,
+          "back_hits": 1,
+          "prize_level": "九等奖",
+          "score": 1.0,
+          "confidence": 0.1,
+          "cumulative_score": 2.0,
+          "win_rate": 0.1,
+          "bandit_values": "[0.         0.         0.         0.         0.03333333 0.03333333\n 0.        ]",
+          "bandit_counts": "[3. 3. 3. 3. 3. 3. 2.]"
+        },
+        {
+          "period": 21,
+          "issue": "24109",
+          "date": "2024-09-18",
+          "selected_predictor": "super_predictor",
+          "predicted_front": [
+            "2",
+            "8",
+            "11",
+            "15",
+            "20"
+          ],
+          "predicted_back": [
+            "4",
+            "5"
+          ],
+          "actual_front": [
+            12,
+            23,
+            26,
+            27,
+            28
+          ],
+          "actual_back": [
+            3,
+            11
+          ],
+          "front_hits": 0,
+          "back_hits": 0,
+          "prize_level": "未中奖",
+          "score": 0.0,
+          "confidence": 0.1,
+          "cumulative_score": 2.0,
+          "win_rate": 0.09523809523809523,
+          "bandit_values": "[0.         0.         0.         0.         0.03333333 0.03333333\n 0.        ]",
+          "bandit_counts": "[3. 3. 3. 3. 3. 3. 3.]"
+        },
+        {
+          "period": 22,
+          "issue": "24108",
+          "date": "2024-09-16",
+          "selected_predictor": "advanced_bayesian",
+          "predicted_front": [
+            "2",
+            "10",
+            "13",
+            "19",
+            "22"
+          ],
+          "predicted_back": [
+            "1",
+            "2"
+          ],
+          "actual_front": [
+            16,
+            17,
+            21,
+            31,
+            34
+          ],
+          "actual_back": [
+            3,
+            8
+          ],
+          "front_hits": 0,
+          "back_hits": 0,
+          "prize_level": "未中奖",
+          "score": 0.0,
+          "confidence": 0.1,
+          "cumulative_score": 2.0,
+          "win_rate": 0.09090909090909091,
+          "bandit_values": "[0.         0.         0.         0.         0.025      0.03333333\n 0.        ]",
+          "bandit_counts": "[3. 3. 3. 3. 4. 3. 3.]"
+        },
+        {
+          "period": 23,
+          "issue": "24107",
+          "date": "2024-09-14",
+          "selected_predictor": "advanced_ensemble",
+          "predicted_front": [
+            "1",
+            "4",
+            "9",
+            "11",
+            "15"
+          ],
+          "predicted_back": [
+            "6",
+            "11"
+          ],
+          "actual_front": [
+            6,
+            14,
+            16,
+            18,
+            34
+          ],
+          "actual_back": [
+            3,
+            10
+          ],
+          "front_hits": 0,
+          "back_hits": 0,
+          "prize_level": "未中奖",
+          "score": 0.0,
+          "confidence": 0.1,
+          "cumulative_score": 2.0,
+          "win_rate": 0.08695652173913043,
+          "bandit_values": "[0.    0.    0.    0.    0.025 0.025 0.   ]",
+          "bandit_counts": "[3. 3. 3. 3. 4. 4. 3.]"
+        },
+        {
+          "period": 24,
+          "issue": "24106",
+          "date": "2024-09-11",
+          "selected_predictor": "traditional_frequency",
+          "predicted_front": [
+            "4",
+            "5",
+            "17",
+            "24",
+            "33"
+          ],
+          "predicted_back": [
+            "6",
+            "11"
+          ],
+          "actual_front": [
+            5,
+            11,
+            19,
+            22,
+            29
+          ],
+          "actual_back": [
+            2,
+            12
+          ],
+          "front_hits": 1,
+          "back_hits": 0,
+          "prize_level": "未中奖",
+          "score": 0.0,
+          "confidence": 0.1,
+          "cumulative_score": 2.0,
+          "win_rate": 0.08333333333333333,
+          "bandit_values": "[0.    0.    0.    0.    0.025 0.025 0.   ]",
+          "bandit_counts": "[4. 3. 3. 3. 4. 4. 3.]"
+        },
+        {
+          "period": 25,
+          "issue": "24105",
+          "date": "2024-09-09",
+          "selected_predictor": "traditional_hot_cold",
+          "predicted_front": [
+            "2",
+            "15",
+            "23",
+            "26",
+            "27"
+          ],
+          "predicted_back": [
+            "8",
+            "11"
+          ],
+          "actual_front": [
+            14,
+            20,
+            21,
+            28,
+            32
+          ],
+          "actual_back": [
+            9,
+            11
+          ],
+          "front_hits": 0,
+          "back_hits": 1,
+          "prize_level": "未中奖",
+          "score": 0.0,
+          "confidence": 0.1,
+          "cumulative_score": 2.0,
+          "win_rate": 0.08,
+          "bandit_values": "[0.    0.    0.    0.    0.025 0.025 0.   ]",
+          "bandit_counts": "[4. 4. 3. 3. 4. 4. 3.]"
+        },
+        {
+          "period": 26,
+          "issue": "24104",
+          "date": "2024-09-07",
+          "selected_predictor": "traditional_missing",
+          "predicted_front": [
+            "1",
+            "6",
+            "14",
+            "22",
+            "30"
+          ],
+          "predicted_back": [
+            "2",
+            "10"
+          ],
+          "actual_front": [
+            1,
+            4,
+            9,
+            13,
+            17
+          ],
+          "actual_back": [
+            6,
+            9
+          ],
+          "front_hits": 1,
+          "back_hits": 0,
+          "prize_level": "未中奖",
+          "score": 0.0,
+          "confidence": 0.1,
+          "cumulative_score": 2.0,
+          "win_rate": 0.07692307692307693,
+          "bandit_values": "[0.    0.    0.    0.    0.025 0.025 0.   ]",
+          "bandit_counts": "[4. 4. 4. 3. 4. 4. 3.]"
+        },
+        {
+          "period": 27,
+          "issue": "24103",
+          "date": "2024-09-04",
+          "selected_predictor": "advanced_markov",
+          "predicted_front": [
+            "9",
+            "10",
+            "14",
+            "15",
+            "31"
+          ],
+          "predicted_back": [
+            "10",
+            "12"
+          ],
+          "actual_front": [
+            19,
+            21,
+            29,
+            32,
+            33
+          ],
+          "actual_back": [
+            6,
+            8
+          ],
+          "front_hits": 0,
+          "back_hits": 0,
+          "prize_level": "未中奖",
+          "score": 0.0,
+          "confidence": 0.1,
+          "cumulative_score": 2.0,
+          "win_rate": 0.07407407407407407,
+          "bandit_values": "[0.    0.    0.    0.    0.025 0.025 0.   ]",
+          "bandit_counts": "[4. 4. 4. 4. 4. 4. 3.]"
+        },
+        {
+          "period": 28,
+          "issue": "24102",
+          "date": "2024-09-02",
+          "selected_predictor": "super_predictor",
+          "predicted_front": [
+            "3",
+            "8",
+            "23",
+            "33",
+            "34"
+          ],
+          "predicted_back": [
+            "3",
+            "11"
+          ],
+          "actual_front": [
+            1,
+            5,
+            9,
+            14,
+            20
+          ],
+          "actual_back": [
+            5,
+            11
+          ],
+          "front_hits": 0,
+          "back_hits": 1,
+          "prize_level": "未中奖",
+          "score": 0.0,
+          "confidence": 0.1,
+          "cumulative_score": 2.0,
+          "win_rate": 0.07142857142857142,
+          "bandit_values": "[0.    0.    0.    0.    0.025 0.025 0.   ]",
+          "bandit_counts": "[4. 4. 4. 4. 4. 4. 4.]"
+        },
+        {
+          "period": 29,
+          "issue": "24101",
+          "date": "2024-08-31",
+          "selected_predictor": "advanced_bayesian",
+          "predicted_front": [
+            "8",
+            "11",
+            "25",
+            "29",
+            "30"
+          ],
+          "predicted_back": [
+            "2",
+            "9"
+          ],
+          "actual_front": [
+            16,
+            19,
+            22,
+            27,
+            35
+          ],
+          "actual_back": [
+            6,
+            10
+          ],
+          "front_hits": 0,
+          "back_hits": 0,
+          "prize_level": "未中奖",
+          "score": 0.0,
+          "confidence": 0.1,
+          "cumulative_score": 2.0,
+          "win_rate": 0.06896551724137931,
+          "bandit_values": "[0.    0.    0.    0.    0.02  0.025 0.   ]",
+          "bandit_counts": "[4. 4. 4. 4. 5. 4. 4.]"
+        },
+        {
+          "period": 30,
+          "issue": "24100",
+          "date": "2024-08-28",
+          "selected_predictor": "advanced_ensemble",
+          "predicted_front": [
+            "4",
+            "5",
+            "23",
+            "31",
+            "34"
+          ],
+          "predicted_back": [
+            "1",
+            "6"
+          ],
+          "actual_front": [
+            2,
+            12,
+            19,
+            22,
+            32
+          ],
+          "actual_back": [
+            5,
+            11
+          ],
+          "front_hits": 0,
+          "back_hits": 0,
+          "prize_level": "未中奖",
+          "score": 0.0,
+          "confidence": 0.1,
+          "cumulative_score": 2.0,
+          "win_rate": 0.06666666666666667,
+          "bandit_values": "[0.   0.   0.   0.   0.02 0.02 0.  ]",
+          "bandit_counts": "[4. 4. 4. 4. 5. 5. 4.]"
+        },
+        {
+          "period": 31,
+          "issue": "24099",
+          "date": "2024-08-26",
+          "selected_predictor": "traditional_frequency",
+          "predicted_front": [
+            "3",
+            "4",
+            "8",
+            "13",
+            "28"
+          ],
+          "predicted_back": [
+            "2",
+            "7"
+          ],
+          "actual_front": [
+            4,
+            10,
+            24,
+            31,
+            35
+          ],
+          "actual_back": [
+            5,
+            8
+          ],
+          "front_hits": 1,
+          "back_hits": 0,
+          "prize_level": "未中奖",
+          "score": 0.0,
+          "confidence": 0.1,
+          "cumulative_score": 2.0,
+          "win_rate": 0.06451612903225806,
+          "bandit_values": "[0.   0.   0.   0.   0.02 0.02 0.  ]",
+          "bandit_counts": "[5. 4. 4. 4. 5. 5. 4.]"
+        },
+        {
+          "period": 32,
+          "issue": "24098",
+          "date": "2024-08-24",
+          "selected_predictor": "traditional_hot_cold",
+          "predicted_front": [
+            "12",
+            "14",
+            "17",
+            "30",
+            "35"
+          ],
+          "predicted_back": [
+            "1",
+            "5"
+          ],
+          "actual_front": [
+            3,
+            10,
+            15,
+            19,
+            29
+          ],
+          "actual_back": [
+            9,
+            10
+          ],
+          "front_hits": 0,
+          "back_hits": 0,
+          "prize_level": "未中奖",
+          "score": 0.0,
+          "confidence": 0.1,
+          "cumulative_score": 2.0,
+          "win_rate": 0.0625,
+          "bandit_values": "[0.   0.   0.   0.   0.02 0.02 0.  ]",
+          "bandit_counts": "[5. 5. 4. 4. 5. 5. 4.]"
+        },
+        {
+          "period": 33,
+          "issue": "24097",
+          "date": "2024-08-21",
+          "selected_predictor": "traditional_missing",
+          "predicted_front": [
+            "1",
+            "7",
+            "10",
+            "26",
+            "33"
+          ],
+          "predicted_back": [
+            "3",
+            "6"
+          ],
+          "actual_front": [
+            7,
+            11,
+            12,
+            14,
+            19
+          ],
+          "actual_back": [
+            2,
+            8
+          ],
+          "front_hits": 1,
+          "back_hits": 0,
+          "prize_level": "未中奖",
+          "score": 0.0,
+          "confidence": 0.1,
+          "cumulative_score": 2.0,
+          "win_rate": 0.06060606060606061,
+          "bandit_values": "[0.   0.   0.   0.   0.02 0.02 0.  ]",
+          "bandit_counts": "[5. 5. 5. 4. 5. 5. 4.]"
+        },
+        {
+          "period": 34,
+          "issue": "24096",
+          "date": "2024-08-19",
+          "selected_predictor": "advanced_markov",
+          "predicted_front": [
+            "9",
+            "14",
+            "16",
+            "22",
+            "23"
+          ],
+          "predicted_back": [
+            "3",
+            "10"
+          ],
+          "actual_front": [
+            2,
+            3,
+            23,
+            27,
+            31
+          ],
+          "actual_back": [
+            1,
+            10
+          ],
+          "front_hits": 1,
+          "back_hits": 1,
+          "prize_level": "未中奖",
+          "score": 0.0,
+          "confidence": 0.1,
+          "cumulative_score": 2.0,
+          "win_rate": 0.058823529411764705,
+          "bandit_values": "[0.   0.   0.   0.   0.02 0.02 0.  ]",
+          "bandit_counts": "[5. 5. 5. 5. 5. 5. 4.]"
+        },
+        {
+          "period": 35,
+          "issue": "24095",
+          "date": "2024-08-17",
+          "selected_predictor": "super_predictor",
+          "predicted_front": [
+            "3",
+            "9",
+            "16",
+            "30",
+            "35"
+          ],
+          "predicted_back": [
+            "3",
+            "6"
+          ],
+          "actual_front": [
+            1,
+            7,
+            19,
+            26,
+            27
+          ],
+          "actual_back": [
+            3,
+            5
+          ],
+          "front_hits": 0,
+          "back_hits": 1,
+          "prize_level": "未中奖",
+          "score": 0.0,
+          "confidence": 0.1,
+          "cumulative_score": 2.0,
+          "win_rate": 0.05714285714285714,
+          "bandit_values": "[0.   0.   0.   0.   0.02 0.02 0.  ]",
+          "bandit_counts": "[5. 5. 5. 5. 5. 5. 5.]"
+        },
+        {
+          "period": 36,
+          "issue": "24094",
+          "date": "2024-08-14",
+          "selected_predictor": "advanced_bayesian",
+          "predicted_front": [
+            "10",
+            "16",
+            "17",
+            "26",
+            "29"
+          ],
+          "predicted_back": [
+            "2",
+            "10"
+          ],
+          "actual_front": [
+            12,
+            13,
+            24,
+            29,
+            31
+          ],
+          "actual_back": [
+            2,
+            8
+          ],
+          "front_hits": 1,
+          "back_hits": 1,
+          "prize_level": "未中奖",
+          "score": 0.0,
+          "confidence": 0.1,
+          "cumulative_score": 2.0,
+          "win_rate": 0.05555555555555555,
+          "bandit_values": "[0.         0.         0.         0.         0.01666667 0.02\n 0.        ]",
+          "bandit_counts": "[5. 5. 5. 5. 6. 5. 5.]"
+        },
+        {
+          "period": 37,
+          "issue": "24093",
+          "date": "2024-08-12",
+          "selected_predictor": "advanced_ensemble",
+          "predicted_front": [
+            "8",
+            "19",
+            "23",
+            "26",
+            "33"
+          ],
+          "predicted_back": [
+            "5",
+            "11"
+          ],
+          "actual_front": [
+            16,
+            24,
+            26,
+            28,
+            29
+          ],
+          "actual_back": [
+            8,
+            12
+          ],
+          "front_hits": 1,
+          "back_hits": 0,
+          "prize_level": "未中奖",
+          "score": 0.0,
+          "confidence": 0.1,
+          "cumulative_score": 2.0,
+          "win_rate": 0.05405405405405406,
+          "bandit_values": "[0.         0.         0.         0.         0.01666667 0.01666667\n 0.        ]",
+          "bandit_counts": "[5. 5. 5. 5. 6. 6. 5.]"
+        },
+        {
+          "period": 38,
+          "issue": "24092",
+          "date": "2024-08-10",
+          "selected_predictor": "traditional_frequency",
+          "predicted_front": [
+            "17",
+            "30",
+            "32",
+            "34",
+            "35"
+          ],
+          "predicted_back": [
+            "3",
+            "12"
+          ],
+          "actual_front": [
+            2,
+            4,
+            25,
+            26,
+            31
+          ],
+          "actual_back": [
+            1,
+            6
+          ],
+          "front_hits": 0,
+          "back_hits": 0,
+          "prize_level": "未中奖",
+          "score": 0.0,
+          "confidence": 0.1,
+          "cumulative_score": 2.0,
+          "win_rate": 0.05263157894736842,
+          "bandit_values": "[0.         0.         0.         0.         0.01666667 0.01666667\n 0.        ]",
+          "bandit_counts": "[6. 5. 5. 5. 6. 6. 5.]"
+        },
+        {
+          "period": 39,
+          "issue": "24091",
+          "date": "2024-08-07",
+          "selected_predictor": "traditional_hot_cold",
+          "predicted_front": [
+            "16",
+            "18",
+            "19",
+            "22",
+            "29"
+          ],
+          "predicted_back": [
+            "3",
+            "11"
+          ],
+          "actual_front": [
+            1,
+            8,
+            11,
+            17,
+            21
+          ],
+          "actual_back": [
+            1,
+            2
+          ],
+          "front_hits": 0,
+          "back_hits": 0,
+          "prize_level": "未中奖",
+          "score": 0.0,
+          "confidence": 0.1,
+          "cumulative_score": 2.0,
+          "win_rate": 0.05128205128205128,
+          "bandit_values": "[0.         0.         0.         0.         0.01666667 0.01666667\n 0.        ]",
+          "bandit_counts": "[6. 6. 5. 5. 6. 6. 5.]"
+        },
+        {
+          "period": 40,
+          "issue": "24090",
+          "date": "2024-08-05",
+          "selected_predictor": "traditional_missing",
+          "predicted_front": [
+            "6",
+            "8",
+            "9",
+            "11",
+            "30"
+          ],
+          "predicted_back": [
+            "4",
+            "6"
+          ],
+          "actual_front": [
+            2,
+            3,
+            6,
+            28,
+            33
+          ],
+          "actual_back": [
+            7,
+            11
+          ],
+          "front_hits": 1,
+          "back_hits": 0,
+          "prize_level": "未中奖",
+          "score": 0.0,
+          "confidence": 0.1,
+          "cumulative_score": 2.0,
+          "win_rate": 0.05,
+          "bandit_values": "[0.         0.         0.         0.         0.01666667 0.01666667\n 0.        ]",
+          "bandit_counts": "[6. 6. 6. 5. 6. 6. 5.]"
+        },
+        {
+          "period": 41,
+          "issue": "24089",
+          "date": "2024-08-03",
+          "selected_predictor": "advanced_markov",
+          "predicted_front": [
+            "9",
+            "10",
+            "12",
+            "15",
+            "25"
+          ],
+          "predicted_back": [
+            "1",
+            "10"
+          ],
+          "actual_front": [
+            5,
+            6,
+            29,
+            30,
+            34
+          ],
+          "actual_back": [
+            7,
+            8
+          ],
+          "front_hits": 0,
+          "back_hits": 0,
+          "prize_level": "未中奖",
+          "score": 0.0,
+          "confidence": 0.1,
+          "cumulative_score": 2.0,
+          "win_rate": 0.04878048780487805,
+          "bandit_values": "[0.         0.         0.         0.         0.01666667 0.01666667\n 0.        ]",
+          "bandit_counts": "[6. 6. 6. 6. 6. 6. 5.]"
+        },
+        {
+          "period": 42,
+          "issue": "24088",
+          "date": "2024-07-31",
+          "selected_predictor": "super_predictor",
+          "predicted_front": [
+            "5",
+            "10",
+            "12",
+            "20",
+            "29"
+          ],
+          "predicted_back": [
+            "5",
+            "10"
+          ],
+          "actual_front": [
+            1,
+            2,
+            23,
+            28,
+            32
+          ],
+          "actual_back": [
+            3,
+            5
+          ],
+          "front_hits": 0,
+          "back_hits": 1,
+          "prize_level": "未中奖",
+          "score": 0.0,
+          "confidence": 0.1,
+          "cumulative_score": 2.0,
+          "win_rate": 0.047619047619047616,
+          "bandit_values": "[0.         0.         0.         0.         0.01666667 0.01666667\n 0.        ]",
+          "bandit_counts": "[6. 6. 6. 6. 6. 6. 6.]"
+        },
+        {
+          "period": 43,
+          "issue": "24087",
+          "date": "2024-07-29",
+          "selected_predictor": "advanced_bayesian",
+          "predicted_front": [
+            "2",
+            "8",
+            "19",
+            "27",
+            "28"
+          ],
+          "predicted_back": [
+            "4",
+            "8"
+          ],
+          "actual_front": [
+            7,
+            10,
+            20,
+            28,
+            34
+          ],
+          "actual_back": [
+            5,
+            10
+          ],
+          "front_hits": 1,
+          "back_hits": 0,
+          "prize_level": "未中奖",
+          "score": 0.0,
+          "confidence": 0.1,
+          "cumulative_score": 2.0,
+          "win_rate": 0.046511627906976744,
+          "bandit_values": "[0.         0.         0.         0.         0.01428571 0.01666667\n 0.        ]",
+          "bandit_counts": "[6. 6. 6. 6. 7. 6. 6.]"
+        },
+        {
+          "period": 44,
+          "issue": "24086",
+          "date": "2024-07-27",
+          "selected_predictor": "advanced_ensemble",
+          "predicted_front": [
+            "5",
+            "7",
+            "17",
+            "21",
+            "24"
+          ],
+          "predicted_back": [
+            "1",
+            "9"
+          ],
+          "actual_front": [
+            11,
+            12,
+            14,
+            22,
+            28
+          ],
+          "actual_back": [
+            7,
+            11
+          ],
+          "front_hits": 0,
+          "back_hits": 0,
+          "prize_level": "未中奖",
+          "score": 0.0,
+          "confidence": 0.1,
+          "cumulative_score": 2.0,
+          "win_rate": 0.045454545454545456,
+          "bandit_values": "[0.         0.         0.         0.         0.01428571 0.01428571\n 0.        ]",
+          "bandit_counts": "[6. 6. 6. 6. 7. 7. 6.]"
+        },
+        {
+          "period": 45,
+          "issue": "24085",
+          "date": "2024-07-24",
+          "selected_predictor": "traditional_frequency",
+          "predicted_front": [
+            "2",
+            "7",
+            "10",
+            "11",
+            "22"
+          ],
+          "predicted_back": [
+            "5",
+            "12"
+          ],
+          "actual_front": [
+            2,
+            9,
+            16,
+            29,
+            35
+          ],
+          "actual_back": [
+            1,
+            6
+          ],
+          "front_hits": 1,
+          "back_hits": 0,
+          "prize_level": "未中奖",
+          "score": 0.0,
+          "confidence": 0.1,
+          "cumulative_score": 2.0,
+          "win_rate": 0.044444444444444446,
+          "bandit_values": "[0.         0.         0.         0.         0.01428571 0.01428571\n 0.        ]",
+          "bandit_counts": "[7. 6. 6. 6. 7. 7. 6.]"
+        },
+        {
+          "period": 46,
+          "issue": "24084",
+          "date": "2024-07-22",
+          "selected_predictor": "traditional_hot_cold",
+          "predicted_front": [
+            "2",
+            "5",
+            "8",
+            "12",
+            "29"
+          ],
+          "predicted_back": [
+            "1",
+            "9"
+          ],
+          "actual_front": [
+            4,
+            11,
+            16,
+            17,
+            23
+          ],
+          "actual_back": [
+            5,
+            10
+          ],
+          "front_hits": 0,
+          "back_hits": 0,
+          "prize_level": "未中奖",
+          "score": 0.0,
+          "confidence": 0.1,
+          "cumulative_score": 2.0,
+          "win_rate": 0.043478260869565216,
+          "bandit_values": "[0.         0.         0.         0.         0.01428571 0.01428571\n 0.        ]",
+          "bandit_counts": "[7. 7. 6. 6. 7. 7. 6.]"
+        },
+        {
+          "period": 47,
+          "issue": "24083",
+          "date": "2024-07-20",
+          "selected_predictor": "traditional_missing",
+          "predicted_front": [
+            "8",
+            "21",
+            "23",
+            "24",
+            "32"
+          ],
+          "predicted_back": [
+            "8",
+            "11"
+          ],
+          "actual_front": [
+            9,
+            11,
+            12,
+            13,
+            30
+          ],
+          "actual_back": [
+            7,
+            9
+          ],
+          "front_hits": 0,
+          "back_hits": 0,
+          "prize_level": "未中奖",
+          "score": 0.0,
+          "confidence": 0.1,
+          "cumulative_score": 2.0,
+          "win_rate": 0.0425531914893617,
+          "bandit_values": "[0.         0.         0.         0.         0.01428571 0.01428571\n 0.        ]",
+          "bandit_counts": "[7. 7. 7. 6. 7. 7. 6.]"
+        },
+        {
+          "period": 48,
+          "issue": "24082",
+          "date": "2024-07-17",
+          "selected_predictor": "advanced_markov",
+          "predicted_front": [
+            "1",
+            "13",
+            "23",
+            "26",
+            "31"
+          ],
+          "predicted_back": [
+            "3",
+            "12"
+          ],
+          "actual_front": [
+            8,
+            21,
+            23,
+            24,
+            26
+          ],
+          "actual_back": [
+            4,
+            5
+          ],
+          "front_hits": 2,
+          "back_hits": 0,
+          "prize_level": "未中奖",
+          "score": 0.0,
+          "confidence": 0.1,
+          "cumulative_score": 2.0,
+          "win_rate": 0.041666666666666664,
+          "bandit_values": "[0.         0.         0.         0.         0.01428571 0.01428571\n 0.        ]",
+          "bandit_counts": "[7. 7. 7. 7. 7. 7. 6.]"
+        },
+        {
+          "period": 49,
+          "issue": "24081",
+          "date": "2024-07-15",
+          "selected_predictor": "super_predictor",
+          "predicted_front": [
+            "9",
+            "20",
+            "25",
+            "30",
+            "35"
+          ],
+          "predicted_back": [
+            "2",
+            "8"
+          ],
+          "actual_front": [
+            14,
+            15,
+            25,
+            27,
+            34
+          ],
+          "actual_back": [
+            1,
+            10
+          ],
+          "front_hits": 1,
+          "back_hits": 0,
+          "prize_level": "未中奖",
+          "score": 0.0,
+          "confidence": 0.1,
+          "cumulative_score": 2.0,
+          "win_rate": 0.04081632653061224,
+          "bandit_values": "[0.         0.         0.         0.         0.01428571 0.01428571\n 0.        ]",
+          "bandit_counts": "[7. 7. 7. 7. 7. 7. 7.]"
+        },
+        {
+          "period": 50,
+          "issue": "24080",
+          "date": "2024-07-13",
+          "selected_predictor": "advanced_bayesian",
+          "predicted_front": [
+            "10",
+            "20",
+            "21",
+            "23",
+            "24"
+          ],
+          "predicted_back": [
+            "9",
+            "10"
+          ],
+          "actual_front": [
+            3,
+            5,
+            24,
+            27,
+            28
+          ],
+          "actual_back": [
+            9,
+            11
+          ],
+          "front_hits": 1,
+          "back_hits": 1,
+          "prize_level": "未中奖",
+          "score": 0.0,
+          "confidence": 0.1,
+          "cumulative_score": 2.0,
+          "win_rate": 0.04,
+          "bandit_values": "[0.         0.         0.         0.         0.0125     0.01428571\n 0.        ]",
+          "bandit_counts": "[7. 7. 7. 7. 8. 7. 7.]"
+        }
+      ],
+      "timestamp": "2025-07-12T16:55:00.764759"
+    }
+  ],
+  "predictor_performance": {
+    "traditional_frequency": {
+      "total_predictions": 7,
+      "total_score": 0.0,
+      "win_count": 0,
+      "recent_scores": "deque([0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], maxlen=20)",
+      "confidence": 0.1
+    },
+    "traditional_hot_cold": {
+      "total_predictions": 7,
+      "total_score": 0.0,
+      "win_count": 0,
+      "recent_scores": "deque([0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], maxlen=20)",
+      "confidence": 0.1
+    },
+    "traditional_missing": {
+      "total_predictions": 7,
+      "total_score": 0.0,
+      "win_count": 0,
+      "recent_scores": "deque([0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], maxlen=20)",
+      "confidence": 0.1
+    },
+    "advanced_markov": {
+      "total_predictions": 7,
+      "total_score": 0.0,
+      "win_count": 0,
+      "recent_scores": "deque([0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], maxlen=20)",
+      "confidence": 0.1
+    },
+    "advanced_bayesian": {
+      "total_predictions": 8,
+      "total_score": 1.0,
+      "win_count": 1,
+      "recent_scores": "deque([0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], maxlen=20)",
+      "confidence": 0.1
+    },
+    "advanced_ensemble": {
+      "total_predictions": 7,
+      "total_score": 1.0,
+      "win_count": 1,
+      "recent_scores": "deque([0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0], maxlen=20)",
+      "confidence": 0.1
+    },
+    "super_predictor": {
+      "total_predictions": 7,
+      "total_score": 0.0,
+      "win_count": 0,
+      "recent_scores": "deque([0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], maxlen=20)",
+      "confidence": 0.1
+    }
+  },
+  "bandit_values": [
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0125,
+    0.014285714285714287,
+    0.0
+  ],
+  "bandit_counts": [
+    7.0,
+    7.0,
+    7.0,
+    7.0,
+    8.0,
+    7.0,
+    7.0
+  ],
+  "predictor_names": [
+    "traditional_frequency",
+    "traditional_hot_cold",
+    "traditional_missing",
+    "advanced_markov",
+    "advanced_bayesian",
+    "advanced_ensemble",
+    "super_predictor"
+  ],
+  "accuracy_stats": {}
+}

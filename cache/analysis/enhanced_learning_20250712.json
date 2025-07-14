@@ -1,0 +1,184 @@
+{
+  "timestamp": "2025-07-12T18:56:08.025988",
+  "learning_history": [
+    {
+      "total_periods": 1,
+      "total_wins": 1,
+      "win_rate": 1.0,
+      "total_score": 5.0,
+      "average_score": 5.0,
+      "predictor_performance": {
+        "traditional_frequency": {
+          "total_predictions": 1,
+          "total_score": 5.0,
+          "win_count": 1,
+          "recent_scores": "deque([5.0], maxlen=20)",
+          "confidence": 0.5
+        },
+        "traditional_hot_cold": {
+          "total_predictions": 0,
+          "total_score": 0.0,
+          "win_count": 0,
+          "recent_scores": "deque([], maxlen=20)",
+          "confidence": 0.5
+        },
+        "traditional_missing": {
+          "total_predictions": 0,
+          "total_score": 0.0,
+          "win_count": 0,
+          "recent_scores": "deque([], maxlen=20)",
+          "confidence": 0.5
+        },
+        "advanced_markov": {
+          "total_predictions": 0,
+          "total_score": 0.0,
+          "win_count": 0,
+          "recent_scores": "deque([], maxlen=20)",
+          "confidence": 0.5
+        },
+        "advanced_bayesian": {
+          "total_predictions": 0,
+          "total_score": 0.0,
+          "win_count": 0,
+          "recent_scores": "deque([], maxlen=20)",
+          "confidence": 0.5
+        },
+        "advanced_ensemble": {
+          "total_predictions": 0,
+          "total_score": 0.0,
+          "win_count": 0,
+          "recent_scores": "deque([], maxlen=20)",
+          "confidence": 0.5
+        },
+        "super_predictor": {
+          "total_predictions": 0,
+          "total_score": 0.0,
+          "win_count": 0,
+          "recent_scores": "deque([], maxlen=20)",
+          "confidence": 0.5
+        }
+      },
+      "bandit_final_values": "[0.5 0.  0.  0.  0.  0.  0. ]",
+      "bandit_final_counts": "[1. 0. 0. 0. 0. 0. 0.]",
+      "detailed_results": [
+        {
+          "period": 1,
+          "issue": "7001",
+          "date": "2007-05-30",
+          "selected_predictor": "traditional_frequency",
+          "predicted_front": [
+            24,
+            29,
+            31,
+            34,
+            35
+          ],
+          "predicted_back": [
+            9,
+            10
+          ],
+          "actual_front": [
+            22,
+            24,
+            29,
+            31,
+            35
+          ],
+          "actual_back": [
+            4,
+            11
+          ],
+          "front_hits": 4,
+          "back_hits": 0,
+          "prize_level": "七等奖",
+          "score": 5.0,
+          "confidence": 0.5,
+          "cumulative_score": 5.0,
+          "win_rate": 1.0,
+          "bandit_values": "[0.5 0.  0.  0.  0.  0.  0. ]",
+          "bandit_counts": "[1. 0. 0. 0. 0. 0. 0.]"
+        }
+      ],
+      "timestamp": "2025-07-12T18:56:08.025849"
+    }
+  ],
+  "predictor_performance": {
+    "traditional_frequency": {
+      "total_predictions": 1,
+      "total_score": 5.0,
+      "win_count": 1,
+      "recent_scores": "deque([5.0], maxlen=20)",
+      "confidence": 0.5
+    },
+    "traditional_hot_cold": {
+      "total_predictions": 0,
+      "total_score": 0.0,
+      "win_count": 0,
+      "recent_scores": "deque([], maxlen=20)",
+      "confidence": 0.5
+    },
+    "traditional_missing": {
+      "total_predictions": 0,
+      "total_score": 0.0,
+      "win_count": 0,
+      "recent_scores": "deque([], maxlen=20)",
+      "confidence": 0.5
+    },
+    "advanced_markov": {
+      "total_predictions": 0,
+      "total_score": 0.0,
+      "win_count": 0,
+      "recent_scores": "deque([], maxlen=20)",
+      "confidence": 0.5
+    },
+    "advanced_bayesian": {
+      "total_predictions": 0,
+      "total_score": 0.0,
+      "win_count": 0,
+      "recent_scores": "deque([], maxlen=20)",
+      "confidence": 0.5
+    },
+    "advanced_ensemble": {
+      "total_predictions": 0,
+      "total_score": 0.0,
+      "win_count": 0,
+      "recent_scores": "deque([], maxlen=20)",
+      "confidence": 0.5
+    },
+    "super_predictor": {
+      "total_predictions": 0,
+      "total_score": 0.0,
+      "win_count": 0,
+      "recent_scores": "deque([], maxlen=20)",
+      "confidence": 0.5
+    }
+  },
+  "bandit_values": [
+    0.5,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0
+  ],
+  "bandit_counts": [
+    1.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0
+  ],
+  "predictor_names": [
+    "traditional_frequency",
+    "traditional_hot_cold",
+    "traditional_missing",
+    "advanced_markov",
+    "advanced_bayesian",
+    "advanced_ensemble",
+    "super_predictor"
+  ],
+  "accuracy_stats": {}
+}

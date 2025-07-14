@@ -18,6 +18,11 @@ networkx>=3.1
 # 机器学习
 scikit-learn>=1.2.2
 
+# 深度学习（新增）
+tensorflow>=2.12.0
+keras>=2.12.0
+tensorflow-addons>=0.20.0
+
 # 贝叶斯分析（可选）
 pymc>=5.0.1
 arviz>=0.15.1

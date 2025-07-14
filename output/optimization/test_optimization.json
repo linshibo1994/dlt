@@ -1,0 +1,47 @@
+{
+  "best_params": {
+    "epsilon": 0.2,
+    "ucb_c": 1.5,
+    "thompson_alpha": 1.0,
+    "thompson_beta": 1.0
+  },
+  "best_score": 0.09999999999999999,
+  "optimization_history": [
+    {
+      "round": 1,
+      "params": {
+        "epsilon": 0.2,
+        "ucb_c": 1.5,
+        "thompson_alpha": 1.0,
+        "thompson_beta": 1.0
+      },
+      "win_rate": 0.1,
+      "average_score": 0.1,
+      "score": 0.09999999999999999
+    },
+    {
+      "round": 2,
+      "params": {
+        "epsilon": 0.3,
+        "ucb_c": 1.0,
+        "thompson_alpha": 2.0,
+        "thompson_beta": 3.0
+      },
+      "win_rate": 0.1,
+      "average_score": 0.1,
+      "score": 0.09999999999999999
+    },
+    {
+      "round": 3,
+      "params": {
+        "epsilon": 0.3,
+        "ucb_c": 1.5,
+        "thompson_alpha": 1.0,
+        "thompson_beta": 1.0
+      },
+      "win_rate": 0.05,
+      "average_score": 0.05,
+      "score": 0.049999999999999996
+    }
+  ]
+}
