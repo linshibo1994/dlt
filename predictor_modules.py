@@ -22,9 +22,24 @@ from analyzer_modules import basic_analyzer, advanced_analyzer, comprehensive_an
 # 尝试导入高级算法
 try:
     from advanced_lstm_predictor import AdvancedLSTMPredictor, TENSORFLOW_AVAILABLE
-    LSTM_AVAILABLE = True
+    LSTM_AVAILABLE = TENSORFLOW_AVAILABLE
 except ImportError:
     LSTM_AVAILABLE = False
+    TENSORFLOW_AVAILABLE = False
+
+# 尝试导入增强集成学习
+try:
+    from improvements.advanced_ensemble import AdvancedEnsemblePredictor, MetaLearningPredictor
+    ADVANCED_ENSEMBLE_AVAILABLE = True
+except ImportError:
+    ADVANCED_ENSEMBLE_AVAILABLE = False
+
+# 尝试导入增强深度学习
+try:
+    from improvements.enhanced_deep_learning import TransformerLotteryPredictor, GAN_LotteryPredictor
+    ENHANCED_DL_AVAILABLE = True
+except ImportError:
+    ENHANCED_DL_AVAILABLE = False
 
 try:
     from monte_carlo_predictor import MonteCarloPredictor
@@ -59,47 +74,26 @@ class TraditionalPredictor:
         
         predictions = []
         
+        # 选择频率最高的号码（确定性选择）
+        front_candidates = sorted(front_freq.items(), key=lambda x: x[1], reverse=True)
+        back_candidates = sorted(back_freq.items(), key=lambda x: x[1], reverse=True)
+
+        # 直接选择频率最高的号码
+        front_balls = [int(ball) for ball, freq in front_candidates[:5]]
+        back_balls = [int(ball) for ball, freq in back_candidates[:2]]
+
+        # 如果不足，选择次高频率的号码
+        if len(front_balls) < 5:
+            remaining = [int(ball) for ball, freq in front_candidates[5:5+(5-len(front_balls))]]
+            front_balls.extend(remaining)
+
+        if len(back_balls) < 2:
+            remaining = [int(ball) for ball, freq in back_candidates[2:2+(2-len(back_balls))]]
+            back_balls.extend(remaining)
+
+        # 生成多注相同的预测（基于频率的确定性预测）
         for _ in range(count):
-            # 选择频率最高的号码
-            front_candidates = sorted(front_freq.items(), key=lambda x: x[1], reverse=True)
-            back_candidates = sorted(back_freq.items(), key=lambda x: x[1], reverse=True)
-            
-            # 添加随机性
-            front_balls = []
-            back_balls = []
-            
-            # 选择前区号码
-            for i, (ball, freq) in enumerate(front_candidates):
-                if len(front_balls) >= 5:
-                    break
-                
-                # 基于频率和随机性选择
-                prob = freq / (freq + i + 1)
-                if np.random.random() < prob:
-                    front_balls.append(ball)
-            
-            # 补充到5个
-            while len(front_balls) < 5:
-                candidate = np.random.randint(1, 36)
-                if candidate not in front_balls:
-                    front_balls.append(candidate)
-            
-            # 选择后区号码
-            for i, (ball, freq) in enumerate(back_candidates):
-                if len(back_balls) >= 2:
-                    break
-                
-                prob = freq / (freq + i + 1)
-                if np.random.random() < prob:
-                    back_balls.append(ball)
-            
-            # 补充到2个
-            while len(back_balls) < 2:
-                candidate = np.random.randint(1, 13)
-                if candidate not in back_balls:
-                    back_balls.append(candidate)
-            
-            predictions.append((sorted(front_balls), sorted(back_balls)))
+            predictions.append((sorted(front_balls[:5]), sorted(back_balls[:2])))
         
         return predictions
     
@@ -114,50 +108,60 @@ class TraditionalPredictor:
         
         predictions = []
         
+        # 冷热号预测（确定性选择，3个热号+2个冷号）
+        front_balls = []
+        back_balls = []
+
+        # 前区：选择3个热号和2个冷号
+        hot_count = 3
+        cold_count = 2
+
+        if len(front_hot) >= hot_count:
+            front_balls.extend([int(ball) for ball in front_hot[:hot_count]])
+        else:
+            front_balls.extend([int(ball) for ball in front_hot])
+
+        if len(front_cold) >= cold_count:
+            front_balls.extend([int(ball) for ball in front_cold[:cold_count]])
+        else:
+            front_balls.extend([int(ball) for ball in front_cold])
+
+        # 如果前区号码不足，用频率分析补充
+        if len(front_balls) < 5:
+            freq_analysis = basic_analyzer.frequency_analysis()
+            front_freq = freq_analysis.get('front_frequency', {})
+            sorted_freq = sorted(front_freq.items(), key=lambda x: x[1], reverse=True)
+            for ball, freq in sorted_freq:
+                if len(front_balls) >= 5:
+                    break
+                if ball not in front_balls:
+                    front_balls.append(ball)
+
+        # 后区：选择1个热号和1个冷号
+        if len(back_hot) > 0:
+            back_balls.append(int(back_hot[0]))
+
+        if len(back_cold) > 0:
+            # 选择不与热号重复的冷号
+            for cold_ball in back_cold:
+                if int(cold_ball) not in back_balls:
+                    back_balls.append(int(cold_ball))
+                    break
+
+        # 如果后区号码不足，用频率分析补充
+        if len(back_balls) < 2:
+            freq_analysis = basic_analyzer.frequency_analysis()
+            back_freq = freq_analysis.get('back_frequency', {})
+            sorted_freq = sorted(back_freq.items(), key=lambda x: x[1], reverse=True)
+            for ball, freq in sorted_freq:
+                if len(back_balls) >= 2:
+                    break
+                if ball not in back_balls:
+                    back_balls.append(ball)
+
+        # 生成多注相同的预测（基于冷热号的确定性预测）
         for _ in range(count):
-            front_balls = []
-            back_balls = []
-            
-            # 前区：热号和冷号混合
-            hot_count = np.random.randint(2, 4)  # 2-3个热号
-            cold_count = 5 - hot_count  # 剩余为冷号
-            
-            if len(front_hot) >= hot_count:
-                front_balls.extend(np.random.choice(front_hot, hot_count, replace=False))
-            
-            if len(front_cold) >= cold_count:
-                front_balls.extend(np.random.choice(front_cold, cold_count, replace=False))
-            
-            # 补充到5个
-            while len(front_balls) < 5:
-                candidate = np.random.randint(1, 36)
-                if candidate not in front_balls:
-                    front_balls.append(candidate)
-            
-            # 后区：热号和冷号混合
-            if len(back_hot) > 0 and len(back_cold) > 0:
-                if np.random.random() < 0.6:  # 60%概率选择热号
-                    back_balls.append(np.random.choice(back_hot))
-                else:
-                    back_balls.append(np.random.choice(back_cold))
-                
-                # 第二个号码
-                remaining_hot = [b for b in back_hot if b not in back_balls]
-                remaining_cold = [b for b in back_cold if b not in back_balls]
-                
-                if remaining_hot and remaining_cold:
-                    if np.random.random() < 0.4:  # 40%概率选择另一类
-                        back_balls.append(np.random.choice(remaining_cold if back_balls[0] in back_hot else remaining_hot))
-                    else:
-                        back_balls.append(np.random.choice(remaining_hot if back_balls[0] in back_hot else remaining_cold))
-            
-            # 补充到2个
-            while len(back_balls) < 2:
-                candidate = np.random.randint(1, 13)
-                if candidate not in back_balls:
-                    back_balls.append(candidate)
-            
-            predictions.append((sorted(front_balls), sorted(back_balls)))
+            predictions.append((sorted(front_balls[:5]), sorted(back_balls[:2])))
         
         return predictions
     
@@ -170,33 +174,16 @@ class TraditionalPredictor:
         
         predictions = []
         
+        # 按遗漏值排序，选择遗漏值最大的号码（确定性选择）
+        front_sorted = sorted(front_missing.items(), key=lambda x: x[1], reverse=True)
+        back_sorted = sorted(back_missing.items(), key=lambda x: x[1], reverse=True)
+
+        # 选择遗漏值最大的号码
+        front_balls = [int(ball) for ball, missing in front_sorted[:5]]
+        back_balls = [int(ball) for ball, missing in back_sorted[:2]]
+
+        # 生成多注相同的预测（基于遗漏值的确定性预测）
         for _ in range(count):
-            # 基于遗漏值加权选择
-            front_weights = []
-            front_numbers = []
-            
-            for num, missing in front_missing.items():
-                front_numbers.append(num)
-                # 遗漏值越大，权重越高
-                weight = missing + 1
-                front_weights.append(weight)
-            
-            back_weights = []
-            back_numbers = []
-            
-            for num, missing in back_missing.items():
-                back_numbers.append(num)
-                weight = missing + 1
-                back_weights.append(weight)
-            
-            # 标准化权重
-            front_weights = np.array(front_weights) / np.sum(front_weights)
-            back_weights = np.array(back_weights) / np.sum(back_weights)
-            
-            # 选择号码
-            front_balls = list(np.random.choice(front_numbers, 5, replace=False, p=front_weights))
-            back_balls = list(np.random.choice(back_numbers, 2, replace=False, p=back_weights))
-            
             predictions.append((sorted(front_balls), sorted(back_balls)))
         
         return predictions
@@ -231,52 +218,86 @@ class AdvancedPredictor:
             last_front = [1, 2, 3, 4, 5]
             last_back = [1, 2]
         
+        # 马尔可夫预测（确定性选择最高概率的号码）
+        front_balls = []
+        back_balls = []
+
+        # 前区马尔可夫预测
+        for start_ball in last_front:
+            if start_ball in front_transitions and len(front_balls) < 5:
+                trans_probs = front_transitions[start_ball]
+                if trans_probs:
+                    # 选择概率最高的号码
+                    best_ball = max(trans_probs.items(), key=lambda x: x[1])[0]
+                    if int(best_ball) not in front_balls:
+                        front_balls.append(int(best_ball))
+
+        # 如果前区号码不足，从所有转移概率中选择最高的
+        if len(front_balls) < 5:
+            all_front_probs = {}
+            for start_ball, trans_probs in front_transitions.items():
+                for target_ball, prob in trans_probs.items():
+                    if target_ball not in front_balls:
+                        all_front_probs[target_ball] = all_front_probs.get(target_ball, 0) + prob
+
+            # 按概率排序，选择最高概率的号码
+            sorted_probs = sorted(all_front_probs.items(), key=lambda x: x[1], reverse=True)
+            for ball, prob in sorted_probs:
+                if len(front_balls) >= 5:
+                    break
+                if int(ball) not in front_balls:
+                    front_balls.append(int(ball))
+
+        # 后区马尔可夫预测
+        for start_ball in last_back:
+            if start_ball in back_transitions and len(back_balls) < 2:
+                trans_probs = back_transitions[start_ball]
+                if trans_probs:
+                    # 选择概率最高的号码
+                    best_ball = max(trans_probs.items(), key=lambda x: x[1])[0]
+                    if int(best_ball) not in back_balls:
+                        back_balls.append(int(best_ball))
+
+        # 如果后区号码不足，从所有转移概率中选择最高的
+        if len(back_balls) < 2:
+            all_back_probs = {}
+            for start_ball, trans_probs in back_transitions.items():
+                for target_ball, prob in trans_probs.items():
+                    if target_ball not in back_balls:
+                        all_back_probs[target_ball] = all_back_probs.get(target_ball, 0) + prob
+
+            # 按概率排序，选择最高概率的号码
+            sorted_probs = sorted(all_back_probs.items(), key=lambda x: x[1], reverse=True)
+            for ball, prob in sorted_probs:
+                if len(back_balls) >= 2:
+                    break
+                if int(ball) not in back_balls:
+                    back_balls.append(int(ball))
+
+        # 如果仍然不足，使用频率最高的号码补充
+        if len(front_balls) < 5:
+            freq_analysis = basic_analyzer.frequency_analysis()
+            front_freq = freq_analysis.get('front_frequency', {})
+            sorted_freq = sorted(front_freq.items(), key=lambda x: x[1], reverse=True)
+            for ball, freq in sorted_freq:
+                if len(front_balls) >= 5:
+                    break
+                if ball not in front_balls:
+                    front_balls.append(ball)
+
+        if len(back_balls) < 2:
+            freq_analysis = basic_analyzer.frequency_analysis()
+            back_freq = freq_analysis.get('back_frequency', {})
+            sorted_freq = sorted(back_freq.items(), key=lambda x: x[1], reverse=True)
+            for ball, freq in sorted_freq:
+                if len(back_balls) >= 2:
+                    break
+                if ball not in back_balls:
+                    back_balls.append(ball)
+
+        # 生成多注相同的预测（基于马尔可夫链的确定性预测）
         for _ in range(count):
-            front_balls = []
-            back_balls = []
-            
-            # 前区马尔可夫预测
-            for start_ball in last_front:
-                if start_ball in front_transitions:
-                    trans_probs = front_transitions[start_ball]
-                    if trans_probs:
-                        candidates = list(trans_probs.keys())
-                        probs = list(trans_probs.values())
-                        
-                        # 标准化概率
-                        probs = np.array(probs) / np.sum(probs)
-                        
-                        # 选择下一个号码
-                        next_ball = np.random.choice(candidates, p=probs)
-                        if next_ball not in front_balls and len(front_balls) < 5:
-                            front_balls.append(next_ball)
-            
-            # 补充前区号码
-            while len(front_balls) < 5:
-                candidate = np.random.randint(1, 36)
-                if candidate not in front_balls:
-                    front_balls.append(candidate)
-            
-            # 后区马尔可夫预测
-            for start_ball in last_back:
-                if start_ball in back_transitions:
-                    trans_probs = back_transitions[start_ball]
-                    if trans_probs:
-                        candidates = list(trans_probs.keys())
-                        probs = list(trans_probs.values())
-                        
-                        probs = np.array(probs) / np.sum(probs)
-                        next_ball = np.random.choice(candidates, p=probs)
-                        if next_ball not in back_balls and len(back_balls) < 2:
-                            back_balls.append(next_ball)
-            
-            # 补充后区号码
-            while len(back_balls) < 2:
-                candidate = np.random.randint(1, 13)
-                if candidate not in back_balls:
-                    back_balls.append(candidate)
-            
-            predictions.append((sorted(front_balls), sorted(back_balls)))
+            predictions.append((sorted(front_balls[:5]), sorted(back_balls[:2])))
         
         return predictions
 
@@ -336,7 +357,15 @@ class AdvancedPredictor:
     def _markov_predict_balls(self, transitions: Dict, num_balls: int, max_ball: int) -> List[int]:
         """基于马尔可夫转移概率预测号码"""
         if not transitions:
-            return sorted(np.random.choice(range(1, max_ball + 1), num_balls, replace=False))
+            # 如果没有转移概率，使用频率分析
+            freq_analysis = basic_analyzer.frequency_analysis()
+            if max_ball == 35:  # 前区
+                freq_dict = freq_analysis.get('front_frequency', {})
+            else:  # 后区
+                freq_dict = freq_analysis.get('back_frequency', {})
+
+            sorted_freq = sorted(freq_dict.items(), key=lambda x: x[1], reverse=True)
+            return sorted([int(ball) for ball, freq in sorted_freq[:num_balls]])
 
         balls = []
 
@@ -364,26 +393,47 @@ class AdvancedPredictor:
                             current_ball = ball
                             break
                     else:
-                        # 如果没有找到未选号码，随机选择
-                        candidate = np.random.randint(1, max_ball + 1)
-                        while candidate in balls:
-                            candidate = np.random.randint(1, max_ball + 1)
-                        balls.append(candidate)
-                        current_ball = candidate
+                        # 如果没有找到未选号码，使用频率分析补充
+                        freq_analysis = basic_analyzer.frequency_analysis()
+                        if max_ball == 35:  # 前区
+                            freq_dict = freq_analysis.get('front_frequency', {})
+                        else:  # 后区
+                            freq_dict = freq_analysis.get('back_frequency', {})
+
+                        sorted_freq = sorted(freq_dict.items(), key=lambda x: x[1], reverse=True)
+                        for ball, freq in sorted_freq:
+                            if ball not in balls:
+                                balls.append(ball)
+                                current_ball = ball
+                                break
                 else:
-                    # 随机选择
-                    candidate = np.random.randint(1, max_ball + 1)
-                    while candidate in balls:
-                        candidate = np.random.randint(1, max_ball + 1)
-                    balls.append(candidate)
-                    current_ball = candidate
+                    # 使用频率分析选择
+                    freq_analysis = basic_analyzer.frequency_analysis()
+                    if max_ball == 35:  # 前区
+                        freq_dict = freq_analysis.get('front_frequency', {})
+                    else:  # 后区
+                        freq_dict = freq_analysis.get('back_frequency', {})
+
+                    sorted_freq = sorted(freq_dict.items(), key=lambda x: x[1], reverse=True)
+                    for ball, freq in sorted_freq:
+                        if ball not in balls:
+                            balls.append(ball)
+                            current_ball = ball
+                            break
             else:
-                # 随机选择
-                candidate = np.random.randint(1, max_ball + 1)
-                while candidate in balls:
-                    candidate = np.random.randint(1, max_ball + 1)
-                balls.append(candidate)
-                current_ball = candidate
+                # 使用频率分析选择
+                freq_analysis = basic_analyzer.frequency_analysis()
+                if max_ball == 35:  # 前区
+                    freq_dict = freq_analysis.get('front_frequency', {})
+                else:  # 后区
+                    freq_dict = freq_analysis.get('back_frequency', {})
+
+                sorted_freq = sorted(freq_dict.items(), key=lambda x: x[1], reverse=True)
+                for ball, freq in sorted_freq:
+                    if ball not in balls:
+                        balls.append(ball)
+                        current_ball = ball
+                        break
 
         return balls
 
@@ -417,26 +467,31 @@ class AdvancedPredictor:
         
         predictions = []
         
+        # 基于后验概率选择号码（确定性选择最高概率的号码）
+        if front_posterior:
+            # 按后验概率排序，选择概率最高的5个号码
+            sorted_front = sorted(front_posterior.items(), key=lambda x: x[1], reverse=True)
+            front_balls = [int(ball) for ball, prob in sorted_front[:5]]
+        else:
+            # 如果没有后验概率，使用频率分析
+            freq_analysis = basic_analyzer.frequency_analysis()
+            front_freq = freq_analysis.get('front_frequency', {})
+            sorted_freq = sorted(front_freq.items(), key=lambda x: x[1], reverse=True)
+            front_balls = [int(ball) for ball, freq in sorted_freq[:5]]
+
+        if back_posterior:
+            # 按后验概率排序，选择概率最高的2个号码
+            sorted_back = sorted(back_posterior.items(), key=lambda x: x[1], reverse=True)
+            back_balls = [int(ball) for ball, prob in sorted_back[:2]]
+        else:
+            # 如果没有后验概率，使用频率分析
+            freq_analysis = basic_analyzer.frequency_analysis()
+            back_freq = freq_analysis.get('back_frequency', {})
+            sorted_freq = sorted(back_freq.items(), key=lambda x: x[1], reverse=True)
+            back_balls = [int(ball) for ball, freq in sorted_freq[:2]]
+
+        # 生成多注相同的预测（基于贝叶斯的确定性预测）
         for _ in range(count):
-            # 基于后验概率选择号码
-            if front_posterior:
-                front_numbers = list(front_posterior.keys())
-                front_probs = list(front_posterior.values())
-                front_probs = np.array(front_probs) / np.sum(front_probs)
-                
-                front_balls = list(np.random.choice(front_numbers, 5, replace=False, p=front_probs))
-            else:
-                front_balls = list(np.random.choice(range(1, 36), 5, replace=False))
-            
-            if back_posterior:
-                back_numbers = list(back_posterior.keys())
-                back_probs = list(back_posterior.values())
-                back_probs = np.array(back_probs) / np.sum(back_probs)
-                
-                back_balls = list(np.random.choice(back_numbers, 2, replace=False, p=back_probs))
-            else:
-                back_balls = list(np.random.choice(range(1, 13), 2, replace=False))
-            
             predictions.append((sorted(front_balls), sorted(back_balls)))
         
         return predictions
@@ -454,57 +509,79 @@ class AdvancedPredictor:
         
         predictions = []
         
+        # 获取各种预测方法的结果（一次性获取，确保一致性）
+        markov_pred = self.markov_predict(1)[0]
+        bayesian_pred = self.bayesian_predict(1)[0]
+        freq_pred = self.traditional_predictor.frequency_predict(1)[0]
+        hot_cold_pred = self.traditional_predictor.hot_cold_predict(1)[0]
+        missing_pred = self.traditional_predictor.missing_predict(1)[0]
+
+        # 收集所有候选号码
+        all_front_candidates = []
+        all_back_candidates = []
+
+        for method, weight in weights.items():
+            if method == 'markov':
+                pred = markov_pred
+            elif method == 'bayesian':
+                pred = bayesian_pred
+            elif method == 'frequency':
+                pred = freq_pred
+            elif method == 'hot_cold':
+                pred = hot_cold_pred
+            elif method == 'missing':
+                pred = missing_pred
+            else:
+                continue
+
+            # 根据权重重复添加候选号码
+            repeat_count = max(1, int(weight * 10))
+            for _ in range(repeat_count):
+                all_front_candidates.extend(pred[0])
+                all_back_candidates.extend(pred[1])
+
+        # 统计频率并选择最高频率的号码
+        front_counter = Counter(all_front_candidates)
+        back_counter = Counter(all_back_candidates)
+
+        # 选择频率最高的号码（去重）
+        front_balls = []
+        for ball, freq_count in front_counter.most_common():
+            if len(front_balls) >= 5:
+                break
+            if int(ball) not in front_balls:
+                front_balls.append(int(ball))
+
+        back_balls = []
+        for ball, freq_count in back_counter.most_common():
+            if len(back_balls) >= 2:
+                break
+            if int(ball) not in back_balls:
+                back_balls.append(int(ball))
+
+        # 如果数量不足，使用频率分析补充
+        if len(front_balls) < 5:
+            freq_analysis = basic_analyzer.frequency_analysis()
+            front_freq = freq_analysis.get('front_frequency', {})
+            sorted_freq = sorted(front_freq.items(), key=lambda x: x[1], reverse=True)
+            for ball, freq in sorted_freq:
+                if len(front_balls) >= 5:
+                    break
+                if ball not in front_balls:
+                    front_balls.append(ball)
+
+        if len(back_balls) < 2:
+            freq_analysis = basic_analyzer.frequency_analysis()
+            back_freq = freq_analysis.get('back_frequency', {})
+            sorted_freq = sorted(back_freq.items(), key=lambda x: x[1], reverse=True)
+            for ball, freq in sorted_freq:
+                if len(back_balls) >= 2:
+                    break
+                if ball not in back_balls:
+                    back_balls.append(ball)
+
+        # 生成多注相同的预测（基于集成的确定性预测）
         for _ in range(count):
-            # 获取各种预测方法的结果
-            markov_pred = self.markov_predict(1)[0]
-            bayesian_pred = self.bayesian_predict(1)[0]
-            freq_pred = self.traditional_predictor.frequency_predict(1)[0]
-            hot_cold_pred = self.traditional_predictor.hot_cold_predict(1)[0]
-            missing_pred = self.traditional_predictor.missing_predict(1)[0]
-            
-            # 收集所有候选号码
-            all_front_candidates = []
-            all_back_candidates = []
-            
-            for method, weight in weights.items():
-                if method == 'markov':
-                    pred = markov_pred
-                elif method == 'bayesian':
-                    pred = bayesian_pred
-                elif method == 'frequency':
-                    pred = freq_pred
-                elif method == 'hot_cold':
-                    pred = hot_cold_pred
-                elif method == 'missing':
-                    pred = missing_pred
-                else:
-                    continue
-                
-                # 根据权重重复添加候选号码
-                repeat_count = max(1, int(weight * 10))
-                for _ in range(repeat_count):
-                    all_front_candidates.extend(pred[0])
-                    all_back_candidates.extend(pred[1])
-            
-            # 统计频率并选择最高频率的号码
-            front_counter = Counter(all_front_candidates)
-            back_counter = Counter(all_back_candidates)
-            
-            # 选择频率最高的号码
-            front_balls = [int(ball) for ball, count in front_counter.most_common(5)]
-            back_balls = [int(ball) for ball, count in back_counter.most_common(2)]
-            
-            # 确保数量正确
-            while len(front_balls) < 5:
-                candidate = np.random.randint(1, 36)
-                if candidate not in front_balls:
-                    front_balls.append(candidate)
-            
-            while len(back_balls) < 2:
-                candidate = np.random.randint(1, 13)
-                if candidate not in back_balls:
-                    back_balls.append(candidate)
-            
             predictions.append((sorted(front_balls[:5]), sorted(back_balls[:2])))
         
         return predictions
@@ -598,16 +675,26 @@ class AdvancedPredictor:
             front_balls = [ball for ball, score in front_candidates.most_common(5)]
             back_balls = [ball for ball, score in back_candidates.most_common(2)]
 
-            # 补充号码（如果不足）
-            while len(front_balls) < 5:
-                candidate = np.random.randint(1, 36)
-                if candidate not in front_balls:
-                    front_balls.append(candidate)
+            # 如果号码不足，用频率分析补充
+            if len(front_balls) < 5:
+                freq_analysis = basic_analyzer.frequency_analysis()
+                front_freq = freq_analysis.get('front_frequency', {})
+                sorted_freq = sorted(front_freq.items(), key=lambda x: x[1], reverse=True)
+                for ball, freq in sorted_freq:
+                    if len(front_balls) >= 5:
+                        break
+                    if ball not in front_balls:
+                        front_balls.append(ball)
 
-            while len(back_balls) < 2:
-                candidate = np.random.randint(1, 13)
-                if candidate not in back_balls:
-                    back_balls.append(candidate)
+            if len(back_balls) < 2:
+                freq_analysis = basic_analyzer.frequency_analysis()
+                back_freq = freq_analysis.get('back_frequency', {})
+                sorted_freq = sorted(back_freq.items(), key=lambda x: x[1], reverse=True)
+                for ball, freq in sorted_freq:
+                    if len(back_balls) >= 2:
+                        break
+                    if ball not in back_balls:
+                        back_balls.append(ball)
 
             prediction = {
                 'index': i + 1,
@@ -744,20 +831,25 @@ class AdvancedPredictor:
                 if state_count >= 2:  # 至少在2个状态下表现良好
                     diversity_candidates.append(ball)
 
-            # 从多样性候选中随机选择
+            # 从多样性候选中选择（确定性选择前几个）
             if diversity_candidates:
-                diversity_selected = np.random.choice(
-                    diversity_candidates,
-                    min(diversity_count, len(diversity_candidates)),
-                    replace=False
-                )
+                diversity_selected = diversity_candidates[:min(diversity_count, len(diversity_candidates))]
                 selected.extend(diversity_selected)
 
-        # 补充到目标数量
-        while len(selected) < target_count:
-            candidate = np.random.randint(1, max_ball + 1)
-            if candidate not in selected:
-                selected.append(candidate)
+        # 如果数量不足，用频率分析补充
+        if len(selected) < target_count:
+            freq_analysis = basic_analyzer.frequency_analysis()
+            if max_ball == 35:  # 前区
+                freq_dict = freq_analysis.get('front_frequency', {})
+            else:  # 后区
+                freq_dict = freq_analysis.get('back_frequency', {})
+
+            sorted_freq = sorted(freq_dict.items(), key=lambda x: x[1], reverse=True)
+            for ball, freq in sorted_freq:
+                if len(selected) >= target_count:
+                    break
+                if ball not in selected:
+                    selected.append(ball)
 
         return sorted(selected[:target_count])
 
@@ -871,22 +963,23 @@ class AdvancedPredictor:
                 for j in range(min(front_high_count, len(front_sorted))):
                     front_balls.append(front_sorted[j][0])
 
-                # 随机号码（从中等分数中选择）
+                # 中等分数号码（确定性选择）
                 if len(front_sorted) > front_high_count:
                     remaining_candidates = [x[0] for x in front_sorted[front_high_count:front_high_count+10]]
                     if remaining_candidates:
-                        random_selected = np.random.choice(
-                            remaining_candidates,
-                            min(front_random_count, len(remaining_candidates)),
-                            replace=False
-                        )
-                        front_balls.extend(random_selected)
+                        selected_count = min(front_random_count, len(remaining_candidates))
+                        front_balls.extend(remaining_candidates[:selected_count])
 
-                # 补充到5个
-                while len(front_balls) < 5:
-                    candidate = np.random.randint(1, 36)
-                    if candidate not in front_balls:
-                        front_balls.append(candidate)
+                # 如果前区号码不足，用频率分析补充
+                if len(front_balls) < 5:
+                    freq_analysis = basic_analyzer.frequency_analysis()
+                    front_freq = freq_analysis.get('front_frequency', {})
+                    sorted_freq = sorted(front_freq.items(), key=lambda x: x[1], reverse=True)
+                    for ball, freq in sorted_freq:
+                        if len(front_balls) >= 5:
+                            break
+                        if ball not in front_balls:
+                            front_balls.append(ball)
 
                 # 选择后区号码
                 back_balls = []
@@ -929,15 +1022,22 @@ class AdvancedPredictor:
 
         except Exception as e:
             logger_manager.error(f"高级集成预测失败: {e}")
-            # 返回随机预测作为备选
-            for i in range(count):
-                front_balls = sorted(np.random.choice(range(1, 36), 5, replace=False))
-                back_balls = sorted(np.random.choice(range(1, 13), 2, replace=False))
+            # 使用频率分析作为备选方案
+            freq_analysis = basic_analyzer.frequency_analysis()
+            front_freq = freq_analysis.get('front_frequency', {})
+            back_freq = freq_analysis.get('back_frequency', {})
 
+            front_sorted = sorted(front_freq.items(), key=lambda x: x[1], reverse=True)
+            back_sorted = sorted(back_freq.items(), key=lambda x: x[1], reverse=True)
+
+            front_balls = [int(ball) for ball, freq in front_sorted[:5]]
+            back_balls = [int(ball) for ball, freq in back_sorted[:2]]
+
+            for i in range(count):
                 prediction = {
                     'index': i + 1,
-                    'front_balls': [int(x) for x in front_balls],
-                    'back_balls': [int(x) for x in back_balls],
+                    'front_balls': front_balls,
+                    'back_balls': back_balls,
                     'integration_type': integration_type,
                     'method': 'advanced_integration_fallback',
                     'confidence': 0.3
@@ -1016,9 +1116,15 @@ class AdvancedPredictor:
     def _intelligent_nine_models_selection(self, recommendations, target_count, is_front=True):
         """基于9种数学模型的智能号码选择"""
         if not recommendations:
-            # 如果没有推荐，随机生成
-            max_ball = 35 if is_front else 12
-            return sorted(np.random.choice(range(1, max_ball + 1), target_count, replace=False))
+            # 如果没有推荐，使用频率分析
+            freq_analysis = basic_analyzer.frequency_analysis()
+            if is_front:
+                freq_dict = freq_analysis.get('front_frequency', {})
+            else:
+                freq_dict = freq_analysis.get('back_frequency', {})
+
+            sorted_freq = sorted(freq_dict.items(), key=lambda x: x[1], reverse=True)
+            return sorted([int(ball) for ball, freq in sorted_freq[:target_count]])
 
         selected = []
 
@@ -1031,23 +1137,27 @@ class AdvancedPredictor:
             ball = recommendations[i][0]  # (ball, score) 格式
             selected.append(int(ball))
 
-        # 选择多样性号码
+        # 选择多样性号码（确定性选择）
         if diversity_count > 0 and len(recommendations) > high_score_count:
             diversity_candidates = [x[0] for x in recommendations[high_score_count:]]
             if diversity_candidates:
-                diversity_selected = np.random.choice(
-                    diversity_candidates,
-                    min(diversity_count, len(diversity_candidates)),
-                    replace=False
-                )
-                selected.extend([int(x) for x in diversity_selected])
+                selected_count = min(diversity_count, len(diversity_candidates))
+                selected.extend([int(x) for x in diversity_candidates[:selected_count]])
 
-        # 补充到目标数量
-        while len(selected) < target_count:
-            max_ball = 35 if is_front else 12
-            candidate = np.random.randint(1, max_ball + 1)
-            if candidate not in selected:
-                selected.append(candidate)
+        # 如果数量不足，用频率分析补充
+        if len(selected) < target_count:
+            freq_analysis = basic_analyzer.frequency_analysis()
+            if is_front:
+                freq_dict = freq_analysis.get('front_frequency', {})
+            else:
+                freq_dict = freq_analysis.get('back_frequency', {})
+
+            sorted_freq = sorted(freq_dict.items(), key=lambda x: x[1], reverse=True)
+            for ball, freq in sorted_freq:
+                if len(selected) >= target_count:
+                    break
+                if ball not in selected:
+                    selected.append(ball)
 
         return sorted(selected[:target_count])
 
@@ -1084,15 +1194,23 @@ class AdvancedPredictor:
 
     def _fallback_nine_models_prediction(self, count):
         """9种数学模型的备选预测方案"""
+        # 使用频率分析作为备选方案
+        freq_analysis = basic_analyzer.frequency_analysis()
+        front_freq = freq_analysis.get('front_frequency', {})
+        back_freq = freq_analysis.get('back_frequency', {})
+
+        front_sorted = sorted(front_freq.items(), key=lambda x: x[1], reverse=True)
+        back_sorted = sorted(back_freq.items(), key=lambda x: x[1], reverse=True)
+
+        front_balls = [int(ball) for ball, freq in front_sorted[:5]]
+        back_balls = [int(ball) for ball, freq in back_sorted[:2]]
+
         predictions = []
         for i in range(count):
-            front_balls = sorted(np.random.choice(range(1, 36), 5, replace=False))
-            back_balls = sorted(np.random.choice(range(1, 13), 2, replace=False))
-
             prediction = {
                 'index': i + 1,
-                'front_balls': [int(x) for x in front_balls],
-                'back_balls': [int(x) for x in back_balls],
+                'front_balls': front_balls,
+                'back_balls': back_balls,
                 'method': 'nine_models_fallback',
                 'confidence': 0.4
             }
@@ -1170,8 +1288,15 @@ class AdvancedPredictor:
     def _nine_models_compound_selection(self, scores_dict, target_count, is_front=True):
         """基于9种数学模型的复式号码选择"""
         if not scores_dict:
-            max_ball = 35 if is_front else 12
-            return sorted(np.random.choice(range(1, max_ball + 1), target_count, replace=False))
+            # 如果没有评分，使用频率分析
+            freq_analysis = basic_analyzer.frequency_analysis()
+            if is_front:
+                freq_dict = freq_analysis.get('front_frequency', {})
+            else:
+                freq_dict = freq_analysis.get('back_frequency', {})
+
+            sorted_freq = sorted(freq_dict.items(), key=lambda x: x[1], reverse=True)
+            return sorted([int(ball) for ball, freq in sorted_freq[:target_count]])
 
         # 按评分排序
         sorted_scores = sorted(scores_dict.items(), key=lambda x: x[1], reverse=True)
@@ -1193,19 +1318,23 @@ class AdvancedPredictor:
             balance_candidates = [int(x[0]) for x in sorted_scores[balance_start:balance_end]]
 
             if balance_candidates:
-                balance_selected = np.random.choice(
-                    balance_candidates,
-                    min(balance_count, len(balance_candidates)),
-                    replace=False
-                )
-                selected.extend(balance_selected)
+                selected_count = min(balance_count, len(balance_candidates))
+                selected.extend(balance_candidates[:selected_count])
 
-        # 补充到目标数量
-        while len(selected) < target_count:
-            max_ball = 35 if is_front else 12
-            candidate = np.random.randint(1, max_ball + 1)
-            if candidate not in selected:
-                selected.append(candidate)
+        # 如果数量不足，用频率分析补充
+        if len(selected) < target_count:
+            freq_analysis = basic_analyzer.frequency_analysis()
+            if is_front:
+                freq_dict = freq_analysis.get('front_frequency', {})
+            else:
+                freq_dict = freq_analysis.get('back_frequency', {})
+
+            sorted_freq = sorted(freq_dict.items(), key=lambda x: x[1], reverse=True)
+            for ball, freq in sorted_freq:
+                if len(selected) >= target_count:
+                    break
+                if ball not in selected:
+                    selected.append(ball)
 
         return sorted(selected[:target_count])
 
@@ -1484,8 +1613,8 @@ class SuperPredictor:
         back_counter = Counter(all_back_candidates)
         
         # 选择频率最高的号码
-        front_balls = [ball for ball, count in front_counter.most_common(8)]
-        back_balls = [ball for ball, count in back_counter.most_common(4)]
+        front_balls = [ball for ball, freq_count in front_counter.most_common(8)]
+        back_balls = [ball for ball, freq_count in back_counter.most_common(4)]
         
         # 智能选择最终号码
         final_front = self._smart_selection(front_balls, 5)
@@ -1496,12 +1625,19 @@ class SuperPredictor:
     def _smart_selection(self, candidates: List[int], num_select: int) -> List[int]:
         """智能选择号码"""
         if len(candidates) <= num_select:
-            # 补充随机号码
-            max_ball = 35 if num_select == 5 else 12
-            while len(candidates) < num_select:
-                candidate = np.random.randint(1, max_ball + 1)
-                if candidate not in candidates:
-                    candidates.append(candidate)
+            # 如果候选号码不足，用频率分析补充
+            freq_analysis = basic_analyzer.frequency_analysis()
+            if num_select == 5:  # 前区
+                freq_dict = freq_analysis.get('front_frequency', {})
+            else:  # 后区
+                freq_dict = freq_analysis.get('back_frequency', {})
+
+            sorted_freq = sorted(freq_dict.items(), key=lambda x: x[1], reverse=True)
+            for ball, freq in sorted_freq:
+                if len(candidates) >= num_select:
+                    break
+                if ball not in candidates:
+                    candidates.append(ball)
             return sorted(candidates[:num_select])
 
         # 选择策略：高频 + 随机
@@ -1512,8 +1648,8 @@ class SuperPredictor:
         remaining = candidates[high_freq_count:]
 
         if random_count > 0 and remaining:
-            random_selected = np.random.choice(remaining, min(random_count, len(remaining)), replace=False)
-            selected.extend(random_selected)
+            selected_count = min(random_count, len(remaining))
+            selected.extend(remaining[:selected_count])
 
         return sorted(selected[:num_select])
 
@@ -1579,14 +1715,24 @@ class CompoundPredictor:
                 front_candidates.update(pred[0])
                 back_candidates.update(pred[1])
 
-            # 补充候选号码到所需数量
-            while len(front_candidates) < front_count:
-                candidate = np.random.randint(1, 36)
-                front_candidates.add(candidate)
+            # 如果候选号码不足，用频率分析补充
+            if len(front_candidates) < front_count:
+                freq_analysis = basic_analyzer.frequency_analysis()
+                front_freq = freq_analysis.get('front_frequency', {})
+                sorted_freq = sorted(front_freq.items(), key=lambda x: x[1], reverse=True)
+                for ball, freq in sorted_freq:
+                    if len(front_candidates) >= front_count:
+                        break
+                    front_candidates.add(ball)
 
-            while len(back_candidates) < back_count:
-                candidate = np.random.randint(1, 13)
-                back_candidates.add(candidate)
+            if len(back_candidates) < back_count:
+                freq_analysis = basic_analyzer.frequency_analysis()
+                back_freq = freq_analysis.get('back_frequency', {})
+                sorted_freq = sorted(back_freq.items(), key=lambda x: x[1], reverse=True)
+                for ball, freq in sorted_freq:
+                    if len(back_candidates) >= back_count:
+                        break
+                    back_candidates.add(ball)
 
             # 选择最终号码
             front_balls = sorted(list(front_candidates))[:front_count]
@@ -1651,12 +1797,12 @@ class CompoundPredictor:
                 back_counter.update(pred[1])
 
             # 选择胆码（频率最高的）
-            front_dan = [ball for ball, count in front_counter.most_common(front_dan_count)]
-            back_dan = [ball for ball, count in back_counter.most_common(back_dan_count)]
+            front_dan = [ball for ball, freq_count in front_counter.most_common(front_dan_count)]
+            back_dan = [ball for ball, freq_count in back_counter.most_common(back_dan_count)]
 
             # 选择拖码（排除胆码后的候选）
-            front_tuo_candidates = [ball for ball, count in front_counter.most_common() if ball not in front_dan]
-            back_tuo_candidates = [ball for ball, count in back_counter.most_common() if ball not in back_dan]
+            front_tuo_candidates = [ball for ball, freq_count in front_counter.most_common() if ball not in front_dan]
+            back_tuo_candidates = [ball for ball, freq_count in back_counter.most_common() if ball not in back_dan]
 
             # 补充拖码
             while len(front_tuo_candidates) < front_tuo_count:
@@ -1836,9 +1982,15 @@ class CompoundPredictor:
     def _intelligent_compound_selection(self, candidates: Counter, target_count: int) -> List[int]:
         """智能复式号码选择"""
         if len(candidates) == 0:
-            # 如果没有候选号码，随机生成
-            max_ball = 35 if target_count > 8 else 12
-            return sorted(np.random.choice(range(1, max_ball + 1), target_count, replace=False))
+            # 如果没有候选号码，使用频率分析
+            freq_analysis = basic_analyzer.frequency_analysis()
+            if target_count > 8:  # 前区
+                freq_dict = freq_analysis.get('front_frequency', {})
+            else:  # 后区
+                freq_dict = freq_analysis.get('back_frequency', {})
+
+            sorted_freq = sorted(freq_dict.items(), key=lambda x: x[1], reverse=True)
+            return sorted([int(ball) for ball, freq in sorted_freq[:target_count]])
 
         # 获取候选号码列表（按得分排序）
         sorted_candidates = candidates.most_common()
@@ -1861,30 +2013,44 @@ class CompoundPredictor:
                 medium_candidates = [item[0] for item in sorted_candidates[medium_start:medium_end]]
 
                 if medium_candidates:
-                    medium_selected = np.random.choice(
-                        medium_candidates,
-                        min(medium_score_count, len(medium_candidates)),
-                        replace=False
-                    )
-                    selected.extend([int(x) for x in medium_selected])
+                    selected_count = min(medium_score_count, len(medium_candidates))
+                    selected.extend([int(x) for x in medium_candidates[:selected_count]])
 
-            # 补充到目标数量
-            while len(selected) < target_count:
-                max_ball = 35 if target_count > 8 else 12
-                candidate = np.random.randint(1, max_ball + 1)
-                if candidate not in selected:
-                    selected.append(candidate)
+            # 如果数量不足，用频率分析补充
+            if len(selected) < target_count:
+                freq_analysis = basic_analyzer.frequency_analysis()
+                if target_count > 8:  # 前区
+                    freq_dict = freq_analysis.get('front_frequency', {})
+                else:  # 后区
+                    freq_dict = freq_analysis.get('back_frequency', {})
+
+                sorted_freq = sorted(freq_dict.items(), key=lambda x: x[1], reverse=True)
+                for ball, freq in sorted_freq:
+                    if len(selected) >= target_count:
+                        break
+                    if ball not in selected:
+                        selected.append(ball)
 
             return sorted(selected[:target_count])
         else:
             # 候选号码不足，全部选择并补充
             selected = [int(item[0]) for item in sorted_candidates]
 
+            # 如果数量不足，用频率分析补充
             while len(selected) < target_count:
-                max_ball = 35 if target_count > 8 else 12
-                candidate = np.random.randint(1, max_ball + 1)
-                if candidate not in selected:
-                    selected.append(candidate)
+                freq_analysis = basic_analyzer.frequency_analysis()
+                if target_count > 8:  # 前区
+                    freq_dict = freq_analysis.get('front_frequency', {})
+                else:  # 后区
+                    freq_dict = freq_analysis.get('back_frequency', {})
+
+                sorted_freq = sorted(freq_dict.items(), key=lambda x: x[1], reverse=True)
+                for ball, freq in sorted_freq:
+                    if len(selected) >= target_count:
+                        break
+                    if ball not in selected:
+                        selected.append(ball)
+                        break
 
             return sorted(selected)
 

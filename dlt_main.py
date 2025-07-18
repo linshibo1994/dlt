@@ -103,27 +103,30 @@ class DLTPredictorSystem:
         elif args.data_action == 'update':
             # 处理更新参数
             periods = getattr(args, 'periods', None)
+            incremental = getattr(args, 'incremental', False)
 
-            print(f"🔄 更新数据 (数据源: {args.source}" + (f", 期数: {periods}" if periods else "") + ")...")
+            update_type = "增量更新" if incremental else "完整更新"
+            print(f"🔄 {update_type} (数据源: {args.source}" + (f", 期数: {periods}" if periods else "") + ")...")
+
             try:
-                if args.source == 'zhcw':
-                    from crawlers import ZhcwCrawler
-                    crawler = ZhcwCrawler()
-                    if periods:
-                        # 更新指定期数
-                        count = crawler.crawl_recent_data(periods)
-                    else:
-                        # 更新所有数据
-                        count = crawler.crawl_all_data()
-                elif args.source == '500':
-                    from crawlers import Crawler500
-                    crawler = Crawler500()
+                from crawlers import ZhcwCrawler
+                crawler = ZhcwCrawler()
+
+                if incremental:
+                    # 增量更新：只获取最新的几页数据
+                    count = crawler.crawl_recent_data(3)
+                elif periods:
+                    # 更新指定期数
+                    count = crawler.crawl_recent_data(periods)
+                else:
+                    # 更新所有数据
                     count = crawler.crawl_all_data()
 
                 # 清理缓存并重新加载数据
                 cache_manager.clear_cache('data')
                 data_manager._load_data()
                 print(f"✅ 数据更新完成，新增 {count} 期数据")
+
             except ImportError:
                 print("❌ 爬虫模块未找到，请检查crawlers.py文件")
             except Exception as e:
@@ -295,6 +298,29 @@ class DLTPredictorSystem:
                     predictions = [result]
                 else:
                     predictions = []
+                    
+            elif args.method in ['transformer', 'gan', 'stacking', 'adaptive_ensemble', 'ultimate_ensemble']:
+                # 增强预测方法
+                try:
+                    from improvements.integration import get_integrator
+                    integrator = get_integrator()
+                    
+                    if args.method == 'transformer':
+                        results = integrator.transformer_predict(args.count)
+                    elif args.method == 'gan':
+                        results = integrator.gan_predict(args.count)
+                    elif args.method == 'stacking':
+                        results = integrator.stacking_predict(args.count)
+                    elif args.method == 'adaptive_ensemble':
+                        results = integrator.adaptive_ensemble_predict(args.count)
+                    elif args.method == 'ultimate_ensemble':
+                        results = integrator.ultimate_ensemble_predict(args.count)
+                    
+                    predictions = results
+                except ImportError:
+                    print("❌ 增强预测模块未找到，请确保improvements目录存在且包含所需文件")
+                except Exception as e:
+                    print(f"❌ 增强预测失败: {e}")
 
             elif args.method == 'markov_custom':
                 # 马尔可夫自定义期数预测
@@ -371,6 +397,129 @@ class DLTPredictorSystem:
                 if result:
                     predictions = [result]
                 else:
+                    predictions = []
+                    
+            elif args.method in ['markov_2nd', 'markov_3rd', 'adaptive_markov']:
+                # 增强版马尔可夫链预测
+                try:
+                    from improvements.enhanced_markov import get_markov_predictor
+                    
+                    markov_periods = getattr(args, 'analysis_periods', 500)
+                    
+                    if args.method == 'markov_2nd':
+                        print("🔄 二阶马尔可夫链预测...")
+                        markov_predictor = get_markov_predictor()
+                        results = markov_predictor.multi_order_markov_predict(
+                            count=args.count, 
+                            periods=markov_periods, 
+                            order=2
+                        )
+                        predictions = [{'front_balls': r[0], 'back_balls': r[1], 'method': 'markov_2nd', 'confidence': 0.85, 'order': 2} for r in results]
+                    
+                    elif args.method == 'markov_3rd':
+                        print("🔄 三阶马尔可夫链预测...")
+                        markov_predictor = get_markov_predictor()
+                        results = markov_predictor.multi_order_markov_predict(
+                            count=args.count, 
+                            periods=markov_periods, 
+                            order=3
+                        )
+                        predictions = [{'front_balls': r[0], 'back_balls': r[1], 'method': 'markov_3rd', 'confidence': 0.9, 'order': 3} for r in results]
+                    
+                    elif args.method == 'adaptive_markov':
+                        print("🔄 自适应马尔可夫链预测...")
+                        markov_predictor = get_markov_predictor()
+                        predictions = markov_predictor.adaptive_order_markov_predict(
+                            count=args.count, 
+                            periods=markov_periods
+                        )
+                
+                except ImportError:
+                    print("❌ 增强版马尔可夫链模块未找到，请确保improvements目录存在且包含所需文件")
+                    predictions = []
+                except Exception as e:
+                    print(f"❌ 增强版马尔可夫链预测失败: {e}")
+                    predictions = []
+            
+            elif args.method == 'lstm':
+                # LSTM深度学习预测
+                try:
+                    from advanced_lstm_predictor import AdvancedLSTMPredictor, TENSORFLOW_AVAILABLE
+                    if not TENSORFLOW_AVAILABLE:
+                        print("❌ TensorFlow未安装，无法使用LSTM预测")
+                        return
+                    
+                    print("🧠 LSTM深度学习预测...")
+                    lstm_predictor = AdvancedLSTMPredictor()
+                    results = lstm_predictor.lstm_predict(args.count)
+                    predictions = [{'front_balls': r[0], 'back_balls': r[1], 'method': 'lstm', 'confidence': 0.85} for r in results]
+                
+                except ImportError:
+                    print("❌ LSTM预测器模块未找到")
+                    predictions = []
+                except Exception as e:
+                    print(f"❌ LSTM预测失败: {e}")
+                    predictions = []
+            
+            elif args.method in ['transformer', 'gan', 'stacking', 'adaptive_ensemble', 'ultimate_ensemble']:
+                # 增强预测方法
+                try:
+                    from improvements.integration import get_integrator
+                    integrator = get_integrator()
+                    
+                    if args.method == 'transformer':
+                        print("🧮 Transformer深度学习预测...")
+                        predictions = integrator.transformer_predict(args.count)
+                    elif args.method == 'gan':
+                        print("🎮 GAN生成预测...")
+                        predictions = integrator.gan_predict(args.count)
+                    elif args.method == 'stacking':
+                        print("🔄 Stacking集成预测...")
+                        predictions = integrator.stacking_predict(args.count)
+                    elif args.method == 'adaptive_ensemble':
+                        print("🧠 自适应集成预测...")
+                        predictions = integrator.adaptive_ensemble_predict(args.count)
+                    elif args.method == 'ultimate_ensemble':
+                        print("🌟 终极集成预测...")
+                        predictions = integrator.ultimate_ensemble_predict(args.count)
+                
+                except ImportError:
+                    print("❌ 增强预测模块未找到，请确保improvements目录存在且包含所需文件")
+                    predictions = []
+                except Exception as e:
+                    print(f"❌ 增强预测失败: {e}")
+                    predictions = []
+            
+            elif args.method == 'advanced_ensemble':
+                # 高级集成预测（兼容旧版本）
+                try:
+                    from improvements.advanced_ensemble import AdvancedEnsemblePredictor
+                    
+                    print("🚀 高级集成预测...")
+                    ensemble = AdvancedEnsemblePredictor()
+                    
+                    # 注册基础预测器
+                    ensemble.register_predictor('frequency', self.predictors['traditional'], weight=0.3)
+                    ensemble.register_predictor('markov', self.predictors['advanced'], weight=0.4)
+                    ensemble.register_predictor('bayesian', self.predictors['advanced'], weight=0.3)
+                    
+                    # 选择集成方法
+                    ensemble_method = getattr(args, 'ensemble_method', 'stacking')
+                    if ensemble_method == 'stacking':
+                        results = ensemble.stacking_predict(args.count)
+                    elif ensemble_method == 'weighted':
+                        results = ensemble.weighted_ensemble_predict(args.count)
+                    else:
+                        results = ensemble.adaptive_ensemble_predict(args.count)
+                    
+                    predictions = [{'front_balls': r[0], 'back_balls': r[1], 'method': f'advanced_ensemble_{ensemble_method}', 'confidence': 0.90} for r in results]
+                
+                except ImportError:
+                    print("❌ 高级集成预测器模块未找到")
+                    predictions = []
+                except Exception as e:
+                    print(f"❌ 高级集成预测失败: {e}")
+                    predictions = []
                     predictions = []
 
             # 显示预测结果
@@ -937,8 +1086,9 @@ def main():
 
     # 数据更新
     data_update_parser = data_subparsers.add_parser('update', help='更新数据')
-    data_update_parser.add_argument('--source', choices=['zhcw', '500'], default='zhcw', help='数据源')
+    data_update_parser.add_argument('--source', choices=['zhcw'], default='zhcw', help='数据源')
     data_update_parser.add_argument('--periods', type=int, help='更新指定期数')
+    data_update_parser.add_argument('--incremental', action='store_true', help='增量更新（只获取最新数据）')
     
     # ==================== 分析命令 ====================
     analyze_parser = subparsers.add_parser('analyze', help='数据分析')
@@ -953,8 +1103,14 @@ def main():
     predict_parser = subparsers.add_parser('predict', help='号码预测')
     predict_parser.add_argument('-m', '--method',
                                choices=['frequency', 'hot_cold', 'missing', 'markov', 'bayesian',
-                                       'ensemble', 'super', 'adaptive', 'compound', 'duplex', 'markov_custom', 'mixed_strategy', 'highly_integrated', 'advanced_integration', 'nine_models', 'nine_models_compound', 'markov_compound'],
+                                       'ensemble', 'super', 'adaptive', 'compound', 'duplex', 'markov_custom', 
+                                       'mixed_strategy', 'highly_integrated', 'advanced_integration', 
+                                       'nine_models', 'nine_models_compound', 'markov_compound', 
+                                       'lstm', 'transformer', 'gan', 'stacking', 'adaptive_ensemble', 'ultimate_ensemble',
+                                       'markov_2nd', 'markov_3rd', 'adaptive_markov'],
                                default='ensemble', help='预测方法')
+    predict_parser.add_argument('--ensemble-method', choices=['stacking', 'weighted', 'adaptive'],
+                               default='stacking', help='高级集成方法类型')
     predict_parser.add_argument('-c', '--count', type=int, default=1, help='生成注数')
     predict_parser.add_argument('--front-count', type=int, default=8, help='复式投注前区号码数量')
     predict_parser.add_argument('--back-count', type=int, default=4, help='复式投注后区号码数量')

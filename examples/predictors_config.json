@@ -1,0 +1,88 @@
+{
+  "predictors": [
+    {
+      "module_path": "predictor_modules",
+      "class_name": "TraditionalPredictor",
+      "method_name": "frequency_predict",
+      "model_name": "频率预测",
+      "category": "traditional"
+    },
+    {
+      "module_path": "predictor_modules",
+      "class_name": "TraditionalPredictor",
+      "method_name": "hot_cold_predict",
+      "model_name": "冷热号预测",
+      "category": "traditional"
+    },
+    {
+      "module_path": "predictor_modules",
+      "class_name": "TraditionalPredictor",
+      "method_name": "missing_predict",
+      "model_name": "遗漏值预测",
+      "category": "traditional"
+    },
+    {
+      "module_path": "predictor_modules",
+      "class_name": "AdvancedPredictor",
+      "method_name": "markov_predict",
+      "model_name": "马尔可夫预测",
+      "category": "advanced"
+    },
+    {
+      "module_path": "predictor_modules",
+      "class_name": "AdvancedPredictor",
+      "method_name": "bayesian_predict",
+      "model_name": "贝叶斯预测",
+      "category": "advanced"
+    },
+    {
+      "module_path": "predictor_modules",
+      "class_name": "AdvancedPredictor",
+      "method_name": "ensemble_predict",
+      "model_name": "集成预测",
+      "category": "advanced"
+    },
+    {
+      "module_path": "improvements.enhanced_markov",
+      "class_name": "EnhancedMarkovPredictor",
+      "method_name": "multi_order_markov_predict",
+      "model_name": "二阶马尔可夫",
+      "category": "enhanced"
+    },
+    {
+      "module_path": "improvements.enhanced_markov",
+      "class_name": "EnhancedMarkovPredictor",
+      "method_name": "adaptive_order_markov_predict",
+      "model_name": "自适应马尔可夫",
+      "category": "enhanced"
+    },
+    {
+      "module_path": "advanced_lstm_predictor",
+      "class_name": "AdvancedLSTMPredictor",
+      "method_name": "lstm_predict",
+      "model_name": "LSTM深度学习",
+      "category": "deep_learning"
+    },
+    {
+      "module_path": "improvements.advanced_ensemble",
+      "class_name": "AdvancedEnsemblePredictor",
+      "method_name": "stacking_predict",
+      "model_name": "Stacking集成",
+      "category": "ensemble"
+    },
+    {
+      "module_path": "improvements.advanced_ensemble",
+      "class_name": "AdvancedEnsemblePredictor",
+      "method_name": "weighted_ensemble_predict",
+      "model_name": "加权集成",
+      "category": "ensemble"
+    },
+    {
+      "module_path": "improvements.advanced_ensemble",
+      "class_name": "AdvancedEnsemblePredictor",
+      "method_name": "adaptive_ensemble_predict",
+      "model_name": "自适应集成",
+      "category": "ensemble"
+    }
+  ]
+}

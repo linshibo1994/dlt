@@ -18,10 +18,14 @@ networkx>=3.1
 # 机器学习
 scikit-learn>=1.2.2
 
-# 深度学习（新增）
+# 深度学习框架
 tensorflow>=2.12.0
 keras>=2.12.0
-tensorflow-addons>=0.20.0
+
+# 高级机器学习
+xgboost>=1.6.0
+lightgbm>=3.3.0
+joblib>=1.1.0
 
 # 贝叶斯分析（可选）
 pymc>=5.0.1
@@ -30,13 +34,5 @@ arviz>=0.15.1
 # JSON处理
 jsonschema>=4.17.3
 
-# 深度学习框架（可选）
-tensorflow>=2.10.0
-keras>=2.10.0
-
-# 集成学习框架（可选）
-xgboost>=1.6.0
-lightgbm>=3.3.0
-
-# 其他机器学习库
-joblib>=1.1.0
+# 进度条和工具
+tqdm>=4.64.0
