@@ -80,14 +80,47 @@ def register_default_predictors(benchmark):
     """
     registered_count = 0
     
-    # 注册随机预测器（基准）
-    def mock_random_predict(historical_data):
-        """随机预测"""
-        import numpy as np
-        return [(sorted(np.random.choice(range(1, 36), 5, replace=False)), 
-                sorted(np.random.choice(range(1, 13), 2, replace=False))) for _ in range(3)]
-    
-    benchmark.register_model("随机预测", mock_random_predict, "完全随机的预测方法", "baseline")
+    # 注册基准预测器（仅用于性能对比，不用于实际预测）
+    def mock_baseline_predict(historical_data):
+        """基准预测（仅用于性能对比）"""
+        # 使用最简单的频率分析作为基准
+        from collections import Counter
+
+        front_counter = Counter()
+        back_counter = Counter()
+
+        # 分析最近100期数据
+        recent_data = historical_data.head(100) if len(historical_data) > 100 else historical_data
+
+        for _, row in recent_data.iterrows():
+            front_balls = [int(x) for x in str(row.get('front_balls', '')).split(',') if x.strip().isdigit()]
+            back_balls = [int(x) for x in str(row.get('back_balls', '')).split(',') if x.strip().isdigit()]
+
+            front_counter.update(front_balls)
+            back_counter.update(back_balls)
+
+        # 选择频率最高的号码
+        front_most_common = [ball for ball, _ in front_counter.most_common(5)]
+        back_most_common = [ball for ball, _ in back_counter.most_common(2)]
+
+        # 确保有足够的号码
+        while len(front_most_common) < 5:
+            for i in range(1, 36):
+                if i not in front_most_common:
+                    front_most_common.append(i)
+                    if len(front_most_common) >= 5:
+                        break
+
+        while len(back_most_common) < 2:
+            for i in range(1, 13):
+                if i not in back_most_common:
+                    back_most_common.append(i)
+                    if len(back_most_common) >= 2:
+                        break
+
+        return [(sorted(front_most_common[:5]), sorted(back_most_common[:2])) for _ in range(3)]
+
+    benchmark.register_model("基准预测", mock_baseline_predict, "基于频率的基准预测方法（仅用于性能对比）", "baseline")
     registered_count += 1
     
     # 尝试注册传统预测器

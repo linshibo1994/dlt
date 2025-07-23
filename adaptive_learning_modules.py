@@ -283,39 +283,44 @@ class EnhancedAdaptiveLearningPredictor:
 
         self._predictors_initialized = True
     
-    def _predict_with_predictor(self, predictor_name: str) -> Tuple[List[int], List[int], float]:
-        """使用指定预测器进行预测"""
+    def _predict_with_predictor(self, predictor_name: str, periods: int = 500) -> Tuple[List[int], List[int], float]:
+        """使用指定预测器进行预测
+
+        Args:
+            predictor_name: 预测器名称
+            periods: 分析期数
+        """
         # 确保预测器已初始化
         if not self._predictors_initialized:
             self._initialize_predictors()
 
         try:
             if predictor_name == 'traditional_frequency':
-                result = self.predictors['traditional_frequency'].frequency_predict(1)
+                result = self.predictors['traditional_frequency'].frequency_predict(1, periods)
                 front_balls = [int(x) for x in result[0][0]]
                 back_balls = [int(x) for x in result[0][1]]
                 return front_balls, back_balls, 0.5
 
             elif predictor_name == 'traditional_hot_cold':
-                result = self.predictors['traditional_hot_cold'].hot_cold_predict(1)
+                result = self.predictors['traditional_hot_cold'].hot_cold_predict(1, periods)
                 front_balls = [int(x) for x in result[0][0]]
                 back_balls = [int(x) for x in result[0][1]]
                 return front_balls, back_balls, 0.5
 
             elif predictor_name == 'traditional_missing':
-                result = self.predictors['traditional_missing'].missing_predict(1)
+                result = self.predictors['traditional_missing'].missing_predict(1, periods)
                 front_balls = [int(x) for x in result[0][0]]
                 back_balls = [int(x) for x in result[0][1]]
                 return front_balls, back_balls, 0.5
 
             elif predictor_name == 'advanced_markov':
-                result = self.predictors['advanced_markov'].markov_predict(1)
+                result = self.predictors['advanced_markov'].markov_predict(1, periods)
                 front_balls = [int(x) for x in result[0][0]]
                 back_balls = [int(x) for x in result[0][1]]
                 return front_balls, back_balls, 0.6
 
             elif predictor_name == 'advanced_bayesian':
-                result = self.predictors['advanced_bayesian'].bayesian_predict(1)
+                result = self.predictors['advanced_bayesian'].bayesian_predict(1, periods)
                 front_balls = [int(x) for x in result[0][0]]
                 back_balls = [int(x) for x in result[0][1]]
                 return front_balls, back_balls, 0.6
@@ -384,16 +389,14 @@ class EnhancedAdaptiveLearningPredictor:
             logger_manager.error("数据未加载或为空")
             return {}
 
-        # 找到起始期号在DataFrame中的索引位置
-        start_idx = None
-        for idx, row in self.df.iterrows():
-            if str(row['issue']) == str(start_period):
-                start_idx = idx
-                break
-
-        if start_idx is None:
-            logger_manager.error(f"未找到起始期号 {start_period}")
+        # 计算起始索引位置（从最新数据开始倒数start_period期）
+        total_periods = len(self.df)
+        if start_period >= total_periods:
+            logger_manager.error(f"起始期数 {start_period} 超过可用数据期数 {total_periods}")
             return {}
+
+        # 从最新数据开始倒数start_period期作为起始位置
+        start_idx = total_periods - start_period
 
         # 检查是否有足够的数据进行测试
         available_periods = len(self.df) - start_idx
@@ -516,9 +519,14 @@ class EnhancedAdaptiveLearningPredictor:
         
         return final_results
     
-    def generate_enhanced_prediction(self, count: int = 1) -> List[Dict]:
-        """生成增强预测"""
-        logger_manager.info(f"生成增强预测，注数: {count}")
+    def generate_enhanced_prediction(self, count: int = 1, periods: int = 500) -> List[Dict]:
+        """生成增强预测
+
+        Args:
+            count: 生成注数
+            periods: 分析期数
+        """
+        logger_manager.info(f"生成增强预测，注数: {count}, 分析期数: {periods}")
         
         if len(self.predictor_names) == 0:
             logger_manager.error("预测器未初始化")
@@ -539,7 +547,7 @@ class EnhancedAdaptiveLearningPredictor:
             
             try:
                 # 使用选中的预测器进行预测
-                front_balls, back_balls, confidence = self._predict_with_predictor(selected_predictor)
+                front_balls, back_balls, confidence = self._predict_with_predictor(selected_predictor, periods)
                 
                 prediction = {
                     'index': i + 1,
@@ -557,9 +565,15 @@ class EnhancedAdaptiveLearningPredictor:
         
         return predictions
 
-    def smart_predict_compound(self, front_count: int = 8, back_count: int = 4) -> Dict:
-        """智能复式预测（基于学习结果的最优预测器）"""
-        logger_manager.info(f"智能复式预测: {front_count}+{back_count}")
+    def smart_predict_compound(self, front_count: int = 8, back_count: int = 4, periods: int = 500) -> Dict:
+        """智能复式预测（基于学习结果的最优预测器）
+
+        Args:
+            front_count: 前区号码数量
+            back_count: 后区号码数量
+            periods: 分析期数
+        """
+        logger_manager.info(f"智能复式预测: {front_count}+{back_count}, 分析期数: {periods}")
 
         if len(self.predictor_names) == 0:
             logger_manager.error("预测器未初始化")
@@ -578,21 +592,37 @@ class EnhancedAdaptiveLearningPredictor:
                 try:
                     # 生成多注预测来增加候选号码的多样性
                     for _ in range(3):
-                        front_balls, back_balls, _ = self._predict_with_predictor(predictor_name)
+                        front_balls, back_balls, _ = self._predict_with_predictor(predictor_name, periods)
                         front_candidates.update(front_balls)
                         back_candidates.update(back_balls)
                 except Exception as e:
                     logger_manager.error(f"预测器 {predictor_name} 失败", e)
                     continue
 
-            # 补充候选号码到所需数量
-            while len(front_candidates) < front_count:
-                candidate = int(np.random.randint(1, 36))
-                front_candidates.add(candidate)
+            # 补充候选号码到所需数量（使用频率分析而不是随机数）
+            if len(front_candidates) < front_count:
+                from analyzer_modules import basic_analyzer
+                freq_analysis = basic_analyzer.frequency_analysis()
+                front_freq = freq_analysis.get('front_frequency', {})
+                sorted_freq = sorted(front_freq.items(), key=lambda x: x[1], reverse=True)
 
-            while len(back_candidates) < back_count:
-                candidate = int(np.random.randint(1, 13))
-                back_candidates.add(candidate)
+                for ball, _ in sorted_freq:
+                    if len(front_candidates) >= front_count:
+                        break
+                    ball_int = int(ball) if isinstance(ball, str) else ball
+                    front_candidates.add(ball_int)
+
+            if len(back_candidates) < back_count:
+                from analyzer_modules import basic_analyzer
+                freq_analysis = basic_analyzer.frequency_analysis()
+                back_freq = freq_analysis.get('back_frequency', {})
+                sorted_freq = sorted(back_freq.items(), key=lambda x: x[1], reverse=True)
+
+                for ball, _ in sorted_freq:
+                    if len(back_candidates) >= back_count:
+                        break
+                    ball_int = int(ball) if isinstance(ball, str) else ball
+                    back_candidates.add(ball_int)
 
             # 选择最终号码（基于预测器权重排序）
             front_balls = sorted(list(front_candidates))[:front_count]
@@ -626,9 +656,17 @@ class EnhancedAdaptiveLearningPredictor:
             return {}
 
     def smart_predict_duplex(self, front_dan_count: int = 2, back_dan_count: int = 1,
-                            front_tuo_count: int = 6, back_tuo_count: int = 4) -> Dict:
-        """智能胆拖预测（基于学习结果的最优预测器）"""
-        logger_manager.info(f"智能胆拖预测: 前区{front_dan_count}胆{front_tuo_count}拖, 后区{back_dan_count}胆{back_tuo_count}拖")
+                            front_tuo_count: int = 6, back_tuo_count: int = 4, periods: int = 500) -> Dict:
+        """智能胆拖预测（基于学习结果的最优预测器）
+
+        Args:
+            front_dan_count: 前区胆码数量
+            back_dan_count: 后区胆码数量
+            front_tuo_count: 前区拖码数量
+            back_tuo_count: 后区拖码数量
+            periods: 分析期数
+        """
+        logger_manager.info(f"智能胆拖预测: 前区{front_dan_count}胆{front_tuo_count}拖, 后区{back_dan_count}胆{back_tuo_count}拖, 分析期数: {periods}")
 
         if len(self.predictor_names) == 0:
             logger_manager.error("预测器未初始化")
@@ -648,7 +686,7 @@ class EnhancedAdaptiveLearningPredictor:
             back_freq = {}
 
             for _ in range(10):  # 进行10次预测
-                front_balls, back_balls, _ = self._predict_with_predictor(best_predictor)
+                front_balls, back_balls, _ = self._predict_with_predictor(best_predictor, periods)
                 for ball in front_balls:
                     front_freq[ball] = front_freq.get(ball, 0) + 1
                 for ball in back_balls:
@@ -680,11 +718,19 @@ class EnhancedAdaptiveLearningPredictor:
                     logger_manager.error(f"预测器 {predictor_name} 失败", e)
                     continue
 
-            # 补充拖码到所需数量
-            while len(front_tuo_candidates) < front_tuo_count:
-                candidate = int(np.random.randint(1, 36))
-                if candidate not in front_dan:
-                    front_tuo_candidates.add(candidate)
+            # 补充拖码到所需数量（使用频率分析而不是随机数）
+            if len(front_tuo_candidates) < front_tuo_count:
+                from analyzer_modules import basic_analyzer
+                freq_analysis = basic_analyzer.frequency_analysis()
+                front_freq = freq_analysis.get('front_frequency', {})
+                sorted_freq = sorted(front_freq.items(), key=lambda x: x[1], reverse=True)
+
+                for ball, _ in sorted_freq:
+                    if len(front_tuo_candidates) >= front_tuo_count:
+                        break
+                    ball_int = int(ball) if isinstance(ball, str) else ball
+                    if ball_int not in front_dan:
+                        front_tuo_candidates.add(ball_int)
 
             while len(back_tuo_candidates) < back_tuo_count:
                 candidate = int(np.random.randint(1, 13))

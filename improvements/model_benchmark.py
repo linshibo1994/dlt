@@ -874,11 +874,39 @@ if __name__ == "__main__":
     print("🔍 测试模型基准测试框架...")
     benchmark = get_model_benchmark()
     
-    # 模拟预测函数
-    def mock_random_predict(historical_data):
-        """随机预测"""
-        return [(sorted(np.random.choice(range(1, 36), 5, replace=False)), 
-                sorted(np.random.choice(range(1, 13), 2, replace=False))) for _ in range(3)]
+    # 模拟预测函数（仅用于测试）
+    def mock_baseline_predict(historical_data):
+        """基准预测（仅用于测试）"""
+        # 使用简单的频率分析作为基准
+        from collections import Counter
+
+        front_counter = Counter()
+        back_counter = Counter()
+
+        for _, row in historical_data.head(50).iterrows():
+            front_balls, back_balls = data_manager.parse_balls(row)
+            front_counter.update(front_balls)
+            back_counter.update(back_balls)
+
+        front_most_common = [ball for ball, _ in front_counter.most_common(5)]
+        back_most_common = [ball for ball, _ in back_counter.most_common(2)]
+
+        # 确保有足够的号码
+        while len(front_most_common) < 5:
+            for i in range(1, 36):
+                if i not in front_most_common:
+                    front_most_common.append(i)
+                    if len(front_most_common) >= 5:
+                        break
+
+        while len(back_most_common) < 2:
+            for i in range(1, 13):
+                if i not in back_most_common:
+                    back_most_common.append(i)
+                    if len(back_most_common) >= 2:
+                        break
+
+        return [(sorted(front_most_common[:5]), sorted(back_most_common[:2])) for _ in range(3)]
     
     def mock_frequency_predict(historical_data):
         """频率预测"""
@@ -899,10 +927,16 @@ if __name__ == "__main__":
         return [(sorted(front_most_common), sorted(back_most_common)) for _ in range(3)]
     
     def mock_markov_predict(historical_data):
-        """马尔可夫预测"""
-        # 简化版马尔可夫预测
-        return [(sorted(np.random.choice(range(1, 36), 5, replace=False)), 
-                sorted(np.random.choice(range(1, 13), 2, replace=False))) for _ in range(3)]
+        """马尔可夫预测（仅用于测试）"""
+        # 简化版马尔可夫预测，基于历史数据
+        try:
+            from improvements.enhanced_markov import get_markov_predictor
+            predictor = get_markov_predictor()
+            results = predictor.markov_predict(count=3, periods=100)
+            return [(pred['front'], pred['back']) for pred in results]
+        except:
+            # 如果马尔可夫预测器不可用，使用频率分析
+            return mock_frequency_predict(historical_data)
     
     # 注册模型
     print("\n📝 注册测试模型...")

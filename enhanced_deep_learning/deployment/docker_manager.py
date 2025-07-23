@@ -524,9 +524,13 @@ class DockerManager:
             
             compose_path = os.path.join(project_path, "docker-compose.yml")
             
-            import yaml
-            with open(compose_path, 'w', encoding='utf-8') as f:
-                yaml.dump(compose_content, f, default_flow_style=False)
+            try:
+                import yaml
+                with open(compose_path, 'w', encoding='utf-8') as f:
+                    yaml.dump(compose_content, f, default_flow_style=False)
+            except ImportError:
+                logger_manager.error("PyYAML未安装，无法创建docker-compose.yml")
+                return ""
             
             logger_manager.info(f"docker-compose.yml创建成功: {compose_path}")
             return compose_path

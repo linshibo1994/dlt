@@ -305,6 +305,7 @@ class PredictionCache:
             'hits': 0,
             'misses': 0,
             'puts': 0,
+            'removes': 0,
             'evictions': 0
         }
         self.lock = threading.RLock()
@@ -388,7 +389,98 @@ class PredictionCache:
             
         except Exception as e:
             logger_manager.error(f"添加缓存失败: {e}")
-    
+
+    def set(self, key: str, value: Any, ttl: Optional[int] = None):
+        """
+        设置缓存值（简化接口）
+
+        Args:
+            key: 缓存键
+            value: 缓存值
+            ttl: 生存时间（秒）
+        """
+        try:
+            # 使用原始的CacheEntry类
+            from datetime import datetime
+
+            # 创建一个简单的预测结果包装器
+            class SimpleResult:
+                def __init__(self, value):
+                    self.value = value
+
+            entry = CacheEntry(
+                key=key,
+                value=SimpleResult(value),
+                created_time=datetime.now(),
+                last_accessed=datetime.now(),
+                ttl=ttl
+            )
+
+            with self.lock:
+                self.cache_impl.put(key, entry)
+                self.stats['puts'] += 1
+
+            logger_manager.debug(f"缓存值已设置: {key}")
+
+        except Exception as e:
+            logger_manager.error(f"设置缓存值失败: {e}")
+
+    def get_simple(self, key: str) -> Optional[Any]:
+        """
+        获取缓存值（简化接口）
+
+        Args:
+            key: 缓存键
+
+        Returns:
+            缓存值
+        """
+        try:
+            with self.lock:
+                entry = self.cache_impl.get(key)
+
+                if entry:
+                    # 检查TTL（使用原始的is_expired方法）
+                    if hasattr(entry, 'is_expired') and entry.is_expired():
+                        self.cache_impl.remove(key)
+                        self.stats['misses'] += 1
+                        return None
+
+                    self.stats['hits'] += 1
+
+                    # 返回包装的值
+                    if hasattr(entry.value, 'value'):
+                        return entry.value.value
+                    else:
+                        return entry.value
+                else:
+                    self.stats['misses'] += 1
+                    return None
+
+        except Exception as e:
+            logger_manager.error(f"获取缓存值失败: {e}")
+            return None
+
+    def get_cache_stats(self) -> Dict[str, Any]:
+        """获取缓存统计信息"""
+        try:
+            with self.lock:
+                total_requests = self.stats['hits'] + self.stats['misses']
+                hit_rate = self.stats['hits'] / total_requests if total_requests > 0 else 0.0
+
+                return {
+                    'hits': self.stats['hits'],
+                    'misses': self.stats['misses'],
+                    'puts': self.stats['puts'],
+                    'removes': self.stats['removes'],
+                    'hit_rate': hit_rate,
+                    'total_requests': total_requests,
+                    'cache_size': len(self.cache_impl.cache) if hasattr(self.cache_impl, 'cache') else 0
+                }
+        except Exception as e:
+            logger_manager.error(f"获取缓存统计失败: {e}")
+            return {}
+
     def remove(self, request: PredictionRequest) -> bool:
         """
         移除缓存项
@@ -468,11 +560,15 @@ class PredictionCache:
     
     def stop_cleanup_thread(self):
         """停止清理线程"""
-        self.running = False
-        if self.cleanup_thread:
-            self.cleanup_thread.join(timeout=5)
-        
-        logger_manager.debug("缓存清理线程已停止")
+        try:
+            self.running = False
+            if self.cleanup_thread:
+                self.cleanup_thread.join(timeout=5)
+
+            logger_manager.debug("缓存清理线程已停止")
+        except Exception:
+            # 在Python关闭时，某些模块可能已经被清理，忽略错误
+            pass
     
     def _cleanup_loop(self):
         """清理循环"""
@@ -566,7 +662,11 @@ class PredictionCache:
     
     def __del__(self):
         """析构函数"""
-        self.stop_cleanup_thread()
+        try:
+            self.stop_cleanup_thread()
+        except Exception:
+            # 在Python关闭时，某些模块可能已经被清理，忽略错误
+            pass
 
 
 # 全局预测缓存实例

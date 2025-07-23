@@ -186,11 +186,11 @@ class EnhancedMarkovPredictor:
         # 获取马尔可夫分析结果
         markov_result = self.analyzer.multi_order_markov_analysis(periods, max_order=order)
         
-        if not markov_result or 'orders' not in markov_result or order not in markov_result['orders']:
+        if not markov_result or 'orders' not in markov_result or str(order) not in markov_result['orders']:
             logger_manager.error(f"{order}阶马尔可夫分析结果不可用")
             return []
-        
-        order_result = markov_result['orders'][order]
+
+        order_result = markov_result['orders'][str(order)]
         front_transitions = order_result.get('front_transition_probs', {})
         back_transitions = order_result.get('back_transition_probs', {})
         
@@ -271,11 +271,33 @@ class EnhancedMarkovPredictor:
                 if ball not in balls:
                     balls.append(ball)
         
-        # 如果仍然不足，随机补充
+        # 如果仍然不足，使用频率分析补充
+        if len(balls) < num_balls:
+            from analyzer_modules import basic_analyzer
+            freq_analysis = basic_analyzer.frequency_analysis()
+
+            if max_ball == 35:  # 前区
+                freq_dict = freq_analysis.get('front_frequency', {})
+            else:  # 后区
+                freq_dict = freq_analysis.get('back_frequency', {})
+
+            # 按频率排序
+            sorted_freq = sorted(freq_dict.items(), key=lambda x: x[1], reverse=True)
+
+            for ball_str, _ in sorted_freq:
+                if len(balls) >= num_balls:
+                    break
+                ball_int = int(ball_str) if isinstance(ball_str, str) else ball_str
+                if ball_int not in balls and 1 <= ball_int <= max_ball:
+                    balls.append(ball_int)
+
+        # 如果还是不足，使用默认序列
         while len(balls) < num_balls:
-            ball = np.random.randint(1, max_ball + 1)
-            if ball not in balls:
-                balls.append(ball)
+            for i in range(1, max_ball + 1):
+                if len(balls) >= num_balls:
+                    break
+                if i not in balls:
+                    balls.append(i)
         
         return balls
     
@@ -304,7 +326,7 @@ class EnhancedMarkovPredictor:
         # 获取各阶的预测结果
         order_predictions = {}
         for order in range(1, 4):
-            if order in markov_result['orders']:
+            if str(order) in markov_result['orders']:
                 preds = self.multi_order_markov_predict(count, periods, order)
                 order_predictions[order] = preds
         
@@ -335,16 +357,32 @@ class EnhancedMarkovPredictor:
             front_balls = [ball for ball, _ in front_counter.most_common(5)]
             back_balls = [ball for ball, _ in back_counter.most_common(2)]
             
-            # 如果号码不足，随机补充
-            while len(front_balls) < 5:
-                ball = np.random.randint(1, 36)
-                if ball not in front_balls:
-                    front_balls.append(ball)
-            
-            while len(back_balls) < 2:
-                ball = np.random.randint(1, 13)
-                if ball not in back_balls:
-                    back_balls.append(ball)
+            # 如果号码不足，使用频率分析补充
+            if len(front_balls) < 5:
+                from analyzer_modules import basic_analyzer
+                freq_analysis = basic_analyzer.frequency_analysis()
+                front_freq = freq_analysis.get('front_frequency', {})
+                sorted_freq = sorted(front_freq.items(), key=lambda x: x[1], reverse=True)
+
+                for ball_str, _ in sorted_freq:
+                    if len(front_balls) >= 5:
+                        break
+                    ball_int = int(ball_str) if isinstance(ball_str, str) else ball_str
+                    if ball_int not in front_balls and 1 <= ball_int <= 35:
+                        front_balls.append(ball_int)
+
+            if len(back_balls) < 2:
+                from analyzer_modules import basic_analyzer
+                freq_analysis = basic_analyzer.frequency_analysis()
+                back_freq = freq_analysis.get('back_frequency', {})
+                sorted_freq = sorted(back_freq.items(), key=lambda x: x[1], reverse=True)
+
+                for ball_str, _ in sorted_freq:
+                    if len(back_balls) >= 2:
+                        break
+                    ball_int = int(ball_str) if isinstance(ball_str, str) else ball_str
+                    if ball_int not in back_balls and 1 <= ball_int <= 12:
+                        back_balls.append(ball_int)
             
             # 构建预测结果
             prediction = {

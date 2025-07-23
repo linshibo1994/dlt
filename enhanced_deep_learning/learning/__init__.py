@@ -7,10 +7,12 @@ Learning Module
 
 from .weight_optimizer import WeightOptimizer
 from .retrain_manager import RetrainManager, RetrainTrigger, RetrainTask
-from .retraining_manager import RetrainingManager
 from .performance_tracker import PerformanceTracker
 from .decision_explainer import DecisionExplainer
 from .meta_learning import MetaLearningOptimizer
+
+# 为了兼容性，创建RetrainingManager别名
+RetrainingManager = RetrainManager
 
 __all__ = [
     'WeightOptimizer',

@@ -35,101 +35,484 @@ class BasicAnalyzer:
             logger_manager.error("数据未加载")
     
     def frequency_analysis(self, periods=None) -> Dict:
-        """频率分析"""
+        """增强频率分析 - 包含概率分布建模和置信区间计算"""
         if self.df is None:
             return {}
-        
-        cache_key = f"frequency_analysis_{periods or 'all'}"
+
+        cache_key = f"enhanced_frequency_analysis_{periods or 'all'}"
         cached_result = cache_manager.load_cache("analysis", cache_key)
         if cached_result:
             return cached_result
-        
+
         df_subset = self.df.tail(periods) if periods else self.df
-        
+
         front_counter = Counter()
         back_counter = Counter()
-        
+
         for _, row in df_subset.iterrows():
             front_balls, back_balls = data_manager.parse_balls(row)
             front_counter.update(front_balls)
             back_counter.update(back_balls)
-        
+
+        # 基础频率统计
+        front_frequency = dict(front_counter.most_common())
+        back_frequency = dict(back_counter.most_common())
+
+        # 增强分析：概率分布建模
+        front_enhanced = self._enhanced_frequency_analysis(front_counter, len(df_subset), 35, 5)
+        back_enhanced = self._enhanced_frequency_analysis(back_counter, len(df_subset), 12, 2)
+
         result = {
-            'front_frequency': dict(front_counter.most_common()),
-            'back_frequency': dict(back_counter.most_common()),
+            'front_frequency': front_frequency,
+            'back_frequency': back_frequency,
+            'front_enhanced': front_enhanced,
+            'back_enhanced': back_enhanced,
             'analysis_periods': len(df_subset),
             'timestamp': datetime.now().isoformat()
         }
-        
+
         cache_manager.save_cache("analysis", cache_key, result)
         return result
+
+    def _enhanced_frequency_analysis(self, counter: Counter, total_periods: int,
+                                   max_number: int, numbers_per_draw: int) -> Dict:
+        """增强频率分析 - 概率分布建模"""
+        try:
+            import numpy as np
+            from scipy import stats
+
+            # 理论期望频率
+            theoretical_freq = (total_periods * numbers_per_draw) / max_number
+
+            # 计算每个号码的统计指标
+            enhanced_stats = {}
+
+            for num in range(1, max_number + 1):
+                observed_freq = counter.get(num, 0)
+
+                # 概率计算
+                probability = observed_freq / (total_periods * numbers_per_draw) if total_periods > 0 else 0
+
+                # 偏差分析
+                deviation = observed_freq - theoretical_freq
+                relative_deviation = deviation / theoretical_freq if theoretical_freq > 0 else 0
+
+                # 置信区间计算（基于二项分布）
+                if total_periods > 0:
+                    p = numbers_per_draw / max_number  # 理论概率
+                    n = total_periods  # 试验次数
+
+                    # 95%置信区间
+                    confidence_interval = stats.binom.interval(0.95, n, p)
+
+                    # Z-score计算
+                    expected = n * p
+                    variance = n * p * (1 - p)
+                    z_score = (observed_freq - expected) / np.sqrt(variance) if variance > 0 else 0
+                else:
+                    confidence_interval = (0, 0)
+                    z_score = 0
+
+                # 趋势分析（最近期数的频率变化）
+                recent_trend = self._calculate_frequency_trend(num, total_periods)
+
+                enhanced_stats[num] = {
+                    'observed_frequency': observed_freq,
+                    'theoretical_frequency': theoretical_freq,
+                    'probability': probability,
+                    'deviation': deviation,
+                    'relative_deviation': relative_deviation,
+                    'confidence_interval': confidence_interval,
+                    'z_score': z_score,
+                    'trend': recent_trend,
+                    'heat_level': self._calculate_heat_level(observed_freq, theoretical_freq),
+                    'prediction_weight': self._calculate_prediction_weight(
+                        probability, z_score, recent_trend
+                    )
+                }
+
+            return enhanced_stats
+
+        except Exception as e:
+            logger_manager.error(f"增强频率分析失败: {e}")
+            return {}
+
+    def _calculate_frequency_trend(self, number: int, total_periods: int) -> Dict:
+        """计算频率趋势"""
+        try:
+            if total_periods < 20:
+                return {'trend': 'insufficient_data', 'slope': 0}
+
+            # 分析最近20期的趋势
+            recent_periods = min(20, total_periods // 4)
+            recent_data = self.df.tail(recent_periods)
+
+            frequencies = []
+            for i, (_, row) in enumerate(recent_data.iterrows()):
+                front_balls, back_balls = data_manager.parse_balls(row)
+                all_balls = front_balls + back_balls
+                freq = 1 if number in all_balls else 0
+                frequencies.append(freq)
+
+            if len(frequencies) < 5:
+                return {'trend': 'insufficient_data', 'slope': 0}
+
+            # 线性回归计算趋势
+            import numpy as np
+            x = np.arange(len(frequencies))
+            slope, intercept = np.polyfit(x, frequencies, 1)
+
+            # 趋势判断
+            if slope > 0.05:
+                trend = 'increasing'
+            elif slope < -0.05:
+                trend = 'decreasing'
+            else:
+                trend = 'stable'
+
+            return {
+                'trend': trend,
+                'slope': slope,
+                'recent_frequency': sum(frequencies),
+                'recent_periods': len(frequencies)
+            }
+
+        except Exception as e:
+            logger_manager.error(f"计算频率趋势失败: {e}")
+            return {'trend': 'unknown', 'slope': 0}
+
+    def _calculate_heat_level(self, observed_freq: int, theoretical_freq: float) -> str:
+        """计算热度等级"""
+        try:
+            if theoretical_freq == 0:
+                return 'unknown'
+
+            ratio = observed_freq / theoretical_freq
+
+            if ratio >= 1.3:
+                return 'very_hot'
+            elif ratio >= 1.1:
+                return 'hot'
+            elif ratio >= 0.9:
+                return 'normal'
+            elif ratio >= 0.7:
+                return 'cold'
+            else:
+                return 'very_cold'
+
+        except Exception as e:
+            logger_manager.error(f"计算热度等级失败: {e}")
+            return 'unknown'
+
+    def _calculate_prediction_weight(self, probability: float, z_score: float,
+                                   trend: Dict) -> float:
+        """计算预测权重"""
+        try:
+            # 基础权重基于概率
+            base_weight = probability
+
+            # Z-score调整（异常值降权）
+            z_adjustment = 1.0 / (1.0 + abs(z_score) * 0.1)
+
+            # 趋势调整
+            trend_adjustment = 1.0
+            if trend.get('trend') == 'increasing':
+                trend_adjustment = 1.2
+            elif trend.get('trend') == 'decreasing':
+                trend_adjustment = 0.8
+
+            # 综合权重
+            final_weight = base_weight * z_adjustment * trend_adjustment
+
+            return max(0.0, min(1.0, final_weight))
+
+        except Exception as e:
+            logger_manager.error(f"计算预测权重失败: {e}")
+            return 0.5
     
     def missing_analysis(self, periods=None) -> Dict:
-        """遗漏分析"""
+        """增强遗漏分析 - 包含回补概率模型和期望回补时间"""
         if self.df is None:
             return {}
-        
-        cache_key = f"missing_analysis_{periods or 'all'}"
+
+        cache_key = f"enhanced_missing_analysis_{periods or 'all'}"
         cached_result = cache_manager.load_cache("analysis", cache_key)
         if cached_result:
             return cached_result
-        
+
         df_subset = self.df.tail(periods) if periods else self.df
-        
+
+        # 基础遗漏值计算
         front_missing = {i: 0 for i in range(1, 36)}
         back_missing = {i: 0 for i in range(1, 13)}
-        
+
+        # 历史遗漏记录
+        front_missing_history = {i: [] for i in range(1, 36)}
+        back_missing_history = {i: [] for i in range(1, 13)}
+
+        # 当前遗漏计数器
+        front_current_missing = {i: 0 for i in range(1, 36)}
+        back_current_missing = {i: 0 for i in range(1, 13)}
+
         for _, row in df_subset.iterrows():
             front_balls, back_balls = data_manager.parse_balls(row)
-            
-            # 更新遗漏值
+
+            # 更新前区遗漏值
             for num in range(1, 36):
                 if num in front_balls:
+                    # 记录遗漏历史
+                    if front_current_missing[num] > 0:
+                        front_missing_history[num].append(front_current_missing[num])
+                    front_current_missing[num] = 0
                     front_missing[num] = 0
                 else:
-                    front_missing[num] += 1
-            
+                    front_current_missing[num] += 1
+                    front_missing[num] = front_current_missing[num]
+
+            # 更新后区遗漏值
             for num in range(1, 13):
                 if num in back_balls:
+                    # 记录遗漏历史
+                    if back_current_missing[num] > 0:
+                        back_missing_history[num].append(back_current_missing[num])
+                    back_current_missing[num] = 0
                     back_missing[num] = 0
                 else:
-                    back_missing[num] += 1
-        
+                    back_current_missing[num] += 1
+                    back_missing[num] = back_current_missing[num]
+
+        # 增强分析：回补概率模型
+        front_enhanced = self._enhanced_missing_analysis(
+            front_missing, front_missing_history, 35, 5, len(df_subset)
+        )
+        back_enhanced = self._enhanced_missing_analysis(
+            back_missing, back_missing_history, 12, 2, len(df_subset)
+        )
+
         result = {
             'front_missing': front_missing,
             'back_missing': back_missing,
+            'front_enhanced': front_enhanced,
+            'back_enhanced': back_enhanced,
             'analysis_periods': len(df_subset),
             'timestamp': datetime.now().isoformat()
         }
-        
+
         cache_manager.save_cache("analysis", cache_key, result)
         return result
+
+    def _enhanced_missing_analysis(self, current_missing: Dict, missing_history: Dict,
+                                 max_number: int, numbers_per_draw: int, total_periods: int) -> Dict:
+        """增强遗漏分析 - 回补概率模型"""
+        try:
+            import numpy as np
+            from scipy import stats
+
+            enhanced_stats = {}
+
+            for num in range(1, max_number + 1):
+                current_miss = current_missing.get(num, 0)
+                history = missing_history.get(num, [])
+
+                # 历史遗漏统计
+                if history:
+                    avg_missing = np.mean(history)
+                    std_missing = np.std(history)
+                    max_missing = max(history)
+                    min_missing = min(history)
+                else:
+                    avg_missing = total_periods * numbers_per_draw / max_number
+                    std_missing = avg_missing * 0.5
+                    max_missing = current_miss
+                    min_missing = 0
+
+                # 回补概率计算
+                comeback_probability = self._calculate_comeback_probability(
+                    current_miss, avg_missing, std_missing, max_number, numbers_per_draw
+                )
+
+                # 期望回补时间
+                expected_comeback_time = self._calculate_expected_comeback_time(
+                    current_miss, avg_missing, max_number, numbers_per_draw
+                )
+
+                # 遗漏等级
+                missing_level = self._calculate_missing_level(current_miss, avg_missing, std_missing)
+
+                # 回补紧迫度
+                urgency_score = self._calculate_urgency_score(
+                    current_miss, avg_missing, max_missing, comeback_probability
+                )
+
+                enhanced_stats[num] = {
+                    'current_missing': current_miss,
+                    'average_missing': avg_missing,
+                    'std_missing': std_missing,
+                    'max_historical_missing': max_missing,
+                    'min_historical_missing': min_missing,
+                    'comeback_probability': comeback_probability,
+                    'expected_comeback_time': expected_comeback_time,
+                    'missing_level': missing_level,
+                    'urgency_score': urgency_score,
+                    'historical_count': len(history),
+                    'prediction_weight': self._calculate_missing_prediction_weight(
+                        comeback_probability, urgency_score, missing_level
+                    )
+                }
+
+            return enhanced_stats
+
+        except Exception as e:
+            logger_manager.error(f"增强遗漏分析失败: {e}")
+            return {}
+
+    def _calculate_comeback_probability(self, current_miss: int, avg_miss: float,
+                                      std_miss: float, max_number: int, numbers_per_draw: int) -> float:
+        """计算回补概率"""
+        try:
+            # 基础概率（几何分布）
+            p = numbers_per_draw / max_number
+            base_prob = 1 - (1 - p) ** (current_miss + 1)
+
+            # 基于历史统计的调整
+            if std_miss > 0 and avg_miss > 0:
+                # 标准化当前遗漏值
+                z_score = (current_miss - avg_miss) / std_miss
+
+                # 遗漏越久，回补概率越高（但有上限）
+                adjustment = 1 + min(z_score * 0.1, 0.5)
+                adjusted_prob = base_prob * adjustment
+            else:
+                adjusted_prob = base_prob
+
+            return max(0.0, min(1.0, adjusted_prob))
+
+        except Exception as e:
+            logger_manager.error(f"计算回补概率失败: {e}")
+            return 0.5
+
+    def _calculate_expected_comeback_time(self, current_miss: int, avg_miss: float,
+                                        max_number: int, numbers_per_draw: int) -> float:
+        """计算期望回补时间"""
+        try:
+            # 基于几何分布的期望
+            p = numbers_per_draw / max_number
+            expected_time = 1 / p
+
+            # 考虑当前已遗漏的时间
+            if current_miss >= avg_miss:
+                # 已经超过平均遗漏时间，期望回补时间减少
+                remaining_time = max(1, expected_time - current_miss * 0.5)
+            else:
+                # 还未达到平均遗漏时间
+                remaining_time = expected_time - current_miss
+
+            return max(1.0, remaining_time)
+
+        except Exception as e:
+            logger_manager.error(f"计算期望回补时间失败: {e}")
+            return 10.0
+
+    def _calculate_missing_level(self, current_miss: int, avg_miss: float, std_miss: float) -> str:
+        """计算遗漏等级"""
+        try:
+            if std_miss == 0:
+                return 'normal'
+
+            z_score = (current_miss - avg_miss) / std_miss
+
+            if z_score >= 2:
+                return 'extremely_overdue'
+            elif z_score >= 1.5:
+                return 'very_overdue'
+            elif z_score >= 1:
+                return 'overdue'
+            elif z_score >= -1:
+                return 'normal'
+            else:
+                return 'recent'
+
+        except Exception as e:
+            logger_manager.error(f"计算遗漏等级失败: {e}")
+            return 'unknown'
+
+    def _calculate_urgency_score(self, current_miss: int, avg_miss: float,
+                               max_miss: int, comeback_prob: float) -> float:
+        """计算回补紧迫度评分"""
+        try:
+            # 基于当前遗漏与平均遗漏的比值
+            miss_ratio = current_miss / avg_miss if avg_miss > 0 else 1
+
+            # 基于当前遗漏与历史最大遗漏的比值
+            max_ratio = current_miss / max_miss if max_miss > 0 else 0
+
+            # 综合评分
+            urgency = (miss_ratio * 0.6 + max_ratio * 0.2 + comeback_prob * 0.2)
+
+            return max(0.0, min(10.0, urgency * 5))
+
+        except Exception as e:
+            logger_manager.error(f"计算紧迫度评分失败: {e}")
+            return 5.0
+
+    def _calculate_missing_prediction_weight(self, comeback_prob: float,
+                                           urgency_score: float, missing_level: str) -> float:
+        """计算遗漏预测权重"""
+        try:
+            # 基础权重基于回补概率
+            base_weight = comeback_prob
+
+            # 紧迫度调整
+            urgency_adjustment = 1 + (urgency_score - 5) * 0.1
+
+            # 遗漏等级调整
+            level_adjustments = {
+                'extremely_overdue': 1.5,
+                'very_overdue': 1.3,
+                'overdue': 1.1,
+                'normal': 1.0,
+                'recent': 0.8,
+                'unknown': 1.0
+            }
+            level_adjustment = level_adjustments.get(missing_level, 1.0)
+
+            # 综合权重
+            final_weight = base_weight * urgency_adjustment * level_adjustment
+
+            return max(0.0, min(1.0, final_weight))
+
+        except Exception as e:
+            logger_manager.error(f"计算遗漏预测权重失败: {e}")
+            return 0.5
     
     def hot_cold_analysis(self, periods=100) -> Dict:
-        """冷热号分析"""
+        """增强冷热号分析 - 包含温度量化计算和动态阈值调整"""
         if self.df is None:
             return {}
-        
-        cache_key = f"hot_cold_analysis_{periods}"
+
+        cache_key = f"enhanced_hot_cold_analysis_{periods}"
         cached_result = cache_manager.load_cache("analysis", cache_key)
         if cached_result:
             return cached_result
-        
+
         freq_result = self.frequency_analysis(periods)
-        
+
         front_freq = freq_result.get('front_frequency', {})
         back_freq = freq_result.get('back_frequency', {})
-        
-        # 计算平均频率
+
+        # 增强分析：温度量化计算
+        front_enhanced = self._enhanced_hot_cold_analysis(front_freq, periods, 35, 5)
+        back_enhanced = self._enhanced_hot_cold_analysis(back_freq, periods, 12, 2)
+
+        # 传统分类（保持兼容性）
         front_avg = np.mean(list(front_freq.values())) if front_freq else 0
         back_avg = np.mean(list(back_freq.values())) if back_freq else 0
-        
-        # 分类冷热号
+
         front_hot = [num for num, freq in front_freq.items() if freq > front_avg]
         front_cold = [num for num, freq in front_freq.items() if freq < front_avg]
         back_hot = [num for num, freq in back_freq.items() if freq > back_avg]
         back_cold = [num for num, freq in back_freq.items() if freq < back_avg]
-        
+
         result = {
             'front_hot': sorted(front_hot),
             'front_cold': sorted(front_cold),
@@ -137,12 +520,280 @@ class BasicAnalyzer:
             'back_cold': sorted(back_cold),
             'front_avg_freq': front_avg,
             'back_avg_freq': back_avg,
+            'front_enhanced': front_enhanced,
+            'back_enhanced': back_enhanced,
             'analysis_periods': periods,
             'timestamp': datetime.now().isoformat()
         }
-        
+
         cache_manager.save_cache("analysis", cache_key, result)
         return result
+
+    def _enhanced_hot_cold_analysis(self, frequency_dict: Dict, periods: int,
+                                  max_number: int, numbers_per_draw: int) -> Dict:
+        """增强冷热号分析 - 温度量化计算"""
+        try:
+            import numpy as np
+            from scipy import stats
+
+            # 理论期望频率
+            theoretical_freq = (periods * numbers_per_draw) / max_number
+
+            # 计算统计指标
+            frequencies = list(frequency_dict.values())
+            if frequencies:
+                mean_freq = np.mean(frequencies)
+                std_freq = np.std(frequencies)
+                median_freq = np.median(frequencies)
+            else:
+                mean_freq = std_freq = median_freq = 0
+
+            enhanced_stats = {}
+
+            for num in range(1, max_number + 1):
+                observed_freq = frequency_dict.get(num, 0)
+
+                # 温度计算（标准化得分）
+                if std_freq > 0:
+                    temperature_score = (observed_freq - mean_freq) / std_freq
+                else:
+                    temperature_score = 0
+
+                # 温度等级
+                temperature_level = self._calculate_temperature_level(temperature_score)
+
+                # 相对热度（相对于理论期望）
+                relative_heat = observed_freq / theoretical_freq if theoretical_freq > 0 else 1
+
+                # 动态阈值计算
+                dynamic_threshold = self._calculate_dynamic_threshold(
+                    observed_freq, mean_freq, std_freq, periods
+                )
+
+                # 温度趋势分析
+                temperature_trend = self._calculate_temperature_trend(num, periods)
+
+                # 热度稳定性
+                heat_stability = self._calculate_heat_stability(num, periods)
+
+                enhanced_stats[num] = {
+                    'observed_frequency': observed_freq,
+                    'theoretical_frequency': theoretical_freq,
+                    'temperature_score': temperature_score,
+                    'temperature_level': temperature_level,
+                    'relative_heat': relative_heat,
+                    'dynamic_threshold': dynamic_threshold,
+                    'temperature_trend': temperature_trend,
+                    'heat_stability': heat_stability,
+                    'prediction_weight': self._calculate_temperature_prediction_weight(
+                        temperature_score, relative_heat, temperature_trend, heat_stability
+                    )
+                }
+
+            return enhanced_stats
+
+        except Exception as e:
+            logger_manager.error(f"增强冷热号分析失败: {e}")
+            return {}
+
+    def _calculate_temperature_level(self, temperature_score: float) -> str:
+        """计算温度等级"""
+        if temperature_score >= 2:
+            return 'extremely_hot'
+        elif temperature_score >= 1.5:
+            return 'very_hot'
+        elif temperature_score >= 1:
+            return 'hot'
+        elif temperature_score >= 0.5:
+            return 'warm'
+        elif temperature_score >= -0.5:
+            return 'normal'
+        elif temperature_score >= -1:
+            return 'cool'
+        elif temperature_score >= -1.5:
+            return 'cold'
+        else:
+            return 'extremely_cold'
+
+    def _calculate_dynamic_threshold(self, observed_freq: int, mean_freq: float,
+                                   std_freq: float, periods: int) -> Dict:
+        """计算动态阈值"""
+        try:
+            # 基于统计分布的动态阈值
+            hot_threshold = mean_freq + std_freq
+            very_hot_threshold = mean_freq + 2 * std_freq
+            cold_threshold = mean_freq - std_freq
+            very_cold_threshold = mean_freq - 2 * std_freq
+
+            # 基于期数调整阈值
+            period_adjustment = min(1.2, 1 + (periods - 100) / 1000)
+
+            return {
+                'very_hot_threshold': very_hot_threshold * period_adjustment,
+                'hot_threshold': hot_threshold * period_adjustment,
+                'cold_threshold': cold_threshold * period_adjustment,
+                'very_cold_threshold': very_cold_threshold * period_adjustment,
+                'current_classification': self._classify_by_threshold(
+                    observed_freq, hot_threshold, cold_threshold,
+                    very_hot_threshold, very_cold_threshold
+                )
+            }
+
+        except Exception as e:
+            logger_manager.error(f"计算动态阈值失败: {e}")
+            return {}
+
+    def _classify_by_threshold(self, freq: int, hot_thresh: float, cold_thresh: float,
+                             very_hot_thresh: float, very_cold_thresh: float) -> str:
+        """基于阈值分类"""
+        if freq >= very_hot_thresh:
+            return 'very_hot'
+        elif freq >= hot_thresh:
+            return 'hot'
+        elif freq <= very_cold_thresh:
+            return 'very_cold'
+        elif freq <= cold_thresh:
+            return 'cold'
+        else:
+            return 'normal'
+
+    def _calculate_temperature_trend(self, number: int, periods: int) -> Dict:
+        """计算温度趋势"""
+        try:
+            if periods < 20:
+                return {'trend': 'insufficient_data', 'slope': 0}
+
+            # 分析最近期数的温度变化
+            recent_periods = min(30, periods // 3)
+            recent_data = self.df.tail(recent_periods)
+
+            temperatures = []
+            window_size = 10
+
+            for i in range(len(recent_data) - window_size + 1):
+                window_data = recent_data.iloc[i:i+window_size]
+                freq_in_window = 0
+
+                for _, row in window_data.iterrows():
+                    front_balls, back_balls = data_manager.parse_balls(row)
+                    all_balls = front_balls + back_balls
+                    if number in all_balls:
+                        freq_in_window += 1
+
+                temperatures.append(freq_in_window)
+
+            if len(temperatures) < 3:
+                return {'trend': 'insufficient_data', 'slope': 0}
+
+            # 计算趋势
+            import numpy as np
+            x = np.arange(len(temperatures))
+            slope, intercept = np.polyfit(x, temperatures, 1)
+
+            # 趋势判断
+            if slope > 0.1:
+                trend = 'heating_up'
+            elif slope < -0.1:
+                trend = 'cooling_down'
+            else:
+                trend = 'stable'
+
+            return {
+                'trend': trend,
+                'slope': slope,
+                'recent_temperatures': temperatures,
+                'trend_strength': abs(slope)
+            }
+
+        except Exception as e:
+            logger_manager.error(f"计算温度趋势失败: {e}")
+            return {'trend': 'unknown', 'slope': 0}
+
+    def _calculate_heat_stability(self, number: int, periods: int) -> Dict:
+        """计算热度稳定性"""
+        try:
+            if periods < 30:
+                return {'stability': 'insufficient_data', 'variance': 0}
+
+            # 分段分析热度稳定性
+            segment_size = periods // 5
+            segment_frequencies = []
+
+            for i in range(5):
+                start_idx = i * segment_size
+                end_idx = (i + 1) * segment_size
+                segment_data = self.df.iloc[start_idx:end_idx]
+
+                freq_in_segment = 0
+                for _, row in segment_data.iterrows():
+                    front_balls, back_balls = data_manager.parse_balls(row)
+                    all_balls = front_balls + back_balls
+                    if number in all_balls:
+                        freq_in_segment += 1
+
+                segment_frequencies.append(freq_in_segment)
+
+            # 计算稳定性指标
+            import numpy as np
+            variance = np.var(segment_frequencies)
+            coefficient_of_variation = np.std(segment_frequencies) / np.mean(segment_frequencies) if np.mean(segment_frequencies) > 0 else 0
+
+            # 稳定性等级
+            if coefficient_of_variation < 0.3:
+                stability = 'very_stable'
+            elif coefficient_of_variation < 0.5:
+                stability = 'stable'
+            elif coefficient_of_variation < 0.8:
+                stability = 'moderate'
+            else:
+                stability = 'unstable'
+
+            return {
+                'stability': stability,
+                'variance': variance,
+                'coefficient_of_variation': coefficient_of_variation,
+                'segment_frequencies': segment_frequencies
+            }
+
+        except Exception as e:
+            logger_manager.error(f"计算热度稳定性失败: {e}")
+            return {'stability': 'unknown', 'variance': 0}
+
+    def _calculate_temperature_prediction_weight(self, temperature_score: float,
+                                               relative_heat: float, temperature_trend: Dict,
+                                               heat_stability: Dict) -> float:
+        """计算温度预测权重"""
+        try:
+            # 基础权重基于温度得分
+            base_weight = 0.5 + temperature_score * 0.1
+
+            # 相对热度调整
+            heat_adjustment = min(1.5, max(0.5, relative_heat))
+
+            # 趋势调整
+            trend_adjustment = 1.0
+            trend = temperature_trend.get('trend', 'stable')
+            if trend == 'heating_up':
+                trend_adjustment = 1.2
+            elif trend == 'cooling_down':
+                trend_adjustment = 0.8
+
+            # 稳定性调整
+            stability_adjustment = 1.0
+            stability = heat_stability.get('stability', 'moderate')
+            if stability in ['very_stable', 'stable']:
+                stability_adjustment = 1.1
+            elif stability == 'unstable':
+                stability_adjustment = 0.9
+
+            # 综合权重
+            final_weight = base_weight * heat_adjustment * trend_adjustment * stability_adjustment
+
+            return max(0.0, min(1.0, final_weight))
+
+        except Exception as e:
+            logger_manager.error(f"计算温度预测权重失败: {e}")
+            return 0.5
     
     def sum_analysis(self, periods=None) -> Dict:
         """和值分析"""
@@ -380,78 +1031,542 @@ class AdvancedAnalyzer:
         return result
     
     def bayesian_analysis(self, periods=300) -> Dict:
-        """贝叶斯分析"""
+        """增强贝叶斯分析 - 完整的贝叶斯推理过程"""
         if self.df is None:
             return {}
-        
-        cache_key = f"bayesian_analysis_{periods}"
+
+        cache_key = f"enhanced_bayesian_analysis_{periods}"
         cached_result = cache_manager.load_cache("analysis", cache_key)
         if cached_result:
             return cached_result
-        
+
         df_subset = self.df.tail(periods)
-        
-        # 计算先验概率
-        front_prior = {i: 1/35 for i in range(1, 36)}
-        back_prior = {i: 1/12 for i in range(1, 13)}
-        
-        # 计算似然
-        front_likelihood = defaultdict(float)
-        back_likelihood = defaultdict(float)
-        
-        for _, row in df_subset.iterrows():
-            front_balls, back_balls = data_manager.parse_balls(row)
-            
-            for ball in front_balls:
-                front_likelihood[ball] += 1
-            for ball in back_balls:
-                back_likelihood[ball] += 1
-        
-        # 标准化似然
-        front_total = sum(front_likelihood.values())
-        back_total = sum(back_likelihood.values())
-        
-        if front_total > 0:
-            for ball in front_likelihood:
-                front_likelihood[ball] /= front_total
-        
-        if back_total > 0:
-            for ball in back_likelihood:
-                back_likelihood[ball] /= back_total
-        
-        # 计算后验概率
-        front_posterior = {}
-        for ball in range(1, 36):
-            likelihood = front_likelihood.get(ball, 0.001)
-            prior = front_prior[ball]
-            front_posterior[ball] = likelihood * prior
-        
-        back_posterior = {}
-        for ball in range(1, 13):
-            likelihood = back_likelihood.get(ball, 0.001)
-            prior = back_prior[ball]
-            back_posterior[ball] = likelihood * prior
-        
-        # 标准化后验概率
-        front_post_sum = sum(front_posterior.values())
-        back_post_sum = sum(back_posterior.values())
-        
-        if front_post_sum > 0:
-            front_posterior = {k: v/front_post_sum for k, v in front_posterior.items()}
-        if back_post_sum > 0:
-            back_posterior = {k: v/back_post_sum for k, v in back_posterior.items()}
-        
+
+        # 增强贝叶斯分析
+        front_enhanced = self._enhanced_bayesian_analysis(df_subset, 35, 5)
+        back_enhanced = self._enhanced_bayesian_analysis(df_subset, 12, 2)
+
+        # 传统贝叶斯分析（保持兼容性）
+        traditional_result = self._traditional_bayesian_analysis(df_subset)
+
         result = {
-            'front_posterior': front_posterior,
-            'back_posterior': back_posterior,
-            'front_likelihood': dict(front_likelihood),
-            'back_likelihood': dict(back_likelihood),
+            'front_enhanced': front_enhanced,
+            'back_enhanced': back_enhanced,
+            'front_posterior': traditional_result['front_posterior'],
+            'back_posterior': traditional_result['back_posterior'],
+            'front_likelihood': traditional_result['front_likelihood'],
+            'back_likelihood': traditional_result['back_likelihood'],
             'analysis_periods': periods,
             'timestamp': datetime.now().isoformat()
         }
-        
+
         cache_manager.save_cache("analysis", cache_key, result)
         return result
+
+    def _enhanced_bayesian_analysis(self, df_subset, max_number: int, numbers_per_draw: int) -> Dict:
+        """增强贝叶斯分析 - 完整的贝叶斯推理"""
+        try:
+            import numpy as np
+            from scipy import stats
+
+            enhanced_stats = {}
+
+            # 多层次先验概率设计
+            priors = self._calculate_hierarchical_priors(df_subset, max_number, numbers_per_draw)
+
+            # 多维度似然函数
+            likelihoods = self._calculate_multi_dimensional_likelihood(df_subset, max_number)
+
+            # 证据计算（边际似然）
+            evidence = self._calculate_bayesian_evidence(priors, likelihoods, max_number)
+
+            for num in range(1, max_number + 1):
+                # 贝叶斯定理完整应用
+                prior = priors.get(num, 1/max_number)
+                likelihood = likelihoods.get(num, {})
+
+                # 后验概率计算
+                posterior = self._calculate_posterior_distribution(prior, likelihood, evidence.get(num, 1))
+
+                # 置信区间计算
+                confidence_interval = self._calculate_bayesian_confidence_interval(posterior, 0.95)
+
+                # 预测分布
+                predictive_distribution = self._calculate_predictive_distribution(posterior, likelihood)
+
+                # 贝叶斯因子
+                bayes_factor = self._calculate_bayes_factor(likelihood, prior, max_number)
+
+                # 信息增益
+                information_gain = self._calculate_information_gain(prior, posterior)
+
+                enhanced_stats[num] = {
+                    'prior_probability': prior,
+                    'likelihood_components': likelihood,
+                    'posterior_distribution': posterior,
+                    'confidence_interval': confidence_interval,
+                    'predictive_distribution': predictive_distribution,
+                    'bayes_factor': bayes_factor,
+                    'information_gain': information_gain,
+                    'evidence': evidence.get(num, 1),
+                    'prediction_weight': self._calculate_bayesian_prediction_weight(
+                        posterior, bayes_factor, information_gain
+                    )
+                }
+
+            return enhanced_stats
+
+        except Exception as e:
+            logger_manager.error(f"增强贝叶斯分析失败: {e}")
+            return {}
+
+    def _calculate_hierarchical_priors(self, df_subset, max_number: int, numbers_per_draw: int) -> Dict:
+        """计算层次化先验概率"""
+        try:
+            import numpy as np
+
+            # 无信息先验（均匀分布）
+            uniform_prior = 1 / max_number
+
+            # 基于历史频率的信息先验
+            historical_counts = Counter()
+            for _, row in df_subset.iterrows():
+                if max_number == 35:  # 前区
+                    front_balls, _ = data_manager.parse_balls(row)
+                    historical_counts.update(front_balls)
+                else:  # 后区
+                    _, back_balls = data_manager.parse_balls(row)
+                    historical_counts.update(back_balls)
+
+            total_observations = sum(historical_counts.values())
+
+            # 贝塔分布先验参数
+            alpha = 1  # 伪计数
+            beta = max_number - 1
+
+            priors = {}
+            for num in range(1, max_number + 1):
+                observed_count = historical_counts.get(num, 0)
+
+                # 贝塔-二项共轭先验
+                posterior_alpha = alpha + observed_count
+                posterior_beta = beta + total_observations - observed_count
+
+                # 期望值作为先验
+                informative_prior = posterior_alpha / (posterior_alpha + posterior_beta)
+
+                # 混合先验（无信息 + 信息）
+                mixing_weight = min(0.8, total_observations / (total_observations + 100))
+                mixed_prior = (1 - mixing_weight) * uniform_prior + mixing_weight * informative_prior
+
+                priors[num] = mixed_prior
+
+            return priors
+
+        except Exception as e:
+            logger_manager.error(f"计算层次化先验失败: {e}")
+            return {i: 1/max_number for i in range(1, max_number + 1)}
+
+    def _calculate_multi_dimensional_likelihood(self, df_subset, max_number: int) -> Dict:
+        """计算多维度似然函数"""
+        try:
+            import numpy as np
+
+            likelihoods = {}
+
+            for num in range(1, max_number + 1):
+                likelihood_components = {}
+
+                # 1. 频率似然
+                frequency_likelihood = self._calculate_frequency_likelihood(df_subset, num, max_number)
+
+                # 2. 位置似然（在开奖号码中的位置偏好）
+                position_likelihood = self._calculate_position_likelihood(df_subset, num, max_number)
+
+                # 3. 时间似然（时间序列模式）
+                temporal_likelihood = self._calculate_temporal_likelihood(df_subset, num)
+
+                # 4. 组合似然（与其他号码的组合模式）
+                combination_likelihood = self._calculate_combination_likelihood(df_subset, num, max_number)
+
+                likelihood_components = {
+                    'frequency': frequency_likelihood,
+                    'position': position_likelihood,
+                    'temporal': temporal_likelihood,
+                    'combination': combination_likelihood,
+                    'combined': frequency_likelihood * position_likelihood * temporal_likelihood * combination_likelihood
+                }
+
+                likelihoods[num] = likelihood_components
+
+            return likelihoods
+
+        except Exception as e:
+            logger_manager.error(f"计算多维度似然失败: {e}")
+            return {}
+
+    def _traditional_bayesian_analysis(self, df_subset) -> Dict:
+        """传统贝叶斯分析（保持兼容性）"""
+        try:
+            # 计算先验概率
+            front_prior = {i: 1/35 for i in range(1, 36)}
+            back_prior = {i: 1/12 for i in range(1, 13)}
+
+            # 计算似然
+            front_likelihood = defaultdict(float)
+            back_likelihood = defaultdict(float)
+
+            for _, row in df_subset.iterrows():
+                front_balls, back_balls = data_manager.parse_balls(row)
+
+                for ball in front_balls:
+                    front_likelihood[ball] += 1
+                for ball in back_balls:
+                    back_likelihood[ball] += 1
+
+            # 标准化似然
+            front_total = sum(front_likelihood.values())
+            back_total = sum(back_likelihood.values())
+
+            if front_total > 0:
+                for ball in front_likelihood:
+                    front_likelihood[ball] /= front_total
+
+            if back_total > 0:
+                for ball in back_likelihood:
+                    back_likelihood[ball] /= back_total
+
+            # 计算后验概率
+            front_posterior = {}
+            for ball in range(1, 36):
+                likelihood = front_likelihood.get(ball, 0.001)
+                prior = front_prior[ball]
+                front_posterior[ball] = likelihood * prior
+
+            back_posterior = {}
+            for ball in range(1, 13):
+                likelihood = back_likelihood.get(ball, 0.001)
+                prior = back_prior[ball]
+                back_posterior[ball] = likelihood * prior
+
+            # 标准化后验概率
+            front_post_sum = sum(front_posterior.values())
+            back_post_sum = sum(back_posterior.values())
+
+            if front_post_sum > 0:
+                front_posterior = {k: v/front_post_sum for k, v in front_posterior.items()}
+            if back_post_sum > 0:
+                back_posterior = {k: v/back_post_sum for k, v in back_posterior.items()}
+
+            return {
+                'front_posterior': front_posterior,
+                'back_posterior': back_posterior,
+                'front_likelihood': dict(front_likelihood),
+                'back_likelihood': dict(back_likelihood)
+            }
+
+        except Exception as e:
+            logger_manager.error(f"传统贝叶斯分析失败: {e}")
+            return {}
+
+    def _calculate_frequency_likelihood(self, df_subset, number: int, max_number: int) -> float:
+        """计算频率似然"""
+        try:
+            count = 0
+            total = 0
+
+            for _, row in df_subset.iterrows():
+                if max_number == 35:  # 前区
+                    front_balls, _ = data_manager.parse_balls(row)
+                    if number in front_balls:
+                        count += 1
+                    total += 1
+                else:  # 后区
+                    _, back_balls = data_manager.parse_balls(row)
+                    if number in back_balls:
+                        count += 1
+                    total += 1
+
+            # 贝塔分布似然
+            if total > 0:
+                return (count + 1) / (total + 2)  # 拉普拉斯平滑
+            else:
+                return 1 / max_number
+
+        except Exception as e:
+            logger_manager.error(f"计算频率似然失败: {e}")
+            return 1 / max_number
+
+    def _calculate_position_likelihood(self, df_subset, number: int, max_number: int) -> float:
+        """计算位置似然"""
+        try:
+            position_counts = [0] * 5 if max_number == 35 else [0] * 2
+            total_appearances = 0
+
+            for _, row in df_subset.iterrows():
+                if max_number == 35:  # 前区
+                    front_balls, _ = data_manager.parse_balls(row)
+                    if number in front_balls:
+                        sorted_balls = sorted(front_balls)
+                        position = sorted_balls.index(number)
+                        position_counts[position] += 1
+                        total_appearances += 1
+                else:  # 后区
+                    _, back_balls = data_manager.parse_balls(row)
+                    if number in back_balls:
+                        sorted_balls = sorted(back_balls)
+                        position = sorted_balls.index(number)
+                        position_counts[position] += 1
+                        total_appearances += 1
+
+            # 计算位置偏好似然
+            if total_appearances > 0:
+                # 均匀分布的期望
+                expected_per_position = total_appearances / len(position_counts)
+                # 计算偏差
+                variance = sum((count - expected_per_position) ** 2 for count in position_counts)
+                # 转换为似然（方差越小，似然越高）
+                likelihood = 1 / (1 + variance / total_appearances)
+            else:
+                likelihood = 1.0
+
+            return likelihood
+
+        except Exception as e:
+            logger_manager.error(f"计算位置似然失败: {e}")
+            return 1.0
+
+    def _calculate_temporal_likelihood(self, df_subset, number: int) -> float:
+        """计算时间似然"""
+        try:
+            import numpy as np
+
+            appearances = []
+            for i, (_, row) in enumerate(df_subset.iterrows()):
+                front_balls, back_balls = data_manager.parse_balls(row)
+                all_balls = front_balls + back_balls
+                if number in all_balls:
+                    appearances.append(i)
+
+            if len(appearances) < 2:
+                return 1.0
+
+            # 计算间隔
+            intervals = [appearances[i+1] - appearances[i] for i in range(len(appearances)-1)]
+
+            # 指数分布似然（间隔时间的分布）
+            if intervals:
+                mean_interval = np.mean(intervals)
+                # 指数分布的似然
+                lambda_param = 1 / mean_interval if mean_interval > 0 else 1
+                likelihood = lambda_param * np.exp(-lambda_param * (len(df_subset) - appearances[-1]))
+            else:
+                likelihood = 1.0
+
+            return min(10.0, max(0.1, likelihood))
+
+        except Exception as e:
+            logger_manager.error(f"计算时间似然失败: {e}")
+            return 1.0
+
+    def _calculate_combination_likelihood(self, df_subset, number: int, max_number: int) -> float:
+        """计算组合似然"""
+        try:
+            # 计算该号码与其他号码的共现频率
+            co_occurrence = Counter()
+            total_combinations = 0
+
+            for _, row in df_subset.iterrows():
+                if max_number == 35:  # 前区
+                    front_balls, _ = data_manager.parse_balls(row)
+                    if number in front_balls:
+                        for other_ball in front_balls:
+                            if other_ball != number:
+                                co_occurrence[other_ball] += 1
+                        total_combinations += len(front_balls) - 1
+                else:  # 后区
+                    _, back_balls = data_manager.parse_balls(row)
+                    if number in back_balls:
+                        for other_ball in back_balls:
+                            if other_ball != number:
+                                co_occurrence[other_ball] += 1
+                        total_combinations += len(back_balls) - 1
+
+            if total_combinations == 0:
+                return 1.0
+
+            # 计算组合多样性（熵）
+            probabilities = [count / total_combinations for count in co_occurrence.values()]
+            entropy = -sum(p * np.log2(p) for p in probabilities if p > 0)
+
+            # 标准化熵作为似然
+            max_entropy = np.log2(max_number - 1)
+            normalized_entropy = entropy / max_entropy if max_entropy > 0 else 0
+
+            return normalized_entropy
+
+        except Exception as e:
+            logger_manager.error(f"计算组合似然失败: {e}")
+            return 1.0
+
+    def _calculate_bayesian_evidence(self, priors: Dict, likelihoods: Dict, max_number: int) -> Dict:
+        """计算贝叶斯证据（边际似然）"""
+        try:
+            evidence = {}
+
+            for num in range(1, max_number + 1):
+                prior = priors.get(num, 1/max_number)
+                likelihood_components = likelihoods.get(num, {})
+                combined_likelihood = likelihood_components.get('combined', 1.0)
+
+                # 边际似然 = 先验 × 似然
+                evidence[num] = prior * combined_likelihood
+
+            # 标准化证据
+            total_evidence = sum(evidence.values())
+            if total_evidence > 0:
+                evidence = {k: v / total_evidence for k, v in evidence.items()}
+
+            return evidence
+
+        except Exception as e:
+            logger_manager.error(f"计算贝叶斯证据失败: {e}")
+            return {}
+
+    def _calculate_posterior_distribution(self, prior: float, likelihood: Dict, evidence: float) -> Dict:
+        """计算后验分布"""
+        try:
+            combined_likelihood = likelihood.get('combined', 1.0)
+
+            # 贝叶斯定理：后验 = (似然 × 先验) / 证据
+            posterior_mean = (combined_likelihood * prior) / evidence if evidence > 0 else prior
+
+            # 估计后验分布的参数（假设贝塔分布）
+            # 使用矩估计法
+            alpha = posterior_mean * 100  # 伪观测数
+            beta = (1 - posterior_mean) * 100
+
+            return {
+                'mean': posterior_mean,
+                'alpha': alpha,
+                'beta': beta,
+                'variance': (alpha * beta) / ((alpha + beta) ** 2 * (alpha + beta + 1)),
+                'mode': (alpha - 1) / (alpha + beta - 2) if alpha > 1 and beta > 1 else posterior_mean
+            }
+
+        except Exception as e:
+            logger_manager.error(f"计算后验分布失败: {e}")
+            return {'mean': prior, 'alpha': 1, 'beta': 1, 'variance': 0.25, 'mode': prior}
+
+    def _calculate_bayesian_confidence_interval(self, posterior: Dict, confidence_level: float) -> Tuple[float, float]:
+        """计算贝叶斯置信区间"""
+        try:
+            from scipy import stats
+
+            alpha = posterior.get('alpha', 1)
+            beta = posterior.get('beta', 1)
+
+            # 贝塔分布的置信区间
+            alpha_level = (1 - confidence_level) / 2
+            lower = stats.beta.ppf(alpha_level, alpha, beta)
+            upper = stats.beta.ppf(1 - alpha_level, alpha, beta)
+
+            return (lower, upper)
+
+        except Exception as e:
+            logger_manager.error(f"计算贝叶斯置信区间失败: {e}")
+            return (0.0, 1.0)
+
+    def _calculate_predictive_distribution(self, posterior: Dict, likelihood: Dict) -> Dict:
+        """计算预测分布"""
+        try:
+            posterior_mean = posterior.get('mean', 0.5)
+            posterior_variance = posterior.get('variance', 0.25)
+
+            # 预测分布考虑参数不确定性
+            predictive_mean = posterior_mean
+
+            # 预测方差 = 数据方差 + 参数不确定性
+            data_variance = posterior_mean * (1 - posterior_mean)  # 二项分布方差
+            predictive_variance = data_variance + posterior_variance
+
+            return {
+                'mean': predictive_mean,
+                'variance': predictive_variance,
+                'std': np.sqrt(predictive_variance)
+            }
+
+        except Exception as e:
+            logger_manager.error(f"计算预测分布失败: {e}")
+            return {'mean': 0.5, 'variance': 0.25, 'std': 0.5}
+
+    def _calculate_bayes_factor(self, likelihood: Dict, prior: float, max_number: int) -> float:
+        """计算贝叶斯因子"""
+        try:
+            # 贝叶斯因子 = 模型1的边际似然 / 模型2的边际似然
+            # 这里比较当前模型与均匀分布模型
+
+            combined_likelihood = likelihood.get('combined', 1.0)
+            uniform_likelihood = 1.0  # 均匀分布的似然
+
+            # 边际似然
+            model_evidence = combined_likelihood * prior
+            null_evidence = uniform_likelihood * (1 / max_number)
+
+            bayes_factor = model_evidence / null_evidence if null_evidence > 0 else 1.0
+
+            return bayes_factor
+
+        except Exception as e:
+            logger_manager.error(f"计算贝叶斯因子失败: {e}")
+            return 1.0
+
+    def _calculate_information_gain(self, prior: float, posterior: Dict) -> float:
+        """计算信息增益（KL散度）"""
+        try:
+            posterior_mean = posterior.get('mean', prior)
+
+            # KL散度：KL(posterior || prior)
+            if prior > 0 and posterior_mean > 0:
+                kl_divergence = posterior_mean * np.log(posterior_mean / prior)
+                if posterior_mean < 1:
+                    kl_divergence += (1 - posterior_mean) * np.log((1 - posterior_mean) / (1 - prior))
+            else:
+                kl_divergence = 0
+
+            return max(0, kl_divergence)
+
+        except Exception as e:
+            logger_manager.error(f"计算信息增益失败: {e}")
+            return 0.0
+
+    def _calculate_bayesian_prediction_weight(self, posterior: Dict, bayes_factor: float,
+                                            information_gain: float) -> float:
+        """计算贝叶斯预测权重"""
+        try:
+            posterior_mean = posterior.get('mean', 0.5)
+            posterior_variance = posterior.get('variance', 0.25)
+
+            # 基础权重基于后验均值
+            base_weight = posterior_mean
+
+            # 贝叶斯因子调整（证据强度）
+            bf_adjustment = min(2.0, max(0.5, np.log(bayes_factor + 1)))
+
+            # 信息增益调整（学习程度）
+            ig_adjustment = min(1.5, 1 + information_gain)
+
+            # 不确定性调整（方差越小，权重越高）
+            uncertainty_adjustment = 1 / (1 + posterior_variance * 4)
+
+            # 综合权重
+            final_weight = base_weight * bf_adjustment * ig_adjustment * uncertainty_adjustment
+
+            return max(0.0, min(1.0, final_weight))
+
+        except Exception as e:
+            logger_manager.error(f"计算贝叶斯预测权重失败: {e}")
+            return 0.5
     
     def correlation_analysis(self, periods=200) -> Dict:
         """相关性分析"""

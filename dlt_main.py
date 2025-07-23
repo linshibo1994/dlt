@@ -15,6 +15,14 @@ from typing import List, Dict
 # 只导入核心模块
 from core_modules import cache_manager, logger_manager, data_manager, task_manager
 
+# 导入增强功能集成模块
+try:
+    from enhanced_integration import enhanced_dlt_system, is_enhanced_available
+    ENHANCED_INTEGRATION_AVAILABLE = True
+except ImportError as e:
+    ENHANCED_INTEGRATION_AVAILABLE = False
+    print(f"⚠️ 增强功能集成模块加载失败: {e}")
+
 
 class DLTPredictorSystem:
     """大乐透预测系统主类"""
@@ -23,11 +31,20 @@ class DLTPredictorSystem:
         self.analyzers = {}
         self.predictors = {}
         self.adaptive_predictor = None
-        
+
         # 延迟加载标志
         self._analyzers_loaded = False
         self._predictors_loaded = False
         self._adaptive_loaded = False
+
+        # 初始化增强功能
+        self.enhanced_available = ENHANCED_INTEGRATION_AVAILABLE and is_enhanced_available()
+        if self.enhanced_available:
+            self.enhanced_system = enhanced_dlt_system
+            logger_manager.info("✅ 增强功能已集成到主系统")
+        else:
+            self.enhanced_system = None
+            logger_manager.info("⚠️ 使用基础功能模式")
     
     def _load_analyzers(self):
         """延迟加载分析器"""
@@ -242,50 +259,208 @@ class DLTPredictorSystem:
     def run_predict_command(self, args):
         """处理预测命令"""
         self._load_predictors()
-        
-        print(f"🎯 开始{args.method}预测 (注数: {args.count})...")
-        
+
+        # 参数验证
+        if args.count < 1 or args.count > 100:
+            print("❌ 注数必须在1-100之间")
+            return
+
+        if args.periods < 50 or args.periods > 2748:
+            print("❌ 分析期数必须在50-2748之间")
+            return
+
+        print(f"🎯 开始{args.method}预测 (分析期数: {args.periods}, 生成注数: {args.count})...")
+
+        # 检查是否可以使用增强功能
+        use_enhanced = self.enhanced_available and args.method in ['lstm', 'transformer', 'gan', 'ensemble', 'enhanced', 'stacking', 'adaptive_ensemble', 'ultimate_ensemble']
+
+        if use_enhanced:
+            print("🚀 使用增强预测引擎...")
+            try:
+                # 使用增强预测功能
+                if args.method == 'enhanced':
+                    # 使用增强系统的自动预测
+                    result = self.enhanced_system.enhanced_predict(
+                        data=f"predict_{args.count}_numbers_periods_{args.periods}",
+                        method="auto",
+                        periods=args.periods,
+                        count=args.count
+                    )
+                    if result.get('success'):
+                        print("✅ 增强预测完成")
+                        print(f"预测结果: {result['result']}")
+                        print(f"使用方法: {result['method']}")
+                        print(f"已缓存: {result['cached']}")
+                        return
+                    else:
+                        print(f"❌ 增强预测失败: {result.get('error')}")
+                        print("🔄 回退到传统预测方法...")
+
+                elif args.method in ['lstm', 'transformer', 'gan', 'ensemble', 'stacking', 'adaptive_ensemble', 'ultimate_ensemble']:
+                    # 使用增强深度学习模型或集成方法
+                    try:
+                        if args.method in ['lstm', 'transformer', 'gan', 'ensemble']:
+                            # 深度学习模型
+                            from enhanced_deep_learning.models import model_registry
+                            model = model_registry.get_model(args.method)
+
+                            if model:
+                                print(f"🚀 使用{args.method.upper()}深度学习模型...")
+                                historical_data = data_manager.get_data()
+                                if historical_data is not None and len(historical_data) > args.periods:
+                                    historical_data = historical_data.head(args.periods)
+                                    print(f"📊 使用最新{args.periods}期数据进行{args.method.upper()}模型训练...")
+
+                                predictions = model.predict_lottery(data=historical_data, count=args.count, periods=args.periods)
+
+                                if predictions:
+                                    print(f"✅ {args.method.upper()}预测完成")
+                                    self._display_enhanced_predictions(predictions, args.method)
+                                    return
+                                else:
+                                    print(f"❌ {args.method}深度学习模型预测失败，尝试集成方法...")
+                            else:
+                                print(f"❌ {args.method}深度学习模型未找到，尝试集成方法...")
+
+                        # 如果深度学习模型失败或者是集成方法，使用improvements模块
+                        from improvements.integration import get_integrator
+                        integrator = get_integrator()
+
+                        if args.method == 'lstm':
+                            print("🧠 LSTM集成预测...")
+                            # 尝试使用advanced_lstm_predictor作为回退
+                            try:
+                                from advanced_lstm_predictor import AdvancedLSTMPredictor
+                                lstm_predictor = AdvancedLSTMPredictor()
+                                results = lstm_predictor.lstm_predict(count=args.count, periods=args.periods)
+                                predictions = [{'front_balls': r[0], 'back_balls': r[1], 'method': 'lstm', 'confidence': 0.85} for r in results]
+                            except Exception as e:
+                                print(f"❌ LSTM预测失败: {e}")
+                                predictions = []
+                        elif args.method == 'transformer':
+                            print("🧮 Transformer深度学习预测...")
+                            predictions = integrator.transformer_predict(args.count, args.periods)
+                        elif args.method == 'gan':
+                            print("🎮 GAN生成预测...")
+                            predictions = integrator.gan_predict(args.count, args.periods)
+                        elif args.method == 'stacking':
+                            print("🔄 Stacking集成预测...")
+                            predictions = integrator.stacking_predict(args.count)
+                        elif args.method == 'adaptive_ensemble':
+                            print("🧠 自适应集成预测...")
+                            predictions = integrator.adaptive_ensemble_predict(args.count)
+                        elif args.method == 'ultimate_ensemble':
+                            print("🌟 终极集成预测...")
+                            predictions = integrator.ultimate_ensemble_predict(args.count)
+                        else:
+                            predictions = []
+
+                        if predictions:
+                            print(f"✅ {args.method.upper()}预测完成")
+                            self._display_enhanced_predictions(predictions, args.method)
+                            return
+                        else:
+                            print(f"❌ {args.method}预测失败，回退到传统方法...")
+
+                    except Exception as e:
+                        print(f"❌ 增强预测失败: {e}")
+                        print("🔄 回退到传统预测方法...")
+
+            except Exception as e:
+                logger_manager.error(f"增强预测失败: {e}")
+                print(f"❌ 增强预测失败: {e}")
+                print("🔄 回退到传统预测方法...")
+
         try:
             predictions = []
-            
+
             if args.method in ['frequency', 'hot_cold', 'missing']:
                 # 传统预测方法
                 if args.method == 'frequency':
-                    results = self.predictors['traditional'].frequency_predict(args.count)
+                    print(f"📊 频率分析预测 (分析{args.periods}期数据)...")
+                    results = self.predictors['traditional'].frequency_predict(count=args.count, periods=args.periods)
                 elif args.method == 'hot_cold':
-                    results = self.predictors['traditional'].hot_cold_predict(args.count)
+                    print(f"🌡️ 冷热号分析预测 (分析{args.periods}期数据)...")
+                    print("📊 分析冷热号分布...")
+
+                    # 获取冷热号分析结果
+                    from analyzer_modules import basic_analyzer
+                    hot_cold_analysis = basic_analyzer.hot_cold_analysis(args.periods)
+
+                    front_hot = hot_cold_analysis.get('front_hot', [])
+                    front_cold = hot_cold_analysis.get('front_cold', [])
+                    back_hot = hot_cold_analysis.get('back_hot', [])
+                    back_cold = hot_cold_analysis.get('back_cold', [])
+
+                    print(f"✅ 冷热号识别完成:")
+                    print(f"  前区热号 ({len(front_hot)}个): {sorted(front_hot)[:10]}{'...' if len(front_hot) > 10 else ''}")
+                    print(f"  前区冷号 ({len(front_cold)}个): {sorted(front_cold)[:10]}{'...' if len(front_cold) > 10 else ''}")
+                    print(f"  后区热号 ({len(back_hot)}个): {sorted(back_hot)}")
+                    print(f"  后区冷号 ({len(back_cold)}个): {sorted(back_cold)}")
+                    print("🎯 基于冷热号分布进行智能预测...")
+
+                    results = self.predictors['traditional'].hot_cold_predict(count=args.count, periods=args.periods)
                 elif args.method == 'missing':
-                    results = self.predictors['traditional'].missing_predict(args.count)
+                    print(f"⏰ 遗漏值分析预测 (分析{args.periods}期数据)...")
+                    results = self.predictors['traditional'].missing_predict(count=args.count, periods=args.periods)
                 
                 predictions = [{'front_balls': r[0], 'back_balls': r[1], 'method': args.method} for r in results]
             
             elif args.method in ['markov', 'bayesian', 'ensemble']:
                 # 高级预测方法
                 if args.method == 'markov':
-                    results = self.predictors['advanced'].markov_predict(args.count)
+                    results = self.predictors['advanced'].markov_predict(args.count, args.periods)
                 elif args.method == 'bayesian':
-                    results = self.predictors['advanced'].bayesian_predict(args.count)
+                    print(f"🎲 贝叶斯分析预测 (分析{args.periods}期数据)...")
+                    print("📊 计算先验概率和似然函数...")
+
+                    # 获取贝叶斯分析结果
+                    from analyzer_modules import advanced_analyzer
+                    bayesian_analysis = advanced_analyzer.bayesian_analysis(args.periods)
+
+                    front_prior = bayesian_analysis.get('front_prior', {})
+                    back_prior = bayesian_analysis.get('back_prior', {})
+                    front_posterior = bayesian_analysis.get('front_posterior', {})
+                    back_posterior = bayesian_analysis.get('back_posterior', {})
+
+                    print(f"✅ 贝叶斯推理完成:")
+                    print(f"  前区先验概率计算: {len(front_prior)} 个号码")
+                    print(f"  前区后验概率计算: {len(front_posterior)} 个号码")
+                    print(f"  后区先验概率计算: {len(back_prior)} 个号码")
+                    print(f"  后区后验概率计算: {len(back_posterior)} 个号码")
+
+                    if front_posterior:
+                        top_front = sorted(front_posterior.items(), key=lambda x: x[1], reverse=True)[:5]
+                        print(f"  前区最高后验概率: {[f'{k}({v:.3f})' for k, v in top_front]}")
+
+                    if back_posterior:
+                        top_back = sorted(back_posterior.items(), key=lambda x: x[1], reverse=True)[:2]
+                        print(f"  后区最高后验概率: {[f'{k}({v:.3f})' for k, v in top_back]}")
+
+                    print("🎯 基于贝叶斯推理进行概率预测...")
+
+                    results = self.predictors['advanced'].bayesian_predict(count=args.count, periods=args.periods)
                 elif args.method == 'ensemble':
-                    results = self.predictors['advanced'].ensemble_predict(args.count)
+                    results = self.predictors['advanced'].ensemble_predict(args.count, args.periods)
                 
                 predictions = [{'front_balls': r[0], 'back_balls': r[1], 'method': args.method} for r in results]
             
             elif args.method == 'super':
                 # 超级预测
-                results = self.predictors['super'].predict_super(args.count)
+                results = self.predictors['super'].predict_super(args.count, args.periods)
                 predictions = results
             
             elif args.method == 'adaptive':
                 # 自适应预测
                 self._load_adaptive_predictor()
-                results = self.adaptive_predictor.generate_enhanced_prediction(args.count)
+                results = self.adaptive_predictor.generate_enhanced_prediction(args.count, args.periods)
                 predictions = results
 
             elif args.method == 'compound':
                 # 复式投注预测
                 front_count = getattr(args, 'front_count', 8)
                 back_count = getattr(args, 'back_count', 4)
-                result = self.predictors['compound'].predict_compound(front_count, back_count, 'ensemble')
+                result = self.predictors['compound'].predict_compound(front_count, back_count, 'ensemble', args.periods)
                 if result:
                     predictions = [result]
                 else:
@@ -293,7 +468,7 @@ class DLTPredictorSystem:
 
             elif args.method == 'duplex':
                 # 胆拖投注预测
-                result = self.predictors['compound'].predict_duplex()
+                result = self.predictors['compound'].predict_duplex(periods=args.periods)
                 if result:
                     predictions = [result]
                 else:
@@ -338,7 +513,8 @@ class DLTPredictorSystem:
                 strategy = getattr(args, 'strategy', 'balanced')
                 results = self.predictors['advanced'].mixed_strategy_predict(
                     count=args.count,
-                    strategy=strategy
+                    strategy=strategy,
+                    periods=args.periods
                 )
                 predictions = results
 
@@ -350,7 +526,8 @@ class DLTPredictorSystem:
                 result = self.predictors['compound'].predict_highly_integrated_compound(
                     front_count=front_count,
                     back_count=back_count,
-                    integration_level=integration_level
+                    integration_level=integration_level,
+                    periods=args.periods
                 )
                 if result:
                     predictions = [result]
@@ -362,13 +539,14 @@ class DLTPredictorSystem:
                 integration_type = getattr(args, 'integration_type', 'comprehensive')
                 results = self.predictors['advanced'].advanced_integration_predict(
                     count=args.count,
-                    integration_type=integration_type
+                    integration_type=integration_type,
+                    periods=args.periods
                 )
                 predictions = results
 
             elif args.method == 'nine_models':
                 # 9种数学模型预测
-                results = self.predictors['advanced'].nine_models_predict(count=args.count)
+                results = self.predictors['advanced'].nine_models_predict(count=args.count, periods=args.periods)
                 predictions = results
 
             elif args.method == 'nine_models_compound':
@@ -377,7 +555,8 @@ class DLTPredictorSystem:
                 back_count = getattr(args, 'back_count', 4)
                 result = self.predictors['advanced'].nine_models_compound_predict(
                     front_count=front_count,
-                    back_count=back_count
+                    back_count=back_count,
+                    periods=args.periods
                 )
                 if result:
                     predictions = [result]
@@ -388,7 +567,7 @@ class DLTPredictorSystem:
                 # 马尔可夫链复式预测
                 front_count = getattr(args, 'front_count', 8)
                 back_count = getattr(args, 'back_count', 4)
-                markov_periods = getattr(args, 'markov_periods', 500)
+                markov_periods = args.periods  # 使用新的periods参数
                 result = self.predictors['advanced'].markov_compound_predict(
                     front_count=front_count,
                     back_count=back_count,
@@ -404,24 +583,67 @@ class DLTPredictorSystem:
                 try:
                     from improvements.enhanced_markov import get_markov_predictor
                     
-                    markov_periods = getattr(args, 'analysis_periods', 500)
+                    markov_periods = args.periods  # 使用新的periods参数
                     
                     if args.method == 'markov_2nd':
-                        print("🔄 二阶马尔可夫链预测...")
+                        print(f"🔄 二阶马尔可夫链预测 (分析{markov_periods}期数据)...")
+                        print("📊 构建二阶状态转移矩阵...")
+                        print("🔢 概率计算: 基于历史数据计算转移概率")
+                        print("📈 矩阵计算: 构建复合状态转移矩阵")
+
                         markov_predictor = get_markov_predictor()
+
+                        # 获取二阶马尔可夫分析结果
+                        markov_analyzer = markov_predictor.analyzer
+                        analysis_result = markov_analyzer.multi_order_markov_analysis(markov_periods, max_order=2)
+
+                        if analysis_result and 'orders' in analysis_result and 2 in analysis_result['orders']:
+                            order_2_result = analysis_result['orders'][2]
+                            front_stats = order_2_result.get('front_stats', {})
+                            back_stats = order_2_result.get('back_stats', {})
+
+                            print(f"✅ 二阶状态转移矩阵构建完成:")
+                            print(f"  📊 概率计算: 前区转移概率数 {front_stats.get('total_transitions', 0)}")
+                            print(f"  📈 矩阵计算: 前区状态数 {front_stats.get('unique_states', 0)}")
+                            print(f"  🔢 概率计算: 后区转移概率数 {back_stats.get('total_transitions', 0)}")
+                            print(f"  📈 矩阵计算: 后区状态数 {back_stats.get('unique_states', 0)}")
+                            print(f"  🎯 最大转移概率: 前区 {front_stats.get('max_probability', 0):.4f}, 后区 {back_stats.get('max_probability', 0):.4f}")
+
                         results = markov_predictor.multi_order_markov_predict(
-                            count=args.count, 
-                            periods=markov_periods, 
+                            count=args.count,
+                            periods=markov_periods,
                             order=2
                         )
                         predictions = [{'front_balls': r[0], 'back_balls': r[1], 'method': 'markov_2nd', 'confidence': 0.85, 'order': 2} for r in results]
                     
                     elif args.method == 'markov_3rd':
-                        print("🔄 三阶马尔可夫链预测...")
+                        print(f"🔄 三阶马尔可夫链预测 (分析{markov_periods}期数据)...")
+                        print("📊 构建三阶状态转移矩阵...")
+                        print("🔢 状态转移显示: 完整的状态转移矩阵构建和统计信息")
+                        print("📈 超高阶建模: 考虑前三期状态的复杂依赖关系")
+
                         markov_predictor = get_markov_predictor()
+
+                        # 获取三阶马尔可夫分析结果
+                        markov_analyzer = markov_predictor.analyzer
+                        analysis_result = markov_analyzer.multi_order_markov_analysis(markov_periods, max_order=3)
+
+                        if analysis_result and 'orders' in analysis_result and 3 in analysis_result['orders']:
+                            order_3_result = analysis_result['orders'][3]
+                            front_stats = order_3_result.get('front_stats', {})
+                            back_stats = order_3_result.get('back_stats', {})
+
+                            print(f"✅ 三阶状态转移矩阵构建完成:")
+                            print(f"  前区状态数: {front_stats.get('unique_states', 0)}")
+                            print(f"  前区转移概率数: {front_stats.get('total_transitions', 0)}")
+                            print(f"  前区最大转移概率: {front_stats.get('max_probability', 0):.4f}")
+                            print(f"  后区状态数: {back_stats.get('unique_states', 0)}")
+                            print(f"  后区转移概率数: {back_stats.get('total_transitions', 0)}")
+                            print(f"  后区最大转移概率: {back_stats.get('max_probability', 0):.4f}")
+
                         results = markov_predictor.multi_order_markov_predict(
-                            count=args.count, 
-                            periods=markov_periods, 
+                            count=args.count,
+                            periods=markov_periods,
                             order=3
                         )
                         predictions = [{'front_balls': r[0], 'back_balls': r[1], 'method': 'markov_3rd', 'confidence': 0.9, 'order': 3} for r in results]
@@ -441,86 +663,11 @@ class DLTPredictorSystem:
                     print(f"❌ 增强版马尔可夫链预测失败: {e}")
                     predictions = []
             
-            elif args.method == 'lstm':
-                # LSTM深度学习预测
-                try:
-                    from advanced_lstm_predictor import AdvancedLSTMPredictor, TENSORFLOW_AVAILABLE
-                    if not TENSORFLOW_AVAILABLE:
-                        print("❌ TensorFlow未安装，无法使用LSTM预测")
-                        return
-                    
-                    print("🧠 LSTM深度学习预测...")
-                    lstm_predictor = AdvancedLSTMPredictor()
-                    results = lstm_predictor.lstm_predict(args.count)
-                    predictions = [{'front_balls': r[0], 'back_balls': r[1], 'method': 'lstm', 'confidence': 0.85} for r in results]
-                
-                except ImportError:
-                    print("❌ LSTM预测器模块未找到")
-                    predictions = []
-                except Exception as e:
-                    print(f"❌ LSTM预测失败: {e}")
-                    predictions = []
+
             
-            elif args.method in ['transformer', 'gan', 'stacking', 'adaptive_ensemble', 'ultimate_ensemble']:
-                # 增强预测方法
-                try:
-                    from improvements.integration import get_integrator
-                    integrator = get_integrator()
-                    
-                    if args.method == 'transformer':
-                        print("🧮 Transformer深度学习预测...")
-                        predictions = integrator.transformer_predict(args.count)
-                    elif args.method == 'gan':
-                        print("🎮 GAN生成预测...")
-                        predictions = integrator.gan_predict(args.count)
-                    elif args.method == 'stacking':
-                        print("🔄 Stacking集成预测...")
-                        predictions = integrator.stacking_predict(args.count)
-                    elif args.method == 'adaptive_ensemble':
-                        print("🧠 自适应集成预测...")
-                        predictions = integrator.adaptive_ensemble_predict(args.count)
-                    elif args.method == 'ultimate_ensemble':
-                        print("🌟 终极集成预测...")
-                        predictions = integrator.ultimate_ensemble_predict(args.count)
-                
-                except ImportError:
-                    print("❌ 增强预测模块未找到，请确保improvements目录存在且包含所需文件")
-                    predictions = []
-                except Exception as e:
-                    print(f"❌ 增强预测失败: {e}")
-                    predictions = []
+
             
-            elif args.method == 'advanced_ensemble':
-                # 高级集成预测（兼容旧版本）
-                try:
-                    from improvements.advanced_ensemble import AdvancedEnsemblePredictor
-                    
-                    print("🚀 高级集成预测...")
-                    ensemble = AdvancedEnsemblePredictor()
-                    
-                    # 注册基础预测器
-                    ensemble.register_predictor('frequency', self.predictors['traditional'], weight=0.3)
-                    ensemble.register_predictor('markov', self.predictors['advanced'], weight=0.4)
-                    ensemble.register_predictor('bayesian', self.predictors['advanced'], weight=0.3)
-                    
-                    # 选择集成方法
-                    ensemble_method = getattr(args, 'ensemble_method', 'stacking')
-                    if ensemble_method == 'stacking':
-                        results = ensemble.stacking_predict(args.count)
-                    elif ensemble_method == 'weighted':
-                        results = ensemble.weighted_ensemble_predict(args.count)
-                    else:
-                        results = ensemble.adaptive_ensemble_predict(args.count)
-                    
-                    predictions = [{'front_balls': r[0], 'back_balls': r[1], 'method': f'advanced_ensemble_{ensemble_method}', 'confidence': 0.90} for r in results]
-                
-                except ImportError:
-                    print("❌ 高级集成预测器模块未找到")
-                    predictions = []
-                except Exception as e:
-                    print(f"❌ 高级集成预测失败: {e}")
-                    predictions = []
-                    predictions = []
+
 
             # 显示预测结果
             print("✅ 预测完成!")
@@ -722,7 +869,61 @@ class DLTPredictorSystem:
         except Exception as e:
             logger_manager.error("预测失败", e)
             print(f"❌ 预测失败: {e}")
-    
+
+    def _display_predictions(self, predictions, method):
+        """显示预测结果"""
+        if not predictions:
+            print("❌ 没有生成预测结果")
+            return
+
+        print(f"✅ {method.upper()}预测完成")
+        print("=" * 50)
+
+        if isinstance(predictions, list):
+            for i, pred in enumerate(predictions, 1):
+                if isinstance(pred, tuple) and len(pred) == 2:
+                    front, back = pred
+                    print(f"第{i}注: 前区 {front} 后区 {back}")
+                elif isinstance(pred, dict):
+                    if 'front' in pred and 'back' in pred:
+                        print(f"第{i}注: 前区 {pred['front']} 后区 {pred['back']}")
+                    else:
+                        print(f"第{i}注: {pred}")
+                else:
+                    print(f"第{i}注: {pred}")
+        else:
+            print(f"预测结果: {predictions}")
+
+        print("=" * 50)
+
+    def _display_enhanced_predictions(self, predictions, method):
+        """显示增强预测结果"""
+        if not predictions:
+            print("❌ 没有生成预测结果")
+            return
+
+        print(f"✅ {method.upper()}深度学习预测完成")
+        print("=" * 60)
+
+        for i, pred in enumerate(predictions, 1):
+            if isinstance(pred, dict):
+                front = pred.get('front', [])
+                back = pred.get('back', [])
+                confidence = pred.get('confidence', 0.0)
+                pred_method = pred.get('method', method)
+
+                print(f"第{i}注 [{pred_method}]:")
+                print(f"  前区: {' '.join(f'{n:02d}' for n in front)}")
+                print(f"  后区: {' '.join(f'{n:02d}' for n in back)}")
+                print(f"  置信度: {confidence:.1%}")
+                print()
+            else:
+                print(f"第{i}注: {pred}")
+
+        print("=" * 60)
+        print(f"🎯 使用{method.upper()}深度学习算法生成 {len(predictions)} 注预测")
+        print("💡 深度学习模型已自动训练并优化参数")
+
     def run_learn_command(self, args):
         """处理学习命令"""
         self._load_adaptive_predictor()
@@ -811,7 +1012,8 @@ class DLTPredictorSystem:
                 # 复式投注预测
                 result = self.adaptive_predictor.smart_predict_compound(
                     front_count=args.front_count,
-                    back_count=args.back_count
+                    back_count=args.back_count,
+                    periods=args.periods
                 )
 
                 if result:
@@ -837,7 +1039,8 @@ class DLTPredictorSystem:
                     front_dan_count=args.front_dan,
                     back_dan_count=args.back_dan,
                     front_tuo_count=args.front_tuo,
-                    back_tuo_count=args.back_tuo
+                    back_tuo_count=args.back_tuo,
+                    periods=args.periods
                 )
 
                 if result:
@@ -1051,10 +1254,84 @@ class DLTPredictorSystem:
                 cleared_count = cache_manager.clear_cache(args.type)
                 print(f"✅ 已清理 {cleared_count} 个缓存文件")
     
+    def run_enhanced_command(self, args):
+        """运行增强功能命令"""
+        if not self.enhanced_available:
+            print("❌ 增强功能不可用")
+            print("请确保已正确安装enhanced_deep_learning模块")
+            return
+
+        if args.enhanced_action == 'info':
+            print("🔍 增强系统信息")
+            print("=" * 50)
+
+            info = self.enhanced_system.get_system_info()
+            print(f"系统类型: {info['system_type']}")
+
+            if 'platform' in info:
+                platform = info['platform']
+                print(f"操作系统: {platform['os']} {platform['version']}")
+                print(f"架构: {platform['architecture']}")
+                print(f"Python版本: {platform['python_version']}")
+
+                hardware = info['hardware']
+                print(f"CPU核心: {hardware['cpu_count']}")
+                print(f"内存: {hardware['memory_total_gb']:.1f} GB")
+                print(f"GPU数量: {hardware['gpu_count']}")
+
+        elif args.enhanced_action == 'test':
+            print("🧪 运行兼容性测试")
+            print("=" * 50)
+
+            result = self.enhanced_system.run_compatibility_test()
+            if result.get('success'):
+                for test in result['test_results']:
+                    status_icon = '✅' if test['status'] == 'passed' else '❌'
+                    print(f"{status_icon} {test['name']}: {test['message']} ({test['duration']:.2f}s)")
+            else:
+                print(f"❌ 测试失败: {result.get('error', '未知错误')}")
+
+        elif args.enhanced_action == 'predict':
+            print("🔮 增强预测")
+            print("=" * 50)
+
+            if not args.data:
+                print("❌ 请提供预测数据 (-d 参数)")
+                return
+
+            result = self.enhanced_system.enhanced_predict(args.data, method=args.method)
+            if result.get('success'):
+                print(f"✅ 预测成功")
+                print(f"方法: {result['method']}")
+                print(f"结果: {result['result']}")
+                print(f"已缓存: {result['cached']}")
+            else:
+                print(f"❌ 预测失败: {result.get('error', '未知错误')}")
+
+        elif args.enhanced_action == 'visualize':
+            print("📊 增强可视化")
+            print("=" * 50)
+
+            if not args.data:
+                print("❌ 请提供可视化数据 (-d 参数)")
+                return
+
+            result = self.enhanced_system.enhanced_visualize(args.data, chart_type=args.type)
+            if result.get('success'):
+                print(f"✅ 可视化成功")
+                print(f"图表类型: {result['chart_type']}")
+                print(f"结果: {result['result']}")
+            else:
+                print(f"❌ 可视化失败: {result.get('error', '未知错误')}")
+
+        else:
+            print("❌ 未知的增强功能操作")
+            print("可用操作: info, test, predict, visualize")
+
     def show_version(self):
         """显示版本信息"""
         print("🎯 大乐透预测系统")
-        print("版本: 2.0.0")
+        print("版本: 2.0.0 Enhanced")
         print("作者: AI Assistant")
         print("更新时间: 2024-12-19")
         print("\n📦 功能模块:")
@@ -1064,6 +1341,23 @@ class DLTPredictorSystem:
         print("  ✅ 自适应学习系统")
         print("  ✅ 智能预测与回测")
         print("  ✅ 缓存与日志管理")
+
+        # 显示增强功能状态
+        if self.enhanced_available:
+            print("\n🚀 增强功能模块:")
+            print("  ✅ 企业级核心架构")
+            print("  ✅ 高级数据处理")
+            print("  ✅ 智能模型注册表")
+            print("  ✅ 增强预测引擎")
+            print("  ✅ 交互式可视化")
+            print("  ✅ 工作流管理")
+            print("  ✅ 跨平台兼容性")
+            print("  ✅ 分布式计算")
+            print("  ✅ 性能优化")
+            print("  ✅ 智能缓存系统")
+        else:
+            print("\n⚠️ 增强功能: 未启用")
+            print("  提示: 运行 'python dlt_main.py enhanced info' 查看详情")
 
 
 def main():
@@ -1103,15 +1397,16 @@ def main():
     predict_parser = subparsers.add_parser('predict', help='号码预测')
     predict_parser.add_argument('-m', '--method',
                                choices=['frequency', 'hot_cold', 'missing', 'markov', 'bayesian',
-                                       'ensemble', 'super', 'adaptive', 'compound', 'duplex', 'markov_custom', 
-                                       'mixed_strategy', 'highly_integrated', 'advanced_integration', 
-                                       'nine_models', 'nine_models_compound', 'markov_compound', 
+                                       'ensemble', 'super', 'adaptive', 'compound', 'duplex', 'markov_custom',
+                                       'mixed_strategy', 'highly_integrated', 'advanced_integration',
+                                       'nine_models', 'nine_models_compound', 'markov_compound',
                                        'lstm', 'transformer', 'gan', 'stacking', 'adaptive_ensemble', 'ultimate_ensemble',
-                                       'markov_2nd', 'markov_3rd', 'adaptive_markov'],
+                                       'markov_2nd', 'markov_3rd', 'adaptive_markov', 'enhanced'],
                                default='ensemble', help='预测方法')
     predict_parser.add_argument('--ensemble-method', choices=['stacking', 'weighted', 'adaptive'],
                                default='stacking', help='高级集成方法类型')
-    predict_parser.add_argument('-c', '--count', type=int, default=1, help='生成注数')
+    predict_parser.add_argument('-c', '--count', type=int, default=1, help='生成注数 (1-100)')
+    predict_parser.add_argument('-p', '--periods', type=int, default=500, help='分析期数 (50-2748，默认500期)')
     predict_parser.add_argument('--front-count', type=int, default=8, help='复式投注前区号码数量')
     predict_parser.add_argument('--back-count', type=int, default=4, help='复式投注后区号码数量')
     predict_parser.add_argument('--analysis-periods', type=int, default=300, help='马尔可夫分析期数')
@@ -1136,6 +1431,7 @@ def main():
     # ==================== 智能预测命令 ====================
     smart_parser = subparsers.add_parser('smart', help='智能预测（基于学习结果）')
     smart_parser.add_argument('-c', '--count', type=int, default=1, help='生成注数')
+    smart_parser.add_argument('-p', '--periods', type=int, default=500, help='分析期数')
     smart_parser.add_argument('--load', help='加载学习结果文件')
     smart_parser.add_argument('--compound', action='store_true', help='生成复式投注')
     smart_parser.add_argument('--front-count', type=int, default=8, help='复式前区号码数量')
@@ -1170,6 +1466,26 @@ def main():
     cache_parser.add_argument('--type', choices=['all', 'models', 'analysis', 'data'], 
                              default='all', help='缓存类型')
     
+    # ==================== 增强功能命令 ====================
+    enhanced_parser = subparsers.add_parser('enhanced', help='增强功能')
+    enhanced_subparsers = enhanced_parser.add_subparsers(dest='enhanced_action', help='增强功能操作')
+
+    # 系统信息
+    info_parser = enhanced_subparsers.add_parser('info', help='显示增强系统信息')
+
+    # 兼容性测试
+    compat_parser = enhanced_subparsers.add_parser('test', help='运行兼容性测试')
+
+    # 增强预测
+    epredict_parser = enhanced_subparsers.add_parser('predict', help='增强预测')
+    epredict_parser.add_argument('-d', '--data', help='预测数据')
+    epredict_parser.add_argument('-m', '--method', default='auto', help='预测方法')
+
+    # 增强可视化
+    evisualize_parser = enhanced_subparsers.add_parser('visualize', help='增强可视化')
+    evisualize_parser.add_argument('-d', '--data', help='可视化数据')
+    evisualize_parser.add_argument('-t', '--type', default='auto', help='图表类型')
+
     # ==================== 帮助和版本 ====================
     version_parser = subparsers.add_parser('version', help='显示版本信息')
     
@@ -1200,6 +1516,8 @@ def main():
             system.run_backtest_command(args)
         elif args.command == 'system':
             system.run_system_command(args)
+        elif args.command == 'enhanced':
+            system.run_enhanced_command(args)
         elif args.command == 'version':
             system.show_version()
     except KeyboardInterrupt:

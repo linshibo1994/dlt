@@ -132,8 +132,8 @@ class EnhancedFeatureAnalyzer:
         cache_manager.save_cache("analysis", cache_key, result)
         
         return result
- 
-   def cluster_analysis(self, periods: int = 500, n_clusters: int = 5) -> Dict:
+
+    def cluster_analysis(self, periods: int = 500, n_clusters: int = 5) -> Dict:
         """聚类分析
         
         Args:
@@ -365,17 +365,57 @@ class EnhancedFeatureAnalyzer:
             if sum_diff <= 5 and consecutive_diff <= 1:
                 return balls
         
-        # 如果达到最大尝试次数仍未找到符合条件的组合，放宽条件
-        for _ in range(max_attempts):
-            balls = sorted(np.random.choice(range(min_val, max_val + 1), count, replace=False))
-            balls_sum = sum(balls)
-            
-            # 只检查和值约束
-            if abs(balls_sum - sum_target) <= 10:
-                return balls
-        
-        # 如果仍未找到，返回随机组合
-        return sorted(np.random.choice(range(min_val, max_val + 1), count, replace=False))
+        # 如果达到最大尝试次数仍未找到符合条件的组合，使用基于历史数据的智能选择
+        # 获取历史数据进行分析
+        from core_modules import data_manager
+        historical_data = data_manager.get_data()
+
+        if historical_data is not None and len(historical_data) > 0:
+            # 基于历史数据的频率分析选择
+            from collections import Counter
+            counter = Counter()
+
+            for _, row in historical_data.head(100).iterrows():  # 使用最近100期数据
+                if min_val == 1 and max_val == 35:  # 前区
+                    balls_str = str(row.get('front_balls', ''))
+                else:  # 后区
+                    balls_str = str(row.get('back_balls', ''))
+
+                balls = [int(x) for x in balls_str.split(',') if x.strip().isdigit()]
+                for ball in balls:
+                    if min_val <= ball <= max_val:
+                        counter[ball] += 1
+
+            # 选择频率最高的号码
+            if counter:
+                most_common = [ball for ball, freq in counter.most_common()]
+                selected = []
+                for ball in most_common:
+                    if len(selected) >= count:
+                        break
+                    if ball not in selected:
+                        selected.append(ball)
+
+                # 如果不够，补充剩余号码
+                while len(selected) < count:
+                    for i in range(min_val, max_val + 1):
+                        if i not in selected:
+                            selected.append(i)
+                            if len(selected) >= count:
+                                break
+
+                return sorted(selected[:count])
+
+        # 如果没有历史数据，使用均匀分布选择
+        selected = list(range(min_val, min(min_val + count, max_val + 1)))
+        while len(selected) < count and len(selected) < (max_val - min_val + 1):
+            for i in range(min_val, max_val + 1):
+                if i not in selected:
+                    selected.append(i)
+                    if len(selected) >= count:
+                        break
+
+        return sorted(selected[:count])
 
 
 class EnhancedFeaturePredictor:

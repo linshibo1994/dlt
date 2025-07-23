@@ -1,0 +1,102 @@
+{
+  "version": "0.1.0",
+  "logging": {
+    "level": "INFO",
+    "format": "%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+    "file": "logs/deep_learning.log",
+    "max_size": 10485760,
+    "backup_count": 5
+  },
+  "data": {
+    "source": "zhcw",
+    "cache_dir": "cache/data",
+    "max_periods": 3000
+  },
+  "models": {
+    "cache_dir": "cache/models",
+    "default_model": "lstm",
+    "deep_learning": {
+      "models": {
+        "lstm": {
+          "hidden_size": 128,
+          "num_layers": 2,
+          "dropout": 0.2,
+          "bidirectional": true
+        },
+        "transformer": {
+          "num_heads": 8,
+          "num_layers": 4,
+          "d_model": 256,
+          "d_ff": 1024,
+          "dropout": 0.1
+        },
+        "gan": {
+          "latent_dim": 100,
+          "generator_layers": [256, 512, 1024],
+          "discriminator_layers": [1024, 512, 256]
+        }
+      },
+      "training": {
+        "batch_size": 64,
+        "epochs": 100,
+        "learning_rate": 0.001,
+        "optimizer": "adam",
+        "early_stopping": true,
+        "patience": 10,
+        "validation_split": 0.2
+      },
+      "inference": {
+        "batch_size": 32,
+        "top_k": 5,
+        "threshold": 0.5
+      }
+    }
+  },
+  "optimization": {
+    "use_gpu": true,
+    "batch_size": 64,
+    "cache_dir": "cache/optimization",
+    "gpu": {
+      "device_id": 0,
+      "memory_limit": 0,
+      "mixed_precision": true,
+      "precision": "float16",
+      "allow_growth": true,
+      "per_process_gpu_memory_fraction": 0.8
+    }
+  },
+  "learning": {
+    "cache_dir": "cache/learning",
+    "default_algorithm": "ucb1"
+  },
+  "platform_specific": {
+    "windows": {
+      "logging": {
+        "file": "logs\\deep_learning.log"
+      },
+      "data": {
+        "cache_dir": "cache\\data"
+      },
+      "models": {
+        "cache_dir": "cache\\models"
+      },
+      "optimization": {
+        "cache_dir": "cache\\optimization"
+      },
+      "learning": {
+        "cache_dir": "cache\\learning"
+      }
+    },
+    "darwin": {
+      "optimization": {
+        "gpu": {
+          "mixed_precision": true
+        }
+      }
+    },
+    "apple_silicon": {
+      "use_mps": true,
+      "use_neural_engine": true
+    }
+  }
+}

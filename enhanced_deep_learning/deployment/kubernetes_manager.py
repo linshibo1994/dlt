@@ -18,7 +18,12 @@ from dataclasses import dataclass, field
 from enum import Enum
 from datetime import datetime
 import uuid
-import yaml
+# 尝试导入yaml，如果不可用则跳过
+try:
+    import yaml
+    YAML_AVAILABLE = True
+except ImportError:
+    YAML_AVAILABLE = False
 
 from core_modules import logger_manager
 from ..utils.exceptions import DeepLearningException
@@ -265,6 +270,11 @@ class KubernetesManager:
         try:
             # 将清单写入临时文件
             import tempfile
+
+            if not YAML_AVAILABLE:
+                logger_manager.error("PyYAML未安装，无法应用Kubernetes清单")
+                return False
+
             with tempfile.NamedTemporaryFile(mode='w', suffix='.yaml', delete=False) as f:
                 yaml.dump(manifest, f, default_flow_style=False)
                 temp_file = f.name

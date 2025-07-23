@@ -1,0 +1,26 @@
+{
+  "optimization": {
+    "use_gpu": true,
+    "gpu": {
+      "mixed_precision": true,
+      "precision": "float16"
+    }
+  },
+  "models": {
+    "deep_learning": {
+      "training": {
+        "batch_size": 32
+      },
+      "inference": {
+        "batch_size": 16
+      }
+    }
+  },
+  "apple_silicon": {
+    "use_mps": true,
+    "use_neural_engine": true,
+    "optimization": {
+      "energy_efficiency": "balanced"
+    }
+  }
+}

@@ -17,6 +17,10 @@ from .user_guide_generator import (
     UserGuideGenerator, GuideConfig,
     user_guide_generator
 )
+from .performance_guide_generator import (
+    PerformanceGuideGenerator, PerformanceTip,
+    performance_guide_generator
+)
 
 __all__ = [
     # 文档生成器
@@ -33,5 +37,10 @@ __all__ = [
     # 用户指南生成器
     'UserGuideGenerator',
     'GuideConfig',
-    'user_guide_generator'
+    'user_guide_generator',
+
+    # 性能优化指南生成器
+    'PerformanceGuideGenerator',
+    'PerformanceTip',
+    'performance_guide_generator'
 ]

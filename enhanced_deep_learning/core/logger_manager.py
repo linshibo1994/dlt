@@ -262,7 +262,15 @@ class LoggerManager:
                         
         except Exception as e:
             print(f"移除处理器失败: {e}")
-    
+
+    def __del__(self):
+        """析构函数"""
+        try:
+            self.remove_handlers()
+        except Exception:
+            # 在Python关闭时，某些模块可能已经被清理，忽略错误
+            pass
+
     def log_system_info(self):
         """记录系统信息"""
         try:

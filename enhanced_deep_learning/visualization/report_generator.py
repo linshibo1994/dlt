@@ -21,7 +21,12 @@ from datetime import datetime, timedelta
 import uuid
 import base64
 from io import BytesIO
-import schedule
+# 尝试导入schedule，如果不可用则跳过
+try:
+    import schedule
+    SCHEDULE_AVAILABLE = True
+except ImportError:
+    SCHEDULE_AVAILABLE = False
 
 from core_modules import logger_manager
 from ..utils.exceptions import DeepLearningException
@@ -452,6 +457,10 @@ class ReportGenerator:
     def _schedule_report(self, template: ReportTemplate):
         """调度报告生成"""
         try:
+            if not SCHEDULE_AVAILABLE:
+                logger_manager.warning("schedule库不可用，无法调度报告")
+                return
+
             # 简化的调度实现
             if template.schedule_cron == "daily":
                 schedule.every().day.at("09:00").do(
@@ -506,7 +515,8 @@ class ReportGenerator:
         """调度器循环"""
         while self.scheduler_running:
             try:
-                schedule.run_pending()
+                if SCHEDULE_AVAILABLE:
+                    schedule.run_pending()
                 time.sleep(60)  # 每分钟检查一次
             except Exception as e:
                 logger_manager.error(f"调度器运行失败: {e}")

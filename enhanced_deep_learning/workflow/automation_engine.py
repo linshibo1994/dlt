@@ -16,7 +16,7 @@ from typing import Dict, List, Any, Optional, Callable, Union
 from dataclasses import dataclass, field
 from enum import Enum
 from datetime import datetime, timedelta
-import schedule
+# import schedule  # 使用内置调度功能替代
 
 from core_modules import logger_manager
 from ..utils.exceptions import DeepLearningException
@@ -164,20 +164,20 @@ class EventBus:
 
 class ScheduleManager:
     """调度管理器"""
-    
+
     def __init__(self):
         """初始化调度管理器"""
         self.scheduled_jobs = {}
         self.running = False
         self.scheduler_thread = None
         self.lock = threading.RLock()
-        
+
         logger_manager.debug("调度管理器初始化完成")
-    
+
     def add_job(self, job_id: str, schedule_expression: str, job_func: Callable):
         """
         添加定时任务
-        
+
         Args:
             job_id: 任务ID
             schedule_expression: 调度表达式
@@ -185,82 +185,92 @@ class ScheduleManager:
         """
         try:
             with self.lock:
-                # 解析调度表达式
+                # 解析调度表达式并创建简单的调度信息
+                job_info = {
+                    'func': job_func,
+                    'expression': schedule_expression,
+                    'last_run': None,
+                    'next_run': datetime.now()
+                }
+
+                # 解析间隔
                 if schedule_expression.startswith("every"):
-                    # 简单的间隔调度
                     parts = schedule_expression.split()
                     if len(parts) >= 3:
                         interval = int(parts[1])
                         unit = parts[2]
-                        
+
                         if unit == "seconds":
-                            job = schedule.every(interval).seconds.do(job_func)
+                            job_info['interval'] = timedelta(seconds=interval)
                         elif unit == "minutes":
-                            job = schedule.every(interval).minutes.do(job_func)
+                            job_info['interval'] = timedelta(minutes=interval)
                         elif unit == "hours":
-                            job = schedule.every(interval).hours.do(job_func)
+                            job_info['interval'] = timedelta(hours=interval)
                         elif unit == "days":
-                            job = schedule.every(interval).days.do(job_func)
+                            job_info['interval'] = timedelta(days=interval)
                         else:
-                            job = schedule.every(interval).minutes.do(job_func)
-                        
-                        self.scheduled_jobs[job_id] = job
-                        
-                elif ":" in schedule_expression:
-                    # 每日定时调度
-                    job = schedule.every().day.at(schedule_expression).do(job_func)
-                    self.scheduled_jobs[job_id] = job
-                
+                            job_info['interval'] = timedelta(minutes=interval)
+                    else:
+                        job_info['interval'] = timedelta(minutes=1)
                 else:
-                    # 默认每分钟执行
-                    job = schedule.every().minute.do(job_func)
-                    self.scheduled_jobs[job_id] = job
-                
+                    job_info['interval'] = timedelta(minutes=1)
+
+                self.scheduled_jobs[job_id] = job_info
+
             logger_manager.info(f"定时任务添加成功: {job_id}")
-            
+
         except Exception as e:
             logger_manager.error(f"添加定时任务失败: {e}")
-    
+
     def remove_job(self, job_id: str):
         """移除定时任务"""
         try:
             with self.lock:
                 if job_id in self.scheduled_jobs:
-                    job = self.scheduled_jobs[job_id]
-                    schedule.cancel_job(job)
                     del self.scheduled_jobs[job_id]
-                    
+
             logger_manager.info(f"定时任务移除成功: {job_id}")
-            
+
         except Exception as e:
             logger_manager.error(f"移除定时任务失败: {e}")
-    
+
     def start_scheduler(self):
         """启动调度器"""
         if self.running:
             return
-        
+
         self.running = True
         self.scheduler_thread = threading.Thread(target=self._scheduler_loop)
         self.scheduler_thread.daemon = True
         self.scheduler_thread.start()
-        
+
         logger_manager.info("调度器已启动")
-    
+
     def stop_scheduler(self):
         """停止调度器"""
         self.running = False
-        
+
         if self.scheduler_thread:
             self.scheduler_thread.join(timeout=5)
-        
+
         logger_manager.info("调度器已停止")
-    
+
     def _scheduler_loop(self):
         """调度器循环"""
         while self.running:
             try:
-                schedule.run_pending()
+                current_time = datetime.now()
+
+                with self.lock:
+                    for job_id, job_info in self.scheduled_jobs.items():
+                        if current_time >= job_info['next_run']:
+                            try:
+                                job_info['func']()
+                                job_info['last_run'] = current_time
+                                job_info['next_run'] = current_time + job_info['interval']
+                            except Exception as e:
+                                logger_manager.error(f"定时任务执行失败 {job_id}: {e}")
+
                 time.sleep(1)
             except Exception as e:
                 logger_manager.error(f"调度器循环失败: {e}")

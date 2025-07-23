@@ -5,9 +5,9 @@ Utils Module
 提供配置管理、异常处理、接口定义和工具函数。
 """
 
-from .config import ConfigManager
-from .exceptions import DeepLearningException, ModelException, DataException
-from .interfaces import IModel, IDataProcessor, IOptimizer, ILearner, ICommandHandler
+from ..utils.config import ConfigManager
+from ..utils.exceptions import DeepLearningException, ModelException, DataException
+from ..utils.interfaces import IModel, IDataProcessor, IOptimizer, ILearner, ICommandHandler
 from .prediction_utils import PredictionUtils
 from .training_utils import TrainingUtils
 

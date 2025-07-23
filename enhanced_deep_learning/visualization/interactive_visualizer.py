@@ -104,9 +104,11 @@ class PlotlyVisualizer:
         self.figures = {}
         logger_manager.info("Plotly可视化器初始化完成")
     
-    def create_line_chart(self, data: ChartData, config: VisualizationConfig) -> go.Figure:
+    def create_line_chart(self, data: ChartData, config: VisualizationConfig):
         """创建折线图"""
         try:
+            if not PLOTLY_AVAILABLE:
+                return None
             fig = go.Figure()
             
             if isinstance(data.y[0], (list, np.ndarray)):
@@ -137,11 +139,13 @@ class PlotlyVisualizer:
             
         except Exception as e:
             logger_manager.error(f"创建折线图失败: {e}")
-            return go.Figure()
+            return None
     
-    def create_bar_chart(self, data: ChartData, config: VisualizationConfig) -> go.Figure:
+    def create_bar_chart(self, data: ChartData, config: VisualizationConfig):
         """创建柱状图"""
         try:
+            if not PLOTLY_AVAILABLE:
+                return None
             fig = go.Figure()
             
             fig.add_trace(go.Bar(
@@ -161,11 +165,13 @@ class PlotlyVisualizer:
             
         except Exception as e:
             logger_manager.error(f"创建柱状图失败: {e}")
-            return go.Figure()
+            return None
     
-    def create_scatter_plot(self, data: ChartData, config: VisualizationConfig) -> go.Figure:
+    def create_scatter_plot(self, data: ChartData, config: VisualizationConfig):
         """创建散点图"""
         try:
+            if not PLOTLY_AVAILABLE:
+                return None
             fig = go.Figure()
             
             fig.add_trace(go.Scatter(
@@ -189,11 +195,13 @@ class PlotlyVisualizer:
             
         except Exception as e:
             logger_manager.error(f"创建散点图失败: {e}")
-            return go.Figure()
+            return None
     
-    def create_heatmap(self, data: ChartData, config: VisualizationConfig) -> go.Figure:
+    def create_heatmap(self, data: ChartData, config: VisualizationConfig):
         """创建热力图"""
         try:
+            if not PLOTLY_AVAILABLE:
+                return None
             fig = go.Figure()
             
             # 假设z是二维数组
@@ -211,11 +219,13 @@ class PlotlyVisualizer:
             
         except Exception as e:
             logger_manager.error(f"创建热力图失败: {e}")
-            return go.Figure()
-    
-    def create_3d_surface(self, data: ChartData, config: VisualizationConfig) -> go.Figure:
+            return None
+
+    def create_3d_surface(self, data: ChartData, config: VisualizationConfig):
         """创建3D表面图"""
         try:
+            if not PLOTLY_AVAILABLE:
+                return None
             fig = go.Figure()
             
             fig.add_trace(go.Surface(
@@ -241,11 +251,13 @@ class PlotlyVisualizer:
             
         except Exception as e:
             logger_manager.error(f"创建3D表面图失败: {e}")
-            return go.Figure()
-    
-    def create_pie_chart(self, data: ChartData, config: VisualizationConfig) -> go.Figure:
+            return None
+
+    def create_pie_chart(self, data: ChartData, config: VisualizationConfig):
         """创建饼图"""
         try:
+            if not PLOTLY_AVAILABLE:
+                return None
             fig = go.Figure()
             
             fig.add_trace(go.Pie(
@@ -265,9 +277,9 @@ class PlotlyVisualizer:
             
         except Exception as e:
             logger_manager.error(f"创建饼图失败: {e}")
-            return go.Figure()
-    
-    def _apply_layout(self, fig: go.Figure, config: VisualizationConfig):
+            return None
+
+    def _apply_layout(self, fig, config: VisualizationConfig):
         """应用布局配置"""
         try:
             fig.update_layout(

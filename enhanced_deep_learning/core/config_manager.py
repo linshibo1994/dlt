@@ -10,11 +10,17 @@ Configuration Manager Module
 
 import os
 import json
-import yaml
 from typing import Dict, Any, Optional, List, Union
 from dataclasses import dataclass, field
 from pathlib import Path
 import configparser
+
+# 可选导入yaml
+try:
+    import yaml
+    HAS_YAML = True
+except ImportError:
+    HAS_YAML = False
 
 from core_modules import logger_manager
 from ..utils.exceptions import DeepLearningException
@@ -135,6 +141,9 @@ class ConfigManager:
             
             # 根据文件扩展名选择加载方式
             if config_path.suffix.lower() in ['.yaml', '.yml']:
+                if not HAS_YAML:
+                    logger_manager.error("YAML支持未安装，请安装PyYAML: pip install PyYAML")
+                    return False
                 with open(config_path, 'r', encoding='utf-8') as f:
                     config = yaml.safe_load(f)
             elif config_path.suffix.lower() == '.json':
@@ -185,6 +194,9 @@ class ConfigManager:
             config_path = self.config_dir / config_file
             
             if format.lower() in ['yaml', 'yml']:
+                if not HAS_YAML:
+                    logger_manager.error("YAML支持未安装，请安装PyYAML: pip install PyYAML")
+                    return False
                 with open(config_path, 'w', encoding='utf-8') as f:
                     yaml.dump(self.config_data, f, default_flow_style=False, allow_unicode=True)
             elif format.lower() == 'json':

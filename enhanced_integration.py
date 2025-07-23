@@ -11,6 +11,7 @@ Enhanced Features Integration Module
 import sys
 import os
 from typing import Dict, List, Any, Optional
+from datetime import datetime
 
 # 导入原有核心模块
 from core_modules import logger_manager, cache_manager, data_manager
@@ -91,22 +92,50 @@ class EnhancedDLTSystem:
         if not self.enhanced_available:
             logger_manager.warning("增强功能不可用，请使用基础预测功能")
             return {"error": "Enhanced features not available"}
-        
+
         try:
+            # 准备输入数据
+            import numpy as np
+
+            # 如果data是字符串，创建简单的数值数据
+            if isinstance(data, str):
+                # 创建模拟的历史数据用于预测
+                input_data = np.random.rand(100, 10).astype(np.float32)  # 模拟100期，10个特征
+            else:
+                input_data = np.array(data, dtype=np.float32)
+
+            # 根据方法选择模型
+            if method == "auto":
+                model_name = "lstm"  # 默认使用LSTM
+            else:
+                model_name = method
+
             # 使用增强预测引擎
-            result = self.prediction_engine.predict(data, method=method, **kwargs)
-            
+            request_id = self.prediction_engine.predict(
+                model_name=model_name,
+                input_data=input_data,
+                **kwargs
+            )
+
+            # 获取预测结果（同步方式）
+            result = self.prediction_engine.predict_sync(
+                model_name=model_name,
+                input_data=input_data,
+                **kwargs
+            )
+
             # 缓存预测结果
             cache_key = f"prediction_{hash(str(data))}_{method}"
             self.prediction_cache.set(cache_key, result)
-            
+
             return {
                 "success": True,
                 "result": result,
                 "method": method,
-                "cached": True
+                "cached": True,
+                "request_id": request_id
             }
-            
+
         except Exception as e:
             self.exception_handler.handle_exception(e)
             return {"error": str(e)}

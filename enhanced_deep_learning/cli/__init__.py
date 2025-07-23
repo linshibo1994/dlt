@@ -7,8 +7,16 @@ CLI Module
 
 from .cli_commands import CommandDefinition
 from .cli_handler import CommandHandler
+from .cli_enhancer import (
+    CLIEnhancer, AutoCompleter, SmartPrompt,
+    cli_enhancer
+)
 
 __all__ = [
     'CommandDefinition',
-    'CommandHandler'
+    'CommandHandler',
+    'CLIEnhancer',
+    'AutoCompleter',
+    'SmartPrompt',
+    'cli_enhancer'
 ]

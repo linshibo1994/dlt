@@ -11,6 +11,9 @@ from .base_model import BaseModel, ModelConfig, ModelType, ModelStatus, ModelMet
 # 导入深度学习模型
 from .deep_learning_models import LSTMPredictor, TransformerPredictor, GANPredictor, EnsembleManager
 
+# 导入模型注册表
+from .model_registry import ModelRegistry, model_registry
+
 # 为了兼容性，创建别名
 BaseDeepPredictor = BaseModel
 BaseDeepLearningModel = BaseModel
@@ -26,5 +29,6 @@ class ModelMetadata:
 __all__ = [
     'BaseModel', 'ModelConfig', 'ModelType', 'ModelStatus', 'ModelMetrics', 'TrainingConfig',
     'LSTMPredictor', 'TransformerPredictor', 'GANPredictor', 'EnsembleManager',
+    'ModelRegistry', 'model_registry',
     'BaseDeepPredictor', 'BaseDeepLearningModel', 'ModelMetadata'
 ]

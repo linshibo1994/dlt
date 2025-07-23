@@ -12,9 +12,13 @@ from .incremental_data_updater import IncrementalDataUpdater
 from .anomaly_detector import AnomalyDetector
 from .data_manager import DeepLearningDataManager
 
+# 为了向后兼容，添加DataProcessor别名
+DataProcessor = DataPreprocessor
+
 __all__ = [
     'DataPreprocessor',
-    'DataAugmentor', 
+    'DataProcessor',  # 别名
+    'DataAugmentor',
     'WindowDataManager',
     'IncrementalDataUpdater',
     'AnomalyDetector',

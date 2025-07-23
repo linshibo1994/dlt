@@ -525,10 +525,9 @@ if __name__ == "__main__":
         
         # 测试API参考生成
         modules = [
-            "enhanced_deep_learning.utils.exceptions",
-            "enhanced_deep_learning.core.config_manager"
+            "enhanced_deep_learning.utils.exceptions"
         ]
-        
+
         if generator.generate_api_reference(modules, "test_api_docs"):
             print("✅ API参考文档生成成功")
         
