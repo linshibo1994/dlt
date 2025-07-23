@@ -1,0 +1,115 @@
+MIT License
+
+Copyright (c) 2025 林世博 (Lin Shibo)
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+---
+
+## 免责声明 / Disclaimer
+
+### 中文
+
+本软件仅供学习、研究和技术交流使用。
+
+**重要提醒：**
+
+1. **教育目的**：本项目主要用于展示机器学习、深度学习和数据科学技术的应用。
+
+2. **无投资建议**：本软件的任何预测结果均不构成投资建议。彩票具有随机性，任何预测方法都无法保证准确性。
+
+3. **风险提示**：参与彩票等博彩活动存在经济风险。请用户理性对待，适度参与，不要沉迷。
+
+4. **法律合规**：用户应遵守所在地区的相关法律法规。在某些地区，博彩活动可能受到法律限制。
+
+5. **责任限制**：作者和贡献者不对使用本软件造成的任何损失承担责任。
+
+### English
+
+This software is for educational, research, and technical communication purposes only.
+
+**Important Notice:**
+
+1. **Educational Purpose**: This project is primarily intended to demonstrate the application of machine learning, deep learning, and data science technologies.
+
+2. **No Investment Advice**: Any prediction results from this software do not constitute investment advice. Lottery has inherent randomness, and no prediction method can guarantee accuracy.
+
+3. **Risk Warning**: Participating in lottery and gambling activities involves financial risks. Users should approach rationally, participate moderately, and avoid addiction.
+
+4. **Legal Compliance**: Users should comply with relevant laws and regulations in their jurisdiction. In some regions, gambling activities may be legally restricted.
+
+5. **Limitation of Liability**: The authors and contributors are not responsible for any losses caused by the use of this software.
+
+---
+
+## 技术声明 / Technical Statement
+
+### 算法说明
+
+本项目使用的预测算法包括但不限于：
+
+- 统计分析方法
+- 机器学习算法
+- 深度学习模型
+- 概率论和数理统计
+
+这些算法基于历史数据进行模式识别和趋势分析，但**不能预测未来的随机事件**。
+
+### 数据来源
+
+本项目使用的数据来源于公开的彩票开奖信息，仅用于技术研究和算法验证。
+
+### 开源精神
+
+本项目遵循开源精神，鼓励技术交流和知识分享。欢迎研究者和开发者：
+
+- 学习和研究代码
+- 提出改进建议
+- 贡献代码和文档
+- 分享技术心得
+
+---
+
+## 联系方式 / Contact
+
+如有技术问题或建议，请通过以下方式联系：
+
+- **GitHub Issues**: [https://github.com/linshibo1994/dlt/issues](https://github.com/linshibo1994/dlt/issues)
+- **Email**: linshibo1994@example.com
+- **项目主页**: [https://github.com/linshibo1994/dlt](https://github.com/linshibo1994/dlt)
+
+---
+
+## 致谢 / Acknowledgments
+
+感谢以下开源项目和技术社区的支持：
+
+- **TensorFlow** - 深度学习框架
+- **PyTorch** - 深度学习框架
+- **Scikit-learn** - 机器学习库
+- **NumPy** - 数值计算库
+- **Pandas** - 数据处理库
+- **Matplotlib** - 数据可视化库
+- **Python** - 编程语言
+
+以及所有为开源社区做出贡献的开发者们。
+
+---
+
+**最后提醒：请理性对待彩票，适度参与，切勿沉迷。技术研究的目的是学习和进步，而不是投机和赌博。**
