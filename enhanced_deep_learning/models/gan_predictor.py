@@ -15,7 +15,7 @@ from tensorflow.keras.callbacks import EarlyStopping, ReduceLROnPlateau
 from datetime import datetime
 import functools
 
-from . import BaseDeepPredictor
+from .base_model import BaseModel as BaseDeepPredictor
 from ..utils.config import DEFAULT_GAN_CONFIG
 from ..utils.exceptions import ModelInitializationError, handle_model_error
 from core_modules import logger_manager

@@ -149,6 +149,130 @@ class DLTPredictorSystem:
             except Exception as e:
                 print(f"❌ 数据更新失败: {e}")
 
+        elif args.data_action == 'check':
+            print("🔍 开始数据完整性检查...")
+            self._check_data_integrity(args)
+
+    def _check_data_integrity(self, args):
+        """检查数据完整性"""
+        detailed = getattr(args, 'detailed', False)
+        auto_fix = getattr(args, 'fix', False)
+
+        issues = []
+
+        try:
+            # 1. 检查数据文件是否存在
+            print("📁 检查数据文件...")
+            df = data_manager.get_data()
+            if df is None or len(df) == 0:
+                issues.append("数据文件不存在或为空")
+                print("❌ 数据文件不存在或为空")
+            else:
+                print(f"✅ 数据文件正常，共 {len(df)} 期数据")
+
+            # 2. 检查数据格式
+            if df is not None and len(df) > 0:
+                print("📊 检查数据格式...")
+                required_columns = ['issue', 'front_1', 'front_2', 'front_3', 'front_4', 'front_5', 'back_1', 'back_2', 'date']
+                missing_columns = [col for col in required_columns if col not in df.columns]
+
+                if missing_columns:
+                    issues.append(f"缺少必要列: {missing_columns}")
+                    print(f"❌ 缺少必要列: {missing_columns}")
+                else:
+                    print("✅ 数据格式正常")
+
+                # 3. 检查数据范围
+                print("🔢 检查数据范围...")
+                front_cols = ['front_1', 'front_2', 'front_3', 'front_4', 'front_5']
+                back_cols = ['back_1', 'back_2']
+
+                # 检查前区号码范围 (1-35)
+                for col in front_cols:
+                    if col in df.columns:
+                        invalid_front = df[(df[col] < 1) | (df[col] > 35)]
+                        if len(invalid_front) > 0:
+                            issues.append(f"前区号码 {col} 超出范围 (1-35): {len(invalid_front)} 期")
+                            if detailed:
+                                print(f"❌ 前区号码 {col} 超出范围: {len(invalid_front)} 期")
+
+                # 检查后区号码范围 (1-12)
+                for col in back_cols:
+                    if col in df.columns:
+                        invalid_back = df[(df[col] < 1) | (df[col] > 12)]
+                        if len(invalid_back) > 0:
+                            issues.append(f"后区号码 {col} 超出范围 (1-12): {len(invalid_back)} 期")
+                            if detailed:
+                                print(f"❌ 后区号码 {col} 超出范围: {len(invalid_back)} 期")
+
+                if not any("超出范围" in issue for issue in issues):
+                    print("✅ 数据范围正常")
+
+                # 4. 检查重复期号
+                print("🔄 检查重复期号...")
+                if 'issue' in df.columns:
+                    duplicates = df[df.duplicated(subset=['issue'], keep=False)]
+                    if len(duplicates) > 0:
+                        issues.append(f"发现重复期号: {len(duplicates)} 期")
+                        if detailed:
+                            print(f"❌ 发现重复期号: {duplicates['issue'].unique()}")
+                    else:
+                        print("✅ 无重复期号")
+
+            # 5. 检查缓存状态
+            print("💾 检查缓存状态...")
+            cache_info = cache_manager.get_cache_info()
+            if cache_info['total']['files'] == 0:
+                issues.append("缓存为空")
+                print("⚠️ 缓存为空")
+            else:
+                print(f"✅ 缓存正常，{cache_info['total']['files']} 个文件")
+
+            # 输出检查结果
+            print("\n" + "="*50)
+            if len(issues) == 0:
+                print("🎉 数据完整性检查通过，未发现问题")
+            else:
+                print(f"⚠️ 发现 {len(issues)} 个问题:")
+                for i, issue in enumerate(issues, 1):
+                    print(f"  {i}. {issue}")
+
+                if auto_fix:
+                    print("\n🔧 尝试自动修复...")
+                    self._auto_fix_data_issues(issues)
+                else:
+                    print("\n💡 建议使用 --fix 参数自动修复问题")
+
+        except Exception as e:
+            print(f"❌ 数据检查过程中出错: {e}")
+
+    def _auto_fix_data_issues(self, issues):
+        """自动修复数据问题"""
+        fixed_count = 0
+
+        for issue in issues:
+            try:
+                if "缓存为空" in issue:
+                    print("🔧 清理并重建缓存...")
+                    cache_manager.clear_cache()
+                    data_manager._load_data()
+                    fixed_count += 1
+                    print("✅ 缓存已重建")
+                elif "数据文件不存在" in issue:
+                    print("🔧 尝试重新加载数据...")
+                    data_manager._load_data()
+                    fixed_count += 1
+                    print("✅ 数据已重新加载")
+                else:
+                    print(f"⚠️ 无法自动修复: {issue}")
+            except Exception as e:
+                print(f"❌ 修复失败: {e}")
+
+        if fixed_count > 0:
+            print(f"\n🎉 成功修复 {fixed_count} 个问题")
+        else:
+            print("\n⚠️ 未能自动修复任何问题，请手动处理")
+
     def _compare_with_latest(self, actual_front: List[int], actual_back: List[int]):
         """与最新开奖结果比较"""
         print("\n🎯 号码比较功能:")
@@ -1383,7 +1507,12 @@ def main():
     data_update_parser.add_argument('--source', choices=['zhcw'], default='zhcw', help='数据源')
     data_update_parser.add_argument('--periods', type=int, help='更新指定期数')
     data_update_parser.add_argument('--incremental', action='store_true', help='增量更新（只获取最新数据）')
-    
+
+    # 数据检查
+    data_check_parser = data_subparsers.add_parser('check', help='检查数据完整性')
+    data_check_parser.add_argument('--detailed', action='store_true', help='显示详细检查信息')
+    data_check_parser.add_argument('--fix', action='store_true', help='自动修复发现的问题')
+
     # ==================== 分析命令 ====================
     analyze_parser = subparsers.add_parser('analyze', help='数据分析')
     analyze_parser.add_argument('-t', '--type', choices=['basic', 'advanced', 'comprehensive'],

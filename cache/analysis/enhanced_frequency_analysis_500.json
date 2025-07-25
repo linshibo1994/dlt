@@ -1,0 +1,999 @@
+{
+  "front_frequency": {
+    "32": 115,
+    "33": 109,
+    "35": 102,
+    "29": 100,
+    "34": 90,
+    "30": 89,
+    "31": 84,
+    "25": 82,
+    "10": 79,
+    "22": 79,
+    "11": 77,
+    "24": 76,
+    "1": 74,
+    "23": 72,
+    "19": 71,
+    "21": 69,
+    "2": 68,
+    "5": 68,
+    "27": 68,
+    "14": 67,
+    "6": 66,
+    "3": 65,
+    "12": 65,
+    "13": 65,
+    "26": 65,
+    "7": 61,
+    "28": 59,
+    "20": 58,
+    "8": 55,
+    "18": 55,
+    "9": 54,
+    "17": 52,
+    "4": 50,
+    "15": 48,
+    "16": 43
+  },
+  "back_frequency": {
+    "10": 105,
+    "9": 92,
+    "4": 88,
+    "6": 85,
+    "2": 84,
+    "11": 84,
+    "5": 81,
+    "8": 80,
+    "7": 80,
+    "1": 76,
+    "12": 76,
+    "3": 69
+  },
+  "front_enhanced": {
+    "1": {
+      "observed_frequency": 74,
+      "theoretical_frequency": 71.42857142857143,
+      "probability": 0.0296,
+      "deviation": 2.5714285714285694,
+      "relative_deviation": 0.03599999999999997,
+      "confidence_interval": [
+        56.0,
+        87.0
+      ],
+      "z_score": 0.3286335345030994,
+      "trend": {
+        "trend": "stable",
+        "slope": 0.015037593984962414,
+        "recent_frequency": 6,
+        "recent_periods": 20
+      },
+      "heat_level": "normal",
+      "prediction_weight": 0.028658195589107063
+    },
+    "2": {
+      "observed_frequency": 68,
+      "theoretical_frequency": 71.42857142857143,
+      "probability": 0.0272,
+      "deviation": -3.4285714285714306,
+      "relative_deviation": -0.04800000000000003,
+      "confidence_interval": [
+        56.0,
+        87.0
+      ],
+      "z_score": -0.4381780460041331,
+      "trend": {
+        "trend": "stable",
+        "slope": -0.0045112781954887386,
+        "recent_frequency": 6,
+        "recent_periods": 20
+      },
+      "heat_level": "normal",
+      "prediction_weight": 0.026058187434743463
+    },
+    "3": {
+      "observed_frequency": 65,
+      "theoretical_frequency": 71.42857142857143,
+      "probability": 0.026,
+      "deviation": -6.428571428571431,
+      "relative_deviation": -0.09000000000000002,
+      "confidence_interval": [
+        56.0,
+        87.0
+      ],
+      "z_score": -0.8215838362577494,
+      "trend": {
+        "trend": "stable",
+        "slope": -0.02406015037593985,
+        "recent_frequency": 8,
+        "recent_periods": 20
+      },
+      "heat_level": "normal",
+      "prediction_weight": 0.024026057916667357
+    },
+    "4": {
+      "observed_frequency": 50,
+      "theoretical_frequency": 71.42857142857143,
+      "probability": 0.02,
+      "deviation": -21.42857142857143,
+      "relative_deviation": -0.30000000000000004,
+      "confidence_interval": [
+        56.0,
+        87.0
+      ],
+      "z_score": -2.7386127875258306,
+      "trend": {
+        "trend": "stable",
+        "slope": 0.02030075187969925,
+        "recent_frequency": 7,
+        "recent_periods": 20
+      },
+      "heat_level": "cold",
+      "prediction_weight": 0.015700296675619826
+    },
+    "5": {
+      "observed_frequency": 68,
+      "theoretical_frequency": 71.42857142857143,
+      "probability": 0.0272,
+      "deviation": -3.4285714285714306,
+      "relative_deviation": -0.04800000000000003,
+      "confidence_interval": [
+        56.0,
+        87.0
+      ],
+      "z_score": -0.4381780460041331,
+      "trend": {
+        "trend": "stable",
+        "slope": -0.0015037593984962648,
+        "recent_frequency": 2,
+        "recent_periods": 20
+      },
+      "heat_level": "normal",
+      "prediction_weight": 0.026058187434743463
+    },
+    "6": {
+      "observed_frequency": 66,
+      "theoretical_frequency": 71.42857142857143,
+      "probability": 0.0264,
+      "deviation": -5.428571428571431,
+      "relative_deviation": -0.07600000000000003,
+      "confidence_interval": [
+        56.0,
+        87.0
+      ],
+      "z_score": -0.6937819061732107,
+      "trend": {
+        "trend": "stable",
+        "slope": -0.018796992481203027,
+        "recent_frequency": 9,
+        "recent_periods": 20
+      },
+      "heat_level": "normal",
+      "prediction_weight": 0.024687243700715504
+    },
+    "7": {
+      "observed_frequency": 61,
+      "theoretical_frequency": 71.42857142857143,
+      "probability": 0.0244,
+      "deviation": -10.42857142857143,
+      "relative_deviation": -0.14600000000000002,
+      "confidence_interval": [
+        56.0,
+        87.0
+      ],
+      "z_score": -1.3327915565959045,
+      "trend": {
+        "trend": "stable",
+        "slope": -0.0037593984962405935,
+        "recent_frequency": 3,
+        "recent_periods": 20
+      },
+      "heat_level": "cold",
+      "prediction_weight": 0.021530441002242495
+    },
+    "8": {
+      "observed_frequency": 55,
+      "theoretical_frequency": 71.42857142857143,
+      "probability": 0.022,
+      "deviation": -16.42857142857143,
+      "relative_deviation": -0.23,
+      "confidence_interval": [
+        56.0,
+        87.0
+      ],
+      "z_score": -2.099603137103137,
+      "trend": {
+        "trend": "stable",
+        "slope": -0.0022556390977443545,
+        "recent_frequency": 3,
+        "recent_periods": 20
+      },
+      "heat_level": "cold",
+      "prediction_weight": 0.01818241453931455
+    },
+    "9": {
+      "observed_frequency": 54,
+      "theoretical_frequency": 71.42857142857143,
+      "probability": 0.0216,
+      "deviation": -17.42857142857143,
+      "relative_deviation": -0.24400000000000002,
+      "confidence_interval": [
+        56.0,
+        87.0
+      ],
+      "z_score": -2.227405067187676,
+      "trend": {
+        "trend": "stable",
+        "slope": 0.0007518796992481357,
+        "recent_frequency": 7,
+        "recent_periods": 20
+      },
+      "heat_level": "cold",
+      "prediction_weight": 0.017665236312456638
+    },
+    "10": {
+      "observed_frequency": 79,
+      "theoretical_frequency": 71.42857142857143,
+      "probability": 0.0316,
+      "deviation": 7.571428571428569,
+      "relative_deviation": 0.10599999999999997,
+      "confidence_interval": [
+        56.0,
+        87.0
+      ],
+      "z_score": 0.9676431849257932,
+      "trend": {
+        "trend": "stable",
+        "slope": 0.009022556390977442,
+        "recent_frequency": 2,
+        "recent_periods": 20
+      },
+      "heat_level": "hot",
+      "prediction_weight": 0.02881202412149207
+    },
+    "11": {
+      "observed_frequency": 77,
+      "theoretical_frequency": 71.42857142857143,
+      "probability": 0.0308,
+      "deviation": 5.571428571428569,
+      "relative_deviation": 0.07799999999999997,
+      "confidence_interval": [
+        56.0,
+        87.0
+      ],
+      "z_score": 0.7120393247567157,
+      "trend": {
+        "trend": "stable",
+        "slope": 0.0037593984962405905,
+        "recent_frequency": 7,
+        "recent_periods": 20
+      },
+      "heat_level": "normal",
+      "prediction_weight": 0.028752695043620474
+    },
+    "12": {
+      "observed_frequency": 65,
+      "theoretical_frequency": 71.42857142857143,
+      "probability": 0.026,
+      "deviation": -6.428571428571431,
+      "relative_deviation": -0.09000000000000002,
+      "confidence_interval": [
+        56.0,
+        87.0
+      ],
+      "z_score": -0.8215838362577494,
+      "trend": {
+        "trend": "stable",
+        "slope": -0.030075187969924817,
+        "recent_frequency": 8,
+        "recent_periods": 20
+      },
+      "heat_level": "normal",
+      "prediction_weight": 0.024026057916667357
+    },
+    "13": {
+      "observed_frequency": 65,
+      "theoretical_frequency": 71.42857142857143,
+      "probability": 0.026,
+      "deviation": -6.428571428571431,
+      "relative_deviation": -0.09000000000000002,
+      "confidence_interval": [
+        56.0,
+        87.0
+      ],
+      "z_score": -0.8215838362577494,
+      "trend": {
+        "trend": "stable",
+        "slope": -0.016541353383458645,
+        "recent_frequency": 2,
+        "recent_periods": 20
+      },
+      "heat_level": "normal",
+      "prediction_weight": 0.024026057916667357
+    },
+    "14": {
+      "observed_frequency": 67,
+      "theoretical_frequency": 71.42857142857143,
+      "probability": 0.0268,
+      "deviation": -4.428571428571431,
+      "relative_deviation": -0.06200000000000003,
+      "confidence_interval": [
+        56.0,
+        87.0
+      ],
+      "z_score": -0.5659799760886719,
+      "trend": {
+        "trend": "stable",
+        "slope": -0.012781954887218033,
+        "recent_frequency": 3,
+        "recent_periods": 20
+      },
+      "heat_level": "normal",
+      "prediction_weight": 0.025364424370148072
+    },
+    "15": {
+      "observed_frequency": 48,
+      "theoretical_frequency": 71.42857142857143,
+      "probability": 0.0192,
+      "deviation": -23.42857142857143,
+      "relative_deviation": -0.328,
+      "confidence_interval": [
+        56.0,
+        87.0
+      ],
+      "z_score": -2.994216647694908,
+      "trend": {
+        "trend": "stable",
+        "slope": 0.01052631578947368,
+        "recent_frequency": 2,
+        "recent_periods": 20
+      },
+      "heat_level": "very_cold",
+      "prediction_weight": 0.01477580412929775
+    },
+    "16": {
+      "observed_frequency": 43,
+      "theoretical_frequency": 71.42857142857143,
+      "probability": 0.0172,
+      "deviation": -28.42857142857143,
+      "relative_deviation": -0.398,
+      "confidence_interval": [
+        56.0,
+        87.0
+      ],
+      "z_score": -3.6332262981176022,
+      "trend": {
+        "trend": "stable",
+        "slope": 0.010526315789473686,
+        "recent_frequency": 4,
+        "recent_periods": 20
+      },
+      "heat_level": "very_cold",
+      "prediction_weight": 0.012616235969306017
+    },
+    "17": {
+      "observed_frequency": 52,
+      "theoretical_frequency": 71.42857142857143,
+      "probability": 0.0208,
+      "deviation": -19.42857142857143,
+      "relative_deviation": -0.272,
+      "confidence_interval": [
+        56.0,
+        87.0
+      ],
+      "z_score": -2.483008927356753,
+      "trend": {
+        "trend": "stable",
+        "slope": -0.01353383458646618,
+        "recent_frequency": 4,
+        "recent_periods": 20
+      },
+      "heat_level": "cold",
+      "prediction_weight": 0.016662649302778595
+    },
+    "18": {
+      "observed_frequency": 55,
+      "theoretical_frequency": 71.42857142857143,
+      "probability": 0.022,
+      "deviation": -16.42857142857143,
+      "relative_deviation": -0.23,
+      "confidence_interval": [
+        56.0,
+        87.0
+      ],
+      "z_score": -2.099603137103137,
+      "trend": {
+        "trend": "stable",
+        "slope": -0.002255639097744378,
+        "recent_frequency": 3,
+        "recent_periods": 20
+      },
+      "heat_level": "cold",
+      "prediction_weight": 0.01818241453931455
+    },
+    "19": {
+      "observed_frequency": 71,
+      "theoretical_frequency": 71.42857142857143,
+      "probability": 0.0284,
+      "deviation": -0.4285714285714306,
+      "relative_deviation": -0.006000000000000028,
+      "confidence_interval": [
+        56.0,
+        87.0
+      ],
+      "z_score": -0.05477225575051687,
+      "trend": {
+        "trend": "stable",
+        "slope": 0.0022556390977443654,
+        "recent_frequency": 3,
+        "recent_periods": 20
+      },
+      "heat_level": "normal",
+      "prediction_weight": 0.02824529415249311
+    },
+    "20": {
+      "observed_frequency": 58,
+      "theoretical_frequency": 71.42857142857143,
+      "probability": 0.0232,
+      "deviation": -13.42857142857143,
+      "relative_deviation": -0.18800000000000003,
+      "confidence_interval": [
+        56.0,
+        87.0
+      ],
+      "z_score": -1.7161973468495206,
+      "trend": {
+        "trend": "stable",
+        "slope": 0.015037593984962402,
+        "recent_frequency": 2,
+        "recent_periods": 20
+      },
+      "heat_level": "cold",
+      "prediction_weight": 0.019801646654781267
+    },
+    "21": {
+      "observed_frequency": 69,
+      "theoretical_frequency": 71.42857142857143,
+      "probability": 0.0276,
+      "deviation": -2.4285714285714306,
+      "relative_deviation": -0.03400000000000003,
+      "confidence_interval": [
+        56.0,
+        87.0
+      ],
+      "z_score": -0.3103761159195944,
+      "trend": {
+        "trend": "stable",
+        "slope": 0.003759398496240603,
+        "recent_frequency": 1,
+        "recent_periods": 20
+      },
+      "heat_level": "normal",
+      "prediction_weight": 0.02676914953411311
+    },
+    "22": {
+      "observed_frequency": 79,
+      "theoretical_frequency": 71.42857142857143,
+      "probability": 0.0316,
+      "deviation": 7.571428571428569,
+      "relative_deviation": 0.10599999999999997,
+      "confidence_interval": [
+        56.0,
+        87.0
+      ],
+      "z_score": 0.9676431849257932,
+      "trend": {
+        "trend": "stable",
+        "slope": 0.01428571428571429,
+        "recent_frequency": 3,
+        "recent_periods": 20
+      },
+      "heat_level": "hot",
+      "prediction_weight": 0.02881202412149207
+    },
+    "23": {
+      "observed_frequency": 72,
+      "theoretical_frequency": 71.42857142857143,
+      "probability": 0.0288,
+      "deviation": 0.5714285714285694,
+      "relative_deviation": 0.00799999999999997,
+      "confidence_interval": [
+        56.0,
+        87.0
+      ],
+      "z_score": 0.07302967433402188,
+      "trend": {
+        "trend": "stable",
+        "slope": -0.0022556390977443628,
+        "recent_frequency": 5,
+        "recent_periods": 20
+      },
+      "heat_level": "normal",
+      "prediction_weight": 0.028591199401886116
+    },
+    "24": {
+      "observed_frequency": 76,
+      "theoretical_frequency": 71.42857142857143,
+      "probability": 0.0304,
+      "deviation": 4.571428571428569,
+      "relative_deviation": 0.06399999999999997,
+      "confidence_interval": [
+        56.0,
+        87.0
+      ],
+      "z_score": 0.584237394672177,
+      "trend": {
+        "trend": "stable",
+        "slope": 0.006015037593984962,
+        "recent_frequency": 2,
+        "recent_periods": 20
+      },
+      "heat_level": "normal",
+      "prediction_weight": 0.028721955929770195
+    },
+    "25": {
+      "observed_frequency": 82,
+      "theoretical_frequency": 71.42857142857143,
+      "probability": 0.0328,
+      "deviation": 10.57142857142857,
+      "relative_deviation": 0.14799999999999996,
+      "confidence_interval": [
+        56.0,
+        87.0
+      ],
+      "z_score": 1.3510489751794095,
+      "trend": {
+        "trend": "stable",
+        "slope": 0.0150375939849624,
+        "recent_frequency": 2,
+        "recent_periods": 20
+      },
+      "heat_level": "hot",
+      "prediction_weight": 0.028896007824229814
+    },
+    "26": {
+      "observed_frequency": 65,
+      "theoretical_frequency": 71.42857142857143,
+      "probability": 0.026,
+      "deviation": -6.428571428571431,
+      "relative_deviation": -0.09000000000000002,
+      "confidence_interval": [
+        56.0,
+        87.0
+      ],
+      "z_score": -0.8215838362577494,
+      "trend": {
+        "trend": "stable",
+        "slope": 0.005263157894736844,
+        "recent_frequency": 1,
+        "recent_periods": 20
+      },
+      "heat_level": "normal",
+      "prediction_weight": 0.024026057916667357
+    },
+    "27": {
+      "observed_frequency": 68,
+      "theoretical_frequency": 71.42857142857143,
+      "probability": 0.0272,
+      "deviation": -3.4285714285714306,
+      "relative_deviation": -0.04800000000000003,
+      "confidence_interval": [
+        56.0,
+        87.0
+      ],
+      "z_score": -0.4381780460041331,
+      "trend": {
+        "trend": "stable",
+        "slope": -0.003759398496240599,
+        "recent_frequency": 1,
+        "recent_periods": 20
+      },
+      "heat_level": "normal",
+      "prediction_weight": 0.026058187434743463
+    },
+    "28": {
+      "observed_frequency": 59,
+      "theoretical_frequency": 71.42857142857143,
+      "probability": 0.0236,
+      "deviation": -12.42857142857143,
+      "relative_deviation": -0.17400000000000002,
+      "confidence_interval": [
+        56.0,
+        87.0
+      ],
+      "z_score": -1.5883954167649819,
+      "trend": {
+        "trend": "stable",
+        "slope": -0.004511278195488722,
+        "recent_frequency": 2,
+        "recent_periods": 20
+      },
+      "heat_level": "cold",
+      "prediction_weight": 0.02036520083346291
+    },
+    "29": {
+      "observed_frequency": 100,
+      "theoretical_frequency": 71.42857142857143,
+      "probability": 0.04,
+      "deviation": 28.57142857142857,
+      "relative_deviation": 0.39999999999999997,
+      "confidence_interval": [
+        56.0,
+        87.0
+      ],
+      "z_score": 3.651483716701107,
+      "trend": {
+        "trend": "stable",
+        "slope": -0.006766917293233073,
+        "recent_frequency": 7,
+        "recent_periods": 20
+      },
+      "heat_level": "very_hot",
+      "prediction_weight": 0.029300844384456428
+    },
+    "30": {
+      "observed_frequency": 89,
+      "theoretical_frequency": 71.42857142857143,
+      "probability": 0.0356,
+      "deviation": 17.57142857142857,
+      "relative_deviation": 0.24599999999999997,
+      "confidence_interval": [
+        56.0,
+        87.0
+      ],
+      "z_score": 2.245662485771181,
+      "trend": {
+        "trend": "stable",
+        "slope": 0.008270676691729324,
+        "recent_frequency": 1,
+        "recent_periods": 20
+      },
+      "heat_level": "hot",
+      "prediction_weight": 0.029071518214196526
+    },
+    "31": {
+      "observed_frequency": 84,
+      "theoretical_frequency": 71.42857142857143,
+      "probability": 0.0336,
+      "deviation": 12.57142857142857,
+      "relative_deviation": 0.17599999999999996,
+      "confidence_interval": [
+        56.0,
+        87.0
+      ],
+      "z_score": 1.606652835348487,
+      "trend": {
+        "trend": "stable",
+        "slope": 0.018796992481203003,
+        "recent_frequency": 3,
+        "recent_periods": 20
+      },
+      "heat_level": "hot",
+      "prediction_weight": 0.02894891445160655
+    },
+    "32": {
+      "observed_frequency": 115,
+      "theoretical_frequency": 71.42857142857143,
+      "probability": 0.046,
+      "deviation": 43.57142857142857,
+      "relative_deviation": 0.61,
+      "confidence_interval": [
+        56.0,
+        87.0
+      ],
+      "z_score": 5.5685126679691885,
+      "trend": {
+        "trend": "stable",
+        "slope": -0.004511278195488714,
+        "recent_frequency": 4,
+        "recent_periods": 20
+      },
+      "heat_level": "very_hot",
+      "prediction_weight": 0.029546817336405455
+    },
+    "33": {
+      "observed_frequency": 109,
+      "theoretical_frequency": 71.42857142857143,
+      "probability": 0.0436,
+      "deviation": 37.57142857142857,
+      "relative_deviation": 0.5259999999999999,
+      "confidence_interval": [
+        56.0,
+        87.0
+      ],
+      "z_score": 4.8017010874619555,
+      "trend": {
+        "trend": "stable",
+        "slope": -0.0007518796992481187,
+        "recent_frequency": 1,
+        "recent_periods": 20
+      },
+      "heat_level": "very_hot",
+      "prediction_weight": 0.02945607382717123
+    },
+    "34": {
+      "observed_frequency": 90,
+      "theoretical_frequency": 71.42857142857143,
+      "probability": 0.036,
+      "deviation": 18.57142857142857,
+      "relative_deviation": 0.25999999999999995,
+      "confidence_interval": [
+        56.0,
+        87.0
+      ],
+      "z_score": 2.3734644158557194,
+      "trend": {
+        "trend": "stable",
+        "slope": -0.0007518796992481067,
+        "recent_frequency": 7,
+        "recent_periods": 20
+      },
+      "heat_level": "hot",
+      "prediction_weight": 0.02909451936021131
+    },
+    "35": {
+      "observed_frequency": 102,
+      "theoretical_frequency": 71.42857142857143,
+      "probability": 0.0408,
+      "deviation": 30.57142857142857,
+      "relative_deviation": 0.42799999999999994,
+      "confidence_interval": [
+        56.0,
+        87.0
+      ],
+      "z_score": 3.9070875768701847,
+      "trend": {
+        "trend": "stable",
+        "slope": 0.03157894736842105,
+        "recent_frequency": 4,
+        "recent_periods": 20
+      },
+      "heat_level": "very_hot",
+      "prediction_weight": 0.029337558834286216
+    }
+  },
+  "back_enhanced": {
+    "1": {
+      "observed_frequency": 76,
+      "theoretical_frequency": 83.33333333333333,
+      "probability": 0.076,
+      "deviation": -7.333333333333329,
+      "relative_deviation": -0.08799999999999995,
+      "confidence_interval": [
+        67.0,
+        100.0
+      ],
+      "z_score": -0.8799999999999993,
+      "trend": {
+        "trend": "stable",
+        "slope": 0.015037593984962414,
+        "recent_frequency": 6,
+        "recent_periods": 20
+      },
+      "heat_level": "normal",
+      "prediction_weight": 0.0698529411764706
+    },
+    "2": {
+      "observed_frequency": 84,
+      "theoretical_frequency": 83.33333333333333,
+      "probability": 0.084,
+      "deviation": 0.6666666666666714,
+      "relative_deviation": 0.008000000000000057,
+      "confidence_interval": [
+        67.0,
+        100.0
+      ],
+      "z_score": 0.08000000000000056,
+      "trend": {
+        "trend": "stable",
+        "slope": -0.0045112781954887386,
+        "recent_frequency": 6,
+        "recent_periods": 20
+      },
+      "heat_level": "normal",
+      "prediction_weight": 0.08333333333333334
+    },
+    "3": {
+      "observed_frequency": 69,
+      "theoretical_frequency": 83.33333333333333,
+      "probability": 0.069,
+      "deviation": -14.333333333333329,
+      "relative_deviation": -0.17199999999999996,
+      "confidence_interval": [
+        67.0,
+        100.0
+      ],
+      "z_score": -1.7199999999999993,
+      "trend": {
+        "trend": "stable",
+        "slope": -0.02406015037593985,
+        "recent_frequency": 8,
+        "recent_periods": 20
+      },
+      "heat_level": "cold",
+      "prediction_weight": 0.05887372013651878
+    },
+    "4": {
+      "observed_frequency": 88,
+      "theoretical_frequency": 83.33333333333333,
+      "probability": 0.088,
+      "deviation": 4.666666666666671,
+      "relative_deviation": 0.05600000000000006,
+      "confidence_interval": [
+        67.0,
+        100.0
+      ],
+      "z_score": 0.5600000000000005,
+      "trend": {
+        "trend": "stable",
+        "slope": 0.02030075187969925,
+        "recent_frequency": 7,
+        "recent_periods": 20
+      },
+      "heat_level": "normal",
+      "prediction_weight": 0.08333333333333333
+    },
+    "5": {
+      "observed_frequency": 81,
+      "theoretical_frequency": 83.33333333333333,
+      "probability": 0.081,
+      "deviation": -2.3333333333333286,
+      "relative_deviation": -0.027999999999999945,
+      "confidence_interval": [
+        67.0,
+        100.0
+      ],
+      "z_score": -0.2799999999999994,
+      "trend": {
+        "trend": "stable",
+        "slope": -0.0015037593984962648,
+        "recent_frequency": 2,
+        "recent_periods": 20
+      },
+      "heat_level": "normal",
+      "prediction_weight": 0.07879377431906615
+    },
+    "6": {
+      "observed_frequency": 85,
+      "theoretical_frequency": 83.33333333333333,
+      "probability": 0.085,
+      "deviation": 1.6666666666666714,
+      "relative_deviation": 0.02000000000000006,
+      "confidence_interval": [
+        67.0,
+        100.0
+      ],
+      "z_score": 0.20000000000000057,
+      "trend": {
+        "trend": "stable",
+        "slope": -0.018796992481203027,
+        "recent_frequency": 9,
+        "recent_periods": 20
+      },
+      "heat_level": "normal",
+      "prediction_weight": 0.08333333333333334
+    },
+    "7": {
+      "observed_frequency": 80,
+      "theoretical_frequency": 83.33333333333333,
+      "probability": 0.08,
+      "deviation": -3.3333333333333286,
+      "relative_deviation": -0.039999999999999945,
+      "confidence_interval": [
+        67.0,
+        100.0
+      ],
+      "z_score": -0.3999999999999994,
+      "trend": {
+        "trend": "stable",
+        "slope": -0.0037593984962405935,
+        "recent_frequency": 3,
+        "recent_periods": 20
+      },
+      "heat_level": "normal",
+      "prediction_weight": 0.07692307692307691
+    },
+    "8": {
+      "observed_frequency": 80,
+      "theoretical_frequency": 83.33333333333333,
+      "probability": 0.08,
+      "deviation": -3.3333333333333286,
+      "relative_deviation": -0.039999999999999945,
+      "confidence_interval": [
+        67.0,
+        100.0
+      ],
+      "z_score": -0.3999999999999994,
+      "trend": {
+        "trend": "stable",
+        "slope": -0.0022556390977443545,
+        "recent_frequency": 3,
+        "recent_periods": 20
+      },
+      "heat_level": "normal",
+      "prediction_weight": 0.07692307692307691
+    },
+    "9": {
+      "observed_frequency": 92,
+      "theoretical_frequency": 83.33333333333333,
+      "probability": 0.092,
+      "deviation": 8.666666666666671,
+      "relative_deviation": 0.10400000000000006,
+      "confidence_interval": [
+        67.0,
+        100.0
+      ],
+      "z_score": 1.0400000000000005,
+      "trend": {
+        "trend": "stable",
+        "slope": 0.0007518796992481357,
+        "recent_frequency": 7,
+        "recent_periods": 20
+      },
+      "heat_level": "hot",
+      "prediction_weight": 0.08333333333333333
+    },
+    "10": {
+      "observed_frequency": 105,
+      "theoretical_frequency": 83.33333333333333,
+      "probability": 0.105,
+      "deviation": 21.66666666666667,
+      "relative_deviation": 0.26000000000000006,
+      "confidence_interval": [
+        67.0,
+        100.0
+      ],
+      "z_score": 2.6000000000000005,
+      "trend": {
+        "trend": "stable",
+        "slope": 0.009022556390977442,
+        "recent_frequency": 2,
+        "recent_periods": 20
+      },
+      "heat_level": "hot",
+      "prediction_weight": 0.08333333333333333
+    },
+    "11": {
+      "observed_frequency": 84,
+      "theoretical_frequency": 83.33333333333333,
+      "probability": 0.084,
+      "deviation": 0.6666666666666714,
+      "relative_deviation": 0.008000000000000057,
+      "confidence_interval": [
+        67.0,
+        100.0
+      ],
+      "z_score": 0.08000000000000056,
+      "trend": {
+        "trend": "stable",
+        "slope": 0.0037593984962405905,
+        "recent_frequency": 7,
+        "recent_periods": 20
+      },
+      "heat_level": "normal",
+      "prediction_weight": 0.08333333333333334
+    },
+    "12": {
+      "observed_frequency": 76,
+      "theoretical_frequency": 83.33333333333333,
+      "probability": 0.076,
+      "deviation": -7.333333333333329,
+      "relative_deviation": -0.08799999999999995,
+      "confidence_interval": [
+        67.0,
+        100.0
+      ],
+      "z_score": -0.8799999999999993,
+      "trend": {
+        "trend": "stable",
+        "slope": -0.030075187969924817,
+        "recent_frequency": 8,
+        "recent_periods": 20
+      },
+      "heat_level": "normal",
+      "prediction_weight": 0.0698529411764706
+    }
+  },
+  "analysis_periods": 500,
+  "timestamp": "2025-07-25T21:54:51.318321"
+}

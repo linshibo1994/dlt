@@ -1,0 +1,2650 @@
+{
+  "front_hot": [
+    "1",
+    "12",
+    "16",
+    "21",
+    "22",
+    "24",
+    "25",
+    "29",
+    "31",
+    "32",
+    "33",
+    "34",
+    "35",
+    "4"
+  ],
+  "front_cold": [
+    "10",
+    "11",
+    "13",
+    "14",
+    "15",
+    "17",
+    "18",
+    "19",
+    "2",
+    "20",
+    "23",
+    "26",
+    "27",
+    "28",
+    "3",
+    "30",
+    "5",
+    "6",
+    "7",
+    "8",
+    "9"
+  ],
+  "back_hot": [
+    "1",
+    "10",
+    "11",
+    "12",
+    "6",
+    "9"
+  ],
+  "back_cold": [
+    "2",
+    "3",
+    "4",
+    "5",
+    "7",
+    "8"
+  ],
+  "front_avg_freq": 14.285714285714286,
+  "back_avg_freq": 16.666666666666668,
+  "front_enhanced": {
+    "1": {
+      "observed_frequency": 0,
+      "theoretical_frequency": 14.285714285714286,
+      "temperature_score": -3.5805743701971644,
+      "temperature_level": "extremely_cold",
+      "relative_heat": 0.0,
+      "dynamic_threshold": {
+        "very_hot_threshold": 22.265280025010824,
+        "hot_threshold": 18.275497155362554,
+        "cold_threshold": 10.295931416066018,
+        "very_cold_threshold": 6.306148546417749,
+        "current_classification": "very_cold"
+      },
+      "temperature_trend": {
+        "trend": "heating_up",
+        "slope": 0.1051948051948052,
+        "recent_temperatures": [
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          3,
+          3,
+          3,
+          2,
+          2,
+          3,
+          3,
+          3,
+          3,
+          4,
+          3,
+          4,
+          4,
+          4
+        ],
+        "trend_strength": 0.1051948051948052
+      },
+      "heat_stability": {
+        "stability": "very_stable",
+        "variance": 1.8399999999999999,
+        "coefficient_of_variation": 0.205525151003796,
+        "segment_frequencies": [
+          9,
+          6,
+          5,
+          7,
+          6
+        ]
+      },
+      "prediction_weight": 0.09368209156698713
+    },
+    "2": {
+      "observed_frequency": 0,
+      "theoretical_frequency": 14.285714285714286,
+      "temperature_score": -3.5805743701971644,
+      "temperature_level": "extremely_cold",
+      "relative_heat": 0.0,
+      "dynamic_threshold": {
+        "very_hot_threshold": 22.265280025010824,
+        "hot_threshold": 18.275497155362554,
+        "cold_threshold": 10.295931416066018,
+        "very_cold_threshold": 6.306148546417749,
+        "current_classification": "very_cold"
+      },
+      "temperature_trend": {
+        "trend": "stable",
+        "slope": -0.05584415584415586,
+        "recent_temperatures": [
+          4,
+          4,
+          4,
+          4,
+          3,
+          3,
+          3,
+          4,
+          4,
+          4,
+          3,
+          2,
+          2,
+          3,
+          3,
+          3,
+          3,
+          3,
+          3,
+          3,
+          3
+        ],
+        "trend_strength": 0.05584415584415586
+      },
+      "heat_stability": {
+        "stability": "stable",
+        "variance": 3.44,
+        "coefficient_of_variation": 0.343467351685026,
+        "segment_frequencies": [
+          4,
+          9,
+          5,
+          5,
+          4
+        ]
+      },
+      "prediction_weight": 0.07806840963915594
+    },
+    "3": {
+      "observed_frequency": 0,
+      "theoretical_frequency": 14.285714285714286,
+      "temperature_score": -3.5805743701971644,
+      "temperature_level": "extremely_cold",
+      "relative_heat": 0.0,
+      "dynamic_threshold": {
+        "very_hot_threshold": 22.265280025010824,
+        "hot_threshold": 18.275497155362554,
+        "cold_threshold": 10.295931416066018,
+        "very_cold_threshold": 6.306148546417749,
+        "current_classification": "very_cold"
+      },
+      "temperature_trend": {
+        "trend": "stable",
+        "slope": -0.0441558441558442,
+        "recent_temperatures": [
+          3,
+          3,
+          4,
+          4,
+          4,
+          5,
+          5,
+          5,
+          5,
+          5,
+          5,
+          5,
+          5,
+          4,
+          3,
+          3,
+          3,
+          3,
+          4,
+          3,
+          3
+        ],
+        "trend_strength": 0.0441558441558442
+      },
+      "heat_stability": {
+        "stability": "very_stable",
+        "variance": 1.2,
+        "coefficient_of_variation": 0.18257418583505536,
+        "segment_frequencies": [
+          5,
+          6,
+          8,
+          6,
+          5
+        ]
+      },
+      "prediction_weight": 0.07806840963915594
+    },
+    "4": {
+      "observed_frequency": 0,
+      "theoretical_frequency": 14.285714285714286,
+      "temperature_score": -3.5805743701971644,
+      "temperature_level": "extremely_cold",
+      "relative_heat": 0.0,
+      "dynamic_threshold": {
+        "very_hot_threshold": 22.265280025010824,
+        "hot_threshold": 18.275497155362554,
+        "cold_threshold": 10.295931416066018,
+        "very_cold_threshold": 6.306148546417749,
+        "current_classification": "very_cold"
+      },
+      "temperature_trend": {
+        "trend": "stable",
+        "slope": 0.010389610389610414,
+        "recent_temperatures": [
+          2,
+          2,
+          3,
+          4,
+          4,
+          4,
+          4,
+          3,
+          3,
+          3,
+          2,
+          2,
+          1,
+          1,
+          2,
+          2,
+          2,
+          3,
+          4,
+          4,
+          5
+        ],
+        "trend_strength": 0.010389610389610414
+      },
+      "heat_stability": {
+        "stability": "stable",
+        "variance": 4.959999999999999,
+        "coefficient_of_variation": 0.3839837491606911,
+        "segment_frequencies": [
+          10,
+          4,
+          6,
+          4,
+          5
+        ]
+      },
+      "prediction_weight": 0.07806840963915594
+    },
+    "5": {
+      "observed_frequency": 0,
+      "theoretical_frequency": 14.285714285714286,
+      "temperature_score": -3.5805743701971644,
+      "temperature_level": "extremely_cold",
+      "relative_heat": 0.0,
+      "dynamic_threshold": {
+        "very_hot_threshold": 22.265280025010824,
+        "hot_threshold": 18.275497155362554,
+        "cold_threshold": 10.295931416066018,
+        "very_cold_threshold": 6.306148546417749,
+        "current_classification": "very_cold"
+      },
+      "temperature_trend": {
+        "trend": "stable",
+        "slope": -0.08571428571428572,
+        "recent_temperatures": [
+          1,
+          2,
+          2,
+          2,
+          2,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          1,
+          1
+        ],
+        "trend_strength": 0.08571428571428572
+      },
+      "heat_stability": {
+        "stability": "stable",
+        "variance": 7.359999999999999,
+        "coefficient_of_variation": 0.43756967633066246,
+        "segment_frequencies": [
+          6,
+          2,
+          5,
+          8,
+          10
+        ]
+      },
+      "prediction_weight": 0.07806840963915594
+    },
+    "6": {
+      "observed_frequency": 0,
+      "theoretical_frequency": 14.285714285714286,
+      "temperature_score": -3.5805743701971644,
+      "temperature_level": "extremely_cold",
+      "relative_heat": 0.0,
+      "dynamic_threshold": {
+        "very_hot_threshold": 22.265280025010824,
+        "hot_threshold": 18.275497155362554,
+        "cold_threshold": 10.295931416066018,
+        "very_cold_threshold": 6.306148546417749,
+        "current_classification": "very_cold"
+      },
+      "temperature_trend": {
+        "trend": "stable",
+        "slope": 0.016883116883116868,
+        "recent_temperatures": [
+          2,
+          3,
+          4,
+          5,
+          4,
+          4,
+          4,
+          4,
+          5,
+          5,
+          5,
+          5,
+          4,
+          3,
+          3,
+          4,
+          4,
+          4,
+          4,
+          4,
+          4
+        ],
+        "trend_strength": 0.016883116883116868
+      },
+      "heat_stability": {
+        "stability": "stable",
+        "variance": 6.0,
+        "coefficient_of_variation": 0.40824829046386296,
+        "segment_frequencies": [
+          6,
+          4,
+          10,
+          3,
+          7
+        ]
+      },
+      "prediction_weight": 0.07806840963915594
+    },
+    "7": {
+      "observed_frequency": 0,
+      "theoretical_frequency": 14.285714285714286,
+      "temperature_score": -3.5805743701971644,
+      "temperature_level": "extremely_cold",
+      "relative_heat": 0.0,
+      "dynamic_threshold": {
+        "very_hot_threshold": 22.265280025010824,
+        "hot_threshold": 18.275497155362554,
+        "cold_threshold": 10.295931416066018,
+        "very_cold_threshold": 6.306148546417749,
+        "current_classification": "very_cold"
+      },
+      "temperature_trend": {
+        "trend": "heating_up",
+        "slope": 0.11948051948051946,
+        "recent_temperatures": [
+          1,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          1,
+          1,
+          2,
+          2,
+          2,
+          2,
+          3,
+          3,
+          3,
+          3,
+          2,
+          2,
+          1,
+          1
+        ],
+        "trend_strength": 0.11948051948051946
+      },
+      "heat_stability": {
+        "stability": "stable",
+        "variance": 5.04,
+        "coefficient_of_variation": 0.3401506715249038,
+        "segment_frequencies": [
+          5,
+          3,
+          8,
+          8,
+          9
+        ]
+      },
+      "prediction_weight": 0.09368209156698713
+    },
+    "8": {
+      "observed_frequency": 0,
+      "theoretical_frequency": 14.285714285714286,
+      "temperature_score": -3.5805743701971644,
+      "temperature_level": "extremely_cold",
+      "relative_heat": 0.0,
+      "dynamic_threshold": {
+        "very_hot_threshold": 22.265280025010824,
+        "hot_threshold": 18.275497155362554,
+        "cold_threshold": 10.295931416066018,
+        "very_cold_threshold": 6.306148546417749,
+        "current_classification": "very_cold"
+      },
+      "temperature_trend": {
+        "trend": "stable",
+        "slope": -0.044155844155844164,
+        "recent_temperatures": [
+          3,
+          3,
+          3,
+          3,
+          3,
+          2,
+          3,
+          3,
+          2,
+          1,
+          1,
+          2,
+          2,
+          3,
+          3,
+          3,
+          2,
+          2,
+          2,
+          2,
+          2
+        ],
+        "trend_strength": 0.044155844155844164
+      },
+      "heat_stability": {
+        "stability": "very_stable",
+        "variance": 2.6399999999999997,
+        "coefficient_of_variation": 0.24618298195866548,
+        "segment_frequencies": [
+          5,
+          6,
+          9,
+          5,
+          8
+        ]
+      },
+      "prediction_weight": 0.07806840963915594
+    },
+    "9": {
+      "observed_frequency": 0,
+      "theoretical_frequency": 14.285714285714286,
+      "temperature_score": -3.5805743701971644,
+      "temperature_level": "extremely_cold",
+      "relative_heat": 0.0,
+      "dynamic_threshold": {
+        "very_hot_threshold": 22.265280025010824,
+        "hot_threshold": 18.275497155362554,
+        "cold_threshold": 10.295931416066018,
+        "very_cold_threshold": 6.306148546417749,
+        "current_classification": "very_cold"
+      },
+      "temperature_trend": {
+        "trend": "heating_up",
+        "slope": 0.17532467532467533,
+        "recent_temperatures": [
+          3,
+          3,
+          2,
+          3,
+          3,
+          2,
+          2,
+          1,
+          2,
+          2,
+          3,
+          4,
+          5,
+          4,
+          5,
+          5,
+          6,
+          6,
+          5,
+          5,
+          4
+        ],
+        "trend_strength": 0.17532467532467533
+      },
+      "heat_stability": {
+        "stability": "very_stable",
+        "variance": 0.5599999999999999,
+        "coefficient_of_variation": 0.14390989949130542,
+        "segment_frequencies": [
+          6,
+          4,
+          5,
+          6,
+          5
+        ]
+      },
+      "prediction_weight": 0.09368209156698713
+    },
+    "10": {
+      "observed_frequency": 0,
+      "theoretical_frequency": 14.285714285714286,
+      "temperature_score": -3.5805743701971644,
+      "temperature_level": "extremely_cold",
+      "relative_heat": 0.0,
+      "dynamic_threshold": {
+        "very_hot_threshold": 22.265280025010824,
+        "hot_threshold": 18.275497155362554,
+        "cold_threshold": 10.295931416066018,
+        "very_cold_threshold": 6.306148546417749,
+        "current_classification": "very_cold"
+      },
+      "temperature_trend": {
+        "trend": "cooling_down",
+        "slope": -0.17272727272727265,
+        "recent_temperatures": [
+          5,
+          5,
+          5,
+          4,
+          3,
+          3,
+          2,
+          2,
+          1,
+          0,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          2,
+          2,
+          2,
+          1
+        ],
+        "trend_strength": 0.17272727272727265
+      },
+      "heat_stability": {
+        "stability": "stable",
+        "variance": 3.7600000000000002,
+        "coefficient_of_variation": 0.3127535391881503,
+        "segment_frequencies": [
+          8,
+          8,
+          5,
+          7,
+          3
+        ]
+      },
+      "prediction_weight": 0.06245472771132476
+    },
+    "11": {
+      "observed_frequency": 0,
+      "theoretical_frequency": 14.285714285714286,
+      "temperature_score": -3.5805743701971644,
+      "temperature_level": "extremely_cold",
+      "relative_heat": 0.0,
+      "dynamic_threshold": {
+        "very_hot_threshold": 22.265280025010824,
+        "hot_threshold": 18.275497155362554,
+        "cold_threshold": 10.295931416066018,
+        "very_cold_threshold": 6.306148546417749,
+        "current_classification": "very_cold"
+      },
+      "temperature_trend": {
+        "trend": "heating_up",
+        "slope": 0.15974025974025977,
+        "recent_temperatures": [
+          2,
+          2,
+          1,
+          1,
+          1,
+          1,
+          2,
+          2,
+          2,
+          3,
+          3,
+          3,
+          3,
+          4,
+          4,
+          4,
+          4,
+          4,
+          4,
+          3,
+          4
+        ],
+        "trend_strength": 0.15974025974025977
+      },
+      "heat_stability": {
+        "stability": "stable",
+        "variance": 6.16,
+        "coefficient_of_variation": 0.4772951402304176,
+        "segment_frequencies": [
+          4,
+          10,
+          3,
+          5,
+          4
+        ]
+      },
+      "prediction_weight": 0.09368209156698713
+    },
+    "12": {
+      "observed_frequency": 0,
+      "theoretical_frequency": 14.285714285714286,
+      "temperature_score": -3.5805743701971644,
+      "temperature_level": "extremely_cold",
+      "relative_heat": 0.0,
+      "dynamic_threshold": {
+        "very_hot_threshold": 22.265280025010824,
+        "hot_threshold": 18.275497155362554,
+        "cold_threshold": 10.295931416066018,
+        "very_cold_threshold": 6.306148546417749,
+        "current_classification": "very_cold"
+      },
+      "temperature_trend": {
+        "trend": "stable",
+        "slope": 0.02467532467532468,
+        "recent_temperatures": [
+          1,
+          2,
+          2,
+          2,
+          3,
+          4,
+          5,
+          5,
+          6,
+          6,
+          6,
+          5,
+          6,
+          6,
+          5,
+          4,
+          3,
+          3,
+          2,
+          2,
+          2
+        ],
+        "trend_strength": 0.02467532467532468
+      },
+      "heat_stability": {
+        "stability": "very_stable",
+        "variance": 1.3599999999999999,
+        "coefficient_of_variation": 0.20106730671880346,
+        "segment_frequencies": [
+          7,
+          7,
+          5,
+          6,
+          4
+        ]
+      },
+      "prediction_weight": 0.07806840963915594
+    },
+    "13": {
+      "observed_frequency": 0,
+      "theoretical_frequency": 14.285714285714286,
+      "temperature_score": -3.5805743701971644,
+      "temperature_level": "extremely_cold",
+      "relative_heat": 0.0,
+      "dynamic_threshold": {
+        "very_hot_threshold": 22.265280025010824,
+        "hot_threshold": 18.275497155362554,
+        "cold_threshold": 10.295931416066018,
+        "very_cold_threshold": 6.306148546417749,
+        "current_classification": "very_cold"
+      },
+      "temperature_trend": {
+        "trend": "stable",
+        "slope": -0.06493506493506497,
+        "recent_temperatures": [
+          1,
+          1,
+          1,
+          1,
+          2,
+          1,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          1,
+          1,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "trend_strength": 0.06493506493506497
+      },
+      "heat_stability": {
+        "stability": "unstable",
+        "variance": 2.64,
+        "coefficient_of_variation": 1.0155048005794949,
+        "segment_frequencies": [
+          0,
+          1,
+          3,
+          4,
+          0
+        ]
+      },
+      "prediction_weight": 0.06387415334112759
+    },
+    "14": {
+      "observed_frequency": 0,
+      "theoretical_frequency": 14.285714285714286,
+      "temperature_score": -3.5805743701971644,
+      "temperature_level": "extremely_cold",
+      "relative_heat": 0.0,
+      "dynamic_threshold": {
+        "very_hot_threshold": 22.265280025010824,
+        "hot_threshold": 18.275497155362554,
+        "cold_threshold": 10.295931416066018,
+        "very_cold_threshold": 6.306148546417749,
+        "current_classification": "very_cold"
+      },
+      "temperature_trend": {
+        "trend": "stable",
+        "slope": 0.024675324675324673,
+        "recent_temperatures": [
+          1,
+          0,
+          0,
+          0,
+          1,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1
+        ],
+        "trend_strength": 0.024675324675324673
+      },
+      "heat_stability": {
+        "stability": "moderate",
+        "variance": 1.36,
+        "coefficient_of_variation": 0.6478835438717001,
+        "segment_frequencies": [
+          2,
+          3,
+          3,
+          1,
+          0
+        ]
+      },
+      "prediction_weight": 0.07097128149014176
+    },
+    "15": {
+      "observed_frequency": 0,
+      "theoretical_frequency": 14.285714285714286,
+      "temperature_score": -3.5805743701971644,
+      "temperature_level": "extremely_cold",
+      "relative_heat": 0.0,
+      "dynamic_threshold": {
+        "very_hot_threshold": 22.265280025010824,
+        "hot_threshold": 18.275497155362554,
+        "cold_threshold": 10.295931416066018,
+        "very_cold_threshold": 6.306148546417749,
+        "current_classification": "very_cold"
+      },
+      "temperature_trend": {
+        "trend": "stable",
+        "slope": 0.04545454545454547,
+        "recent_temperatures": [
+          1,
+          1,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1
+        ],
+        "trend_strength": 0.04545454545454547
+      },
+      "heat_stability": {
+        "stability": "moderate",
+        "variance": 3.7600000000000002,
+        "coefficient_of_variation": 0.6059599821770412,
+        "segment_frequencies": [
+          6,
+          5,
+          2,
+          1,
+          2
+        ]
+      },
+      "prediction_weight": 0.07097128149014176
+    },
+    "16": {
+      "observed_frequency": 0,
+      "theoretical_frequency": 14.285714285714286,
+      "temperature_score": -3.5805743701971644,
+      "temperature_level": "extremely_cold",
+      "relative_heat": 0.0,
+      "dynamic_threshold": {
+        "very_hot_threshold": 22.265280025010824,
+        "hot_threshold": 18.275497155362554,
+        "cold_threshold": 10.295931416066018,
+        "very_cold_threshold": 6.306148546417749,
+        "current_classification": "very_cold"
+      },
+      "temperature_trend": {
+        "trend": "stable",
+        "slope": 0.07012987012987014,
+        "recent_temperatures": [
+          1,
+          1,
+          1,
+          2,
+          2,
+          2,
+          2,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          0,
+          1,
+          2,
+          2,
+          3,
+          3,
+          3,
+          3
+        ],
+        "trend_strength": 0.07012987012987014
+      },
+      "heat_stability": {
+        "stability": "moderate",
+        "variance": 1.8399999999999999,
+        "coefficient_of_variation": 0.5217176910096359,
+        "segment_frequencies": [
+          2,
+          3,
+          2,
+          1,
+          5
+        ]
+      },
+      "prediction_weight": 0.07097128149014176
+    },
+    "17": {
+      "observed_frequency": 0,
+      "theoretical_frequency": 14.285714285714286,
+      "temperature_score": -3.5805743701971644,
+      "temperature_level": "extremely_cold",
+      "relative_heat": 0.0,
+      "dynamic_threshold": {
+        "very_hot_threshold": 22.265280025010824,
+        "hot_threshold": 18.275497155362554,
+        "cold_threshold": 10.295931416066018,
+        "very_cold_threshold": 6.306148546417749,
+        "current_classification": "very_cold"
+      },
+      "temperature_trend": {
+        "trend": "stable",
+        "slope": 0.037662337662337654,
+        "recent_temperatures": [
+          0,
+          0,
+          1,
+          1,
+          1,
+          1,
+          2,
+          2,
+          3,
+          3,
+          3,
+          3,
+          2,
+          2,
+          2,
+          2,
+          1,
+          2,
+          1,
+          1,
+          1
+        ],
+        "trend_strength": 0.037662337662337654
+      },
+      "heat_stability": {
+        "stability": "unstable",
+        "variance": 2.8,
+        "coefficient_of_variation": 0.8366600265340756,
+        "segment_frequencies": [
+          2,
+          2,
+          1,
+          0,
+          5
+        ]
+      },
+      "prediction_weight": 0.06387415334112759
+    },
+    "18": {
+      "observed_frequency": 0,
+      "theoretical_frequency": 14.285714285714286,
+      "temperature_score": -3.5805743701971644,
+      "temperature_level": "extremely_cold",
+      "relative_heat": 0.0,
+      "dynamic_threshold": {
+        "very_hot_threshold": 22.265280025010824,
+        "hot_threshold": 18.275497155362554,
+        "cold_threshold": 10.295931416066018,
+        "very_cold_threshold": 6.306148546417749,
+        "current_classification": "very_cold"
+      },
+      "temperature_trend": {
+        "trend": "stable",
+        "slope": 0.04805194805194803,
+        "recent_temperatures": [
+          0,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          2,
+          2,
+          2
+        ],
+        "trend_strength": 0.04805194805194803
+      },
+      "heat_stability": {
+        "stability": "moderate",
+        "variance": 4.5600000000000005,
+        "coefficient_of_variation": 0.667317390751957,
+        "segment_frequencies": [
+          7,
+          1,
+          2,
+          4,
+          2
+        ]
+      },
+      "prediction_weight": 0.07097128149014176
+    },
+    "19": {
+      "observed_frequency": 0,
+      "theoretical_frequency": 14.285714285714286,
+      "temperature_score": -3.5805743701971644,
+      "temperature_level": "extremely_cold",
+      "relative_heat": 0.0,
+      "dynamic_threshold": {
+        "very_hot_threshold": 22.265280025010824,
+        "hot_threshold": 18.275497155362554,
+        "cold_threshold": 10.295931416066018,
+        "very_cold_threshold": 6.306148546417749,
+        "current_classification": "very_cold"
+      },
+      "temperature_trend": {
+        "trend": "stable",
+        "slope": 0.07142857142857142,
+        "recent_temperatures": [
+          1,
+          1,
+          1,
+          1,
+          0,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          2,
+          2,
+          2,
+          1,
+          2,
+          2,
+          2,
+          2,
+          2
+        ],
+        "trend_strength": 0.07142857142857142
+      },
+      "heat_stability": {
+        "stability": "moderate",
+        "variance": 1.2,
+        "coefficient_of_variation": 0.5477225575051661,
+        "segment_frequencies": [
+          2,
+          1,
+          1,
+          4,
+          2
+        ]
+      },
+      "prediction_weight": 0.07097128149014176
+    },
+    "20": {
+      "observed_frequency": 0,
+      "theoretical_frequency": 14.285714285714286,
+      "temperature_score": -3.5805743701971644,
+      "temperature_level": "extremely_cold",
+      "relative_heat": 0.0,
+      "dynamic_threshold": {
+        "very_hot_threshold": 22.265280025010824,
+        "hot_threshold": 18.275497155362554,
+        "cold_threshold": 10.295931416066018,
+        "very_cold_threshold": 6.306148546417749,
+        "current_classification": "very_cold"
+      },
+      "temperature_trend": {
+        "trend": "stable",
+        "slope": 0.011688311688311692,
+        "recent_temperatures": [
+          2,
+          2,
+          2,
+          1,
+          1,
+          1,
+          1,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          1,
+          2,
+          2,
+          2,
+          2,
+          2
+        ],
+        "trend_strength": 0.011688311688311692
+      },
+      "heat_stability": {
+        "stability": "stable",
+        "variance": 3.2,
+        "coefficient_of_variation": 0.35777087639996635,
+        "segment_frequencies": [
+          3,
+          5,
+          7,
+          3,
+          7
+        ]
+      },
+      "prediction_weight": 0.07806840963915594
+    },
+    "21": {
+      "observed_frequency": 0,
+      "theoretical_frequency": 14.285714285714286,
+      "temperature_score": -3.5805743701971644,
+      "temperature_level": "extremely_cold",
+      "relative_heat": 0.0,
+      "dynamic_threshold": {
+        "very_hot_threshold": 22.265280025010824,
+        "hot_threshold": 18.275497155362554,
+        "cold_threshold": 10.295931416066018,
+        "very_cold_threshold": 6.306148546417749,
+        "current_classification": "very_cold"
+      },
+      "temperature_trend": {
+        "trend": "stable",
+        "slope": 0.06753246753246753,
+        "recent_temperatures": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1
+        ],
+        "trend_strength": 0.06753246753246753
+      },
+      "heat_stability": {
+        "stability": "moderate",
+        "variance": 4.8,
+        "coefficient_of_variation": 0.5477225575051661,
+        "segment_frequencies": [
+          3,
+          7,
+          1,
+          3,
+          6
+        ]
+      },
+      "prediction_weight": 0.07097128149014176
+    },
+    "22": {
+      "observed_frequency": 0,
+      "theoretical_frequency": 14.285714285714286,
+      "temperature_score": -3.5805743701971644,
+      "temperature_level": "extremely_cold",
+      "relative_heat": 0.0,
+      "dynamic_threshold": {
+        "very_hot_threshold": 22.265280025010824,
+        "hot_threshold": 18.275497155362554,
+        "cold_threshold": 10.295931416066018,
+        "very_cold_threshold": 6.306148546417749,
+        "current_classification": "very_cold"
+      },
+      "temperature_trend": {
+        "trend": "stable",
+        "slope": -0.0909090909090909,
+        "recent_temperatures": [
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          1,
+          2
+        ],
+        "trend_strength": 0.0909090909090909
+      },
+      "heat_stability": {
+        "stability": "stable",
+        "variance": 3.04,
+        "coefficient_of_variation": 0.3962635403218794,
+        "segment_frequencies": [
+          5,
+          2,
+          5,
+          3,
+          7
+        ]
+      },
+      "prediction_weight": 0.07806840963915594
+    },
+    "23": {
+      "observed_frequency": 0,
+      "theoretical_frequency": 14.285714285714286,
+      "temperature_score": -3.5805743701971644,
+      "temperature_level": "extremely_cold",
+      "relative_heat": 0.0,
+      "dynamic_threshold": {
+        "very_hot_threshold": 22.265280025010824,
+        "hot_threshold": 18.275497155362554,
+        "cold_threshold": 10.295931416066018,
+        "very_cold_threshold": 6.306148546417749,
+        "current_classification": "very_cold"
+      },
+      "temperature_trend": {
+        "trend": "stable",
+        "slope": -0.0545454545454545,
+        "recent_temperatures": [
+          2,
+          2,
+          3,
+          4,
+          4,
+          4,
+          4,
+          4,
+          3,
+          2,
+          2,
+          2,
+          1,
+          1,
+          1,
+          2,
+          2,
+          2,
+          3,
+          3,
+          3
+        ],
+        "trend_strength": 0.0545454545454545
+      },
+      "heat_stability": {
+        "stability": "moderate",
+        "variance": 2.6399999999999997,
+        "coefficient_of_variation": 0.6770032003863301,
+        "segment_frequencies": [
+          0,
+          5,
+          2,
+          2,
+          3
+        ]
+      },
+      "prediction_weight": 0.07097128149014176
+    },
+    "24": {
+      "observed_frequency": 0,
+      "theoretical_frequency": 14.285714285714286,
+      "temperature_score": -3.5805743701971644,
+      "temperature_level": "extremely_cold",
+      "relative_heat": 0.0,
+      "dynamic_threshold": {
+        "very_hot_threshold": 22.265280025010824,
+        "hot_threshold": 18.275497155362554,
+        "cold_threshold": 10.295931416066018,
+        "very_cold_threshold": 6.306148546417749,
+        "current_classification": "very_cold"
+      },
+      "temperature_trend": {
+        "trend": "cooling_down",
+        "slope": -0.12337662337662335,
+        "recent_temperatures": [
+          2,
+          2,
+          2,
+          2,
+          2,
+          3,
+          2,
+          2,
+          2,
+          2,
+          1,
+          1,
+          1,
+          1,
+          1,
+          0,
+          0,
+          0,
+          0,
+          0,
+          1
+        ],
+        "trend_strength": 0.12337662337662335
+      },
+      "heat_stability": {
+        "stability": "moderate",
+        "variance": 2.96,
+        "coefficient_of_variation": 0.7820295697311478,
+        "segment_frequencies": [
+          3,
+          0,
+          2,
+          1,
+          5
+        ]
+      },
+      "prediction_weight": 0.05677702519211341
+    },
+    "25": {
+      "observed_frequency": 0,
+      "theoretical_frequency": 14.285714285714286,
+      "temperature_score": -3.5805743701971644,
+      "temperature_level": "extremely_cold",
+      "relative_heat": 0.0,
+      "dynamic_threshold": {
+        "very_hot_threshold": 22.265280025010824,
+        "hot_threshold": 18.275497155362554,
+        "cold_threshold": 10.295931416066018,
+        "very_cold_threshold": 6.306148546417749,
+        "current_classification": "very_cold"
+      },
+      "temperature_trend": {
+        "trend": "stable",
+        "slope": -0.0506493506493506,
+        "recent_temperatures": [
+          3,
+          3,
+          2,
+          2,
+          2,
+          2,
+          2,
+          1,
+          1,
+          0,
+          0,
+          0,
+          0,
+          0,
+          1,
+          1,
+          1,
+          2,
+          2,
+          2,
+          2
+        ],
+        "trend_strength": 0.0506493506493506
+      },
+      "heat_stability": {
+        "stability": "moderate",
+        "variance": 3.6,
+        "coefficient_of_variation": 0.6324555320336759,
+        "segment_frequencies": [
+          3,
+          1,
+          6,
+          4,
+          1
+        ]
+      },
+      "prediction_weight": 0.07097128149014176
+    },
+    "26": {
+      "observed_frequency": 0,
+      "theoretical_frequency": 14.285714285714286,
+      "temperature_score": -3.5805743701971644,
+      "temperature_level": "extremely_cold",
+      "relative_heat": 0.0,
+      "dynamic_threshold": {
+        "very_hot_threshold": 22.265280025010824,
+        "hot_threshold": 18.275497155362554,
+        "cold_threshold": 10.295931416066018,
+        "very_cold_threshold": 6.306148546417749,
+        "current_classification": "very_cold"
+      },
+      "temperature_trend": {
+        "trend": "stable",
+        "slope": -0.029870129870129856,
+        "recent_temperatures": [
+          2,
+          2,
+          2,
+          1,
+          1,
+          1,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1
+        ],
+        "trend_strength": 0.029870129870129856
+      },
+      "heat_stability": {
+        "stability": "moderate",
+        "variance": 0.64,
+        "coefficient_of_variation": 0.5714285714285715,
+        "segment_frequencies": [
+          2,
+          2,
+          2,
+          1,
+          0
+        ]
+      },
+      "prediction_weight": 0.07097128149014176
+    },
+    "27": {
+      "observed_frequency": 0,
+      "theoretical_frequency": 14.285714285714286,
+      "temperature_score": -3.5805743701971644,
+      "temperature_level": "extremely_cold",
+      "relative_heat": 0.0,
+      "dynamic_threshold": {
+        "very_hot_threshold": 22.265280025010824,
+        "hot_threshold": 18.275497155362554,
+        "cold_threshold": 10.295931416066018,
+        "very_cold_threshold": 6.306148546417749,
+        "current_classification": "very_cold"
+      },
+      "temperature_trend": {
+        "trend": "stable",
+        "slope": -0.08311688311688308,
+        "recent_temperatures": [
+          3,
+          2,
+          2,
+          2,
+          1,
+          1,
+          0,
+          0,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          0,
+          0,
+          0
+        ],
+        "trend_strength": 0.08311688311688308
+      },
+      "heat_stability": {
+        "stability": "moderate",
+        "variance": 1.3599999999999999,
+        "coefficient_of_variation": 0.5300865358950272,
+        "segment_frequencies": [
+          1,
+          3,
+          4,
+          2,
+          1
+        ]
+      },
+      "prediction_weight": 0.07097128149014176
+    },
+    "28": {
+      "observed_frequency": 0,
+      "theoretical_frequency": 14.285714285714286,
+      "temperature_score": -3.5805743701971644,
+      "temperature_level": "extremely_cold",
+      "relative_heat": 0.0,
+      "dynamic_threshold": {
+        "very_hot_threshold": 22.265280025010824,
+        "hot_threshold": 18.275497155362554,
+        "cold_threshold": 10.295931416066018,
+        "very_cold_threshold": 6.306148546417749,
+        "current_classification": "very_cold"
+      },
+      "temperature_trend": {
+        "trend": "stable",
+        "slope": 0.025974025974025965,
+        "recent_temperatures": [
+          0,
+          0,
+          0,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          0,
+          0,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1
+        ],
+        "trend_strength": 0.025974025974025965
+      },
+      "heat_stability": {
+        "stability": "very_stable",
+        "variance": 0.5599999999999999,
+        "coefficient_of_variation": 0.2672612419124244,
+        "segment_frequencies": [
+          2,
+          3,
+          4,
+          3,
+          2
+        ]
+      },
+      "prediction_weight": 0.07806840963915594
+    },
+    "29": {
+      "observed_frequency": 0,
+      "theoretical_frequency": 14.285714285714286,
+      "temperature_score": -3.5805743701971644,
+      "temperature_level": "extremely_cold",
+      "relative_heat": 0.0,
+      "dynamic_threshold": {
+        "very_hot_threshold": 22.265280025010824,
+        "hot_threshold": 18.275497155362554,
+        "cold_threshold": 10.295931416066018,
+        "very_cold_threshold": 6.306148546417749,
+        "current_classification": "very_cold"
+      },
+      "temperature_trend": {
+        "trend": "heating_up",
+        "slope": 0.12467532467532473,
+        "recent_temperatures": [
+          2,
+          2,
+          1,
+          1,
+          2,
+          2,
+          2,
+          3,
+          4,
+          5,
+          5,
+          6,
+          6,
+          6,
+          5,
+          5,
+          5,
+          4,
+          3,
+          2,
+          2
+        ],
+        "trend_strength": 0.12467532467532473
+      },
+      "heat_stability": {
+        "stability": "moderate",
+        "variance": 7.76,
+        "coefficient_of_variation": 0.7330730672202168,
+        "segment_frequencies": [
+          3,
+          9,
+          2,
+          4,
+          1
+        ]
+      },
+      "prediction_weight": 0.08516553778817011
+    },
+    "30": {
+      "observed_frequency": 0,
+      "theoretical_frequency": 14.285714285714286,
+      "temperature_score": -3.5805743701971644,
+      "temperature_level": "extremely_cold",
+      "relative_heat": 0.0,
+      "dynamic_threshold": {
+        "very_hot_threshold": 22.265280025010824,
+        "hot_threshold": 18.275497155362554,
+        "cold_threshold": 10.295931416066018,
+        "very_cold_threshold": 6.306148546417749,
+        "current_classification": "very_cold"
+      },
+      "temperature_trend": {
+        "trend": "stable",
+        "slope": 0.0168831168831169,
+        "recent_temperatures": [
+          1,
+          1,
+          1,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          1,
+          1,
+          1,
+          1,
+          1
+        ],
+        "trend_strength": 0.0168831168831169
+      },
+      "heat_stability": {
+        "stability": "moderate",
+        "variance": 1.8400000000000003,
+        "coefficient_of_variation": 0.5651941652604391,
+        "segment_frequencies": [
+          0,
+          3,
+          3,
+          4,
+          2
+        ]
+      },
+      "prediction_weight": 0.07097128149014176
+    },
+    "31": {
+      "observed_frequency": 0,
+      "theoretical_frequency": 14.285714285714286,
+      "temperature_score": -3.5805743701971644,
+      "temperature_level": "extremely_cold",
+      "relative_heat": 0.0,
+      "dynamic_threshold": {
+        "very_hot_threshold": 22.265280025010824,
+        "hot_threshold": 18.275497155362554,
+        "cold_threshold": 10.295931416066018,
+        "very_cold_threshold": 6.306148546417749,
+        "current_classification": "very_cold"
+      },
+      "temperature_trend": {
+        "trend": "stable",
+        "slope": -0.03246753246753248,
+        "recent_temperatures": [
+          1,
+          1,
+          1,
+          1,
+          1,
+          2,
+          2,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          0,
+          0,
+          0,
+          0,
+          1,
+          2
+        ],
+        "trend_strength": 0.03246753246753248
+      },
+      "heat_stability": {
+        "stability": "moderate",
+        "variance": 1.8400000000000003,
+        "coefficient_of_variation": 0.521717691009636,
+        "segment_frequencies": [
+          1,
+          1,
+          3,
+          4,
+          4
+        ]
+      },
+      "prediction_weight": 0.07097128149014176
+    },
+    "32": {
+      "observed_frequency": 0,
+      "theoretical_frequency": 14.285714285714286,
+      "temperature_score": -3.5805743701971644,
+      "temperature_level": "extremely_cold",
+      "relative_heat": 0.0,
+      "dynamic_threshold": {
+        "very_hot_threshold": 22.265280025010824,
+        "hot_threshold": 18.275497155362554,
+        "cold_threshold": 10.295931416066018,
+        "very_cold_threshold": 6.306148546417749,
+        "current_classification": "very_cold"
+      },
+      "temperature_trend": {
+        "trend": "stable",
+        "slope": 0.02597402597402597,
+        "recent_temperatures": [
+          1,
+          1,
+          1,
+          1,
+          2,
+          2,
+          2,
+          3,
+          2,
+          2,
+          3,
+          3,
+          3,
+          3,
+          2,
+          2,
+          2,
+          1,
+          2,
+          2,
+          1
+        ],
+        "trend_strength": 0.02597402597402597
+      },
+      "heat_stability": {
+        "stability": "moderate",
+        "variance": 1.44,
+        "coefficient_of_variation": 0.5,
+        "segment_frequencies": [
+          3,
+          1,
+          1,
+          4,
+          3
+        ]
+      },
+      "prediction_weight": 0.07097128149014176
+    },
+    "33": {
+      "observed_frequency": 0,
+      "theoretical_frequency": 14.285714285714286,
+      "temperature_score": -3.5805743701971644,
+      "temperature_level": "extremely_cold",
+      "relative_heat": 0.0,
+      "dynamic_threshold": {
+        "very_hot_threshold": 22.265280025010824,
+        "hot_threshold": 18.275497155362554,
+        "cold_threshold": 10.295931416066018,
+        "very_cold_threshold": 6.306148546417749,
+        "current_classification": "very_cold"
+      },
+      "temperature_trend": {
+        "trend": "stable",
+        "slope": -0.0779220779220779,
+        "recent_temperatures": [
+          3,
+          2,
+          2,
+          2,
+          2,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          0
+        ],
+        "trend_strength": 0.0779220779220779
+      },
+      "heat_stability": {
+        "stability": "moderate",
+        "variance": 1.3599999999999999,
+        "coefficient_of_variation": 0.5300865358950272,
+        "segment_frequencies": [
+          4,
+          2,
+          3,
+          1,
+          1
+        ]
+      },
+      "prediction_weight": 0.07097128149014176
+    },
+    "34": {
+      "observed_frequency": 0,
+      "theoretical_frequency": 14.285714285714286,
+      "temperature_score": -3.5805743701971644,
+      "temperature_level": "extremely_cold",
+      "relative_heat": 0.0,
+      "dynamic_threshold": {
+        "very_hot_threshold": 22.265280025010824,
+        "hot_threshold": 18.275497155362554,
+        "cold_threshold": 10.295931416066018,
+        "very_cold_threshold": 6.306148546417749,
+        "current_classification": "very_cold"
+      },
+      "temperature_trend": {
+        "trend": "heating_up",
+        "slope": 0.12207792207792209,
+        "recent_temperatures": [
+          3,
+          3,
+          3,
+          2,
+          3,
+          3,
+          2,
+          2,
+          2,
+          3,
+          4,
+          5,
+          6,
+          6,
+          5,
+          5,
+          5,
+          5,
+          4,
+          4,
+          3
+        ],
+        "trend_strength": 0.12207792207792209
+      },
+      "heat_stability": {
+        "stability": "moderate",
+        "variance": 2.8,
+        "coefficient_of_variation": 0.5577733510227171,
+        "segment_frequencies": [
+          5,
+          4,
+          1,
+          1,
+          4
+        ]
+      },
+      "prediction_weight": 0.08516553778817011
+    },
+    "35": {
+      "observed_frequency": 0,
+      "theoretical_frequency": 14.285714285714286,
+      "temperature_score": -3.5805743701971644,
+      "temperature_level": "extremely_cold",
+      "relative_heat": 0.0,
+      "dynamic_threshold": {
+        "very_hot_threshold": 22.265280025010824,
+        "hot_threshold": 18.275497155362554,
+        "cold_threshold": 10.295931416066018,
+        "very_cold_threshold": 6.306148546417749,
+        "current_classification": "very_cold"
+      },
+      "temperature_trend": {
+        "trend": "stable",
+        "slope": 0.035064935064935125,
+        "recent_temperatures": [
+          4,
+          3,
+          2,
+          1,
+          1,
+          0,
+          0,
+          0,
+          0,
+          0,
+          1,
+          1,
+          1,
+          1,
+          2,
+          2,
+          2,
+          2,
+          2,
+          3,
+          3
+        ],
+        "trend_strength": 0.035064935064935125
+      },
+      "heat_stability": {
+        "stability": "moderate",
+        "variance": 3.44,
+        "coefficient_of_variation": 0.7133552688842849,
+        "segment_frequencies": [
+          3,
+          1,
+          1,
+          6,
+          2
+        ]
+      },
+      "prediction_weight": 0.07097128149014176
+    }
+  },
+  "back_enhanced": {
+    "1": {
+      "observed_frequency": 0,
+      "theoretical_frequency": 16.666666666666668,
+      "temperature_score": -5.129891760425771,
+      "temperature_level": "extremely_cold",
+      "relative_heat": 0.0,
+      "dynamic_threshold": {
+        "very_hot_threshold": 23.164529563205978,
+        "hot_threshold": 19.915598114936323,
+        "cold_threshold": 13.417735218397013,
+        "very_cold_threshold": 10.168803770127358,
+        "current_classification": "very_cold"
+      },
+      "temperature_trend": {
+        "trend": "heating_up",
+        "slope": 0.1051948051948052,
+        "recent_temperatures": [
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          3,
+          3,
+          3,
+          2,
+          2,
+          3,
+          3,
+          3,
+          3,
+          4,
+          3,
+          4,
+          4,
+          4
+        ],
+        "trend_strength": 0.1051948051948052
+      },
+      "heat_stability": {
+        "stability": "very_stable",
+        "variance": 1.8399999999999999,
+        "coefficient_of_variation": 0.205525151003796,
+        "segment_frequencies": [
+          9,
+          6,
+          5,
+          7,
+          6
+        ]
+      },
+      "prediction_weight": 0.0
+    },
+    "2": {
+      "observed_frequency": 0,
+      "theoretical_frequency": 16.666666666666668,
+      "temperature_score": -5.129891760425771,
+      "temperature_level": "extremely_cold",
+      "relative_heat": 0.0,
+      "dynamic_threshold": {
+        "very_hot_threshold": 23.164529563205978,
+        "hot_threshold": 19.915598114936323,
+        "cold_threshold": 13.417735218397013,
+        "very_cold_threshold": 10.168803770127358,
+        "current_classification": "very_cold"
+      },
+      "temperature_trend": {
+        "trend": "stable",
+        "slope": -0.05584415584415586,
+        "recent_temperatures": [
+          4,
+          4,
+          4,
+          4,
+          3,
+          3,
+          3,
+          4,
+          4,
+          4,
+          3,
+          2,
+          2,
+          3,
+          3,
+          3,
+          3,
+          3,
+          3,
+          3,
+          3
+        ],
+        "trend_strength": 0.05584415584415586
+      },
+      "heat_stability": {
+        "stability": "stable",
+        "variance": 3.44,
+        "coefficient_of_variation": 0.343467351685026,
+        "segment_frequencies": [
+          4,
+          9,
+          5,
+          5,
+          4
+        ]
+      },
+      "prediction_weight": 0.0
+    },
+    "3": {
+      "observed_frequency": 0,
+      "theoretical_frequency": 16.666666666666668,
+      "temperature_score": -5.129891760425771,
+      "temperature_level": "extremely_cold",
+      "relative_heat": 0.0,
+      "dynamic_threshold": {
+        "very_hot_threshold": 23.164529563205978,
+        "hot_threshold": 19.915598114936323,
+        "cold_threshold": 13.417735218397013,
+        "very_cold_threshold": 10.168803770127358,
+        "current_classification": "very_cold"
+      },
+      "temperature_trend": {
+        "trend": "stable",
+        "slope": -0.0441558441558442,
+        "recent_temperatures": [
+          3,
+          3,
+          4,
+          4,
+          4,
+          5,
+          5,
+          5,
+          5,
+          5,
+          5,
+          5,
+          5,
+          4,
+          3,
+          3,
+          3,
+          3,
+          4,
+          3,
+          3
+        ],
+        "trend_strength": 0.0441558441558442
+      },
+      "heat_stability": {
+        "stability": "very_stable",
+        "variance": 1.2,
+        "coefficient_of_variation": 0.18257418583505536,
+        "segment_frequencies": [
+          5,
+          6,
+          8,
+          6,
+          5
+        ]
+      },
+      "prediction_weight": 0.0
+    },
+    "4": {
+      "observed_frequency": 0,
+      "theoretical_frequency": 16.666666666666668,
+      "temperature_score": -5.129891760425771,
+      "temperature_level": "extremely_cold",
+      "relative_heat": 0.0,
+      "dynamic_threshold": {
+        "very_hot_threshold": 23.164529563205978,
+        "hot_threshold": 19.915598114936323,
+        "cold_threshold": 13.417735218397013,
+        "very_cold_threshold": 10.168803770127358,
+        "current_classification": "very_cold"
+      },
+      "temperature_trend": {
+        "trend": "stable",
+        "slope": 0.010389610389610414,
+        "recent_temperatures": [
+          2,
+          2,
+          3,
+          4,
+          4,
+          4,
+          4,
+          3,
+          3,
+          3,
+          2,
+          2,
+          1,
+          1,
+          2,
+          2,
+          2,
+          3,
+          4,
+          4,
+          5
+        ],
+        "trend_strength": 0.010389610389610414
+      },
+      "heat_stability": {
+        "stability": "stable",
+        "variance": 4.959999999999999,
+        "coefficient_of_variation": 0.3839837491606911,
+        "segment_frequencies": [
+          10,
+          4,
+          6,
+          4,
+          5
+        ]
+      },
+      "prediction_weight": 0.0
+    },
+    "5": {
+      "observed_frequency": 0,
+      "theoretical_frequency": 16.666666666666668,
+      "temperature_score": -5.129891760425771,
+      "temperature_level": "extremely_cold",
+      "relative_heat": 0.0,
+      "dynamic_threshold": {
+        "very_hot_threshold": 23.164529563205978,
+        "hot_threshold": 19.915598114936323,
+        "cold_threshold": 13.417735218397013,
+        "very_cold_threshold": 10.168803770127358,
+        "current_classification": "very_cold"
+      },
+      "temperature_trend": {
+        "trend": "stable",
+        "slope": -0.08571428571428572,
+        "recent_temperatures": [
+          1,
+          2,
+          2,
+          2,
+          2,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          1,
+          1
+        ],
+        "trend_strength": 0.08571428571428572
+      },
+      "heat_stability": {
+        "stability": "stable",
+        "variance": 7.359999999999999,
+        "coefficient_of_variation": 0.43756967633066246,
+        "segment_frequencies": [
+          6,
+          2,
+          5,
+          8,
+          10
+        ]
+      },
+      "prediction_weight": 0.0
+    },
+    "6": {
+      "observed_frequency": 0,
+      "theoretical_frequency": 16.666666666666668,
+      "temperature_score": -5.129891760425771,
+      "temperature_level": "extremely_cold",
+      "relative_heat": 0.0,
+      "dynamic_threshold": {
+        "very_hot_threshold": 23.164529563205978,
+        "hot_threshold": 19.915598114936323,
+        "cold_threshold": 13.417735218397013,
+        "very_cold_threshold": 10.168803770127358,
+        "current_classification": "very_cold"
+      },
+      "temperature_trend": {
+        "trend": "stable",
+        "slope": 0.016883116883116868,
+        "recent_temperatures": [
+          2,
+          3,
+          4,
+          5,
+          4,
+          4,
+          4,
+          4,
+          5,
+          5,
+          5,
+          5,
+          4,
+          3,
+          3,
+          4,
+          4,
+          4,
+          4,
+          4,
+          4
+        ],
+        "trend_strength": 0.016883116883116868
+      },
+      "heat_stability": {
+        "stability": "stable",
+        "variance": 6.0,
+        "coefficient_of_variation": 0.40824829046386296,
+        "segment_frequencies": [
+          6,
+          4,
+          10,
+          3,
+          7
+        ]
+      },
+      "prediction_weight": 0.0
+    },
+    "7": {
+      "observed_frequency": 0,
+      "theoretical_frequency": 16.666666666666668,
+      "temperature_score": -5.129891760425771,
+      "temperature_level": "extremely_cold",
+      "relative_heat": 0.0,
+      "dynamic_threshold": {
+        "very_hot_threshold": 23.164529563205978,
+        "hot_threshold": 19.915598114936323,
+        "cold_threshold": 13.417735218397013,
+        "very_cold_threshold": 10.168803770127358,
+        "current_classification": "very_cold"
+      },
+      "temperature_trend": {
+        "trend": "heating_up",
+        "slope": 0.11948051948051946,
+        "recent_temperatures": [
+          1,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          1,
+          1,
+          2,
+          2,
+          2,
+          2,
+          3,
+          3,
+          3,
+          3,
+          2,
+          2,
+          1,
+          1
+        ],
+        "trend_strength": 0.11948051948051946
+      },
+      "heat_stability": {
+        "stability": "stable",
+        "variance": 5.04,
+        "coefficient_of_variation": 0.3401506715249038,
+        "segment_frequencies": [
+          5,
+          3,
+          8,
+          8,
+          9
+        ]
+      },
+      "prediction_weight": 0.0
+    },
+    "8": {
+      "observed_frequency": 0,
+      "theoretical_frequency": 16.666666666666668,
+      "temperature_score": -5.129891760425771,
+      "temperature_level": "extremely_cold",
+      "relative_heat": 0.0,
+      "dynamic_threshold": {
+        "very_hot_threshold": 23.164529563205978,
+        "hot_threshold": 19.915598114936323,
+        "cold_threshold": 13.417735218397013,
+        "very_cold_threshold": 10.168803770127358,
+        "current_classification": "very_cold"
+      },
+      "temperature_trend": {
+        "trend": "stable",
+        "slope": -0.044155844155844164,
+        "recent_temperatures": [
+          3,
+          3,
+          3,
+          3,
+          3,
+          2,
+          3,
+          3,
+          2,
+          1,
+          1,
+          2,
+          2,
+          3,
+          3,
+          3,
+          2,
+          2,
+          2,
+          2,
+          2
+        ],
+        "trend_strength": 0.044155844155844164
+      },
+      "heat_stability": {
+        "stability": "very_stable",
+        "variance": 2.6399999999999997,
+        "coefficient_of_variation": 0.24618298195866548,
+        "segment_frequencies": [
+          5,
+          6,
+          9,
+          5,
+          8
+        ]
+      },
+      "prediction_weight": 0.0
+    },
+    "9": {
+      "observed_frequency": 0,
+      "theoretical_frequency": 16.666666666666668,
+      "temperature_score": -5.129891760425771,
+      "temperature_level": "extremely_cold",
+      "relative_heat": 0.0,
+      "dynamic_threshold": {
+        "very_hot_threshold": 23.164529563205978,
+        "hot_threshold": 19.915598114936323,
+        "cold_threshold": 13.417735218397013,
+        "very_cold_threshold": 10.168803770127358,
+        "current_classification": "very_cold"
+      },
+      "temperature_trend": {
+        "trend": "heating_up",
+        "slope": 0.17532467532467533,
+        "recent_temperatures": [
+          3,
+          3,
+          2,
+          3,
+          3,
+          2,
+          2,
+          1,
+          2,
+          2,
+          3,
+          4,
+          5,
+          4,
+          5,
+          5,
+          6,
+          6,
+          5,
+          5,
+          4
+        ],
+        "trend_strength": 0.17532467532467533
+      },
+      "heat_stability": {
+        "stability": "very_stable",
+        "variance": 0.5599999999999999,
+        "coefficient_of_variation": 0.14390989949130542,
+        "segment_frequencies": [
+          6,
+          4,
+          5,
+          6,
+          5
+        ]
+      },
+      "prediction_weight": 0.0
+    },
+    "10": {
+      "observed_frequency": 0,
+      "theoretical_frequency": 16.666666666666668,
+      "temperature_score": -5.129891760425771,
+      "temperature_level": "extremely_cold",
+      "relative_heat": 0.0,
+      "dynamic_threshold": {
+        "very_hot_threshold": 23.164529563205978,
+        "hot_threshold": 19.915598114936323,
+        "cold_threshold": 13.417735218397013,
+        "very_cold_threshold": 10.168803770127358,
+        "current_classification": "very_cold"
+      },
+      "temperature_trend": {
+        "trend": "cooling_down",
+        "slope": -0.17272727272727265,
+        "recent_temperatures": [
+          5,
+          5,
+          5,
+          4,
+          3,
+          3,
+          2,
+          2,
+          1,
+          0,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          2,
+          2,
+          2,
+          1
+        ],
+        "trend_strength": 0.17272727272727265
+      },
+      "heat_stability": {
+        "stability": "stable",
+        "variance": 3.7600000000000002,
+        "coefficient_of_variation": 0.3127535391881503,
+        "segment_frequencies": [
+          8,
+          8,
+          5,
+          7,
+          3
+        ]
+      },
+      "prediction_weight": 0.0
+    },
+    "11": {
+      "observed_frequency": 0,
+      "theoretical_frequency": 16.666666666666668,
+      "temperature_score": -5.129891760425771,
+      "temperature_level": "extremely_cold",
+      "relative_heat": 0.0,
+      "dynamic_threshold": {
+        "very_hot_threshold": 23.164529563205978,
+        "hot_threshold": 19.915598114936323,
+        "cold_threshold": 13.417735218397013,
+        "very_cold_threshold": 10.168803770127358,
+        "current_classification": "very_cold"
+      },
+      "temperature_trend": {
+        "trend": "heating_up",
+        "slope": 0.15974025974025977,
+        "recent_temperatures": [
+          2,
+          2,
+          1,
+          1,
+          1,
+          1,
+          2,
+          2,
+          2,
+          3,
+          3,
+          3,
+          3,
+          4,
+          4,
+          4,
+          4,
+          4,
+          4,
+          3,
+          4
+        ],
+        "trend_strength": 0.15974025974025977
+      },
+      "heat_stability": {
+        "stability": "stable",
+        "variance": 6.16,
+        "coefficient_of_variation": 0.4772951402304176,
+        "segment_frequencies": [
+          4,
+          10,
+          3,
+          5,
+          4
+        ]
+      },
+      "prediction_weight": 0.0
+    },
+    "12": {
+      "observed_frequency": 0,
+      "theoretical_frequency": 16.666666666666668,
+      "temperature_score": -5.129891760425771,
+      "temperature_level": "extremely_cold",
+      "relative_heat": 0.0,
+      "dynamic_threshold": {
+        "very_hot_threshold": 23.164529563205978,
+        "hot_threshold": 19.915598114936323,
+        "cold_threshold": 13.417735218397013,
+        "very_cold_threshold": 10.168803770127358,
+        "current_classification": "very_cold"
+      },
+      "temperature_trend": {
+        "trend": "stable",
+        "slope": 0.02467532467532468,
+        "recent_temperatures": [
+          1,
+          2,
+          2,
+          2,
+          3,
+          4,
+          5,
+          5,
+          6,
+          6,
+          6,
+          5,
+          6,
+          6,
+          5,
+          4,
+          3,
+          3,
+          2,
+          2,
+          2
+        ],
+        "trend_strength": 0.02467532467532468
+      },
+      "heat_stability": {
+        "stability": "very_stable",
+        "variance": 1.3599999999999999,
+        "coefficient_of_variation": 0.20106730671880346,
+        "segment_frequencies": [
+          7,
+          7,
+          5,
+          6,
+          4
+        ]
+      },
+      "prediction_weight": 0.0
+    }
+  },
+  "analysis_periods": 100,
+  "timestamp": "2025-07-25T22:35:07.364668"
+}

@@ -423,11 +423,12 @@ python3 dlt_main.py data latest                          # 获取最新开奖
 python3 dlt_main.py data latest --compare                # 获取最新开奖并比较预测
 ```
 
-#### 数据质量检查
-检查数据质量，包括异常检测、数据完整性验证等。
+#### 数据完整性检查
+检查数据完整性，包括格式验证、范围检查、重复检测等。
 ```bash
-python3 dlt_main.py data check                           # 基础数据检查
-python3 dlt_main.py data check --anomaly                 # 异常检测分析
+python3 dlt_main.py data check                           # 基础完整性检查
+python3 dlt_main.py data check --detailed                # 详细检查信息
+python3 dlt_main.py data check --fix                     # 自动修复问题
 ```
 
 ## 🔍 **高级分析功能详解**
@@ -435,29 +436,29 @@ python3 dlt_main.py data check --anomaly                 # 异常检测分析
 #### 基础统计分析
 提供频率、遗漏、冷热号等基础统计分析。
 ```bash
-python3 dlt_main.py analyze -t basic -p 500              # 基础分析（500期）
-python3 dlt_main.py analyze -t basic -p 1000             # 基础分析（1000期）
+python3 dlt_main.py analyze --type basic -p 500          # 基础分析（500期）
+python3 dlt_main.py analyze --type basic -p 1000         # 基础分析（1000期）
 ```
 
 #### 高级模式分析
 深度模式分析，包括马尔可夫链、贝叶斯等高级分析。
 ```bash
-python3 dlt_main.py analyze -t advanced -p 1000          # 高级分析（1000期）
-python3 dlt_main.py analyze -t advanced -p 1500          # 高级分析（1500期）
+python3 dlt_main.py analyze --type advanced -p 1000      # 高级分析（1000期）
+python3 dlt_main.py analyze --type advanced -p 1500      # 高级分析（1500期）
 ```
 
 #### 综合分析
 9种数学模型的综合分析，提供全面的数据洞察。
 ```bash
-python3 dlt_main.py analyze -t comprehensive -p 800      # 综合分析（800期）
-python3 dlt_main.py analyze -t comprehensive -p 1200     # 综合分析（1200期）
+python3 dlt_main.py analyze --type comprehensive -p 800  # 综合分析（800期）
+python3 dlt_main.py analyze --type comprehensive -p 1200 # 综合分析（1200期）
 ```
 
 #### 异常检测分析
 检测数据中的异常模式和趋势变化。
 ```bash
-python3 dlt_main.py analyze -t anomaly                   # 异常检测分析
-python3 dlt_main.py analyze -t anomaly -p 1000           # 指定期数异常检测
+python3 dlt_main.py analyze --type anomaly               # 异常检测分析
+python3 dlt_main.py analyze --type anomaly -p 1000       # 指定期数异常检测
 ```
 
 ## 🎓 **自适应学习功能详解**
@@ -614,10 +615,11 @@ python3 dlt_main.py predict -m compound --front-count 8 --back-count 3
 
 # 数据管理
 python3 dlt_main.py data status                         # 查看数据状态
+python3 dlt_main.py data check                          # 检查数据完整性
 python3 dlt_main.py data update                         # 更新数据
 
 # 分析功能
-python3 dlt_main.py analyze -t basic -p 500             # 基础分析
+python3 dlt_main.py analyze --type basic -p 500         # 基础分析
 python3 dlt_main.py backtest -m ensemble -t 100         # 性能回测
 ```
 

@@ -25,7 +25,8 @@ import math
 from datetime import datetime
 
 from core_modules import logger_manager, cache_manager
-from . import BaseDeepLearningModel, ModelMetadata
+from .base_model import BaseModel as BaseDeepLearningModel
+from . import ModelMetadata
 
 
 class LSTMPredictor(BaseDeepLearningModel):

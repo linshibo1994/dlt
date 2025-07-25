@@ -1,0 +1,1520 @@
+{
+  "front_enhanced": {
+    "1": {
+      "prior_probability": 0.02938292476754015,
+      "likelihood_components": {
+        "frequency": 0.14940239043824702,
+        "position": 0.01661129568106312,
+        "temporal": 0.12128406540071776,
+        "combination": 0.9754113948589892,
+        "combined": 0.0002935976841968082
+      },
+      "posterior_distribution": {
+        "mean": 0.0013727536015248946,
+        "alpha": 0.13727536015248945,
+        "beta": 99.86272463984751,
+        "variance": 1.3572961872023713e-05,
+        "mode": 0.0013727536015248946
+      },
+      "confidence_interval": [
+        1.3409455385976642e-14,
+        0.01203818445143299
+      ],
+      "predictive_distribution": {
+        "mean": 0.0013727536015248946,
+        "variance": 0.0013844421109464188,
+        "std": 0.037208092008949055
+      },
+      "bayes_factor": 0.00030193655333375896,
+      "information_gain": 0.024204937639347477,
+      "evidence": 0.006284273198843531,
+      "prediction_weight": 0.0007029523438405539
+    },
+    "2": {
+      "prior_probability": 0.027489433643279798,
+      "likelihood_components": {
+        "frequency": 0.13745019920318724,
+        "position": 0.027057138309724657,
+        "temporal": 0.1,
+        "combination": 0.9705487947665566,
+        "combined": 0.0003609479751727361
+      },
+      "posterior_distribution": {
+        "mean": 0.0013727536015248946,
+        "alpha": 0.13727536015248945,
+        "beta": 99.86272463984751,
+        "variance": 1.3572961872023713e-05,
+        "mode": 0.0013727536015248946
+      },
+      "confidence_interval": [
+        1.3409455385976642e-14,
+        0.01203818445143299
+      ],
+      "predictive_distribution": {
+        "mean": 0.0013727536015248946,
+        "variance": 0.0013844421109464188,
+        "std": 0.037208092008949055
+      },
+      "bayes_factor": 0.0003472789394265497,
+      "information_gain": 0.02235014358385595,
+      "evidence": 0.00722799444937912,
+      "prediction_weight": 0.0007016793253451985
+    },
+    "3": {
+      "prior_probability": 0.02654268808114962,
+      "likelihood_components": {
+        "frequency": 0.13147410358565736,
+        "position": 0.029912563276576164,
+        "temporal": 0.11832613908126079,
+        "combination": 0.9798800410161502,
+        "combined": 0.0004559817430229568
+      },
+      "posterior_distribution": {
+        "mean": 0.0013727536015248946,
+        "alpha": 0.13727536015248945,
+        "beta": 99.86272463984751,
+        "variance": 1.3572961872023713e-05,
+        "mode": 0.0013727536015248946
+      },
+      "confidence_interval": [
+        1.3409455385976642e-14,
+        0.01203818445143299
+      ],
+      "predictive_distribution": {
+        "mean": 0.0013727536015248946,
+        "variance": 0.0013844421109464188,
+        "std": 0.037208092008949055
+      },
+      "bayes_factor": 0.00042360434115150424,
+      "information_gain": 0.021426557592004035,
+      "evidence": 0.008816572152724947,
+      "prediction_weight": 0.0007010454317621359
+    },
+    "4": {
+      "prior_probability": 0.021808960270498733,
+      "likelihood_components": {
+        "frequency": 0.10159362549800798,
+        "position": 0.05197505197505198,
+        "temporal": 0.20537955929158805,
+        "combination": 0.9771691769922317,
+        "combined": 0.0010597132593455085
+      },
+      "posterior_distribution": {
+        "mean": 0.0013727536015248946,
+        "alpha": 0.13727536015248945,
+        "beta": 99.86272463984751,
+        "variance": 1.3572961872023713e-05,
+        "mode": 0.0013727536015248946
+      },
+      "confidence_interval": [
+        1.3409455385976642e-14,
+        0.01203818445143299
+      ],
+      "predictive_distribution": {
+        "mean": 0.0013727536015248946,
+        "variance": 0.0013844421109464188,
+        "std": 0.037208092008949055
+      },
+      "bayes_factor": 0.000808893552991542,
+      "information_gain": 0.01685185713414826,
+      "evidence": 0.016835682926283548,
+      "prediction_weight": 0.0006979056339628496
+    },
+    "5": {
+      "prior_probability": 0.027489433643279798,
+      "likelihood_components": {
+        "frequency": 0.13745019920318724,
+        "position": 0.04333418302319654,
+        "temporal": 0.16020379285001002,
+        "combination": 0.9748968342019605,
+        "combined": 0.0009302666264286568
+      },
+      "posterior_distribution": {
+        "mean": 0.0013727536015248946,
+        "alpha": 0.13727536015248945,
+        "beta": 99.86272463984751,
+        "variance": 1.3572961872023713e-05,
+        "mode": 0.0013727536015248946
+      },
+      "confidence_interval": [
+        1.3409455385976642e-14,
+        0.01203818445143299
+      ],
+      "predictive_distribution": {
+        "mean": 0.0013727536015248946,
+        "variance": 0.0013844421109464188,
+        "std": 0.037208092008949055
+      },
+      "bayes_factor": 0.0008950375944218912,
+      "information_gain": 0.02235014358385595,
+      "evidence": 0.018628618179811467,
+      "prediction_weight": 0.0007016793253451985
+    },
+    "6": {
+      "prior_probability": 0.02685826993519301,
+      "likelihood_components": {
+        "frequency": 0.13346613545816732,
+        "position": 0.049519807923169276,
+        "temporal": 0.1208566316607784,
+        "combination": 0.9799322165087203,
+        "combined": 0.0007827382536219123
+      },
+      "posterior_distribution": {
+        "mean": 0.0013727536015248946,
+        "alpha": 0.13727536015248945,
+        "beta": 99.86272463984751,
+        "variance": 1.3572961872023713e-05,
+        "mode": 0.0013727536015248946
+      },
+      "confidence_interval": [
+        1.3409455385976642e-14,
+        0.01203818445143299
+      ],
+      "predictive_distribution": {
+        "mean": 0.0013727536015248946,
+        "variance": 0.0013844421109464188,
+        "std": 0.037208092008949055
+      },
+      "bayes_factor": 0.0007358048356532612,
+      "information_gain": 0.02173412646930315,
+      "evidence": 0.015314471060958016,
+      "prediction_weight": 0.0007012565284433218
+    },
+    "7": {
+      "prior_probability": 0.025280360664976048,
+      "likelihood_components": {
+        "frequency": 0.12350597609561753,
+        "position": 0.07965526247061896,
+        "temporal": 0.1,
+        "combination": 0.9696708325349837,
+        "combined": 0.0009539525597394461
+      },
+      "posterior_distribution": {
+        "mean": 0.0013727536015248946,
+        "alpha": 0.13727536015248945,
+        "beta": 99.86272463984751,
+        "variance": 1.3572961872023713e-05,
+        "mode": 0.0013727536015248946
+      },
+      "confidence_interval": [
+        1.3409455385976642e-14,
+        0.01203818445143299
+      ],
+      "predictive_distribution": {
+        "mean": 0.0013727536015248946,
+        "variance": 0.0013844421109464188,
+        "std": 0.037208092008949055
+      },
+      "bayes_factor": 0.0008440692668621608,
+      "information_gain": 0.020199319486314177,
+      "evidence": 0.017567802947813255,
+      "prediction_weight": 0.0007002031297275122
+    },
+    "8": {
+      "prior_probability": 0.023386869540715696,
+      "likelihood_components": {
+        "frequency": 0.11155378486055777,
+        "position": 0.07982583454281568,
+        "temporal": 0.1,
+        "combination": 0.9717764874217266,
+        "combined": 0.0008653547150321554
+      },
+      "posterior_distribution": {
+        "mean": 0.0013727536015248946,
+        "alpha": 0.13727536015248945,
+        "beta": 99.86272463984751,
+        "variance": 1.3572961872023713e-05,
+        "mode": 0.0013727536015248946
+      },
+      "confidence_interval": [
+        1.3409455385976642e-14,
+        0.01203818445143299
+      ],
+      "predictive_distribution": {
+        "mean": 0.0013727536015248946,
+        "variance": 0.0013844421109464188,
+        "std": 0.037208092008949055
+      },
+      "bayes_factor": 0.0007083278239415078,
+      "information_gain": 0.018368140374077656,
+      "evidence": 0.014742585854023136,
+      "prediction_weight": 0.0006989463191014032
+    },
+    "9": {
+      "prior_probability": 0.0230712876866723,
+      "likelihood_components": {
+        "frequency": 0.10956175298804781,
+        "position": 0.07618510158013544,
+        "temporal": 0.1,
+        "combination": 0.9743771414671181,
+        "combined": 0.0008133099965143211
+      },
+      "posterior_distribution": {
+        "mean": 0.0013727536015248946,
+        "alpha": 0.13727536015248945,
+        "beta": 99.86272463984751,
+        "variance": 1.3572961872023713e-05,
+        "mode": 0.0013727536015248946
+      },
+      "confidence_interval": [
+        1.3409455385976642e-14,
+        0.01203818445143299
+      ],
+      "predictive_distribution": {
+        "mean": 0.0013727536015248946,
+        "variance": 0.0013844421109464188,
+        "std": 0.037208092008949055
+      },
+      "bayes_factor": 0.0006567438117809923,
+      "information_gain": 0.018064147046120256,
+      "evidence": 0.013668956240351242,
+      "prediction_weight": 0.0006987376764611011
+    },
+    "10": {
+      "prior_probability": 0.030960834037757116,
+      "likelihood_components": {
+        "frequency": 0.1593625498007968,
+        "position": 0.07067453927357308,
+        "temporal": 0.1,
+        "combination": 0.9807061237427559,
+        "combined": 0.0011045570272237612
+      },
+      "posterior_distribution": {
+        "mean": 0.0013727536015248946,
+        "alpha": 0.13727536015248945,
+        "beta": 99.86272463984751,
+        "variance": 1.3572961872023713e-05,
+        "mode": 0.0013727536015248946
+      },
+      "confidence_interval": [
+        1.3409455385976642e-14,
+        0.01203818445143299
+      ],
+      "predictive_distribution": {
+        "mean": 0.0013727536015248946,
+        "variance": 0.0013844421109464188,
+        "std": 0.037208092008949055
+      },
+      "bayes_factor": 0.0011969302381789632,
+      "information_gain": 0.025757895671772973,
+      "evidence": 0.024911977478787962,
+      "prediction_weight": 0.00070401820033925
+    },
+    "11": {
+      "prior_probability": 0.030329670329670332,
+      "likelihood_components": {
+        "frequency": 0.1553784860557769,
+        "position": 0.09646705086444499,
+        "temporal": 0.21654792272524923,
+        "combination": 0.9791467251775866,
+        "combined": 0.0031781301988710246
+      },
+      "posterior_distribution": {
+        "mean": 0.0013727536015248948,
+        "alpha": 0.13727536015248948,
+        "beta": 99.86272463984751,
+        "variance": 1.3572961872023714e-05,
+        "mode": 0.0013727536015248948
+      },
+      "confidence_interval": [
+        1.340945538597672e-14,
+        0.01203818445143299
+      ],
+      "predictive_distribution": {
+        "mean": 0.0013727536015248948,
+        "variance": 0.001384442110946419,
+        "std": 0.03720809200894906
+      },
+      "bayes_factor": 0.0033737074418784727,
+      "information_gain": 0.025135946076708347,
+      "evidence": 0.07021772959797967,
+      "prediction_weight": 0.000703591331741439
+    },
+    "12": {
+      "prior_probability": 0.02654268808114962,
+      "likelihood_components": {
+        "frequency": 0.13147410358565736,
+        "position": 0.14606741573033707,
+        "temporal": 0.15284078261936984,
+        "combination": 0.9803824366854741,
+        "combined": 0.0028775861812751933
+      },
+      "posterior_distribution": {
+        "mean": 0.0013727536015248946,
+        "alpha": 0.13727536015248945,
+        "beta": 99.86272463984751,
+        "variance": 1.3572961872023713e-05,
+        "mode": 0.0013727536015248946
+      },
+      "confidence_interval": [
+        1.3409455385976642e-14,
+        0.01203818445143299
+      ],
+      "predictive_distribution": {
+        "mean": 0.0013727536015248946,
+        "variance": 0.0013844421109464188,
+        "std": 0.037208092008949055
+      },
+      "bayes_factor": 0.0026732605352674872,
+      "information_gain": 0.021426557592004035,
+      "evidence": 0.05563917104378386,
+      "prediction_weight": 0.0007010454317621359
+    },
+    "13": {
+      "prior_probability": 0.02654268808114962,
+      "likelihood_components": {
+        "frequency": 0.13147410358565736,
+        "position": 0.1138353765323993,
+        "temporal": 0.1,
+        "combination": 0.9703819547547726,
+        "combined": 0.0014523128452557457
+      },
+      "posterior_distribution": {
+        "mean": 0.0013727536015248946,
+        "alpha": 0.13727536015248945,
+        "beta": 99.86272463984751,
+        "variance": 1.3572961872023713e-05,
+        "mode": 0.0013727536015248946
+      },
+      "confidence_interval": [
+        1.3409455385976642e-14,
+        0.01203818445143299
+      ],
+      "predictive_distribution": {
+        "mean": 0.0013727536015248946,
+        "variance": 0.0013844421109464188,
+        "std": 0.037208092008949055
+      },
+      "bayes_factor": 0.0013491900396754562,
+      "information_gain": 0.021426557592004035,
+      "evidence": 0.028080994874134454,
+      "prediction_weight": 0.0007010454317621359
+    },
+    "14": {
+      "prior_probability": 0.027173851789236404,
+      "likelihood_components": {
+        "frequency": 0.13545816733067728,
+        "position": 0.17438833940655907,
+        "temporal": 0.1,
+        "combination": 0.9751276735643962,
+        "combined": 0.002303478268477049
+      },
+      "posterior_distribution": {
+        "mean": 0.0013727536015248946,
+        "alpha": 0.13727536015248945,
+        "beta": 99.86272463984751,
+        "variance": 1.3572961872023713e-05,
+        "mode": 0.0013727536015248946
+      },
+      "confidence_interval": [
+        1.3409455385976642e-14,
+        0.01203818445143299
+      ],
+      "predictive_distribution": {
+        "mean": 0.0013727536015248946,
+        "variance": 0.0013844421109464188,
+        "std": 0.037208092008949055
+      },
+      "bayes_factor": 0.0021908031973562783,
+      "information_gain": 0.02204198990288773,
+      "evidence": 0.045597678270733064,
+      "prediction_weight": 0.0007014678272901323
+    },
+    "15": {
+      "prior_probability": 0.021177796562411946,
+      "likelihood_components": {
+        "frequency": 0.09760956175298804,
+        "position": 0.22944550669216057,
+        "temporal": 0.1,
+        "combination": 0.9665819695895045,
+        "combined": 0.002164764262714452
+      },
+      "posterior_distribution": {
+        "mean": 0.0013727536015248946,
+        "alpha": 0.13727536015248945,
+        "beta": 99.86272463984751,
+        "variance": 1.3572961872023713e-05,
+        "mode": 0.0013727536015248946
+      },
+      "confidence_interval": [
+        1.3409455385976642e-14,
+        0.01203818445143299
+      ],
+      "predictive_distribution": {
+        "mean": 0.0013727536015248946,
+        "variance": 0.0013844421109464188,
+        "std": 0.037208092008949055
+      },
+      "bayes_factor": 0.0016045728006471225,
+      "information_gain": 0.01624802953379833,
+      "evidence": 0.03339633355208135,
+      "prediction_weight": 0.0006974912032065208
+    },
+    "16": {
+      "prior_probability": 0.019599887292194983,
+      "likelihood_components": {
+        "frequency": 0.08764940239043825,
+        "position": 0.10534051935325821,
+        "temporal": 0.1,
+        "combination": 0.9592436320863187,
+        "combined": 0.0008856728655721628
+      },
+      "posterior_distribution": {
+        "mean": 0.0013727536015248946,
+        "alpha": 0.13727536015248945,
+        "beta": 99.86272463984751,
+        "variance": 1.3572961872023713e-05,
+        "mode": 0.0013727536015248946
+      },
+      "confidence_interval": [
+        1.3409455385976642e-14,
+        0.01203818445143299
+      ],
+      "predictive_distribution": {
+        "mean": 0.0013727536015248946,
+        "variance": 0.0013844421109464188,
+        "std": 0.037208092008949055
+      },
+      "bayes_factor": 0.0006075680920039412,
+      "information_gain": 0.014745781344412092,
+      "evidence": 0.012645450956156129,
+      "prediction_weight": 0.0006964601508780744
+    },
+    "17": {
+      "prior_probability": 0.022440123978585517,
+      "likelihood_components": {
+        "frequency": 0.10557768924302789,
+        "position": 0.15700483091787437,
+        "temporal": 0.1,
+        "combination": 0.9834969322482707,
+        "combined": 0.0016302648977016055
+      },
+      "posterior_distribution": {
+        "mean": 0.0013727536015248946,
+        "alpha": 0.13727536015248945,
+        "beta": 99.86272463984751,
+        "variance": 1.3572961872023713e-05,
+        "mode": 0.0013727536015248946
+      },
+      "confidence_interval": [
+        1.3409455385976642e-14,
+        0.01203818445143299
+      ],
+      "predictive_distribution": {
+        "mean": 0.0013727536015248946,
+        "variance": 0.0013844421109464188,
+        "std": 0.037208092008949055
+      },
+      "bayes_factor": 0.0012804171247826023,
+      "information_gain": 0.017457250732550663,
+      "evidence": 0.026649608772996273,
+      "prediction_weight": 0.0006983211395255584
+    },
+    "18": {
+      "prior_probability": 0.023386869540715696,
+      "likelihood_components": {
+        "frequency": 0.11155378486055777,
+        "position": 0.12585812356979406,
+        "temporal": 0.1,
+        "combination": 0.9690710606284827,
+        "combined": 0.0013605709276102579
+      },
+      "posterior_distribution": {
+        "mean": 0.0013727536015248946,
+        "alpha": 0.13727536015248945,
+        "beta": 99.86272463984751,
+        "variance": 1.3572961872023713e-05,
+        "mode": 0.0013727536015248946
+      },
+      "confidence_interval": [
+        1.3409455385976642e-14,
+        0.01203818445143299
+      ],
+      "predictive_distribution": {
+        "mean": 0.0013727536015248946,
+        "variance": 0.0013844421109464188,
+        "std": 0.037208092008949055
+      },
+      "bayes_factor": 0.0011136823174719074,
+      "information_gain": 0.018368140374077656,
+      "evidence": 0.023179319835377316,
+      "prediction_weight": 0.0006989463191014032
+    },
+    "19": {
+      "prior_probability": 0.028436179205409973,
+      "likelihood_components": {
+        "frequency": 0.14342629482071714,
+        "position": 0.08276987642807182,
+        "temporal": 0.1,
+        "combination": 0.9788791041662612,
+        "combined": 0.0011620642588187537
+      },
+      "posterior_distribution": {
+        "mean": 0.0013727536015248946,
+        "alpha": 0.13727536015248945,
+        "beta": 99.86272463984751,
+        "variance": 1.3572961872023713e-05,
+        "mode": 0.0013727536015248946
+      },
+      "confidence_interval": [
+        1.3409455385976642e-14,
+        0.01203818445143299
+      ],
+      "predictive_distribution": {
+        "mean": 0.0013727536015248946,
+        "variance": 0.0013844421109464188,
+        "std": 0.037208092008949055
+      },
+      "bayes_factor": 0.00115656336291902,
+      "information_gain": 0.023276305231215894,
+      "evidence": 0.024071812651057716,
+      "prediction_weight": 0.0007023149867024728
+    },
+    "20": {
+      "prior_probability": 0.02433361510284587,
+      "likelihood_components": {
+        "frequency": 0.11752988047808766,
+        "position": 0.12154233025984909,
+        "temporal": 0.1,
+        "combination": 0.9819481329643232,
+        "combined": 0.001402698723548352
+      },
+      "posterior_distribution": {
+        "mean": 0.0013727536015248946,
+        "alpha": 0.13727536015248945,
+        "beta": 99.86272463984751,
+        "variance": 1.3572961872023713e-05,
+        "mode": 0.0013727536015248946
+      },
+      "confidence_interval": [
+        1.3409455385976642e-14,
+        0.01203818445143299
+      ],
+      "predictive_distribution": {
+        "mean": 0.0013727536015248946,
+        "variance": 0.0013844421109464188,
+        "std": 0.037208092008949055
+      },
+      "bayes_factor": 0.0011946455795427582,
+      "information_gain": 0.019282219991067644,
+      "evidence": 0.024864426366219817,
+      "prediction_weight": 0.0006995736880835338
+    },
+    "21": {
+      "prior_probability": 0.02780501549732319,
+      "likelihood_components": {
+        "frequency": 0.1394422310756972,
+        "position": 0.1590594744121715,
+        "temporal": 0.1,
+        "combination": 0.9769900503806702,
+        "combined": 0.002166925632343212
+      },
+      "posterior_distribution": {
+        "mean": 0.0013727536015248946,
+        "alpha": 0.13727536015248945,
+        "beta": 99.86272463984751,
+        "variance": 1.3572961872023713e-05,
+        "mode": 0.0013727536015248946
+      },
+      "confidence_interval": [
+        1.3409455385976642e-14,
+        0.01203818445143299
+      ],
+      "predictive_distribution": {
+        "mean": 0.0013727536015248946,
+        "variance": 0.0013844421109464188,
+        "std": 0.037208092008949055
+      },
+      "bayes_factor": 0.0021087990276097454,
+      "information_gain": 0.02265858335326576,
+      "evidence": 0.04389090709499568,
+      "prediction_weight": 0.0007018910197540732
+    },
+    "22": {
+      "prior_probability": 0.030960834037757116,
+      "likelihood_components": {
+        "frequency": 0.1593625498007968,
+        "position": 0.14265077645359336,
+        "temporal": 0.1374082976992926,
+        "combination": 0.981673156392762,
+        "combined": 0.0030664810452792368
+      },
+      "posterior_distribution": {
+        "mean": 0.0013727536015248948,
+        "alpha": 0.13727536015248948,
+        "beta": 99.86272463984751,
+        "variance": 1.3572961872023714e-05,
+        "mode": 0.0013727536015248948
+      },
+      "confidence_interval": [
+        1.340945538597672e-14,
+        0.01203818445143299
+      ],
+      "predictive_distribution": {
+        "mean": 0.0013727536015248948,
+        "variance": 0.001384442110946419,
+        "std": 0.03720809200894906
+      },
+      "bayes_factor": 0.0033229283752986443,
+      "information_gain": 0.02575789567177297,
+      "evidence": 0.0691608534972011,
+      "prediction_weight": 0.0007040182003392501
+    },
+    "23": {
+      "prior_probability": 0.028751761059453367,
+      "likelihood_components": {
+        "frequency": 0.1454183266932271,
+        "position": 0.13206162876008803,
+        "temporal": 0.1,
+        "combination": 0.9684054569405539,
+        "combined": 0.0018597433748788964
+      },
+      "posterior_distribution": {
+        "mean": 0.0013727536015248948,
+        "alpha": 0.13727536015248948,
+        "beta": 99.86272463984751,
+        "variance": 1.3572961872023714e-05,
+        "mode": 0.0013727536015248948
+      },
+      "confidence_interval": [
+        1.340945538597672e-14,
+        0.01203818445143299
+      ],
+      "predictive_distribution": {
+        "mean": 0.0013727536015248948,
+        "variance": 0.001384442110946419,
+        "std": 0.03720809200894906
+      },
+      "bayes_factor": 0.0018714814001246805,
+      "information_gain": 0.023585579712631543,
+      "evidence": 0.038951562091712896,
+      "prediction_weight": 0.0007025272540072004
+    },
+    "24": {
+      "prior_probability": 0.030014088475626935,
+      "likelihood_components": {
+        "frequency": 0.15338645418326693,
+        "position": 0.12281835811247577,
+        "temporal": 0.13021285771038021,
+        "combination": 0.9754355525832725,
+        "combined": 0.002392779868774846
+      },
+      "posterior_distribution": {
+        "mean": 0.0013727536015248946,
+        "alpha": 0.13727536015248945,
+        "beta": 99.86272463984751,
+        "variance": 1.3572961872023713e-05,
+        "mode": 0.0013727536015248946
+      },
+      "confidence_interval": [
+        1.3409455385976642e-14,
+        0.01203818445143299
+      ],
+      "predictive_distribution": {
+        "mean": 0.0013727536015248946,
+        "variance": 0.0013844421109464188,
+        "std": 0.037208092008949055
+      },
+      "bayes_factor": 0.002513598733943753,
+      "information_gain": 0.024825351396092477,
+      "evidence": 0.05231609416601108,
+      "prediction_weight": 0.0007033781583318023
+    },
+    "25": {
+      "prior_probability": 0.03190757959988729,
+      "likelihood_components": {
+        "frequency": 0.16533864541832669,
+        "position": 0.14716439339554918,
+        "temporal": 0.1,
+        "combination": 0.9879437831780196,
+        "combined": 0.0024038610054790176
+      },
+      "posterior_distribution": {
+        "mean": 0.0013727536015248946,
+        "alpha": 0.13727536015248945,
+        "beta": 99.86272463984751,
+        "variance": 1.3572961872023713e-05,
+        "mode": 0.0013727536015248946
+      },
+      "confidence_interval": [
+        1.3409455385976642e-14,
+        0.01203818445143299
+      ],
+      "predictive_distribution": {
+        "mean": 0.0013727536015248946,
+        "variance": 0.0013844421109464188,
+        "std": 0.037208092008949055
+      },
+      "bayes_factor": 0.00268454852327854,
+      "information_gain": 0.026692677367821674,
+      "evidence": 0.05587411046977748,
+      "prediction_weight": 0.00070465977797676
+    },
+    "26": {
+      "prior_probability": 0.02654268808114962,
+      "likelihood_components": {
+        "frequency": 0.13147410358565736,
+        "position": 0.10366826156299841,
+        "temporal": 0.1,
+        "combination": 0.9664967264252529,
+        "combined": 0.0013173052467528085
+      },
+      "posterior_distribution": {
+        "mean": 0.0013727536015248946,
+        "alpha": 0.13727536015248945,
+        "beta": 99.86272463984751,
+        "variance": 1.3572961872023713e-05,
+        "mode": 0.0013727536015248946
+      },
+      "confidence_interval": [
+        1.3409455385976642e-14,
+        0.01203818445143299
+      ],
+      "predictive_distribution": {
+        "mean": 0.0013727536015248946,
+        "variance": 0.0013844421109464188,
+        "std": 0.037208092008949055
+      },
+      "bayes_factor": 0.0012237687795277569,
+      "information_gain": 0.021426557592004035,
+      "evidence": 0.02547057405887093,
+      "prediction_weight": 0.0007010454317621359
+    },
+    "27": {
+      "prior_probability": 0.027489433643279798,
+      "likelihood_components": {
+        "frequency": 0.13745019920318724,
+        "position": 0.08007536504945832,
+        "temporal": 0.1,
+        "combination": 0.9783602537131478,
+        "combined": 0.0010768199717432882
+      },
+      "posterior_distribution": {
+        "mean": 0.0013727536015248946,
+        "alpha": 0.13727536015248945,
+        "beta": 99.86272463984751,
+        "variance": 1.3572961872023713e-05,
+        "mode": 0.0013727536015248946
+      },
+      "confidence_interval": [
+        1.3409455385976642e-14,
+        0.01203818445143299
+      ],
+      "predictive_distribution": {
+        "mean": 0.0013727536015248946,
+        "variance": 0.0013844421109464188,
+        "std": 0.037208092008949055
+      },
+      "bayes_factor": 0.0010360409905648441,
+      "information_gain": 0.02235014358385595,
+      "evidence": 0.021563353486098093,
+      "prediction_weight": 0.0007016793253451985
+    },
+    "28": {
+      "prior_probability": 0.024649196956889264,
+      "likelihood_components": {
+        "frequency": 0.11952191235059761,
+        "position": 0.12400168137873056,
+        "temporal": 0.1,
+        "combination": 0.9745503602961846,
+        "combined": 0.001444373106752684
+      },
+      "posterior_distribution": {
+        "mean": 0.0013727536015248946,
+        "alpha": 0.13727536015248945,
+        "beta": 99.86272463984751,
+        "variance": 1.3572961872023713e-05,
+        "mode": 0.0013727536015248946
+      },
+      "confidence_interval": [
+        1.3409455385976642e-14,
+        0.01203818445143299
+      ],
+      "predictive_distribution": {
+        "mean": 0.0013727536015248946,
+        "variance": 0.0013844421109464188,
+        "std": 0.037208092008949055
+      },
+      "bayes_factor": 0.0012460923015653333,
+      "information_gain": 0.019587592106008384,
+      "evidence": 0.02593519852946116,
+      "prediction_weight": 0.0006997832770398574
+    },
+    "29": {
+      "prior_probability": 0.03758805297266835,
+      "likelihood_components": {
+        "frequency": 0.20119521912350596,
+        "position": 0.05995203836930456,
+        "temporal": 0.16348192408953827,
+        "combination": 0.98406541931427,
+        "combined": 0.0019405074815996193
+      },
+      "posterior_distribution": {
+        "mean": 0.0013727536015248946,
+        "alpha": 0.13727536015248945,
+        "beta": 99.86272463984751,
+        "variance": 1.3572961872023713e-05,
+        "mode": 0.0013727536015248946
+      },
+      "confidence_interval": [
+        1.3409455385976642e-14,
+        0.01203818445143299
+      ],
+      "predictive_distribution": {
+        "mean": 0.0013727536015248946,
+        "variance": 0.0013844421109464188,
+        "std": 0.037208092008949055
+      },
+      "bayes_factor": 0.0025528964304279015,
+      "information_gain": 0.032344663090531876,
+      "evidence": 0.05313400593609953,
+      "prediction_weight": 0.000708538959247151
+    },
+    "30": {
+      "prior_probability": 0.03411665257819104,
+      "likelihood_components": {
+        "frequency": 0.17928286852589642,
+        "position": 0.05605239954654239,
+        "temporal": 0.1,
+        "combination": 0.986587127282221,
+        "combined": 0.000991444586878659
+      },
+      "posterior_distribution": {
+        "mean": 0.0013727536015248946,
+        "alpha": 0.13727536015248945,
+        "beta": 99.86272463984751,
+        "variance": 1.3572961872023713e-05,
+        "mode": 0.0013727536015248946
+      },
+      "confidence_interval": [
+        1.3409455385976642e-14,
+        0.01203818445143299
+      ],
+      "predictive_distribution": {
+        "mean": 0.0013727536015248946,
+        "variance": 0.0013844421109464188,
+        "std": 0.037208092008949055
+      },
+      "bayes_factor": 0.0011838669682373573,
+      "information_gain": 0.02888213620272969,
+      "evidence": 0.02464008871183715,
+      "prediction_weight": 0.0007061624901422455
+    },
+    "31": {
+      "prior_probability": 0.03253874330797407,
+      "likelihood_components": {
+        "frequency": 0.1693227091633466,
+        "position": 0.05458799064205874,
+        "temporal": 0.14299400990009498,
+        "combination": 0.9799575341361672,
+        "combined": 0.0012952017371026547
+      },
+      "posterior_distribution": {
+        "mean": 0.0013727536015248946,
+        "alpha": 0.13727536015248945,
+        "beta": 99.86272463984751,
+        "variance": 1.3572961872023713e-05,
+        "mode": 0.0013727536015248946
+      },
+      "confidence_interval": [
+        1.3409455385976642e-14,
+        0.01203818445143299
+      ],
+      "predictive_distribution": {
+        "mean": 0.0013727536015248946,
+        "variance": 0.0013844421109464188,
+        "std": 0.037208092008949055
+      },
+      "bayes_factor": 0.001475048289946889,
+      "information_gain": 0.027317071733621006,
+      "evidence": 0.030700510862845566,
+      "prediction_weight": 0.000705088324517388
+    },
+    "32": {
+      "prior_probability": 0.042321780783319246,
+      "likelihood_components": {
+        "frequency": 0.23107569721115537,
+        "position": 0.037520391517128875,
+        "temporal": 0.11569667797381022,
+        "combination": 0.9834464567347492,
+        "combined": 0.0009864912617356968
+      },
+      "posterior_distribution": {
+        "mean": 0.0013727536015248946,
+        "alpha": 0.13727536015248945,
+        "beta": 99.86272463984751,
+        "variance": 1.3572961872023713e-05,
+        "mode": 0.0013727536015248946
+      },
+      "confidence_interval": [
+        1.3409455385976642e-14,
+        0.01203818445143299
+      ],
+      "predictive_distribution": {
+        "mean": 0.0013727536015248946,
+        "variance": 0.0013844421109464188,
+        "std": 0.037208092008949055
+      },
+      "bayes_factor": 0.0014612523423343361,
+      "information_gain": 0.03710580929664596,
+      "evidence": 0.03041337271121415,
+      "prediction_weight": 0.0007118067221351813
+    },
+    "33": {
+      "prior_probability": 0.04042828965905889,
+      "likelihood_components": {
+        "frequency": 0.21912350597609562,
+        "position": 0.024342310956273164,
+        "temporal": 0.1,
+        "combination": 0.9833839914633948,
+        "combined": 0.0005245343187367596
+      },
+      "posterior_distribution": {
+        "mean": 0.0013727536015248946,
+        "alpha": 0.13727536015248945,
+        "beta": 99.86272463984751,
+        "variance": 1.3572961872023713e-05,
+        "mode": 0.0013727536015248946
+      },
+      "confidence_interval": [
+        1.3409455385976642e-14,
+        0.01203818445143299
+      ],
+      "predictive_distribution": {
+        "mean": 0.0013727536015248946,
+        "variance": 0.0013844421109464188,
+        "std": 0.037208092008949055
+      },
+      "bayes_factor": 0.0007422108880902395,
+      "information_gain": 0.03519613819139565,
+      "evidence": 0.01544780166699295,
+      "prediction_weight": 0.0007104960393508411
+    },
+    "34": {
+      "prior_probability": 0.03443223443223443,
+      "likelihood_components": {
+        "frequency": 0.18127490039840638,
+        "position": 0.02324380165289256,
+        "temporal": 0.12598014489497336,
+        "combination": 0.9790392443088859,
+        "combined": 0.0005196932070065864
+      },
+      "posterior_distribution": {
+        "mean": 0.0013727536015248946,
+        "alpha": 0.13727536015248945,
+        "beta": 99.86272463984751,
+        "variance": 1.3572961872023713e-05,
+        "mode": 0.0013727536015248946
+      },
+      "confidence_interval": [
+        1.3409455385976642e-14,
+        0.01203818445143299
+      ],
+      "predictive_distribution": {
+        "mean": 0.0013727536015248946,
+        "variance": 0.0013844421109464188,
+        "std": 0.037208092008949055
+      },
+      "bayes_factor": 0.0006262969417771681,
+      "information_gain": 0.029195830029275734,
+      "evidence": 0.013035258706743236,
+      "prediction_weight": 0.0007063777906182686
+    },
+    "35": {
+      "prior_probability": 0.03821921668075514,
+      "likelihood_components": {
+        "frequency": 0.2051792828685259,
+        "position": 0.012106537530266345,
+        "temporal": 0.16531700786883935,
+        "combination": 0.9730471475037491,
+        "combined": 0.00039958104682685206
+      },
+      "posterior_distribution": {
+        "mean": 0.0013727536015248946,
+        "alpha": 0.13727536015248945,
+        "beta": 99.86272463984751,
+        "variance": 1.3572961872023713e-05,
+        "mode": 0.0013727536015248946
+      },
+      "confidence_interval": [
+        1.3409455385976642e-14,
+        0.01203818445143299
+      ],
+      "predictive_distribution": {
+        "mean": 0.0013727536015248946,
+        "variance": 0.0013844421109464188,
+        "std": 0.037208092008949055
+      },
+      "bayes_factor": 0.0005345086113569449,
+      "information_gain": 0.03297693281681069,
+      "evidence": 0.01112484760064312,
+      "prediction_weight": 0.0007089729109590529
+    }
+  },
+  "back_enhanced": {
+    "1": {
+      "prior_probability": 0.07753623188405798,
+      "likelihood_components": {
+        "frequency": 0.15338645418326693,
+        "position": 0.02564102564102564,
+        "temporal": 0.12128406540071776,
+        "combination": 0.9921477332255801,
+        "combined": 0.0004732629335685614
+      },
+      "posterior_distribution": {
+        "mean": 0.003117445927255716,
+        "alpha": 0.3117445927255716,
+        "beta": 99.68825540727443,
+        "variance": 3.0769578793528245e-05,
+        "mode": 0.003117445927255716
+      },
+      "confidence_interval": [
+        5.1343350467417395e-08,
+        0.019348025791468635
+      ],
+      "predictive_distribution": {
+        "mean": 0.003117445927255716,
+        "variance": 0.0031384970369398814,
+        "std": 0.05602229053635598
+      },
+      "bayes_factor": 0.000440340294711618,
+      "information_gain": 0.06732436419449987,
+      "evidence": 0.011770861601312226,
+      "prediction_weight": 0.0016634582604694089
+    },
+    "2": {
+      "prior_probability": 0.08386034255599473,
+      "likelihood_components": {
+        "frequency": 0.1693227091633466,
+        "position": 0.03314917127071823,
+        "temporal": 0.1,
+        "combination": 0.9874246123362599,
+        "combined": 0.0005542322998519651
+      },
+      "posterior_distribution": {
+        "mean": 0.003117445927255716,
+        "alpha": 0.3117445927255716,
+        "beta": 99.68825540727443,
+        "variance": 3.0769578793528245e-05,
+        "mode": 0.003117445927255716
+      },
+      "confidence_interval": [
+        5.1343350467417395e-08,
+        0.019348025791468635
+      ],
+      "predictive_distribution": {
+        "mean": 0.003117445927255716,
+        "variance": 0.0031384970369398814,
+        "std": 0.05602229053635598
+      },
+      "bayes_factor": 0.000557737326254191,
+      "information_gain": 0.07393776916798497,
+      "evidence": 0.01490903502602119,
+      "prediction_weight": 0.0016737654580768352
+    },
+    "3": {
+      "prior_probability": 0.07200263504611332,
+      "likelihood_components": {
+        "frequency": 0.1394422310756972,
+        "position": 0.054352107128790864,
+        "temporal": 0.11832613908126079,
+        "combination": 0.927922901484089,
+        "combined": 0.000832153215664885
+      },
+      "posterior_distribution": {
+        "mean": 0.003117445927255716,
+        "alpha": 0.3117445927255716,
+        "beta": 99.68825540727443,
+        "variance": 3.0769578793528245e-05,
+        "mode": 0.003117445927255716
+      },
+      "confidence_interval": [
+        5.1343350467417395e-08,
+        0.019348025791468635
+      ],
+      "predictive_distribution": {
+        "mean": 0.003117445927255716,
+        "variance": 0.0031384970369398814,
+        "std": 0.05602229053635598
+      },
+      "bayes_factor": 0.0007190066914796201,
+      "information_gain": 0.06159303895287552,
+      "evidence": 0.019219972274776037,
+      "prediction_weight": 0.0016545258115940272
+    },
+    "4": {
+      "prior_probability": 0.08702239789196312,
+      "likelihood_components": {
+        "frequency": 0.17729083665338646,
+        "position": 0.06576980568011959,
+        "temporal": 0.20537955929158805,
+        "combination": 0.9768989462159517,
+        "combined": 0.002339481993940861
+      },
+      "posterior_distribution": {
+        "mean": 0.003117445927255716,
+        "alpha": 0.3117445927255716,
+        "beta": 99.68825540727443,
+        "variance": 3.0769578793528245e-05,
+        "mode": 0.003117445927255716
+      },
+      "confidence_interval": [
+        5.1343350467417395e-08,
+        0.019348025791468635
+      ],
+      "predictive_distribution": {
+        "mean": 0.003117445927255716,
+        "variance": 0.0031384970369398814,
+        "std": 0.05602229053635598
+      },
+      "bayes_factor": 0.0024430479952536584,
+      "information_gain": 0.0772690749943961,
+      "evidence": 0.06530581048987834,
+      "prediction_weight": 0.0016789574019516248
+    },
+    "5": {
+      "prior_probability": 0.08148880105401844,
+      "likelihood_components": {
+        "frequency": 0.16334661354581673,
+        "position": 0.10581319399085565,
+        "temporal": 0.16020379285001002,
+        "combination": 0.9532645263959727,
+        "combined": 0.0026395882409824527
+      },
+      "posterior_distribution": {
+        "mean": 0.003117445927255716,
+        "alpha": 0.3117445927255716,
+        "beta": 99.68825540727443,
+        "variance": 3.0769578793528245e-05,
+        "mode": 0.003117445927255716
+      },
+      "confidence_interval": [
+        5.1343350467417395e-08,
+        0.019348025791468635
+      ],
+      "predictive_distribution": {
+        "mean": 0.003117445927255716,
+        "variance": 0.0031384970369398814,
+        "std": 0.05602229053635598
+      },
+      "bayes_factor": 0.002581162572407347,
+      "information_gain": 0.07144997979766965,
+      "evidence": 0.06899779051606361,
+      "prediction_weight": 0.0016698881608678633
+    },
+    "6": {
+      "prior_probability": 0.08465085638998682,
+      "likelihood_components": {
+        "frequency": 0.17131474103585656,
+        "position": 0.6772908366533864,
+        "temporal": 0.1208566316607784,
+        "combination": 0.9669401631752969,
+        "combined": 0.01355938586094323
+      },
+      "posterior_distribution": {
+        "mean": 0.0031174459272557157,
+        "alpha": 0.3117445927255716,
+        "beta": 99.68825540727443,
+        "variance": 3.0769578793528245e-05,
+        "mode": 0.0031174459272557157
+      },
+      "confidence_interval": [
+        5.1343350467417395e-08,
+        0.019348025791468635
+      ],
+      "predictive_distribution": {
+        "mean": 0.0031174459272557157,
+        "variance": 0.003138497036939881,
+        "std": 0.05602229053635598
+      },
+      "bayes_factor": 0.013773763503013478,
+      "information_gain": 0.07476907622236649,
+      "evidence": 0.3681903879120502,
+      "prediction_weight": 0.001675061076009853
+    },
+    "7": {
+      "prior_probability": 0.08069828722002635,
+      "likelihood_components": {
+        "frequency": 0.16135458167330677,
+        "position": 0.5263157894736842,
+        "temporal": 0.1,
+        "combination": 0.98451185586399,
+        "combined": 0.008360815718702367
+      },
+      "posterior_distribution": {
+        "mean": 0.003117445927255716,
+        "alpha": 0.3117445927255716,
+        "beta": 99.68825540727443,
+        "variance": 3.0769578793528245e-05,
+        "mode": 0.003117445927255716
+      },
+      "confidence_interval": [
+        5.1343350467417395e-08,
+        0.019348025791468635
+      ],
+      "predictive_distribution": {
+        "mean": 0.003117445927255716,
+        "variance": 0.0031384970369398814,
+        "std": 0.05602229053635598
+      },
+      "bayes_factor": 0.008096442099138658,
+      "information_gain": 0.07062277452903054,
+      "evidence": 0.21642829547183048,
+      "prediction_weight": 0.0016685989356956636
+    },
+    "8": {
+      "prior_probability": 0.08069828722002635,
+      "likelihood_components": {
+        "frequency": 0.16135458167330677,
+        "position": 0.24844720496894407,
+        "temporal": 0.1,
+        "combination": 0.975440003650402,
+        "combined": 0.003910353136308557
+      },
+      "posterior_distribution": {
+        "mean": 0.003117445927255716,
+        "alpha": 0.3117445927255716,
+        "beta": 99.68825540727443,
+        "variance": 3.0769578793528245e-05,
+        "mode": 0.003117445927255716
+      },
+      "confidence_interval": [
+        5.1343350467417395e-08,
+        0.019348025791468635
+      ],
+      "predictive_distribution": {
+        "mean": 0.003117445927255716,
+        "variance": 0.0031384970369398814,
+        "std": 0.05602229053635598
+      },
+      "bayes_factor": 0.0037867056063067062,
+      "information_gain": 0.07062277452903054,
+      "evidence": 0.10122350407641068,
+      "prediction_weight": 0.0016685989356956636
+    },
+    "9": {
+      "prior_probability": 0.09018445322793149,
+      "likelihood_components": {
+        "frequency": 0.1852589641434263,
+        "position": 0.11302211302211303,
+        "temporal": 0.1,
+        "combination": 0.9807859959324927,
+        "combined": 0.0020536049857568274
+      },
+      "posterior_distribution": {
+        "mean": 0.003117445927255716,
+        "alpha": 0.3117445927255716,
+        "beta": 99.68825540727443,
+        "variance": 3.0769578793528245e-05,
+        "mode": 0.003117445927255716
+      },
+      "confidence_interval": [
+        5.1343350467417395e-08,
+        0.019348025791468635
+      ],
+      "predictive_distribution": {
+        "mean": 0.003117445927255716,
+        "variance": 0.0031384970369398814,
+        "std": 0.05602229053635598
+      },
+      "bayes_factor": 0.0022224389134396024,
+      "information_gain": 0.08061645772971451,
+      "evidence": 0.05940864640743511,
+      "prediction_weight": 0.0016841744021896176
+    },
+    "10": {
+      "prior_probability": 0.10046113306982873,
+      "likelihood_components": {
+        "frequency": 0.21115537848605578,
+        "position": 0.03255309254379166,
+        "temporal": 0.1,
+        "combination": 0.9852505737419276,
+        "combined": 0.0006772376552230178
+      },
+      "posterior_distribution": {
+        "mean": 0.003117445927255716,
+        "alpha": 0.3117445927255716,
+        "beta": 99.68825540727443,
+        "variance": 3.0769578793528245e-05,
+        "mode": 0.003117445927255716
+      },
+      "confidence_interval": [
+        5.1343350467417395e-08,
+        0.019348025791468635
+      ],
+      "predictive_distribution": {
+        "mean": 0.003117445927255716,
+        "variance": 0.0031384970369398814,
+        "std": 0.05602229053635598
+      },
+      "bayes_factor": 0.0008164327464151006,
+      "information_gain": 0.09160425026003438,
+      "evidence": 0.021824295846295704,
+      "prediction_weight": 0.001701299219032601
+    },
+    "11": {
+      "prior_probability": 0.08386034255599473,
+      "likelihood_components": {
+        "frequency": 0.1693227091633466,
+        "position": 0.039399624765478425,
+        "temporal": 0.21654792272524923,
+        "combination": 0.9787063886293705,
+        "combined": 0.0014138838687160658
+      },
+      "posterior_distribution": {
+        "mean": 0.003117445927255716,
+        "alpha": 0.3117445927255716,
+        "beta": 99.68825540727443,
+        "variance": 3.0769578793528245e-05,
+        "mode": 0.003117445927255716
+      },
+      "confidence_interval": [
+        5.1343350467417395e-08,
+        0.019348025791468635
+      ],
+      "predictive_distribution": {
+        "mean": 0.003117445927255716,
+        "variance": 0.0031384970369398814,
+        "std": 0.05602229053635598
+      },
+      "bayes_factor": 0.0014228254267790923,
+      "information_gain": 0.07393776916798497,
+      "evidence": 0.03803395097514981,
+      "prediction_weight": 0.0016737654580768352
+    },
+    "12": {
+      "prior_probability": 0.07753623188405798,
+      "likelihood_components": {
+        "frequency": 0.15338645418326693,
+        "position": 0.02564102564102564,
+        "temporal": 0.15284078261936984,
+        "combination": 0.982378768287542,
+        "combined": 0.000590528172570052
+      },
+      "posterior_distribution": {
+        "mean": 0.003117445927255716,
+        "alpha": 0.3117445927255716,
+        "beta": 99.68825540727443,
+        "variance": 3.0769578793528245e-05,
+        "mode": 0.003117445927255716
+      },
+      "confidence_interval": [
+        5.1343350467417395e-08,
+        0.019348025791468635
+      ],
+      "predictive_distribution": {
+        "mean": 0.003117445927255716,
+        "variance": 0.0031384970369398814,
+        "std": 0.05602229053635598
+      },
+      "bayes_factor": 0.0005494479518695268,
+      "information_gain": 0.06732436419449987,
+      "evidence": 0.014687449402776678,
+      "prediction_weight": 0.0016634582604694089
+    }
+  },
+  "front_posterior": {
+    "1": 0.0296,
+    "2": 0.0272,
+    "3": 0.026,
+    "4": 0.02,
+    "5": 0.0272,
+    "6": 0.0264,
+    "7": 0.024399999999999998,
+    "8": 0.022,
+    "9": 0.0216,
+    "10": 0.0316,
+    "11": 0.0308,
+    "12": 0.026,
+    "13": 0.026,
+    "14": 0.0268,
+    "15": 0.0192,
+    "16": 0.0172,
+    "17": 0.020799999999999996,
+    "18": 0.022,
+    "19": 0.0284,
+    "20": 0.0232,
+    "21": 0.0276,
+    "22": 0.0316,
+    "23": 0.028800000000000003,
+    "24": 0.0304,
+    "25": 0.0328,
+    "26": 0.026,
+    "27": 0.0272,
+    "28": 0.0236,
+    "29": 0.04,
+    "30": 0.0356,
+    "31": 0.0336,
+    "32": 0.046,
+    "33": 0.0436,
+    "34": 0.036,
+    "35": 0.0408
+  },
+  "back_posterior": {
+    "1": 0.076,
+    "2": 0.084,
+    "3": 0.069,
+    "4": 0.088,
+    "5": 0.081,
+    "6": 0.085,
+    "7": 0.08,
+    "8": 0.08,
+    "9": 0.092,
+    "10": 0.105,
+    "11": 0.084,
+    "12": 0.076
+  },
+  "front_likelihood": {
+    "19": 0.0284,
+    "20": 0.0232,
+    "30": 0.0356,
+    "33": 0.0436,
+    "35": 0.0408,
+    "3": 0.026,
+    "11": 0.0308,
+    "17": 0.0208,
+    "21": 0.0276,
+    "2": 0.0272,
+    "12": 0.026,
+    "13": 0.026,
+    "25": 0.0328,
+    "9": 0.0216,
+    "28": 0.0236,
+    "29": 0.04,
+    "4": 0.02,
+    "24": 0.0304,
+    "14": 0.0268,
+    "16": 0.0172,
+    "32": 0.046,
+    "34": 0.036,
+    "15": 0.0192,
+    "6": 0.0264,
+    "10": 0.0316,
+    "23": 0.0288,
+    "26": 0.026,
+    "31": 0.0336,
+    "8": 0.022,
+    "18": 0.022,
+    "5": 0.0272,
+    "1": 0.0296,
+    "22": 0.0316,
+    "7": 0.0244,
+    "27": 0.0272
+  },
+  "back_likelihood": {
+    "6": 0.085,
+    "8": 0.08,
+    "1": 0.076,
+    "7": 0.08,
+    "2": 0.084,
+    "10": 0.105,
+    "5": 0.081,
+    "12": 0.076,
+    "9": 0.092,
+    "3": 0.069,
+    "4": 0.088,
+    "11": 0.084
+  },
+  "analysis_periods": 500,
+  "timestamp": "2025-07-25T21:55:43.353028"
+}
