@@ -2352,7 +2352,7 @@ class AdvancedAnalyzer:
         enhanced_markov_analysis = self._enhanced_markov_analysis(df_subset)
 
         # 8. 贝叶斯分析（增强版）
-        enhanced_bayesian_analysis = self._enhanced_bayesian_analysis(df_subset)
+        enhanced_bayesian_analysis = self._enhanced_bayesian_analysis_simple(df_subset)
 
         # 9. 回归分析
         regression_analysis = self._regression_analysis(df_subset)
@@ -2783,7 +2783,7 @@ class AdvancedAnalyzer:
 
         return enhanced_markov
 
-    def _enhanced_bayesian_analysis(self, df_subset) -> Dict:
+    def _enhanced_bayesian_analysis_simple(self, df_subset) -> Dict:
         """增强版贝叶斯分析"""
         enhanced_bayesian = {
             'prior_distributions': {},

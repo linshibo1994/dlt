@@ -215,21 +215,143 @@ class EnhancedMarkovPredictor:
         condition_front_str = str(tuple(sorted(condition_front)))
         condition_back_str = str(tuple(sorted(condition_back)))
         
-        for _ in range(count):
+        for i in range(count):
+            # 为每注使用不同的马尔可夫策略，添加时间戳确保随机性
+            import time
+            strategy_seed = int(time.time() * 1000000) + i * 1000
+
             # 预测前区号码
-            front_balls = self._predict_balls_with_condition(
-                front_transitions, condition_front_str, 5, 35
+            front_balls = self._predict_balls_with_condition_diverse(
+                front_transitions, condition_front_str, 5, 35, i, strategy_seed
             )
-            
+
             # 预测后区号码
-            back_balls = self._predict_balls_with_condition(
-                back_transitions, condition_back_str, 2, 12
+            back_balls = self._predict_balls_with_condition_diverse(
+                back_transitions, condition_back_str, 2, 12, i, strategy_seed + 500
             )
-            
+
             predictions.append((sorted(front_balls), sorted(back_balls)))
-        
+
         return predictions
-    
+
+    def _predict_balls_with_condition_diverse(self, transitions, condition_str, num_balls, max_ball, strategy_index, seed=None):
+        """基于条件状态预测号码 - 多样性策略版本"""
+        import random
+        import numpy as np
+
+        # 设置随机种子确保每注不同
+        if seed is not None:
+            random.seed(seed)
+            np.random.seed(seed % 2**32)
+
+        balls = []
+
+        # 策略1: 最高概率策略 (第1注)
+        if strategy_index % 4 == 0 and strategy_index < 4:
+            # 如果条件状态存在于转移矩阵中
+            if condition_str in transitions:
+                trans_probs = transitions[condition_str]
+
+                # 按概率排序，选择前几个高概率号码
+                sorted_probs = sorted(trans_probs.items(), key=lambda x: x[1], reverse=True)
+                high_prob_balls = [int(ball) for ball, _ in sorted_probs[:num_balls*2]]
+
+                if len(high_prob_balls) >= num_balls:
+                    balls = random.sample(high_prob_balls, num_balls)
+                else:
+                    balls = high_prob_balls
+
+        # 策略2: 中等概率策略 (第2注)
+        elif strategy_index % 4 == 1 and strategy_index < 4:
+            if condition_str in transitions:
+                trans_probs = transitions[condition_str]
+                sorted_probs = sorted(trans_probs.items(), key=lambda x: x[1], reverse=True)
+
+                # 选择中等概率的号码
+                mid_start = len(sorted_probs) // 4
+                mid_end = len(sorted_probs) * 3 // 4
+                mid_prob_balls = [int(ball) for ball, _ in sorted_probs[mid_start:mid_end]]
+
+                if len(mid_prob_balls) >= num_balls:
+                    balls = random.sample(mid_prob_balls, num_balls)
+                else:
+                    balls = mid_prob_balls
+
+        # 策略3: 概率加权随机选择 (第3注)
+        elif strategy_index % 4 == 2 and strategy_index < 4:
+            if condition_str in transitions:
+                trans_probs = transitions[condition_str]
+
+                if trans_probs:
+                    ball_list = [int(ball) for ball in trans_probs.keys()]
+                    prob_list = list(trans_probs.values())
+
+                    # 归一化概率
+                    total_prob = sum(prob_list)
+                    if total_prob > 0:
+                        normalized_probs = [p/total_prob for p in prob_list]
+
+                        # 概率加权随机选择
+                        if len(ball_list) >= num_balls:
+                            balls = list(np.random.choice(ball_list, size=num_balls, replace=False, p=normalized_probs))
+                        else:
+                            balls = ball_list
+
+        # 策略4: 全局概率分布策略 (第4注及以后)
+        else:
+            # 为第4注以后添加更多随机性
+            import time
+            random.seed(int(time.time() * 1000) + strategy_index)
+            # 从所有转移概率中选择
+            all_probs = {}
+
+            for cond, trans_probs in transitions.items():
+                for ball, prob in trans_probs.items():
+                    ball_int = int(ball)
+                    all_probs[ball_int] = all_probs.get(ball_int, 0) + prob
+
+            if all_probs:
+                # 概率加权随机选择
+                ball_list = list(all_probs.keys())
+                prob_list = list(all_probs.values())
+
+                total_prob = sum(prob_list)
+                if total_prob > 0:
+                    normalized_probs = [p/total_prob for p in prob_list]
+
+                    if len(ball_list) >= num_balls:
+                        balls = list(np.random.choice(ball_list, size=num_balls, replace=False, p=normalized_probs))
+                    else:
+                        balls = ball_list
+
+        # 如果号码不足，使用频率分析补充
+        if len(balls) < num_balls:
+            from analyzer_modules import basic_analyzer
+            freq_analysis = basic_analyzer.frequency_analysis()
+
+            if max_ball == 35:  # 前区
+                freq_dict = freq_analysis.get('front_frequency', {})
+            else:  # 后区
+                freq_dict = freq_analysis.get('back_frequency', {})
+
+            sorted_freq = sorted(freq_dict.items(), key=lambda x: x[1], reverse=True)
+            for ball, _ in sorted_freq:
+                if len(balls) >= num_balls:
+                    break
+
+                ball_int = int(ball)
+                if ball_int not in balls:
+                    balls.append(ball_int)
+
+        # 如果仍然不足，随机补充
+        if len(balls) < num_balls:
+            remaining = [i for i in range(1, max_ball + 1) if i not in balls]
+            if remaining:
+                needed = num_balls - len(balls)
+                balls.extend(random.sample(remaining, min(needed, len(remaining))))
+
+        return balls[:num_balls]
+
     def _predict_balls_with_condition(self, transitions, condition_str, num_balls, max_ball):
         """基于条件状态预测号码"""
         balls = []

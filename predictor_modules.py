@@ -66,39 +66,130 @@ class TraditionalPredictor:
             logger_manager.error("数据未加载")
     
     def frequency_predict(self, count=1, periods=500) -> List[Tuple[List[int], List[int]]]:
-        """基于频率的预测"""
+        """基于频率的预测 - 真正的多样性统计分析"""
+        import random
+        import numpy as np
+
         freq_result = basic_analyzer.frequency_analysis(periods)
-        
+
         front_freq = freq_result.get('front_frequency', {})
         back_freq = freq_result.get('back_frequency', {})
-        
+
         predictions = []
-        
-        # 选择频率最高的号码（确定性选择）
+
+        # 获取频率排序的候选号码
         front_candidates = sorted(front_freq.items(), key=lambda x: x[1], reverse=True)
         back_candidates = sorted(back_freq.items(), key=lambda x: x[1], reverse=True)
 
-        # 直接选择频率最高的号码
-        front_balls = [int(ball) for ball, freq in front_candidates[:5]]
-        back_balls = [int(ball) for ball, freq in back_candidates[:2]]
+        # 为每注生成不同的预测策略
+        for i in range(count):
+            front_balls = []
+            back_balls = []
 
-        # 如果不足，选择次高频率的号码
-        if len(front_balls) < 5:
-            remaining = [int(ball) for ball, freq in front_candidates[5:5+(5-len(front_balls))]]
-            front_balls.extend(remaining)
+            # 策略1: 高频号码为主 (第1注)
+            if i % 4 == 0:
+                # 选择频率最高的号码，但加入随机性
+                high_freq_front = [int(ball) for ball, freq in front_candidates[:8]]
+                front_balls = random.sample(high_freq_front, min(5, len(high_freq_front)))
 
-        if len(back_balls) < 2:
-            remaining = [int(ball) for ball, freq in back_candidates[2:2+(2-len(back_balls))]]
-            back_balls.extend(remaining)
+                high_freq_back = [int(ball) for ball, freq in back_candidates[:4]]
+                back_balls = random.sample(high_freq_back, min(2, len(high_freq_back)))
 
-        # 生成多注相同的预测（基于频率的确定性预测）
-        for _ in range(count):
+            # 策略2: 中频号码为主 (第2注)
+            elif i % 4 == 1:
+                # 选择中等频率的号码
+                mid_start = len(front_candidates) // 4
+                mid_end = len(front_candidates) * 3 // 4
+                mid_freq_front = [int(ball) for ball, freq in front_candidates[mid_start:mid_end]]
+                if len(mid_freq_front) >= 5:
+                    front_balls = random.sample(mid_freq_front, 5)
+                else:
+                    front_balls = mid_freq_front + random.sample([int(ball) for ball, freq in front_candidates[:8]], 5 - len(mid_freq_front))
+
+                mid_freq_back = [int(ball) for ball, freq in back_candidates[1:5]]
+                if len(mid_freq_back) >= 2:
+                    back_balls = random.sample(mid_freq_back, 2)
+                else:
+                    back_balls = mid_freq_back + random.sample([int(ball) for ball, freq in back_candidates[:4]], 2 - len(mid_freq_back))
+
+            # 策略3: 混合频率策略 (第3注)
+            elif i % 4 == 2:
+                # 2个高频 + 2个中频 + 1个低频
+                high_freq = [int(ball) for ball, freq in front_candidates[:6]]
+                mid_freq = [int(ball) for ball, freq in front_candidates[6:15]]
+                low_freq = [int(ball) for ball, freq in front_candidates[15:25]]
+
+                front_balls = []
+                front_balls.extend(random.sample(high_freq, min(2, len(high_freq))))
+                front_balls.extend(random.sample(mid_freq, min(2, len(mid_freq))))
+                if len(low_freq) > 0:
+                    front_balls.extend(random.sample(low_freq, min(1, len(low_freq))))
+
+                # 如果不足5个，用高频补充
+                while len(front_balls) < 5:
+                    remaining = [ball for ball in high_freq if ball not in front_balls]
+                    if remaining:
+                        front_balls.append(random.choice(remaining))
+                    else:
+                        break
+
+                # 后区混合策略
+                back_high = [int(ball) for ball, freq in back_candidates[:3]]
+                back_mid = [int(ball) for ball, freq in back_candidates[3:8]]
+
+                back_balls = []
+                if len(back_high) > 0:
+                    back_balls.append(random.choice(back_high))
+                if len(back_mid) > 0:
+                    back_balls.append(random.choice(back_mid))
+
+                # 如果不足2个，用高频补充
+                while len(back_balls) < 2:
+                    remaining = [ball for ball in back_high if ball not in back_balls]
+                    if remaining:
+                        back_balls.append(random.choice(remaining))
+                    else:
+                        break
+
+            # 策略4: 概率加权随机选择 (第4注及以后)
+            else:
+                # 基于频率的加权随机选择
+                front_weights = [freq for ball, freq in front_candidates]
+                front_balls_list = [int(ball) for ball, freq in front_candidates]
+
+                if len(front_weights) > 0:
+                    # 归一化权重
+                    total_weight = sum(front_weights)
+                    front_probs = [w/total_weight for w in front_weights]
+
+                    # 加权随机选择
+                    front_balls = list(np.random.choice(front_balls_list, size=5, replace=False, p=front_probs))
+
+                back_weights = [freq for ball, freq in back_candidates]
+                back_balls_list = [int(ball) for ball, freq in back_candidates]
+
+                if len(back_weights) > 0:
+                    total_weight = sum(back_weights)
+                    back_probs = [w/total_weight for w in back_weights]
+                    back_balls = list(np.random.choice(back_balls_list, size=2, replace=False, p=back_probs))
+
+            # 确保号码数量正确
+            if len(front_balls) < 5:
+                remaining = [int(ball) for ball, freq in front_candidates[:10] if int(ball) not in front_balls]
+                front_balls.extend(remaining[:5-len(front_balls)])
+
+            if len(back_balls) < 2:
+                remaining = [int(ball) for ball, freq in back_candidates[:6] if int(ball) not in back_balls]
+                back_balls.extend(remaining[:2-len(back_balls)])
+
             predictions.append((sorted(front_balls[:5]), sorted(back_balls[:2])))
-        
+
         return predictions
     
     def hot_cold_predict(self, count=1, periods=500) -> List[Tuple[List[int], List[int]]]:
-        """基于冷热号的预测"""
+        """基于冷热号的预测 - 真正的冷热号分析和多样性策略"""
+        import random
+
         hot_cold_result = basic_analyzer.hot_cold_analysis(periods)
         
         front_hot = hot_cold_result.get('front_hot', [])
@@ -159,33 +250,278 @@ class TraditionalPredictor:
                 if ball not in back_balls:
                     back_balls.append(ball)
 
-        # 生成多注相同的预测（基于冷热号的确定性预测）
-        for _ in range(count):
-            predictions.append((sorted(front_balls[:5]), sorted(back_balls[:2])))
-        
+        # 为每注生成不同的冷热号策略
+        for i in range(count):
+            current_front = []
+            current_back = []
+
+            # 策略1: 热号为主策略 (第1注)
+            if i % 5 == 0:
+                # 4个热号 + 1个冷号
+                if len(front_hot) >= 4:
+                    current_front.extend(random.sample([int(ball) for ball in front_hot], 4))
+                else:
+                    current_front.extend([int(ball) for ball in front_hot])
+
+                if len(front_cold) >= 1:
+                    remaining_cold = [int(ball) for ball in front_cold if int(ball) not in current_front]
+                    if remaining_cold:
+                        current_front.append(random.choice(remaining_cold))
+
+                # 后区：2个热号
+                if len(back_hot) >= 2:
+                    current_back = random.sample([int(ball) for ball in back_hot], 2)
+                else:
+                    current_back.extend([int(ball) for ball in back_hot])
+
+            # 策略2: 冷号回补策略 (第2注)
+            elif i % 5 == 1:
+                # 2个热号 + 3个冷号
+                if len(front_hot) >= 2:
+                    current_front.extend(random.sample([int(ball) for ball in front_hot], 2))
+                else:
+                    current_front.extend([int(ball) for ball in front_hot])
+
+                if len(front_cold) >= 3:
+                    remaining_cold = [int(ball) for ball in front_cold if int(ball) not in current_front]
+                    if len(remaining_cold) >= 3:
+                        current_front.extend(random.sample(remaining_cold, 3))
+                    else:
+                        current_front.extend(remaining_cold)
+
+                # 后区：1个热号 + 1个冷号
+                if len(back_hot) >= 1:
+                    current_back.append(random.choice([int(ball) for ball in back_hot]))
+                if len(back_cold) >= 1:
+                    remaining_cold = [int(ball) for ball in back_cold if int(ball) not in current_back]
+                    if remaining_cold:
+                        current_back.append(random.choice(remaining_cold))
+
+            # 策略3: 平衡策略 (第3注)
+            elif i % 5 == 2:
+                # 3个热号 + 2个冷号
+                if len(front_hot) >= 3:
+                    current_front.extend(random.sample([int(ball) for ball in front_hot], 3))
+                else:
+                    current_front.extend([int(ball) for ball in front_hot])
+
+                if len(front_cold) >= 2:
+                    remaining_cold = [int(ball) for ball in front_cold if int(ball) not in current_front]
+                    if len(remaining_cold) >= 2:
+                        current_front.extend(random.sample(remaining_cold, 2))
+                    else:
+                        current_front.extend(remaining_cold)
+
+                # 后区：随机选择热号或冷号
+                back_candidates = []
+                if len(back_hot) > 0:
+                    back_candidates.extend([int(ball) for ball in back_hot])
+                if len(back_cold) > 0:
+                    back_candidates.extend([int(ball) for ball in back_cold])
+
+                if len(back_candidates) >= 2:
+                    current_back = random.sample(back_candidates, 2)
+                else:
+                    current_back = back_candidates
+
+            # 策略4: 极端热号策略 (第4注)
+            elif i % 5 == 3:
+                # 全部选择热号
+                if len(front_hot) >= 5:
+                    current_front = random.sample([int(ball) for ball in front_hot], 5)
+                else:
+                    current_front.extend([int(ball) for ball in front_hot])
+
+                if len(back_hot) >= 2:
+                    current_back = random.sample([int(ball) for ball in back_hot], 2)
+                else:
+                    current_back.extend([int(ball) for ball in back_hot])
+
+            # 策略5: 极端冷号策略 (第5注)
+            else:
+                # 全部选择冷号
+                if len(front_cold) >= 5:
+                    current_front = random.sample([int(ball) for ball in front_cold], 5)
+                else:
+                    current_front.extend([int(ball) for ball in front_cold])
+
+                if len(back_cold) >= 2:
+                    current_back = random.sample([int(ball) for ball in back_cold], 2)
+                else:
+                    current_back.extend([int(ball) for ball in back_cold])
+
+            # 如果号码不足，用频率分析补充
+            if len(current_front) < 5:
+                freq_analysis = basic_analyzer.frequency_analysis(periods)
+                front_freq = freq_analysis.get('front_frequency', {})
+                sorted_freq = sorted(front_freq.items(), key=lambda x: x[1], reverse=True)
+                for ball, freq in sorted_freq:
+                    if len(current_front) >= 5:
+                        break
+                    if int(ball) not in current_front:
+                        current_front.append(int(ball))
+
+            if len(current_back) < 2:
+                freq_analysis = basic_analyzer.frequency_analysis(periods)
+                back_freq = freq_analysis.get('back_frequency', {})
+                sorted_freq = sorted(back_freq.items(), key=lambda x: x[1], reverse=True)
+                for ball, freq in sorted_freq:
+                    if len(current_back) >= 2:
+                        break
+                    if int(ball) not in current_back:
+                        current_back.append(int(ball))
+
+            predictions.append((sorted(current_front[:5]), sorted(current_back[:2])))
+
         return predictions
     
     def missing_predict(self, count=1, periods=500) -> List[Tuple[List[int], List[int]]]:
-        """基于遗漏的预测"""
+        """基于遗漏的预测 - 真正的遗漏值分析和回补概率计算"""
+        import random
+        import numpy as np
+
         missing_result = basic_analyzer.missing_analysis(periods)
-        
+
         front_missing = missing_result.get('front_missing', {})
         back_missing = missing_result.get('back_missing', {})
-        
+
         predictions = []
-        
-        # 按遗漏值排序，选择遗漏值最大的号码（确定性选择）
+
+        # 按遗漏值排序
         front_sorted = sorted(front_missing.items(), key=lambda x: x[1], reverse=True)
         back_sorted = sorted(back_missing.items(), key=lambda x: x[1], reverse=True)
 
-        # 选择遗漏值最大的号码
-        front_balls = [int(ball) for ball, missing in front_sorted[:5]]
-        back_balls = [int(ball) for ball, missing in back_sorted[:2]]
+        # 为每注生成不同的遗漏值策略
+        for i in range(count):
+            import time
+            strategy_seed = int(time.time() * 1000000) + i * 1000
+            random.seed(strategy_seed)
+            np.random.seed(strategy_seed % 2**32)
 
-        # 生成多注相同的预测（基于遗漏值的确定性预测）
-        for _ in range(count):
-            predictions.append((sorted(front_balls), sorted(back_balls)))
-        
+            front_balls = []
+            back_balls = []
+
+            # 策略1: 极度超期回补策略 (第1注)
+            if i == 0:
+                # 选择遗漏值最大的号码（极度超期）
+                extreme_missing_front = [int(ball) for ball, missing in front_sorted[:8] if missing > periods * 0.1]
+                if len(extreme_missing_front) >= 5:
+                    front_balls = random.sample(extreme_missing_front, 5)
+                else:
+                    front_balls = extreme_missing_front + [int(ball) for ball, missing in front_sorted[:5-len(extreme_missing_front)]]
+
+                extreme_missing_back = [int(ball) for ball, missing in back_sorted[:4] if missing > periods * 0.15]
+                if len(extreme_missing_back) >= 2:
+                    back_balls = random.sample(extreme_missing_back, 2)
+                else:
+                    back_balls = extreme_missing_back + [int(ball) for ball, missing in back_sorted[:2-len(extreme_missing_back)]]
+
+            # 策略2: 中期遗漏策略 (第2注)
+            elif i == 1:
+                # 选择中等遗漏值的号码
+                mid_missing_front = []
+                for ball, missing in front_sorted:
+                    if periods * 0.05 <= missing <= periods * 0.15:
+                        mid_missing_front.append(int(ball))
+
+                if len(mid_missing_front) >= 5:
+                    front_balls = random.sample(mid_missing_front, 5)
+                else:
+                    front_balls = mid_missing_front + [int(ball) for ball, missing in front_sorted[:5-len(mid_missing_front)]]
+
+                mid_missing_back = []
+                for ball, missing in back_sorted:
+                    if periods * 0.08 <= missing <= periods * 0.2:
+                        mid_missing_back.append(int(ball))
+
+                if len(mid_missing_back) >= 2:
+                    back_balls = random.sample(mid_missing_back, 2)
+                else:
+                    back_balls = mid_missing_back + [int(ball) for ball, missing in back_sorted[:2-len(mid_missing_back)]]
+
+            # 策略3: 混合遗漏策略 (第3注)
+            elif i == 2:
+                # 2个高遗漏 + 2个中遗漏 + 1个低遗漏
+                high_missing = [int(ball) for ball, missing in front_sorted[:8]]
+                mid_missing = [int(ball) for ball, missing in front_sorted[8:20]]
+                low_missing = [int(ball) for ball, missing in front_sorted[20:30]]
+
+                front_balls = []
+                front_balls.extend(random.sample(high_missing, min(2, len(high_missing))))
+                front_balls.extend(random.sample(mid_missing, min(2, len(mid_missing))))
+                if len(low_missing) > 0:
+                    front_balls.extend(random.sample(low_missing, min(1, len(low_missing))))
+
+                # 如果不足5个，用高遗漏补充
+                while len(front_balls) < 5:
+                    remaining = [ball for ball in high_missing if ball not in front_balls]
+                    if remaining:
+                        front_balls.append(random.choice(remaining))
+                    else:
+                        break
+
+                # 后区混合策略
+                back_high = [int(ball) for ball, missing in back_sorted[:4]]
+                back_mid = [int(ball) for ball, missing in back_sorted[4:8]]
+
+                back_balls = []
+                if len(back_high) > 0:
+                    back_balls.append(random.choice(back_high))
+                if len(back_mid) > 0:
+                    back_balls.append(random.choice(back_mid))
+
+                # 如果不足2个，用高遗漏补充
+                while len(back_balls) < 2:
+                    remaining = [ball for ball in back_high if ball not in back_balls]
+                    if remaining:
+                        back_balls.append(random.choice(remaining))
+                    else:
+                        break
+
+            # 策略4: 遗漏值加权随机选择 (第4注及以后)
+            else:
+                # 基于遗漏值的加权随机选择
+                front_weights = []
+                front_balls_list = []
+
+                for ball, missing in front_sorted:
+                    # 遗漏值越大，权重越高
+                    weight = missing + 1  # 避免权重为0
+                    front_weights.append(weight)
+                    front_balls_list.append(int(ball))
+
+                if len(front_weights) > 0:
+                    # 归一化权重
+                    total_weight = sum(front_weights)
+                    front_probs = [w/total_weight for w in front_weights]
+
+                    # 加权随机选择
+                    front_balls = list(np.random.choice(front_balls_list, size=5, replace=False, p=front_probs))
+
+                back_weights = []
+                back_balls_list = []
+
+                for ball, missing in back_sorted:
+                    weight = missing + 1
+                    back_weights.append(weight)
+                    back_balls_list.append(int(ball))
+
+                if len(back_weights) > 0:
+                    total_weight = sum(back_weights)
+                    back_probs = [w/total_weight for w in back_weights]
+                    back_balls = list(np.random.choice(back_balls_list, size=2, replace=False, p=back_probs))
+
+            # 确保号码数量正确
+            if len(front_balls) < 5:
+                remaining = [int(ball) for ball, missing in front_sorted[:10] if int(ball) not in front_balls]
+                front_balls.extend(remaining[:5-len(front_balls)])
+
+            if len(back_balls) < 2:
+                remaining = [int(ball) for ball, missing in back_sorted[:6] if int(ball) not in back_balls]
+                back_balls.extend(remaining[:2-len(back_balls)])
+
+            predictions.append((sorted(front_balls[:5]), sorted(back_balls[:2])))
+
         return predictions
 
 
@@ -555,41 +891,145 @@ class AdvancedPredictor:
         return total_score / count if count > 0 else 0.0
 
     def bayesian_predict(self, count=1, periods=500) -> List[Tuple[List[int], List[int]]]:
-        """贝叶斯预测"""
+        """贝叶斯预测 - 真正的贝叶斯推理和概率采样"""
+        import random
+        import numpy as np
+
         bayesian_result = advanced_analyzer.bayesian_analysis(periods)
-        
+
         front_posterior = bayesian_result.get('front_posterior', {})
         back_posterior = bayesian_result.get('back_posterior', {})
-        
+
         predictions = []
-        
-        # 基于后验概率选择号码（确定性选择最高概率的号码）
-        if front_posterior:
-            # 按后验概率排序，选择概率最高的5个号码
-            sorted_front = sorted(front_posterior.items(), key=lambda x: x[1], reverse=True)
-            front_balls = [int(ball) for ball, prob in sorted_front[:5]]
-        else:
-            # 如果没有后验概率，使用频率分析
-            freq_analysis = basic_analyzer.frequency_analysis()
-            front_freq = freq_analysis.get('front_frequency', {})
-            sorted_freq = sorted(front_freq.items(), key=lambda x: x[1], reverse=True)
-            front_balls = [int(ball) for ball, freq in sorted_freq[:5]]
 
-        if back_posterior:
-            # 按后验概率排序，选择概率最高的2个号码
-            sorted_back = sorted(back_posterior.items(), key=lambda x: x[1], reverse=True)
-            back_balls = [int(ball) for ball, prob in sorted_back[:2]]
-        else:
-            # 如果没有后验概率，使用频率分析
-            freq_analysis = basic_analyzer.frequency_analysis()
-            back_freq = freq_analysis.get('back_frequency', {})
-            sorted_freq = sorted(back_freq.items(), key=lambda x: x[1], reverse=True)
-            back_balls = [int(ball) for ball, freq in sorted_freq[:2]]
+        # 为每注生成不同的贝叶斯策略
+        for i in range(count):
+            front_balls = []
+            back_balls = []
 
-        # 生成多注相同的预测（基于贝叶斯的确定性预测）
-        for _ in range(count):
-            predictions.append((sorted(front_balls), sorted(back_balls)))
-        
+            # 策略1: 最大后验概率策略 (第1注)
+            if i % 4 == 0:
+                if front_posterior:
+                    # 选择后验概率最高的号码，但加入随机性
+                    sorted_front = sorted(front_posterior.items(), key=lambda x: x[1], reverse=True)
+                    high_prob_front = [int(ball) for ball, prob in sorted_front[:8]]
+                    front_balls = random.sample(high_prob_front, min(5, len(high_prob_front)))
+
+                if back_posterior:
+                    sorted_back = sorted(back_posterior.items(), key=lambda x: x[1], reverse=True)
+                    high_prob_back = [int(ball) for ball, prob in sorted_back[:4]]
+                    back_balls = random.sample(high_prob_back, min(2, len(high_prob_back)))
+
+            # 策略2: 中等概率策略 (第2注)
+            elif i % 4 == 1:
+                if front_posterior:
+                    # 选择中等概率的号码
+                    sorted_front = sorted(front_posterior.items(), key=lambda x: x[1], reverse=True)
+                    mid_start = len(sorted_front) // 4
+                    mid_end = len(sorted_front) * 3 // 4
+                    mid_prob_front = [int(ball) for ball, prob in sorted_front[mid_start:mid_end]]
+                    if len(mid_prob_front) >= 5:
+                        front_balls = random.sample(mid_prob_front, 5)
+                    else:
+                        front_balls = mid_prob_front + [int(ball) for ball, prob in sorted_front[:5-len(mid_prob_front)]]
+
+                if back_posterior:
+                    sorted_back = sorted(back_posterior.items(), key=lambda x: x[1], reverse=True)
+                    mid_prob_back = [int(ball) for ball, prob in sorted_back[1:5]]
+                    if len(mid_prob_back) >= 2:
+                        back_balls = random.sample(mid_prob_back, 2)
+                    else:
+                        back_balls = mid_prob_back + [int(ball) for ball, prob in sorted_back[:2-len(mid_prob_back)]]
+
+            # 策略3: 混合概率策略 (第3注)
+            elif i % 4 == 2:
+                if front_posterior:
+                    # 2个高概率 + 2个中概率 + 1个低概率
+                    sorted_front = sorted(front_posterior.items(), key=lambda x: x[1], reverse=True)
+                    high_prob = [int(ball) for ball, prob in sorted_front[:6]]
+                    mid_prob = [int(ball) for ball, prob in sorted_front[6:15]]
+                    low_prob = [int(ball) for ball, prob in sorted_front[15:25]]
+
+                    front_balls = []
+                    front_balls.extend(random.sample(high_prob, min(2, len(high_prob))))
+                    front_balls.extend(random.sample(mid_prob, min(2, len(mid_prob))))
+                    if len(low_prob) > 0:
+                        front_balls.extend(random.sample(low_prob, min(1, len(low_prob))))
+
+                    # 如果不足5个，用高概率补充
+                    while len(front_balls) < 5:
+                        remaining = [ball for ball in high_prob if ball not in front_balls]
+                        if remaining:
+                            front_balls.append(random.choice(remaining))
+                        else:
+                            break
+
+                if back_posterior:
+                    sorted_back = sorted(back_posterior.items(), key=lambda x: x[1], reverse=True)
+                    back_high = [int(ball) for ball, prob in sorted_back[:3]]
+                    back_mid = [int(ball) for ball, prob in sorted_back[3:8]]
+
+                    back_balls = []
+                    if len(back_high) > 0:
+                        back_balls.append(random.choice(back_high))
+                    if len(back_mid) > 0:
+                        back_balls.append(random.choice(back_mid))
+
+                    # 如果不足2个，用高概率补充
+                    while len(back_balls) < 2:
+                        remaining = [ball for ball in back_high if ball not in back_balls]
+                        if remaining:
+                            back_balls.append(random.choice(remaining))
+                        else:
+                            break
+
+            # 策略4: 概率加权随机采样 (第4注及以后)
+            else:
+                # 基于后验概率的加权随机采样
+                if front_posterior:
+                    front_balls_list = [int(ball) for ball in front_posterior.keys()]
+                    front_probs = [prob for prob in front_posterior.values()]
+
+                    if len(front_probs) > 0:
+                        # 归一化概率
+                        total_prob = sum(front_probs)
+                        front_probs_norm = [p/total_prob for p in front_probs]
+
+                        # 概率加权随机采样
+                        front_balls = list(np.random.choice(front_balls_list, size=5, replace=False, p=front_probs_norm))
+
+                if back_posterior:
+                    back_balls_list = [int(ball) for ball in back_posterior.keys()]
+                    back_probs = [prob for prob in back_posterior.values()]
+
+                    if len(back_probs) > 0:
+                        total_prob = sum(back_probs)
+                        back_probs_norm = [p/total_prob for p in back_probs]
+                        back_balls = list(np.random.choice(back_balls_list, size=2, replace=False, p=back_probs_norm))
+
+            # 如果没有后验概率或号码不足，使用频率分析补充
+            if len(front_balls) < 5:
+                freq_analysis = basic_analyzer.frequency_analysis(periods)
+                front_freq = freq_analysis.get('front_frequency', {})
+                sorted_freq = sorted(front_freq.items(), key=lambda x: x[1], reverse=True)
+                for ball, freq in sorted_freq:
+                    if len(front_balls) >= 5:
+                        break
+                    if int(ball) not in front_balls:
+                        front_balls.append(int(ball))
+
+            if len(back_balls) < 2:
+                freq_analysis = basic_analyzer.frequency_analysis(periods)
+                back_freq = freq_analysis.get('back_frequency', {})
+                sorted_freq = sorted(back_freq.items(), key=lambda x: x[1], reverse=True)
+                for ball, freq in sorted_freq:
+                    if len(back_balls) >= 2:
+                        break
+                    if int(ball) not in back_balls:
+                        back_balls.append(int(ball))
+
+            predictions.append((sorted(front_balls[:5]), sorted(back_balls[:2])))
+
         return predictions
     
     def ensemble_predict(self, count=1, periods=500, weights=None) -> List[Tuple[List[int], List[int]]]:

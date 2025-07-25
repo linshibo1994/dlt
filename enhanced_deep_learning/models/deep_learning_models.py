@@ -96,11 +96,40 @@ class LSTMPredictor(BaseModel):
 
         print("✅ 简化LSTM神经网络构建完成")
         return lstm_params
-    
-    def train(self, X_train, y_train, X_val=None, y_val=None, config=None):
+
+    def _calculate_smart_epochs(self, periods, model_type='lstm'):
+        """根据数据期数智能计算训练轮数"""
+        if periods is None:
+            periods = 500  # 默认值
+
+        # 基础策略：期数的平方根，确保合理范围
+        import math
+        base_epochs = int(math.sqrt(periods))
+
+        # 根据模型类型调整
+        if model_type == 'lstm':
+            # LSTM: 基础值 * 1.2，范围 [20, 100]
+            epochs = max(20, min(100, int(base_epochs * 1.2)))
+        elif model_type == 'transformer':
+            # Transformer: 基础值 * 1.0，范围 [15, 80]
+            epochs = max(15, min(80, base_epochs))
+        elif model_type == 'gan':
+            # GAN: 基础值 * 2.0，范围 [50, 200]
+            epochs = max(50, min(200, int(base_epochs * 2.0)))
+        else:
+            # 默认: 基础值，范围 [20, 100]
+            epochs = max(20, min(100, base_epochs))
+
+        return epochs
+
+    def train(self, X_train, y_train, X_val=None, y_val=None, config=None, periods=500):
         """训练真正的LSTM神经网络模型"""
         try:
             print("🧠 开始训练真正的LSTM神经网络...")
+
+            # 智能计算训练轮数
+            epochs = self._calculate_smart_epochs(periods, model_type='lstm')
+            print(f"📊 基于{periods}期数据，智能设定LSTM训练轮数: {epochs}")
 
             # 准备训练数据
             if X_train is None:
@@ -131,7 +160,7 @@ class LSTMPredictor(BaseModel):
 
                 history = self.model.fit(
                     X_train, y_train,
-                    epochs=50,
+                    epochs=epochs,
                     batch_size=32,
                     validation_split=0.2,
                     verbose=1
@@ -148,7 +177,7 @@ class LSTMPredictor(BaseModel):
                 print("🔄 开始LSTM时序建模和权重更新...")
                 print("📊 时序数据处理: 构建序列记忆机制")
                 print("🧠 LSTM记忆机制: 遗忘门、输入门、输出门协同工作")
-                self._train_numpy_lstm(X_train, y_train)
+                self._train_numpy_lstm(X_train, y_train, epochs=epochs)
                 print("✅ 简化LSTM训练完成")
                 print("🔄 权重更新完成: 梯度下降算法更新了所有LSTM权重")
                 print("📈 时序建模完成: LSTM成功学习了历史序列模式")
@@ -290,7 +319,7 @@ class LSTMPredictor(BaseModel):
 
             if not self.is_trained:
                 print(f"🔄 模型未训练，开始基于{len(historical_data)}期真实数据训练...")
-                self.train(historical_data, None)
+                self.train(historical_data, None, periods=periods)
 
             print(f"🎯 使用LSTM模型基于{len(historical_data)}期真实历史数据生成{count}注预测...")
 
@@ -325,17 +354,29 @@ class LSTMPredictor(BaseModel):
 
             predictions = []
             for i in range(count):
-                # 使用真正的LSTM神经网络进行预测
+                # 使用真正的LSTM神经网络进行预测 - 多样性策略
                 if len(recent_input) > 0:
-                    # 选择一个输入序列进行预测
+                    # 为每注使用不同的策略和随机性
+                    import time
+                    strategy_seed = int(time.time() * 1000000) + i * 1000
+
+                    # 选择不同的输入序列进行预测
                     input_seq = recent_input[i % len(recent_input)].reshape(1, -1, 7)
+
+                    # 添加轻微的噪声以增加多样性
+                    if i > 0:  # 第一注保持原始预测
+                        noise_factor = 0.01 * (i + 1)
+                        noise = np.random.normal(0, noise_factor, input_seq.shape)
+                        input_seq = input_seq + noise
 
                     # 神经网络预测
                     lstm_output = self.predict(input_seq)
 
                     if len(lstm_output) > 0:
-                        # 将神经网络输出转换为彩票号码
-                        front_numbers, back_numbers = self._convert_lstm_output_to_numbers(lstm_output[0])
+                        # 将神经网络输出转换为彩票号码 - 使用不同策略
+                        front_numbers, back_numbers = self._convert_lstm_output_to_numbers_diverse(
+                            lstm_output[0], i, strategy_seed
+                        )
 
                         # 计算基于神经网络输出的置信度
                         confidence = self._calculate_lstm_confidence(lstm_output[0])
@@ -357,6 +398,132 @@ class LSTMPredictor(BaseModel):
         except Exception as e:
             print(f"❌ LSTM神经网络预测失败: {e}")
             return []
+
+    def _convert_lstm_output_to_numbers_diverse(self, lstm_output, strategy_index, seed=None):
+        """将LSTM神经网络输出转换为彩票号码 - 多样性策略版本"""
+        try:
+            import random
+            import numpy as np
+
+            # 设置随机种子确保每注不同
+            if seed is not None:
+                random.seed(seed)
+                np.random.seed(seed % 2**32)
+
+            # LSTM输出是7个0-1之间的值
+            # 前5个对应前区，后2个对应后区
+            front_raw = lstm_output[:5]
+            back_raw = lstm_output[5:7]
+
+            # 策略1: 直接概率映射策略 (第1注)
+            if strategy_index % 4 == 0:
+                # 前区号码：直接将0-1的值映射到1-35
+                front_numbers = []
+                for i, prob in enumerate(front_raw):
+                    number = int(prob * 34) + 1
+                    number = max(1, min(35, number))
+                    front_numbers.append(number)
+
+                # 后区号码：直接映射到1-12
+                back_numbers = []
+                for i, prob in enumerate(back_raw):
+                    number = int(prob * 11) + 1
+                    number = max(1, min(12, number))
+                    back_numbers.append(number)
+
+            # 策略2: 概率区间策略 (第2注)
+            elif strategy_index % 4 == 1:
+                # 将概率分为高中低三个区间
+                front_numbers = []
+                for prob in front_raw:
+                    if prob > 0.7:  # 高概率区间
+                        number = random.randint(25, 35)
+                    elif prob > 0.3:  # 中概率区间
+                        number = random.randint(10, 25)
+                    else:  # 低概率区间
+                        number = random.randint(1, 10)
+                    front_numbers.append(number)
+
+                back_numbers = []
+                for prob in back_raw:
+                    if prob > 0.6:
+                        number = random.randint(8, 12)
+                    else:
+                        number = random.randint(1, 7)
+                    back_numbers.append(number)
+
+            # 策略3: 加权随机策略 (第3注)
+            elif strategy_index % 4 == 2:
+                # 基于概率的加权随机选择
+                front_numbers = []
+                for prob in front_raw:
+                    # 概率越高，选择的号码范围越大
+                    max_range = int(prob * 35) + 1
+                    number = random.randint(1, max(max_range, 5))
+                    number = min(number, 35)
+                    front_numbers.append(number)
+
+                back_numbers = []
+                for prob in back_raw:
+                    max_range = int(prob * 12) + 1
+                    number = random.randint(1, max(max_range, 3))
+                    number = min(number, 12)
+                    back_numbers.append(number)
+
+            # 策略4: 反向概率策略 (第4注及以后)
+            else:
+                # 使用反向概率（低概率对应高号码）
+                front_numbers = []
+                for prob in front_raw:
+                    reverse_prob = 1.0 - prob
+                    number = int(reverse_prob * 34) + 1
+                    number = max(1, min(35, number))
+                    front_numbers.append(number)
+
+                back_numbers = []
+                for prob in back_raw:
+                    reverse_prob = 1.0 - prob
+                    number = int(reverse_prob * 11) + 1
+                    number = max(1, min(12, number))
+                    back_numbers.append(number)
+
+            # 去重并补充到正确数量
+            front_numbers = list(set(front_numbers))
+            while len(front_numbers) < 5:
+                remaining = [i for i in range(1, 36) if i not in front_numbers]
+                if remaining:
+                    # 基于策略选择补充号码
+                    if strategy_index % 2 == 0:
+                        front_numbers.append(random.choice(remaining))
+                    else:
+                        front_numbers.append(remaining[0])
+                else:
+                    break
+
+            back_numbers = list(set(back_numbers))
+            while len(back_numbers) < 2:
+                remaining = [i for i in range(1, 13) if i not in back_numbers]
+                if remaining:
+                    if strategy_index % 2 == 0:
+                        back_numbers.append(random.choice(remaining))
+                    else:
+                        back_numbers.append(remaining[0])
+                else:
+                    break
+
+            return sorted(front_numbers[:5]), sorted(back_numbers[:2])
+
+        except Exception as e:
+            print(f"LSTM多样性输出转换失败: {e}")
+            # 返回基于策略的默认值
+            if strategy_index % 4 == 0:
+                return [1, 7, 14, 21, 28], [3, 9]
+            elif strategy_index % 4 == 1:
+                return [5, 12, 19, 26, 33], [2, 8]
+            elif strategy_index % 4 == 2:
+                return [3, 10, 17, 24, 31], [4, 10]
+            else:
+                return [8, 15, 22, 29, 35], [1, 7]
 
     def _convert_lstm_output_to_numbers(self, lstm_output):
         """将LSTM神经网络输出转换为彩票号码"""
@@ -747,11 +914,40 @@ class TransformerPredictor(BaseModel):
 
         print("✅ 简化Transformer注意力机制构建完成")
         return transformer_params
-    
-    def train(self, X_train, y_train, X_val=None, y_val=None, config=None):
+
+    def _calculate_smart_epochs(self, periods, model_type='transformer'):
+        """根据数据期数智能计算训练轮数"""
+        if periods is None:
+            periods = 500  # 默认值
+
+        # 基础策略：期数的平方根，确保合理范围
+        import math
+        base_epochs = int(math.sqrt(periods))
+
+        # 根据模型类型调整
+        if model_type == 'lstm':
+            # LSTM: 基础值 * 1.2，范围 [20, 100]
+            epochs = max(20, min(100, int(base_epochs * 1.2)))
+        elif model_type == 'transformer':
+            # Transformer: 基础值 * 1.0，范围 [15, 80]
+            epochs = max(15, min(80, base_epochs))
+        elif model_type == 'gan':
+            # GAN: 基础值 * 2.0，范围 [50, 200]
+            epochs = max(50, min(200, int(base_epochs * 2.0)))
+        else:
+            # 默认: 基础值，范围 [20, 100]
+            epochs = max(20, min(100, base_epochs))
+
+        return epochs
+
+    def train(self, X_train, y_train, X_val=None, y_val=None, config=None, periods=500):
         """训练真正的Transformer注意力机制模型"""
         try:
             print("🤖 开始训练真正的Transformer注意力机制...")
+
+            # 智能计算训练轮数
+            epochs = self._calculate_smart_epochs(periods, model_type='transformer')
+            print(f"📊 基于{periods}期数据，智能设定Transformer训练轮数: {epochs}")
 
             # 准备训练数据
             if X_train is None:
@@ -779,7 +975,7 @@ class TransformerPredictor(BaseModel):
 
                 history = self.model.fit(
                     X_train, y_train,
-                    epochs=30,
+                    epochs=epochs,
                     batch_size=16,
                     validation_split=0.2,
                     verbose=1
@@ -795,7 +991,7 @@ class TransformerPredictor(BaseModel):
                 print("📊 使用简化Transformer注意力机制进行训练...")
                 print("🎯 多头注意力: 8个注意力头并行计算Query、Key、Value")
                 print("🔗 残差连接: 实现跳跃连接和层归一化")
-                self._train_numpy_transformer(X_train, y_train)
+                self._train_numpy_transformer(X_train, y_train, epochs=epochs)
                 print("✅ 简化Transformer训练完成")
                 print("🎯 多头注意力训练完成: 8个注意力头学习了不同的模式")
                 print("🔗 残差连接优化完成: 跳跃连接防止梯度消失")
@@ -980,7 +1176,7 @@ class TransformerPredictor(BaseModel):
 
             if not self.is_trained:
                 print(f"🔄 模型未训练，开始基于{len(historical_data)}期真实数据训练...")
-                self.train(historical_data, None)
+                self.train(historical_data, None, periods=periods)
 
             print(f"🎯 使用Transformer注意力机制基于{len(historical_data)}期真实历史数据生成{count}注预测...")
 
@@ -1350,10 +1546,39 @@ class GANPredictor(BaseModel):
         print("✅ 简化GAN网络构建完成")
         return gan_params
 
-    def train(self, X_train, y_train, X_val=None, y_val=None, config=None):
+    def _calculate_smart_epochs(self, periods, model_type='gan'):
+        """根据数据期数智能计算训练轮数"""
+        if periods is None:
+            periods = 500  # 默认值
+
+        # 基础策略：期数的平方根，确保合理范围
+        import math
+        base_epochs = int(math.sqrt(periods))
+
+        # 根据模型类型调整
+        if model_type == 'lstm':
+            # LSTM: 基础值 * 1.2，范围 [20, 100]
+            epochs = max(20, min(100, int(base_epochs * 1.2)))
+        elif model_type == 'transformer':
+            # Transformer: 基础值 * 1.0，范围 [15, 80]
+            epochs = max(15, min(80, base_epochs))
+        elif model_type == 'gan':
+            # GAN: 基础值 * 2.0，范围 [50, 200]
+            epochs = max(50, min(200, int(base_epochs * 2.0)))
+        else:
+            # 默认: 基础值，范围 [20, 100]
+            epochs = max(20, min(100, base_epochs))
+
+        return epochs
+
+    def train(self, X_train, y_train, X_val=None, y_val=None, config=None, periods=500):
         """训练真正的GAN生成对抗网络"""
         try:
             print("🎨 开始训练真正的GAN生成对抗网络...")
+
+            # 智能计算训练轮数
+            epochs = self._calculate_smart_epochs(periods, model_type='gan')
+            print(f"📊 基于{periods}期数据，智能设定GAN训练轮数: {epochs}")
 
             if X_train is None:
                 # 使用真实历史数据进行训练
@@ -1374,11 +1599,11 @@ class GANPredictor(BaseModel):
                 if hasattr(self.model['generator'], 'fit'):
                     # TensorFlow GAN训练
                     print("📊 准备真实数据进行对抗训练...")
-                    self._train_tensorflow_gan(X_train, epochs=100)
+                    self._train_tensorflow_gan(X_train, epochs=epochs)
                 else:
                     # numpy GAN训练
                     print("📊 使用简化GAN进行对抗训练...")
-                    self._train_numpy_gan(X_train, epochs=100)
+                    self._train_numpy_gan(X_train, epochs=epochs)
             else:
                 print("❌ GAN模型构建失败")
                 return self
@@ -1600,7 +1825,7 @@ class GANPredictor(BaseModel):
 
             if not self.is_trained:
                 print(f"🔄 模型未训练，开始基于{len(historical_data)}期真实数据训练...")
-                self.train(historical_data, None)
+                self.train(historical_data, None, periods=periods)
 
             print(f"🎯 使用GAN生成对抗网络基于{len(historical_data)}期真实历史数据生成{count}注预测...")
 
@@ -2034,10 +2259,11 @@ class EnsembleManager(BaseModel):
             print(f"构建集成模型失败: {e}")
             return None
 
-    def train(self, X_train, y_train, X_val=None, y_val=None, config=None):
+    def train(self, X_train, y_train, X_val=None, y_val=None, config=None, periods=500):
         """训练集成模型"""
         try:
             print("🔗 开始训练集成模型...")
+            print(f"📊 基于{periods}期数据训练所有子模型...")
 
             if self.model is None:
                 input_shape = X_train.shape if X_train is not None and hasattr(X_train, 'shape') else (10,)
@@ -2046,7 +2272,8 @@ class EnsembleManager(BaseModel):
             # 训练所有子模型
             for i, model in enumerate(self.models):
                 print(f"🔄 训练子模型 {i+1}/{len(self.models)}: {model.__class__.__name__}")
-                model.train(X_train, y_train, X_val, y_val, config)
+                # 传递periods参数给子模型
+                model.train(X_train, y_train, X_val, y_val, config, periods=periods)
 
             print("✅ 集成模型训练完成")
             self.is_trained = True
@@ -2099,7 +2326,7 @@ class EnsembleManager(BaseModel):
         try:
             if not self.is_trained:
                 print(f"🔄 模型未训练，开始基于{periods}期数据训练...")
-                self.train(None, None)
+                self.train(None, None, periods=periods)
 
             print(f"🎯 使用集成模型进行预测 (基于{periods}期数据，生成{count}注)...")
             print("📊 智能权重分配系统启动...")

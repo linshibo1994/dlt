@@ -1,6 +1,6 @@
 # 🎯 大乐透智能预测系统
 
-[![Python](https://img.shields.io/badge/Python-3.8+-blue.svg)](https://python.org)
+[![python](https://img.shields.io/badge/python-3.8+-blue.svg)](https://python.org)
 [![TensorFlow](https://img.shields.io/badge/TensorFlow-2.8+-orange.svg)](https://tensorflow.org)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 [![Status](https://img.shields.io/badge/Status-Production%20Ready-brightgreen.svg)]()
@@ -75,8 +75,8 @@ pip install -r requirements.txt
 pip install tensorflow
 
 # 4. 验证安装
-python dlt_main.py data status
-python dlt_main.py predict -m frequency -c 1
+python3 dlt_main.py data status
+python3 dlt_main.py predict -m frequency -c 1
 ```
 
 ## 📖 **使用指南**
@@ -84,7 +84,7 @@ python dlt_main.py predict -m frequency -c 1
 ### 🎯 **基本语法**
 
 ```bash
-python dlt_main.py predict -m <方法名> -p <期数> -c <注数> [其他参数]
+python3 dlt_main.py predict -m <方法名> -p <期数> -c <注数> [其他参数]
 ```
 
 **核心参数**：
@@ -98,16 +98,16 @@ python dlt_main.py predict -m <方法名> -p <期数> -c <注数> [其他参数]
 
 ```bash
 # 1. 最简单的预测
-python dlt_main.py predict -m frequency
+python3 dlt_main.py predict -m frequency
 
 # 2. 指定期数和注数
-python dlt_main.py predict -m lstm -p 1000 -c 3
+python3 dlt_main.py predict -m lstm -p 1000 -c 3
 
 # 3. 复式投注
-python dlt_main.py predict -m compound --front-count 8 --back-count 4
+python3 dlt_main.py predict -m compound --front-count 8 --back-count 4
 
 # 4. 保存结果
-python dlt_main.py predict -m ensemble -c 5 --save --format json
+python3 dlt_main.py predict -m ensemble -c 5 --save --format json
 ```
 
 ### 📊 **预测方法详解**
@@ -123,7 +123,7 @@ python dlt_main.py predict -m ensemble -c 5 --save --format json
 
 ```bash
 # 示例：频率分析预测
-python dlt_main.py predict -m frequency -p 1000 -c 5
+python3 dlt_main.py predict -m frequency -p 1000 -c 5
 ```
 
 #### 🔗 **马尔可夫链方法**
@@ -137,7 +137,7 @@ python dlt_main.py predict -m frequency -p 1000 -c 5
 
 ```bash
 # 示例：自适应马尔可夫预测
-python dlt_main.py predict -m adaptive_markov -p 1800 -c 4
+python3 dlt_main.py predict -m adaptive_markov -p 1800 -c 4
 ```
 
 #### 🧠 **深度学习方法**
@@ -151,7 +151,7 @@ python dlt_main.py predict -m adaptive_markov -p 1800 -c 4
 
 ```bash
 # 示例：LSTM深度学习预测
-python dlt_main.py predict -m lstm -p 1000 -c 3
+python3 dlt_main.py predict -m lstm -p 1000 -c 3
 ```
 
 #### 🎯 **智能预测方法**
@@ -165,7 +165,7 @@ python dlt_main.py predict -m lstm -p 1000 -c 3
 
 ```bash
 # 示例：超级预测
-python dlt_main.py predict -m super -p 1000 -c 3
+python3 dlt_main.py predict -m super -p 1000 -c 3
 ```
 
 #### 🎲 **复式投注方法**
@@ -178,10 +178,10 @@ python dlt_main.py predict -m super -p 1000 -c 3
 
 ```bash
 # 示例：标准复式投注
-python dlt_main.py predict -m compound -p 1000 --front-count 8 --back-count 3
+python3 dlt_main.py predict -m compound -p 1000 --front-count 8 --back-count 3
 
 # 示例：胆拖投注
-python dlt_main.py predict -m duplex -p 800 --front-dan 2 --back-dan 1
+python3 dlt_main.py predict -m duplex -p 800 --front-dan 2 --back-dan 1
 ```
 
 ## 📊 **详细预测方法说明**
@@ -191,30 +191,30 @@ python dlt_main.py predict -m duplex -p 800 --front-dan 2 --back-dan 1
 #### 频率分析预测
 基于历史出现频率的概率统计预测，适合寻找高频号码。
 ```bash
-python dlt_main.py predict -m frequency -p 1000 -c 5    # 分析1000期，预测5注
-python dlt_main.py predict -m frequency -p 500 -c 3     # 分析500期，预测3注
-python dlt_main.py predict -m frequency --save --format json  # 保存为JSON格式
+python3 dlt_main.py predict -m frequency -p 1000 -c 5    # 分析1000期，预测5注
+python3 dlt_main.py predict -m frequency -p 500 -c 3     # 分析500期，预测3注
+python3 dlt_main.py predict -m frequency --save --format json  # 保存为JSON格式
 ```
 
 #### 冷热号分析预测
 识别热号和冷号，预测冷号回补趋势，适合平衡投注。
 ```bash
-python dlt_main.py predict -m hot_cold -p 800 -c 3      # 分析800期，预测3注
-python dlt_main.py predict -m hot_cold -p 1200 -c 2     # 长期分析，预测2注
+python3 dlt_main.py predict -m hot_cold -p 800 -c 3      # 分析800期，预测3注
+python3 dlt_main.py predict -m hot_cold -p 1200 -c 2     # 长期分析，预测2注
 ```
 
 #### 遗漏值分析预测
 分析号码遗漏周期，预测回补概率，适合长期跟踪。
 ```bash
-python dlt_main.py predict -m missing -p 1200 -c 2      # 分析1200期，预测2注
-python dlt_main.py predict -m missing -p 800 -c 5       # 分析800期，预测5注
+python3 dlt_main.py predict -m missing -p 1200 -c 2      # 分析1200期，预测2注
+python3 dlt_main.py predict -m missing -p 800 -c 5       # 分析800期，预测5注
 ```
 
 #### 贝叶斯分析预测
 基于贝叶斯定理的概率推理预测，适合概率分析。
 ```bash
-python dlt_main.py predict -m bayesian -p 1000 -c 3     # 分析1000期，预测3注
-python dlt_main.py predict -m bayesian -p 1500 -c 2     # 长期分析，预测2注
+python3 dlt_main.py predict -m bayesian -p 1000 -c 3     # 分析1000期，预测3注
+python3 dlt_main.py predict -m bayesian -p 1500 -c 2     # 长期分析，预测2注
 ```
 
 ### 🔗 **马尔可夫链预测详解**
@@ -222,35 +222,35 @@ python dlt_main.py predict -m bayesian -p 1500 -c 2     # 长期分析，预测2
 #### 1阶马尔可夫链预测
 基于前一期状态的转移概率预测，适合短期趋势分析。
 ```bash
-python dlt_main.py predict -m markov -p 1500 -c 5       # 分析1500期，预测5注
-python dlt_main.py predict -m markov -p 800 -c 3        # 短期分析，预测3注
+python3 dlt_main.py predict -m markov -p 1500 -c 5       # 分析1500期，预测5注
+python3 dlt_main.py predict -m markov -p 800 -c 3        # 短期分析，预测3注
 ```
 
 #### 2阶马尔可夫链预测
 考虑前两期状态的复合转移预测，适合中期模式识别。
 ```bash
-python dlt_main.py predict -m markov_2nd -p 1500 -c 5   # 分析1500期，预测5注
-python dlt_main.py predict -m markov_2nd -p 1000 -c 3   # 中期分析，预测3注
+python3 dlt_main.py predict -m markov_2nd -p 1500 -c 5   # 分析1500期，预测5注
+python3 dlt_main.py predict -m markov_2nd -p 1000 -c 3   # 中期分析，预测3注
 ```
 
 #### 3阶马尔可夫链预测
 基于前三期状态的高阶依赖预测，适合长期模式分析。
 ```bash
-python dlt_main.py predict -m markov_3rd -p 2000 -c 3   # 分析2000期，预测3注
-python dlt_main.py predict -m markov_3rd -p 1500 -c 2   # 长期分析，预测2注
+python3 dlt_main.py predict -m markov_3rd -p 2000 -c 3   # 分析2000期，预测3注
+python3 dlt_main.py predict -m markov_3rd -p 1500 -c 2   # 长期分析，预测2注
 ```
 
 #### 自适应马尔可夫预测
 动态选择最优阶数的智能融合预测，适合综合分析。
 ```bash
-python dlt_main.py predict -m adaptive_markov -p 1800 -c 4  # 分析1800期，预测4注
-python dlt_main.py predict -m adaptive_markov -p 1200 -c 3  # 自适应分析，预测3注
+python3 dlt_main.py predict -m adaptive_markov -p 1800 -c 4  # 分析1800期，预测4注
+python3 dlt_main.py predict -m adaptive_markov -p 1200 -c 3  # 自适应分析，预测3注
 ```
 
 #### 马尔可夫自定义预测
 支持自定义分析期数和预测期数的马尔可夫链预测。
 ```bash
-python dlt_main.py predict -m markov_custom -p 1000 -c 2    # 自定义马尔可夫预测
+python3 dlt_main.py predict -m markov_custom -p 1000 -c 2    # 自定义马尔可夫预测
 ```
 
 ### 🧠 **深度学习预测详解**
@@ -258,30 +258,30 @@ python dlt_main.py predict -m markov_custom -p 1000 -c 2    # 自定义马尔可
 #### LSTM时序预测
 长短期记忆网络，专门处理时序数据，擅长捕捉长期依赖关系。
 ```bash
-python dlt_main.py predict -m lstm -p 1000 -c 3         # 分析1000期，LSTM预测3注
-python dlt_main.py predict -m lstm -p 1500 -c 2         # 长期训练，预测2注
-python dlt_main.py predict -m lstm -p 800 -c 5          # 短期训练，预测5注
+python3 dlt_main.py predict -m lstm -p 1000 -c 3         # 分析1000期，LSTM预测3注
+python3 dlt_main.py predict -m lstm -p 1500 -c 2         # 长期训练，预测2注
+python3 dlt_main.py predict -m lstm -p 800 -c 5          # 短期训练，预测5注
 ```
 
 #### Transformer注意力预测
 多头注意力机制，捕捉长距离依赖，适合复杂模式识别。
 ```bash
-python dlt_main.py predict -m transformer -p 1500 -c 2  # 分析1500期，Transformer预测2注
-python dlt_main.py predict -m transformer -p 1000 -c 3  # 注意力分析，预测3注
+python3 dlt_main.py predict -m transformer -p 1500 -c 2  # 分析1500期，Transformer预测2注
+python3 dlt_main.py predict -m transformer -p 1000 -c 3  # 注意力分析，预测3注
 ```
 
 #### GAN生成对抗预测
 生成对抗网络，创新号码组合生成，适合探索新的号码模式。
 ```bash
-python dlt_main.py predict -m gan -p 800 -c 5           # 分析800期，GAN预测5注
-python dlt_main.py predict -m gan -p 1200 -c 3          # 生成对抗，预测3注
+python3 dlt_main.py predict -m gan -p 800 -c 5           # 分析800期，GAN预测5注
+python3 dlt_main.py predict -m gan -p 1200 -c 3          # 生成对抗，预测3注
 ```
 
 #### 集成深度学习预测
 融合LSTM+Transformer+GAN的智能预测，综合多种深度学习优势。
 ```bash
-python dlt_main.py predict -m ensemble -p 2000 -c 3     # 分析2000期，集成预测3注
-python dlt_main.py predict -m ensemble -p 1500 -c 5     # 深度集成，预测5注
+python3 dlt_main.py predict -m ensemble -p 2000 -c 3     # 分析2000期，集成预测3注
+python3 dlt_main.py predict -m ensemble -p 1500 -c 5     # 深度集成，预测5注
 ```
 
 ### 🧠 **智能预测算法详解**
@@ -289,37 +289,37 @@ python dlt_main.py predict -m ensemble -p 1500 -c 5     # 深度集成，预测5
 #### 超级预测
 多种算法智能融合的超级预测系统，综合传统和高级算法优势。
 ```bash
-python dlt_main.py predict -m super -p 1000 -c 3        # 分析1000期，超级预测3注
-python dlt_main.py predict -m super -p 1500 -c 5        # 超级融合，预测5注
+python3 dlt_main.py predict -m super -p 1000 -c 3        # 分析1000期，超级预测3注
+python3 dlt_main.py predict -m super -p 1500 -c 5        # 超级融合，预测5注
 ```
 
 #### 自适应预测
 基于多臂老虎机算法的智能预测器选择，动态优化预测策略。
 ```bash
-python dlt_main.py predict -m adaptive -p 1000 -c 5     # 分析1000期，自适应预测5注
-python dlt_main.py predict -m adaptive -p 1200 -c 3     # 智能选择，预测3注
+python3 dlt_main.py predict -m adaptive -p 1000 -c 5     # 分析1000期，自适应预测5注
+python3 dlt_main.py predict -m adaptive -p 1200 -c 3     # 智能选择，预测3注
 ```
 
 #### 9种数学模型预测
 统计学、概率论、决策树等9种数学模型的综合分析预测。
 ```bash
-python dlt_main.py predict -m nine_models -p 800 -c 2   # 分析800期，9种模型预测2注
-python dlt_main.py predict -m nine_models -p 1000 -c 4  # 数学建模，预测4注
+python3 dlt_main.py predict -m nine_models -p 800 -c 2   # 分析800期，9种模型预测2注
+python3 dlt_main.py predict -m nine_models -p 1000 -c 4  # 数学建模，预测4注
 ```
 
 #### 高级集成分析预测
 多维度权重计算和智能评分系统的高级集成预测。
 ```bash
-python dlt_main.py predict -m advanced_integration -p 1500 -c 4  # 分析1500期，高级集成预测4注
-python dlt_main.py predict -m advanced_integration -p 1000 -c 3 --integration-type comprehensive  # 综合集成
+python3 dlt_main.py predict -m advanced_integration -p 1500 -c 4  # 分析1500期，高级集成预测4注
+python3 dlt_main.py predict -m advanced_integration -p 1000 -c 3 --integration-type comprehensive  # 综合集成
 ```
 
 #### 混合策略预测
 支持保守、激进、平衡三种策略的混合预测方法。
 ```bash
-python dlt_main.py predict -m mixed_strategy -p 1500 -c 3 --strategy balanced  # 平衡策略预测3注
-python dlt_main.py predict -m mixed_strategy -p 1000 -c 2 --strategy conservative  # 保守策略
-python dlt_main.py predict -m mixed_strategy -p 800 -c 5 --strategy aggressive   # 激进策略
+python3 dlt_main.py predict -m mixed_strategy -p 1500 -c 3 --strategy balanced  # 平衡策略预测3注
+python3 dlt_main.py predict -m mixed_strategy -p 1000 -c 2 --strategy conservative  # 保守策略
+python3 dlt_main.py predict -m mixed_strategy -p 800 -c 5 --strategy aggressive   # 激进策略
 ```
 
 ### 🎲 **复式投注预测详解**
@@ -327,36 +327,36 @@ python dlt_main.py predict -m mixed_strategy -p 800 -c 5 --strategy aggressive  
 #### 标准复式投注
 指定前区和后区号码数量的复式投注，适合大额投注。
 ```bash
-python dlt_main.py predict -m compound -p 1000 --front-count 8 --back-count 3   # 8+3复式
-python dlt_main.py predict -m compound -p 1500 --front-count 12 --back-count 5  # 12+5大复式
-python dlt_main.py predict -m compound -p 800 --front-count 6 --back-count 3    # 6+3小复式
+python3 dlt_main.py predict -m compound -p 1000 --front-count 8 --back-count 3   # 8+3复式
+python3 dlt_main.py predict -m compound -p 1500 --front-count 12 --back-count 5  # 12+5大复式
+python3 dlt_main.py predict -m compound -p 800 --front-count 6 --back-count 3    # 6+3小复式
 ```
 
 #### 胆拖投注
 胆码+拖码的智能胆拖投注，降低投注成本。
 ```bash
-python dlt_main.py predict -m duplex -p 800 --front-dan 2 --back-dan 1          # 胆拖投注
-python dlt_main.py predict -m duplex -p 1000 --front-dan 3 --back-dan 1 --front-tuo 8 --back-tuo 5  # 详细胆拖
+python3 dlt_main.py predict -m duplex -p 800 --front-dan 2 --back-dan 1          # 胆拖投注
+python3 dlt_main.py predict -m duplex -p 1000 --front-dan 3 --back-dan 1 --front-tuo 8 --back-tuo 5  # 详细胆拖
 ```
 
 #### 9种模型复式投注
 基于9种数学模型的复式投注预测。
 ```bash
-python dlt_main.py predict -m nine_models_compound -p 1000 --front-count 10 --back-count 4  # 9种模型复式
+python3 dlt_main.py predict -m nine_models_compound -p 1000 --front-count 10 --back-count 4  # 9种模型复式
 ```
 
 #### 马尔可夫链复式
 基于马尔可夫链的复式投注，结合概率模型优势。
 ```bash
-python dlt_main.py predict -m markov_compound -p 1000 --front-count 9 --back-count 4  # 马尔可夫复式
-python dlt_main.py predict -m markov_compound -p 1500 --front-count 12 --back-count 5 # 大复式
+python3 dlt_main.py predict -m markov_compound -p 1000 --front-count 9 --back-count 4  # 马尔可夫复式
+python3 dlt_main.py predict -m markov_compound -p 1500 --front-count 12 --back-count 5 # 大复式
 ```
 
 #### 高度集成复式
 多算法融合的高级复式投注，综合多种预测优势。
 ```bash
-python dlt_main.py predict -m highly_integrated -p 1000 --front-count 12 --back-count 5 --integration-level ultimate
-python dlt_main.py predict -m highly_integrated -p 1500 --front-count 10 --back-count 4 --integration-level high
+python3 dlt_main.py predict -m highly_integrated -p 1000 --front-count 12 --back-count 5 --integration-level ultimate
+python3 dlt_main.py predict -m highly_integrated -p 1500 --front-count 10 --back-count 4 --integration-level high
 ```
 
 ### 🤖 **智能学习预测详解**
@@ -364,15 +364,15 @@ python dlt_main.py predict -m highly_integrated -p 1500 --front-count 10 --back-
 #### 智能复式预测
 基于学习结果的智能复式预测，动态优化投注策略。
 ```bash
-python dlt_main.py smart -p 1200 --compound --front-count 10 --back-count 4  # 智能复式预测
-python dlt_main.py smart -p 1000 --compound --front-count 8 --back-count 3   # 智能复式
+python3 dlt_main.py smart -p 1200 --compound --front-count 10 --back-count 4  # 智能复式预测
+python3 dlt_main.py smart -p 1000 --compound --front-count 8 --back-count 3   # 智能复式
 ```
 
 #### 智能胆拖预测
 基于学习结果的智能胆拖预测，优化胆码选择。
 ```bash
-python dlt_main.py smart -p 800 --duplex --front-dan 3 --back-dan 1 --front-tuo 8 --back-tuo 5  # 智能胆拖预测
-python dlt_main.py smart -p 1000 --duplex --front-dan 2 --back-dan 1 --front-tuo 6 --back-tuo 4 # 智能胆拖
+python3 dlt_main.py smart -p 800 --duplex --front-dan 3 --back-dan 1 --front-tuo 8 --back-tuo 5  # 智能胆拖预测
+python3 dlt_main.py smart -p 1000 --duplex --front-dan 2 --back-dan 1 --front-tuo 6 --back-tuo 4 # 智能胆拖
 ```
 
 ### 🚀 **高级集成预测详解**
@@ -380,25 +380,25 @@ python dlt_main.py smart -p 1000 --duplex --front-dan 2 --back-dan 1 --front-tuo
 #### Stacking集成预测
 使用Stacking算法的高级集成预测。
 ```bash
-python dlt_main.py predict -m stacking -p 1500 -c 3     # Stacking集成预测3注
+python3 dlt_main.py predict -m stacking -p 1500 -c 3     # Stacking集成预测3注
 ```
 
 #### 自适应集成预测
 动态调整权重的自适应集成预测。
 ```bash
-python dlt_main.py predict -m adaptive_ensemble -p 1000 -c 5  # 自适应集成预测5注
+python3 dlt_main.py predict -m adaptive_ensemble -p 1000 -c 5  # 自适应集成预测5注
 ```
 
 #### 终极集成预测
 融合所有算法的终极集成预测系统。
 ```bash
-python dlt_main.py predict -m ultimate_ensemble -p 2000 -c 3  # 终极集成预测3注
+python3 dlt_main.py predict -m ultimate_ensemble -p 2000 -c 3  # 终极集成预测3注
 ```
 
 #### 增强预测
 使用增强系统的自动预测功能。
 ```bash
-python dlt_main.py predict -m enhanced -p 1000 -c 3     # 增强预测3注
+python3 dlt_main.py predict -m enhanced -p 1000 -c 3     # 增强预测3注
 ```
 
 ## 📊 **数据管理功能详解**
@@ -406,28 +406,28 @@ python dlt_main.py predict -m enhanced -p 1000 -c 3     # 增强预测3注
 #### 数据状态查看
 查看当前数据状态，包括数据量、最新期数、数据完整性等。
 ```bash
-python dlt_main.py data status                          # 查看数据状态
+python3 dlt_main.py data status                          # 查看数据状态
 ```
 
 #### 数据更新
 更新最新开奖数据，支持增量更新和全量更新。
 ```bash
-python dlt_main.py data update                          # 全量更新数据
-python dlt_main.py data update --incremental            # 增量更新数据
+python3 dlt_main.py data update                          # 全量更新数据
+python3 dlt_main.py data update --incremental            # 增量更新数据
 ```
 
 #### 最新开奖查询
 获取最新开奖结果并与预测结果进行比较。
 ```bash
-python dlt_main.py data latest                          # 获取最新开奖
-python dlt_main.py data latest --compare                # 获取最新开奖并比较预测
+python3 dlt_main.py data latest                          # 获取最新开奖
+python3 dlt_main.py data latest --compare                # 获取最新开奖并比较预测
 ```
 
 #### 数据质量检查
 检查数据质量，包括异常检测、数据完整性验证等。
 ```bash
-python dlt_main.py data check                           # 基础数据检查
-python dlt_main.py data check --anomaly                 # 异常检测分析
+python3 dlt_main.py data check                           # 基础数据检查
+python3 dlt_main.py data check --anomaly                 # 异常检测分析
 ```
 
 ## 🔍 **高级分析功能详解**
@@ -435,29 +435,29 @@ python dlt_main.py data check --anomaly                 # 异常检测分析
 #### 基础统计分析
 提供频率、遗漏、冷热号等基础统计分析。
 ```bash
-python dlt_main.py analyze -t basic -p 500              # 基础分析（500期）
-python dlt_main.py analyze -t basic -p 1000             # 基础分析（1000期）
+python3 dlt_main.py analyze -t basic -p 500              # 基础分析（500期）
+python3 dlt_main.py analyze -t basic -p 1000             # 基础分析（1000期）
 ```
 
 #### 高级模式分析
 深度模式分析，包括马尔可夫链、贝叶斯等高级分析。
 ```bash
-python dlt_main.py analyze -t advanced -p 1000          # 高级分析（1000期）
-python dlt_main.py analyze -t advanced -p 1500          # 高级分析（1500期）
+python3 dlt_main.py analyze -t advanced -p 1000          # 高级分析（1000期）
+python3 dlt_main.py analyze -t advanced -p 1500          # 高级分析（1500期）
 ```
 
 #### 综合分析
 9种数学模型的综合分析，提供全面的数据洞察。
 ```bash
-python dlt_main.py analyze -t comprehensive -p 800      # 综合分析（800期）
-python dlt_main.py analyze -t comprehensive -p 1200     # 综合分析（1200期）
+python3 dlt_main.py analyze -t comprehensive -p 800      # 综合分析（800期）
+python3 dlt_main.py analyze -t comprehensive -p 1200     # 综合分析（1200期）
 ```
 
 #### 异常检测分析
 检测数据中的异常模式和趋势变化。
 ```bash
-python dlt_main.py analyze -t anomaly                   # 异常检测分析
-python dlt_main.py analyze -t anomaly -p 1000           # 指定期数异常检测
+python3 dlt_main.py analyze -t anomaly                   # 异常检测分析
+python3 dlt_main.py analyze -t anomaly -p 1000           # 指定期数异常检测
 ```
 
 ## 🎓 **自适应学习功能详解**
@@ -465,22 +465,22 @@ python dlt_main.py analyze -t anomaly -p 1000           # 指定期数异常检�
 #### UCB1算法学习
 使用UCB1（Upper Confidence Bound）算法进行预测器选择学习。
 ```bash
-python dlt_main.py learn --algorithm ucb1 -t 1000       # UCB1学习1000轮
-python dlt_main.py learn --algorithm ucb1 -t 500        # UCB1学习500轮
+python3 dlt_main.py learn --algorithm ucb1 -t 1000       # UCB1学习1000轮
+python3 dlt_main.py learn --algorithm ucb1 -t 500        # UCB1学习500轮
 ```
 
 #### Thompson采样学习
 使用Thompson采样算法进行贝叶斯优化学习。
 ```bash
-python dlt_main.py learn --algorithm thompson_sampling -t 1000  # Thompson采样学习1000轮
-python dlt_main.py learn --algorithm thompson_sampling -t 800   # Thompson采样学习800轮
+python3 dlt_main.py learn --algorithm thompson_sampling -t 1000  # Thompson采样学习1000轮
+python3 dlt_main.py learn --algorithm thompson_sampling -t 800   # Thompson采样学习800轮
 ```
 
 #### Epsilon贪婪学习
 使用Epsilon贪婪算法平衡探索和利用。
 ```bash
-python dlt_main.py learn --algorithm epsilon_greedy -t 1000     # Epsilon贪婪学习1000轮
-python dlt_main.py learn --algorithm epsilon_greedy -t 600      # Epsilon贪婪学习600轮
+python3 dlt_main.py learn --algorithm epsilon_greedy -t 1000     # Epsilon贪婪学习1000轮
+python3 dlt_main.py learn --algorithm epsilon_greedy -t 600      # Epsilon贪婪学习600轮
 ```
 
 ## 🚀 **性能优化功能详解**
@@ -488,22 +488,22 @@ python dlt_main.py learn --algorithm epsilon_greedy -t 600      # Epsilon贪婪�
 #### GPU加速优化
 启用GPU加速，提升深度学习模型训练和预测速度。
 ```bash
-python dlt_main.py optimize -t gpu                      # GPU加速优化
-python dlt_main.py optimize -t gpu --device cuda        # 指定CUDA设备
+python3 dlt_main.py optimize -t gpu                      # GPU加速优化
+python3 dlt_main.py optimize -t gpu --device cuda        # 指定CUDA设备
 ```
 
 #### 内存优化
 优化内存使用，适合大数据量处理。
 ```bash
-python dlt_main.py optimize -t memory                   # 内存优化
-python dlt_main.py optimize -t memory --cache-size 1000 # 指定缓存大小
+python3 dlt_main.py optimize -t memory                   # 内存优化
+python3 dlt_main.py optimize -t memory --cache-size 1000 # 指定缓存大小
 ```
 
 #### 批处理优化
 启用批处理模式，提升大量预测任务的处理效率。
 ```bash
-python dlt_main.py optimize -t batch                    # 批处理优化
-python dlt_main.py optimize -t batch --batch-size 50    # 指定批处理大小
+python3 dlt_main.py optimize -t batch                    # 批处理优化
+python3 dlt_main.py optimize -t batch --batch-size 50    # 指定批处理大小
 ```
 
 ## 📈 **回测和验证功能详解**
@@ -511,17 +511,17 @@ python dlt_main.py optimize -t batch --batch-size 50    # 指定批处理大小
 #### 性能回测
 对预测算法进行历史回测，评估预测准确性和稳定性。
 ```bash
-python dlt_main.py backtest -m ensemble -t 100          # 集成算法回测100期
-python dlt_main.py backtest -m lstm -t 50               # LSTM算法回测50期
-python dlt_main.py backtest -m frequency -t 200         # 频率分析回测200期
-python dlt_main.py backtest -m markov -t 150            # 马尔可夫链回测150期
+python3 dlt_main.py backtest -m ensemble -t 100          # 集成算法回测100期
+python3 dlt_main.py backtest -m lstm -t 50               # LSTM算法回测50期
+python3 dlt_main.py backtest -m frequency -t 200         # 频率分析回测200期
+python3 dlt_main.py backtest -m markov -t 150            # 马尔可夫链回测150期
 ```
 
 #### 算法比较
 比较不同算法的预测性能，选择最优算法。
 ```bash
-python dlt_main.py compare -m frequency,markov,lstm -t 100  # 比较三种算法性能
-python dlt_main.py compare -m ensemble,super,adaptive -t 80 # 比较高级算法性能
+python3 dlt_main.py compare -m frequency,markov,lstm -t 100  # 比较三种算法性能
+python3 dlt_main.py compare -m ensemble,super,adaptive -t 80 # 比较高级算法性能
 ```
 
 ## 🚀 **增强功能模块详解**
@@ -529,27 +529,27 @@ python dlt_main.py compare -m ensemble,super,adaptive -t 80 # 比较高级算法
 #### 增强系统信息
 查看增强功能模块的系统信息和兼容性。
 ```bash
-python dlt_main.py enhanced info                        # 查看增强系统信息
+python3 dlt_main.py enhanced info                        # 查看增强系统信息
 ```
 
 #### 系统兼容性测试
 运行系统兼容性测试，确保所有功能正常运行。
 ```bash
-python dlt_main.py enhanced test                        # 运行兼容性测试
+python3 dlt_main.py enhanced test                        # 运行兼容性测试
 ```
 
 #### 增强预测功能
 使用增强功能模块进行高级预测。
 ```bash
-python dlt_main.py enhanced predict -d "sample_data" -m auto  # 增强预测功能
-python dlt_main.py enhanced predict -d "predict_5_numbers" -m lstm  # 指定LSTM模型
+python3 dlt_main.py enhanced predict -d "sample_data" -m auto  # 增强预测功能
+python3 dlt_main.py enhanced predict -d "predict_5_numbers" -m lstm  # 指定LSTM模型
 ```
 
 #### 增强可视化功能
 生成交互式可视化图表和分析报告。
 ```bash
-python dlt_main.py enhanced visualize -d "sample_data" -t interactive  # 交互式可视化
-python dlt_main.py enhanced visualize -d "analysis_data" -t static     # 静态图表
+python3 dlt_main.py enhanced visualize -d "sample_data" -t interactive  # 交互式可视化
+python3 dlt_main.py enhanced visualize -d "analysis_data" -t static     # 静态图表
 ```
 
 ## 💡 **完整使用示例**
@@ -557,68 +557,68 @@ python dlt_main.py enhanced visualize -d "analysis_data" -t static     # 静态�
 ### 🎯 **快速开始示例**
 ```bash
 # 1. 最简单的预测（使用默认参数）
-python dlt_main.py predict -m ensemble
+python3 dlt_main.py predict -m ensemble
 
 # 2. 指定期数和注数的预测
-python dlt_main.py predict -m lstm -p 1000 -c 3
+python3 dlt_main.py predict -m lstm -p 1000 -c 3
 
 # 3. 复式投注预测
-python dlt_main.py predict -m compound -p 800 --front-count 8 --back-count 4
+python3 dlt_main.py predict -m compound -p 800 --front-count 8 --back-count 4
 
 # 4. 智能学习预测
-python dlt_main.py smart -p 1000 --compound --front-count 10 --back-count 5
+python3 dlt_main.py smart -p 1000 --compound --front-count 10 --back-count 5
 
 # 5. 数据管理
-python dlt_main.py data status
-python dlt_main.py data update --incremental
+python3 dlt_main.py data status
+python3 dlt_main.py data update --incremental
 
 # 6. 高级分析
-python dlt_main.py analyze -t comprehensive -p 1000
+python3 dlt_main.py analyze -t comprehensive -p 1000
 
 # 7. 性能回测
-python dlt_main.py backtest -m ensemble -t 100
+python3 dlt_main.py backtest -m ensemble -t 100
 ```
 
 ### 🔥 **高级使用示例**
 ```bash
 # 深度学习组合预测
-python dlt_main.py predict -m lstm -p 1500 -c 2 --save --format json
-python dlt_main.py predict -m transformer -p 1000 -c 3 --save
-python dlt_main.py predict -m gan -p 800 -c 5
+python3 dlt_main.py predict -m lstm -p 1500 -c 2 --save --format json
+python3 dlt_main.py predict -m transformer -p 1000 -c 3 --save
+python3 dlt_main.py predict -m gan -p 800 -c 5
 
 # 马尔可夫链系列预测
-python dlt_main.py predict -m markov -p 1200 -c 3
-python dlt_main.py predict -m markov_2nd -p 1500 -c 2
-python dlt_main.py predict -m adaptive_markov -p 1800 -c 4
+python3 dlt_main.py predict -m markov -p 1200 -c 3
+python3 dlt_main.py predict -m markov_2nd -p 1500 -c 2
+python3 dlt_main.py predict -m adaptive_markov -p 1800 -c 4
 
 # 复式投注组合
-python dlt_main.py predict -m compound --front-count 12 --back-count 5
-python dlt_main.py predict -m duplex --front-dan 3 --back-dan 1 --front-tuo 8
-python dlt_main.py predict -m highly_integrated --front-count 10 --back-count 4
+python3 dlt_main.py predict -m compound --front-count 12 --back-count 5
+python3 dlt_main.py predict -m duplex --front-dan 3 --back-dan 1 --front-tuo 8
+python3 dlt_main.py predict -m highly_integrated --front-count 10 --back-count 4
 
 # 学习和优化
-python dlt_main.py learn --algorithm ucb1 -t 1000
-python dlt_main.py optimize -t gpu
-python dlt_main.py backtest -m super -t 200
+python3 dlt_main.py learn --algorithm ucb1 -t 1000
+python3 dlt_main.py optimize -t gpu
+python3 dlt_main.py backtest -m super -t 200
 ```
 
 ### 💡 **常用示例**
 
 ```bash
 # 基础预测
-python dlt_main.py predict -m frequency -c 3           # 频率分析预测3注
-python dlt_main.py predict -m lstm -p 1000 -c 2        # LSTM预测2注
+python3 dlt_main.py predict -m frequency -c 3           # 频率分析预测3注
+python3 dlt_main.py predict -m lstm -p 1000 -c 2        # LSTM预测2注
 
 # 复式投注
-python dlt_main.py predict -m compound --front-count 8 --back-count 3
+python3 dlt_main.py predict -m compound --front-count 8 --back-count 3
 
 # 数据管理
-python dlt_main.py data status                         # 查看数据状态
-python dlt_main.py data update                         # 更新数据
+python3 dlt_main.py data status                         # 查看数据状态
+python3 dlt_main.py data update                         # 更新数据
 
 # 分析功能
-python dlt_main.py analyze -t basic -p 500             # 基础分析
-python dlt_main.py backtest -m ensemble -t 100         # 性能回测
+python3 dlt_main.py analyze -t basic -p 500             # 基础分析
+python3 dlt_main.py backtest -m ensemble -t 100         # 性能回测
 ```
 
 ## 📋 **参数说明**
