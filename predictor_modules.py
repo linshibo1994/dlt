@@ -1385,8 +1385,10 @@ class AdvancedPredictor:
             for ball, freq in sorted_freq:
                 if len(selected) >= target_count:
                     break
-                if ball not in selected:
-                    selected.append(ball)
+                # 确保ball是整数
+                ball_int = int(ball) if isinstance(ball, str) else ball
+                if ball_int not in selected:
+                    selected.append(ball_int)
 
         return sorted(selected[:target_count])
 

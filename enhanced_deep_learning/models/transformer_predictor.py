@@ -15,7 +15,8 @@ from tensorflow.keras.callbacks import EarlyStopping, ReduceLROnPlateau, Learnin
 from datetime import datetime
 import math
 
-from .base_model import BaseModel as BaseDeepPredictor
+from .base_model import BaseModel as BaseDeepPredictor, ModelConfig, ModelType
+from . import ModelMetadata
 from ..utils.config import DEFAULT_TRANSFORMER_CONFIG
 from ..utils.exceptions import ModelInitializationError, handle_model_error
 from core_modules import logger_manager
@@ -36,7 +37,17 @@ class TransformerPredictor(BaseDeepPredictor):
         if config:
             merged_config.update(config)
         
-        super().__init__(name="Transformer", config=merged_config)
+        # 创建ModelConfig对象
+        model_config = ModelConfig(
+            model_type=ModelType.TRANSFORMER,
+            model_name="TransformerPredictor",
+            version="2.0.0",
+            description="基于Transformer的彩票号码预测模型"
+        )
+        super().__init__(model_config)
+
+        # 保存配置参数
+        self.config_params = merged_config
         
         # 从配置中提取参数
         self.d_model = self.config.get('d_model', 256)

@@ -25,7 +25,7 @@ import math
 from datetime import datetime
 
 from core_modules import logger_manager, cache_manager
-from .base_model import BaseModel as BaseDeepLearningModel
+from .base_model import BaseModel as BaseDeepLearningModel, ModelConfig, ModelType
 from . import ModelMetadata
 
 
@@ -45,29 +45,45 @@ class LSTMPredictor(BaseDeepLearningModel):
             metadata = ModelMetadata(
                 name="LSTMPredictor",
                 version="2.0.0",
-                description="基于LSTM神经网络的彩票号码预测模型",
-                dependencies=["tensorflow", "scikit-learn", "numpy", "pandas"]
+                description="基于LSTM神经网络的彩票号码预测模型"
             )
 
+        # 创建ModelConfig对象
+        if isinstance(config, dict):
+            model_config = ModelConfig(
+                model_type=ModelType.LSTM,
+                model_name=metadata.name if metadata else "LSTMPredictor",
+                version=metadata.version if metadata else "2.0.0",
+                description=metadata.description if metadata else "LSTM预测器"
+            )
+            # 保存原始配置参数
+            self.config_params = config or {}
+        else:
+            model_config = config
+            self.config_params = {}
+
         # 调用父类初始化
-        super().__init__(config, metadata)
+        super().__init__(model_config)
+
+        # 保存元数据
+        self.metadata = metadata
 
         # 模型参数
-        self.sequence_length = self.config.get('sequence_length', 30)
-        self.lstm_units = self.config.get('lstm_units', [128, 64, 32])
-        self.dropout_rate = self.config.get('dropout_rate', 0.2)
-        self.learning_rate = self.config.get('learning_rate', 0.001)
-        self.batch_size = self.config.get('batch_size', 32)
-        self.epochs = self.config.get('epochs', 100)
+        self.sequence_length = self.config_params.get('sequence_length', 30)
+        self.lstm_units = self.config_params.get('lstm_units', [128, 64, 32])
+        self.dropout_rate = self.config_params.get('dropout_rate', 0.2)
+        self.learning_rate = self.config_params.get('learning_rate', 0.001)
+        self.batch_size = self.config_params.get('batch_size', 32)
+        self.epochs = self.config_params.get('epochs', 100)
 
         # 高级LSTM参数
-        self.use_bidirectional = self.config.get('use_bidirectional', True)
-        self.use_attention = self.config.get('use_attention', True)
-        self.use_residual = self.config.get('use_residual', True)
-        self.attention_heads = self.config.get('attention_heads', 4)
-        self.l1_reg = self.config.get('l1_reg', 0.01)
-        self.l2_reg = self.config.get('l2_reg', 0.01)
-        self.gradient_clip_norm = self.config.get('gradient_clip_norm', 1.0)
+        self.use_bidirectional = self.config_params.get('use_bidirectional', True)
+        self.use_attention = self.config_params.get('use_attention', True)
+        self.use_residual = self.config_params.get('use_residual', True)
+        self.attention_heads = self.config_params.get('attention_heads', 4)
+        self.l1_reg = self.config_params.get('l1_reg', 0.01)
+        self.l2_reg = self.config_params.get('l2_reg', 0.01)
+        self.gradient_clip_norm = self.config_params.get('gradient_clip_norm', 1.0)
 
         # 模型和缩放器
         self.front_model = None

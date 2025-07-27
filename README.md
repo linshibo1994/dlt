@@ -146,7 +146,7 @@ python3 dlt_main.py predict -m adaptive_markov -p 1800 -c 4
 |------|------|------|----------|
 | **LSTM预测** | `lstm` | 长短期记忆网络时序预测 | `-p 1000 -c 3` |
 | **Transformer** | `transformer` | 多头注意力机制预测 | `-p 1500 -c 2` |
-| **GAN预测** | `gan` | 生成对抗网络预测 | `-p 800 -c 5` |
+| **GAN预测** | `gan` | 生成对抗网络预测（含fallback机制） | `-p 1000 -c 3` |
 | **集成学习** | `ensemble` | 多模型智能融合 | `-p 2000 -c 3` |
 
 ```bash

@@ -592,7 +592,13 @@ class DLTPredictorSystem:
 
             elif args.method == 'duplex':
                 # 胆拖投注预测
-                result = self.predictors['compound'].predict_duplex(periods=args.periods)
+                result = self.predictors['compound'].predict_duplex(
+                    periods=args.periods,
+                    front_dan_count=getattr(args, 'front_dan', 2),
+                    back_dan_count=getattr(args, 'back_dan', 1),
+                    front_tuo_count=getattr(args, 'front_tuo', 6),
+                    back_tuo_count=getattr(args, 'back_tuo', 4)
+                )
                 if result:
                     predictions = [result]
                 else:
@@ -1547,6 +1553,11 @@ def main():
     predict_parser.add_argument('--integration-type', choices=['comprehensive', 'markov_bayesian', 'hot_cold_markov', 'multi_dimensional'],
                                default='comprehensive', help='高级集成分析类型')
     predict_parser.add_argument('--markov-periods', type=int, default=500, help='马尔可夫分析期数')
+    # 胆拖投注参数
+    predict_parser.add_argument('--front-dan', type=int, default=2, help='前区胆码数量')
+    predict_parser.add_argument('--back-dan', type=int, default=1, help='后区胆码数量')
+    predict_parser.add_argument('--front-tuo', type=int, default=6, help='前区拖码数量')
+    predict_parser.add_argument('--back-tuo', type=int, default=4, help='后区拖码数量')
     predict_parser.add_argument('--save', help='保存预测结果')
     
     # ==================== 自适应学习命令 ====================
