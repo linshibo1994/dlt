@@ -18,6 +18,7 @@ import math
 
 from core_modules import cache_manager, logger_manager, data_manager, task_manager
 from predictor_modules import traditional_predictor, advanced_predictor, super_predictor
+from smart_cache_system import smart_cache_manager
 
 
 # ==================== 多臂老虎机算法 ====================
@@ -415,6 +416,15 @@ class EnhancedAdaptiveLearningPredictor:
             # 预热阶段：让每个预测器都被选择几次
             warmup_rounds = min(20, len(self.predictor_names) * 3)
             
+            # 初始化智能早停机制
+            from enhanced_deep_learning.utils.intelligent_early_stopping import GeneralIntelligentEarlyStopping
+            early_stopping = GeneralIntelligentEarlyStopping(
+                patience=20,  # 连续20次相同结果时停止
+                min_delta=1e-6,
+                verbose=1
+            )
+            early_stopping.reset()
+
             for i in range(test_periods):
                 if task_manager.is_interrupted():
                     break
@@ -428,7 +438,7 @@ class EnhancedAdaptiveLearningPredictor:
                 # 获取当前期的真实开奖号码
                 current_row = self.df.iloc[current_idx]
                 actual_front, actual_back = data_manager.parse_balls(current_row)
-                
+
                 # 选择预测器
                 if i < warmup_rounds:
                     # 预热阶段：轮流选择
@@ -436,12 +446,12 @@ class EnhancedAdaptiveLearningPredictor:
                 else:
                     # 正式阶段：使用多臂老虎机选择
                     selected_arm = self.bandit.select_arm()
-                
+
                 selected_predictor = self.predictor_names[selected_arm]
-                
+
                 # 进行预测
                 predicted_front, predicted_back, confidence = self._predict_with_predictor(selected_predictor)
-                
+
                 # 计算中奖情况
                 prize_level, front_hits, back_hits = self.accuracy_tracker._calculate_prize_level(
                     predicted_front, predicted_back, actual_front, actual_back
@@ -487,7 +497,12 @@ class EnhancedAdaptiveLearningPredictor:
                 # 更新探索率
                 self.exploration_rate *= self.exploration_decay
                 self.exploration_rate = max(0.05, self.exploration_rate)
-                
+
+                # 智能早停检查（使用累积得分作为指标）
+                if i > warmup_rounds and early_stopping.update(-total_score):  # 使用负分数，因为我们要最大化分数
+                    logger_manager.info(f"自适应学习智能早停，已学习 {i + 1} 期")
+                    break
+
                 # 更新进度条
                 progress_bar.update(1, f"期数: {current_row['issue']}, 预测器: {selected_predictor}, 中奖: {prize_level}")
             
@@ -564,6 +579,125 @@ class EnhancedAdaptiveLearningPredictor:
                 logger_manager.error(f"第 {i+1} 注预测失败", e)
         
         return predictions
+
+    def predict_adaptive(self, count: int = 1, periods: int = 500, learning_method: str = "ucb1") -> List[Tuple[List[int], List[int]]]:
+        """自适应预测方法
+
+        Args:
+            count: 生成注数
+            periods: 分析期数
+            learning_method: 学习方法 ("ucb1", "thompson", "epsilon_greedy")
+
+        Returns:
+            预测结果列表
+        """
+        try:
+            logger_manager.info(f"开始自适应预测: 注数={count}, 期数={periods}, 方法={learning_method}")
+
+            # 初始化预测器
+            self._initialize_predictors()
+
+            # 根据学习方法选择最优预测器
+            if learning_method == "ucb1":
+                best_predictor = self._select_best_predictor_ucb1()
+            elif learning_method == "thompson":
+                best_predictor = self._select_best_predictor_thompson()
+            elif learning_method == "epsilon_greedy":
+                best_predictor = self._select_best_predictor_epsilon_greedy()
+            else:
+                # 默认使用性能最好的预测器
+                best_predictor = max(self.predictor_performance.items(),
+                                   key=lambda x: x[1]['average_score'])[0]
+
+            logger_manager.info(f"选择最优预测器: {best_predictor}")
+
+            # 使用最优预测器进行预测
+            predictions = []
+            for i in range(count):
+                try:
+                    front_balls, back_balls, confidence = self._predict_with_predictor(best_predictor, periods)
+                    predictions.append((front_balls, back_balls))
+                except Exception as e:
+                    logger_manager.error(f"第{i+1}注自适应预测失败: {e}")
+                    # 使用回退预测
+                    fallback_pred = self.predictors['traditional_frequency']
+                    result = fallback_pred.frequency_predict(1, periods)
+                    if result:
+                        predictions.append(result[0])
+
+            logger_manager.info(f"自适应预测完成，生成{len(predictions)}注")
+            return predictions
+
+        except Exception as e:
+            logger_manager.error(f"自适应预测失败: {e}")
+            # 回退到传统预测
+            try:
+                from predictor_modules import TraditionalPredictor
+                predictor = TraditionalPredictor()
+                return predictor.frequency_predict(count, periods)
+            except:
+                return []
+
+    def adaptive_predict(self, count=1, periods=100):
+        """自适应预测方法（兼容性别名）"""
+        return self.predict_adaptive(count, periods)
+
+    def _select_best_predictor_ucb1(self) -> str:
+        """使用UCB1算法选择最优预测器"""
+        import math
+
+        total_trials = sum(perf['total_predictions'] for perf in self.predictor_performance.values())
+        if total_trials == 0:
+            return 'traditional_frequency'  # 默认选择
+
+        best_predictor = None
+        best_ucb_value = -float('inf')
+
+        for name, perf in self.predictor_performance.items():
+            if perf['total_predictions'] == 0:
+                ucb_value = float('inf')  # 未尝试的预测器优先
+            else:
+                avg_reward = perf['average_score']
+                exploration = math.sqrt(2 * math.log(total_trials) / perf['total_predictions'])
+                ucb_value = avg_reward + exploration
+
+            if ucb_value > best_ucb_value:
+                best_ucb_value = ucb_value
+                best_predictor = name
+
+        return best_predictor or 'traditional_frequency'
+
+    def _select_best_predictor_thompson(self) -> str:
+        """使用Thompson采样选择最优预测器"""
+        import random
+
+        # 简化的Thompson采样实现
+        best_predictor = None
+        best_sample = -1
+
+        for name, perf in self.predictor_performance.items():
+            # 使用Beta分布采样
+            alpha = max(1, perf['total_score'])
+            beta = max(1, perf['total_predictions'] - perf['total_score'] + 1)
+            sample = random.betavariate(alpha, beta)
+
+            if sample > best_sample:
+                best_sample = sample
+                best_predictor = name
+
+        return best_predictor or 'traditional_frequency'
+
+    def _select_best_predictor_epsilon_greedy(self, epsilon: float = 0.1) -> str:
+        """使用Epsilon贪婪算法选择最优预测器"""
+        import random
+
+        if random.random() < epsilon:
+            # 探索：随机选择
+            return random.choice(list(self.predictor_performance.keys()))
+        else:
+            # 利用：选择最优
+            return max(self.predictor_performance.items(),
+                      key=lambda x: x[1]['average_score'])[0]
 
     def smart_predict_compound(self, front_count: int = 8, back_count: int = 4, periods: int = 500) -> Dict:
         """智能复式预测（基于学习结果的最优预测器）
@@ -782,7 +916,8 @@ class EnhancedAdaptiveLearningPredictor:
         }
         
         try:
-            cache_manager.save_cache("analysis", f"enhanced_learning_{datetime.now().strftime('%Y%m%d')}", results)
+            method_name = "enhanced_learning"
+            smart_cache_manager.save_cache("analysis", method_name, results)
             
             with open(filename, 'w', encoding='utf-8') as f:
                 json.dump(results, f, ensure_ascii=False, indent=2, default=str)
@@ -907,3 +1042,23 @@ if __name__ == "__main__":
         print(f"增强预测: 前区 {pred['front_balls']}, 后区 {pred['back_balls']}")
 
     print("✅ 自适应学习模块测试完成")
+
+
+# ==================== 兼容性别名和全局实例 ====================
+
+# 创建别名以保持兼容性
+AdaptiveLearningPredictor = EnhancedAdaptiveLearningPredictor
+
+# 全局实例
+enhanced_adaptive_predictor = None
+
+def get_enhanced_adaptive_predictor():
+    """获取增强版自适应学习预测器实例"""
+    global enhanced_adaptive_predictor
+    if enhanced_adaptive_predictor is None:
+        enhanced_adaptive_predictor = EnhancedAdaptiveLearningPredictor()
+    return enhanced_adaptive_predictor
+
+def get_adaptive_predictor():
+    """获取自适应学习预测器实例（别名）"""
+    return get_enhanced_adaptive_predictor()

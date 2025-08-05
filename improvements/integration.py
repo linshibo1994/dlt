@@ -17,10 +17,12 @@ from collections import defaultdict, Counter
 # 尝试导入核心模块
 try:
     from core_modules import logger_manager, data_manager, cache_manager
+    from smart_cache_system import smart_cache_manager
 except ImportError:
     # 如果在不同目录运行，添加父目录到路径
     sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
     from core_modules import logger_manager, data_manager, cache_manager
+    from smart_cache_system import smart_cache_manager
 
 # 尝试导入预测器模块
 try:
@@ -408,9 +410,9 @@ class IntegratedPredictor:
     
     def _load_performance_data(self) -> Dict:
         """加载历史性能数据"""
-        # 尝试从缓存加载
-        cache_key = "predictor_performance_data"
-        cached_data = cache_manager.load_cache("analysis", cache_key)
+        # 尝试从智能缓存加载
+        method_name = "predictor_performance_data"
+        cached_data = smart_cache_manager.load_cache("analysis", method_name)
         if cached_data:
             return cached_data
         

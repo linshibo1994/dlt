@@ -1,0 +1,242 @@
+# 预测配置文件
+# Prediction Configuration
+
+# 复式预测配置
+compound_prediction:
+  # 前区号码范围
+  front_range:
+    min: 6
+    max: 15
+    default: 8
+    recommended: [8, 10, 12]
+  
+  # 后区号码范围
+  back_range:
+    min: 3
+    max: 12
+    default: 4
+    recommended: [4, 5, 6]
+  
+  # 成本控制
+  cost_control:
+    max_cost: 10000  # 最大投注成本 (元)
+    warning_threshold: 5000  # 成本警告阈值 (元)
+    cost_per_bet: 3  # 每注成本 (元)
+  
+  # 置信度设置
+  confidence:
+    min_threshold: 0.5  # 最小置信度阈值
+    target_threshold: 0.7  # 目标置信度阈值
+    high_threshold: 0.85  # 高置信度阈值
+
+# 分析期数配置
+analysis_periods:
+  # 期数范围
+  range:
+    min: 50
+    max: 2748
+    default: 500
+  
+  # 推荐期数（按方法）
+  recommended:
+    # 深度学习方法
+    lstm: 1000
+    transformer: 800
+    gan: 600
+    ensemble: 1200
+    
+    # 传统机器学习
+    markov: 500
+    bayesian: 300
+    clustering: 400
+    
+    # 统计方法
+    frequency: 200
+    hot_cold: 300
+    missing: 250
+  
+  # 自适应期数调整
+  adaptive:
+    enabled: true
+    # 基于数据量调整
+    data_size_factor: 0.8
+    # 基于模型复杂度调整
+    complexity_factor: 1.2
+    # 最小调整幅度
+    min_adjustment: 0.1
+
+# 预测方法配置
+prediction_methods:
+  # 深度学习方法
+  deep_learning:
+    lstm:
+      supports_compound: true
+      default_epochs: 200
+      batch_size: 64
+      sequence_length: 50
+      compound_candidates: 20
+    
+    transformer:
+      supports_compound: true
+      default_epochs: 100
+      batch_size: 32
+      sequence_length: 20
+      compound_candidates: 15
+    
+    gan:
+      supports_compound: true
+      default_epochs: 200
+      batch_size: 32
+      latent_dim: 100
+      compound_candidates: 25
+  
+  # 传统机器学习
+  traditional_ml:
+    markov:
+      supports_compound: true
+      max_order: 3
+      parallel_jobs: -1
+    
+    bayesian:
+      supports_compound: true
+      prior_type: "uniform"
+      parallel_jobs: -1
+    
+    clustering:
+      supports_compound: true
+      n_clusters: 5
+      parallel_jobs: -1
+  
+  # 统计方法
+  statistical:
+    frequency:
+      supports_compound: true
+      weight_decay: 0.95
+    
+    hot_cold:
+      supports_compound: true
+      hot_threshold: 0.7
+      cold_threshold: 0.3
+
+# 复式选择策略
+compound_strategies:
+  # 平衡策略
+  balanced:
+    description: "平衡选择高频和低频号码"
+    front_high_ratio: 0.5
+    back_high_ratio: 0.5
+    diversity_weight: 0.3
+  
+  # 激进策略
+  aggressive:
+    description: "优先选择高频号码"
+    front_high_ratio: 0.8
+    back_high_ratio: 0.8
+    diversity_weight: 0.1
+  
+  # 保守策略
+  conservative:
+    description: "优先选择中频号码"
+    front_high_ratio: 0.3
+    back_high_ratio: 0.3
+    diversity_weight: 0.5
+
+# 质量控制
+quality_control:
+  # 预测验证
+  validation:
+    enabled: true
+    # 历史回测期数
+    backtest_periods: 100
+    # 最小准确率要求
+    min_accuracy: 0.1
+    # 一致性检查
+    consistency_check: true
+  
+  # 异常检测
+  anomaly_detection:
+    enabled: true
+    # 异常阈值
+    threshold: 3.0
+    # 检测方法
+    methods: ["statistical", "isolation_forest"]
+  
+  # 多样性检查
+  diversity_check:
+    enabled: true
+    # 最小多样性要求
+    min_diversity: 0.3
+    # 重复检查
+    duplicate_check: true
+
+# 输出格式配置
+output_formats:
+  # 默认格式
+  default: "text"
+  
+  # 支持的格式
+  supported: ["text", "json", "csv", "xml"]
+  
+  # 格式特定配置
+  text:
+    include_details: true
+    show_confidence: true
+    show_cost: true
+  
+  json:
+    pretty_print: true
+    include_metadata: true
+  
+  csv:
+    include_headers: true
+    separator: ","
+
+# 缓存配置
+caching:
+  # 是否启用缓存
+  enabled: true
+  
+  # 缓存有效期 (小时)
+  ttl:
+    compound_results: 24
+    analysis_results: 12
+    model_predictions: 6
+  
+  # 缓存大小限制
+  size_limits:
+    max_entries: 1000
+    max_size_mb: 100
+
+# 性能优化
+performance:
+  # 并行处理
+  parallel_processing:
+    enabled: true
+    max_workers: -1  # -1表示使用所有CPU核心
+  
+  # 内存管理
+  memory_management:
+    max_memory_usage: 0.8  # 最大内存使用率
+    garbage_collection: true
+  
+  # 批处理
+  batch_processing:
+    enabled: true
+    batch_size: 100
+    
+# 实验性功能
+experimental:
+  # 自适应复式选择
+  adaptive_compound_selection:
+    enabled: false
+    learning_rate: 0.01
+  
+  # 动态期数调整
+  dynamic_periods_adjustment:
+    enabled: false
+    adjustment_factor: 0.1
+  
+  # 智能成本优化
+  smart_cost_optimization:
+    enabled: false
+    target_cost: 1000

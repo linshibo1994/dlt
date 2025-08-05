@@ -18,40 +18,18 @@ import math
 
 from core_modules import cache_manager, logger_manager, data_manager, task_manager
 from analyzer_modules import basic_analyzer, advanced_analyzer, comprehensive_analyzer
+from smart_cache_system import smart_cache_manager
 
-# 尝试导入高级算法
+# 导入增强深度学习模块
 try:
-    from advanced_lstm_predictor import AdvancedLSTMPredictor, TENSORFLOW_AVAILABLE
-    LSTM_AVAILABLE = TENSORFLOW_AVAILABLE
-except ImportError:
-    LSTM_AVAILABLE = False
-    TENSORFLOW_AVAILABLE = False
-
-# 尝试导入增强集成学习
-try:
-    from improvements.advanced_ensemble import AdvancedEnsemblePredictor, MetaLearningPredictor
-    ADVANCED_ENSEMBLE_AVAILABLE = True
-except ImportError:
-    ADVANCED_ENSEMBLE_AVAILABLE = False
-
-# 尝试导入增强深度学习
-try:
-    from improvements.enhanced_deep_learning import TransformerLotteryPredictor, GAN_LotteryPredictor
+    from enhanced_deep_learning.models import LSTMPredictor, TransformerPredictor, GANPredictor, EnsembleManager
+    from enhanced_deep_learning.performance.enhanced_hardware_accelerator import EnhancedHardwareAccelerator
+    from enhanced_deep_learning.performance.acceleration_selector import AccelerationSelector, AccelerationRecommendation
+    from compound_modules.compound_predictor import CompoundPredictorMixin, CompoundConfig, CompoundResult
     ENHANCED_DL_AVAILABLE = True
-except ImportError:
+except ImportError as e:
+    logger_manager.warning(f"增强深度学习模块导入失败: {e}")
     ENHANCED_DL_AVAILABLE = False
-
-try:
-    from monte_carlo_predictor import MonteCarloPredictor
-    MONTE_CARLO_AVAILABLE = True
-except ImportError:
-    MONTE_CARLO_AVAILABLE = False
-
-try:
-    from clustering_predictor import ClusteringPredictor
-    CLUSTERING_AVAILABLE = True
-except ImportError:
-    CLUSTERING_AVAILABLE = False
 
 
 # ==================== 传统预测器 ====================
@@ -555,13 +533,33 @@ class AdvancedPredictor:
             predictions = []
 
             for i in range(count):
-                # 生成真正的马尔可夫链序列
-                front_sequence = self._generate_markov_sequence(
-                    front_transitions, 5, 1, 35, periods
-                )
-                back_sequence = self._generate_markov_sequence(
-                    back_transitions, 2, 1, 12, periods
-                )
+                # 为每注预测添加不同的随机种子，确保多样性
+                import time
+                import random
+                import numpy as np
+
+                # 使用时间戳和索引创建唯一的随机种子
+                seed = int(time.time() * 1000000) + i * 1000
+                random.seed(seed)
+                np.random.seed(seed % 2**32)
+
+                # 为每注使用不同的策略确保多样性
+                if i == 0:
+                    # 第一注：标准马尔可夫链
+                    front_sequence = self._generate_markov_sequence(
+                        front_transitions, 5, 1, 35, periods, i
+                    )
+                    back_sequence = self._generate_markov_sequence(
+                        back_transitions, 2, 1, 12, periods, i
+                    )
+                else:
+                    # 其他注：混合马尔可夫链和随机选择
+                    front_sequence = self._generate_diverse_markov_sequence(
+                        front_transitions, 5, 1, 35, i
+                    )
+                    back_sequence = self._generate_diverse_markov_sequence(
+                        back_transitions, 2, 1, 12, i
+                    )
 
                 predictions.append((sorted(front_sequence), sorted(back_sequence)))
 
@@ -573,13 +571,13 @@ class AdvancedPredictor:
             return self._markov_fallback_predict(count, periods)
 
     def _generate_markov_sequence(self, transitions: Dict, target_count: int,
-                                min_num: int, max_num: int, periods: int) -> List[int]:
+                                min_num: int, max_num: int, periods: int, sequence_index: int = 0) -> List[int]:
         """生成真正的马尔可夫链序列"""
         try:
             import numpy as np
 
-            # 获取初始状态
-            initial_state = self._get_initial_markov_state(min_num, max_num)
+            # 获取初始状态，为每个序列使用不同的初始状态
+            initial_state = self._get_initial_markov_state(min_num, max_num, sequence_index)
 
             # 马尔可夫链状态序列生成
             sequence = []
@@ -589,6 +587,11 @@ class AdvancedPredictor:
 
             while len(sequence) < target_count and iterations < max_iterations:
                 iterations += 1
+
+                # 为每次迭代添加额外的随机性
+                import time
+                iteration_seed = int(time.time() * 1000000) + sequence_index * 10000 + iterations
+                np.random.seed(iteration_seed % 2**32)
 
                 # 根据当前状态和转移概率选择下一个状态
                 next_state = self._markov_state_transition(current_state, transitions)
@@ -601,6 +604,9 @@ class AdvancedPredictor:
                     available_states = [num for num in range(min_num, max_num + 1)
                                       if num not in sequence]
                     if available_states:
+                        # 添加更多随机性
+                        random_seed = int(time.time() * 1000000) + sequence_index * 5000 + iterations * 100
+                        np.random.seed(random_seed % 2**32)
                         current_state = np.random.choice(available_states)
                         if current_state not in sequence:
                             sequence.append(current_state)
@@ -618,20 +624,46 @@ class AdvancedPredictor:
             import random
             return random.sample(range(min_num, max_num + 1), target_count)
 
-    def _get_initial_markov_state(self, min_num: int, max_num: int) -> int:
+    def _get_initial_markov_state(self, min_num: int, max_num: int, sequence_index: int = 0) -> int:
         """获取马尔可夫链初始状态"""
         try:
-            # 使用最近一期的号码作为初始状态
-            if len(self.df) > 0:
-                last_row = self.df.iloc[-1]
-                last_front, last_back = data_manager.parse_balls(last_row)
+            import numpy as np
+            import random
 
-                if max_num == 35:  # 前区
-                    return last_front[0] if last_front else np.random.randint(min_num, max_num + 1)
-                else:  # 后区
-                    return last_back[0] if last_back else np.random.randint(min_num, max_num + 1)
+            # 为不同的序列使用不同的初始状态策略
+            if sequence_index == 0:
+                # 第一注：使用最近一期的号码作为初始状态
+                if len(self.df) > 0:
+                    last_row = self.df.iloc[-1]
+                    last_front, last_back = data_manager.parse_balls(last_row)
+
+                    if max_num == 35:  # 前区
+                        return last_front[0] if last_front else np.random.randint(min_num, max_num + 1)
+                    else:  # 后区
+                        return last_back[0] if last_back else np.random.randint(min_num, max_num + 1)
+                else:
+                    return np.random.randint(min_num, max_num + 1)
             else:
-                return np.random.randint(min_num, max_num + 1)
+                # 其他注：使用不同的历史期数或随机状态
+                if len(self.df) > sequence_index:
+                    # 使用不同历史期数的号码
+                    history_row = self.df.iloc[-(sequence_index + 1)]
+                    history_front, history_back = data_manager.parse_balls(history_row)
+
+                    if max_num == 35:  # 前区
+                        if history_front:
+                            # 从历史号码中随机选择一个
+                            return random.choice(history_front)
+                        else:
+                            return np.random.randint(min_num, max_num + 1)
+                    else:  # 后区
+                        if history_back:
+                            return random.choice(history_back)
+                        else:
+                            return np.random.randint(min_num, max_num + 1)
+                else:
+                    # 完全随机
+                    return np.random.randint(min_num, max_num + 1)
 
         except Exception as e:
             logger_manager.error(f"获取初始状态失败: {e}")
@@ -890,12 +922,13 @@ class AdvancedPredictor:
 
         return total_score / count if count > 0 else 0.0
 
-    def bayesian_predict(self, count=1, periods=500) -> List[Tuple[List[int], List[int]]]:
+    def bayesian_predict(self, count=1, periods=500, n_jobs=1) -> List[Tuple[List[int], List[int]]]:
         """贝叶斯预测 - 真正的贝叶斯推理和概率采样"""
         import random
         import numpy as np
 
-        bayesian_result = advanced_analyzer.bayesian_analysis(periods)
+        # 使用n_jobs参数进行贝叶斯分析
+        bayesian_result = advanced_analyzer.bayesian_analysis(periods, n_jobs=n_jobs)
 
         front_posterior = bayesian_result.get('front_posterior', {})
         back_posterior = bayesian_result.get('back_posterior', {})
@@ -1127,6 +1160,458 @@ class AdvancedPredictor:
         # 这个方法用于自适应学习系统
         pass
 
+    def clustering_predict(self, count=1, periods=500, method="kmeans") -> List[Tuple[List[int], List[int]]]:
+        """聚类分析预测"""
+        try:
+            logger_manager.info(f"开始聚类分析预测: 注数={count}, 分析期数={periods}, 方法={method}")
+
+            # 获取历史数据
+            if self.df is None or len(self.df) < periods:
+                logger_manager.warning("数据不足，使用频率分析作为回退")
+                return self.traditional_predictor.frequency_predict(count, periods)
+
+            recent_data = self.df.tail(periods)
+
+            # 准备聚类数据
+            features = []
+            for _, row in recent_data.iterrows():
+                try:
+                    front_balls = [int(x) for x in str(row.get('front_balls', '')).split(',') if x.strip().isdigit()]
+                    back_balls = [int(x) for x in str(row.get('back_balls', '')).split(',') if x.strip().isdigit()]
+
+                    if len(front_balls) == 5 and len(back_balls) == 2:
+                        # 创建特征向量：前区和后区的统计特征
+                        feature_vector = [
+                            sum(front_balls),  # 前区和值
+                            max(front_balls) - min(front_balls),  # 前区跨度
+                            len([x for x in front_balls if x <= 18]),  # 前区小号个数
+                            sum(back_balls),  # 后区和值
+                            max(back_balls) - min(back_balls),  # 后区跨度
+                        ]
+                        features.append(feature_vector)
+                except:
+                    continue
+
+            if len(features) < 10:
+                logger_manager.warning("有效特征数据不足，使用频率分析作为回退")
+                return self.traditional_predictor.frequency_predict(count, periods)
+
+            # 进行聚类分析
+            from sklearn.cluster import KMeans
+            import numpy as np
+
+            features_array = np.array(features)
+            n_clusters = min(8, len(features) // 10)  # 动态确定聚类数
+
+            kmeans = KMeans(n_clusters=n_clusters, random_state=42, n_init=10)
+            cluster_labels = kmeans.fit_predict(features_array)
+
+            # 分析每个聚类的特征
+            cluster_centers = kmeans.cluster_centers_
+
+            # 选择最有潜力的聚类（基于最近数据的分布）
+            recent_features = features_array[-20:]  # 最近20期
+            recent_clusters = kmeans.predict(recent_features)
+
+            # 统计最近期数中各聚类的出现频率
+            from collections import Counter
+            cluster_freq = Counter(recent_clusters)
+
+            predictions = []
+            for i in range(count):
+                try:
+                    # 选择出现频率较高的聚类作为预测基础
+                    target_cluster = cluster_freq.most_common(1)[0][0] if cluster_freq else 0
+                    target_center = cluster_centers[target_cluster]
+
+                    # 基于聚类中心生成预测
+                    front_sum_target = int(target_center[0])
+                    front_span_target = int(target_center[1])
+                    front_small_count = int(target_center[2])
+                    back_sum_target = int(target_center[3])
+
+                    # 生成符合聚类特征的号码
+                    front_balls = self._generate_balls_by_cluster_features(
+                        front_sum_target, front_span_target, front_small_count, 5, 35
+                    )
+
+                    back_balls = self._generate_balls_by_sum(back_sum_target, 2, 12)
+
+                    predictions.append((sorted(front_balls), sorted(back_balls)))
+
+                except Exception as e:
+                    logger_manager.error(f"聚类预测第{i+1}注失败: {e}")
+                    # 使用频率分析作为回退
+                    fallback = self.traditional_predictor.frequency_predict(1, periods)
+                    if fallback:
+                        predictions.append(fallback[0])
+
+            logger_manager.info(f"聚类分析预测完成，生成{len(predictions)}注")
+            return predictions
+
+        except Exception as e:
+            logger_manager.error(f"聚类分析预测失败: {e}")
+            # 回退到频率分析
+            return self.traditional_predictor.frequency_predict(count, periods)
+
+    def _generate_balls_by_cluster_features(self, target_sum, target_span, small_count, num_balls, max_ball):
+        """根据聚类特征生成号码"""
+        import random
+        import numpy as np
+
+        attempts = 0
+        max_attempts = 1000
+
+        while attempts < max_attempts:
+            # 生成候选号码
+            balls = sorted(random.sample(range(1, max_ball + 1), num_balls))
+
+            current_sum = sum(balls)
+            current_span = max(balls) - min(balls)
+            current_small = len([x for x in balls if x <= max_ball // 2])
+
+            # 检查是否接近目标特征
+            sum_diff = abs(current_sum - target_sum)
+            span_diff = abs(current_span - target_span)
+            small_diff = abs(current_small - small_count)
+
+            # 如果特征接近，返回结果
+            if sum_diff <= 20 and span_diff <= 10 and small_diff <= 2:
+                return balls
+
+            attempts += 1
+
+        # 如果无法生成符合特征的号码，返回随机号码
+        return sorted(random.sample(range(1, max_ball + 1), num_balls))
+
+    def _generate_balls_by_sum(self, target_sum, num_balls, max_ball):
+        """根据目标和值生成号码"""
+        import random
+
+        attempts = 0
+        max_attempts = 1000
+
+        while attempts < max_attempts:
+            balls = sorted(random.sample(range(1, max_ball + 1), num_balls))
+            if abs(sum(balls) - target_sum) <= 5:
+                return balls
+            attempts += 1
+
+        # 回退方案
+        return sorted(random.sample(range(1, max_ball + 1), num_balls))
+
+    def markov_2nd_predict(self, count=1, periods=500) -> List[Tuple[List[int], List[int]]]:
+        """二阶马尔可夫链预测"""
+        try:
+            logger_manager.info(f"开始二阶马尔可夫链预测: 注数={count}, 分析期数={periods}")
+
+            # 获取历史数据
+            if self.df is None or len(self.df) < periods:
+                logger_manager.warning("数据不足，使用一阶马尔可夫链作为回退")
+                return self.markov_predict(count, periods)
+
+            recent_data = self.df.tail(periods)
+
+            # 构建二阶转移矩阵
+            front_transitions_2nd = {}
+            back_transitions_2nd = {}
+
+            for i in range(len(recent_data) - 2):
+                try:
+                    # 获取连续三期的数据
+                    period1 = recent_data.iloc[i]
+                    period2 = recent_data.iloc[i + 1]
+                    period3 = recent_data.iloc[i + 2]
+
+                    front1 = [int(x) for x in str(period1.get('front_balls', '')).split(',') if x.strip().isdigit()]
+                    front2 = [int(x) for x in str(period2.get('front_balls', '')).split(',') if x.strip().isdigit()]
+                    front3 = [int(x) for x in str(period3.get('front_balls', '')).split(',') if x.strip().isdigit()]
+
+                    back1 = [int(x) for x in str(period1.get('back_balls', '')).split(',') if x.strip().isdigit()]
+                    back2 = [int(x) for x in str(period2.get('back_balls', '')).split(',') if x.strip().isdigit()]
+                    back3 = [int(x) for x in str(period3.get('back_balls', '')).split(',') if x.strip().isdigit()]
+
+                    if len(front1) == 5 and len(front2) == 5 and len(front3) == 5:
+                        # 二阶状态：前两期的状态组合
+                        state_key = (tuple(sorted(front1)), tuple(sorted(front2)))
+                        next_state = tuple(sorted(front3))
+
+                        if state_key not in front_transitions_2nd:
+                            front_transitions_2nd[state_key] = {}
+                        if next_state not in front_transitions_2nd[state_key]:
+                            front_transitions_2nd[state_key][next_state] = 0
+                        front_transitions_2nd[state_key][next_state] += 1
+
+                    if len(back1) == 2 and len(back2) == 2 and len(back3) == 2:
+                        state_key = (tuple(sorted(back1)), tuple(sorted(back2)))
+                        next_state = tuple(sorted(back3))
+
+                        if state_key not in back_transitions_2nd:
+                            back_transitions_2nd[state_key] = {}
+                        if next_state not in back_transitions_2nd[state_key]:
+                            back_transitions_2nd[state_key][next_state] = 0
+                        back_transitions_2nd[state_key][next_state] += 1
+
+                except:
+                    continue
+
+            if not front_transitions_2nd or not back_transitions_2nd:
+                logger_manager.warning("二阶转移矩阵构建失败，使用一阶马尔可夫链")
+                return self.markov_predict(count, periods)
+
+            # 获取最近两期作为当前状态
+            last_two_periods = recent_data.tail(2)
+
+            predictions = []
+            for i in range(count):
+                try:
+                    # 预测前区
+                    front_balls = self._predict_with_2nd_order_markov(
+                        last_two_periods, front_transitions_2nd, 'front_balls', 5, 35
+                    )
+
+                    # 预测后区
+                    back_balls = self._predict_with_2nd_order_markov(
+                        last_two_periods, back_transitions_2nd, 'back_balls', 2, 12
+                    )
+
+                    predictions.append((sorted(front_balls), sorted(back_balls)))
+
+                except Exception as e:
+                    logger_manager.error(f"二阶马尔可夫预测第{i+1}注失败: {e}")
+                    # 使用一阶马尔可夫作为回退
+                    fallback = self.markov_predict(1, periods)
+                    if fallback:
+                        predictions.append(fallback[0])
+
+            logger_manager.info(f"二阶马尔可夫链预测完成，生成{len(predictions)}注")
+            return predictions
+
+        except Exception as e:
+            logger_manager.error(f"二阶马尔可夫链预测失败: {e}")
+            return self.markov_predict(count, periods)
+
+    def markov_3rd_predict(self, count=1, periods=500) -> List[Tuple[List[int], List[int]]]:
+        """三阶马尔可夫链预测"""
+        try:
+            logger_manager.info(f"开始三阶马尔可夫链预测: 注数={count}, 分析期数={periods}")
+
+            # 获取历史数据
+            if self.df is None or len(self.df) < periods:
+                logger_manager.warning("数据不足，使用二阶马尔可夫链作为回退")
+                return self.markov_2nd_predict(count, periods)
+
+            recent_data = self.df.tail(periods)
+
+            # 构建三阶转移矩阵
+            front_transitions_3rd = {}
+            back_transitions_3rd = {}
+
+            for i in range(len(recent_data) - 3):
+                try:
+                    # 获取连续四期的数据
+                    periods_data = [recent_data.iloc[i + j] for j in range(4)]
+
+                    front_data = []
+                    back_data = []
+
+                    for period in periods_data:
+                        front_balls = [int(x) for x in str(period.get('front_balls', '')).split(',') if x.strip().isdigit()]
+                        back_balls = [int(x) for x in str(period.get('back_balls', '')).split(',') if x.strip().isdigit()]
+
+                        if len(front_balls) == 5 and len(back_balls) == 2:
+                            front_data.append(tuple(sorted(front_balls)))
+                            back_data.append(tuple(sorted(back_balls)))
+                        else:
+                            break
+
+                    if len(front_data) == 4:
+                        # 三阶状态：前三期的状态组合
+                        state_key = (front_data[0], front_data[1], front_data[2])
+                        next_state = front_data[3]
+
+                        if state_key not in front_transitions_3rd:
+                            front_transitions_3rd[state_key] = {}
+                        if next_state not in front_transitions_3rd[state_key]:
+                            front_transitions_3rd[state_key][next_state] = 0
+                        front_transitions_3rd[state_key][next_state] += 1
+
+                    if len(back_data) == 4:
+                        state_key = (back_data[0], back_data[1], back_data[2])
+                        next_state = back_data[3]
+
+                        if state_key not in back_transitions_3rd:
+                            back_transitions_3rd[state_key] = {}
+                        if next_state not in back_transitions_3rd[state_key]:
+                            back_transitions_3rd[state_key][next_state] = 0
+                        back_transitions_3rd[state_key][next_state] += 1
+
+                except:
+                    continue
+
+            if not front_transitions_3rd or not back_transitions_3rd:
+                logger_manager.warning("三阶转移矩阵构建失败，使用二阶马尔可夫链")
+                return self.markov_2nd_predict(count, periods)
+
+            # 获取最近三期作为当前状态
+            last_three_periods = recent_data.tail(3)
+
+            predictions = []
+            for i in range(count):
+                try:
+                    # 预测前区
+                    front_balls = self._predict_with_3rd_order_markov(
+                        last_three_periods, front_transitions_3rd, 'front_balls', 5, 35
+                    )
+
+                    # 预测后区
+                    back_balls = self._predict_with_3rd_order_markov(
+                        last_three_periods, back_transitions_3rd, 'back_balls', 2, 12
+                    )
+
+                    predictions.append((sorted(front_balls), sorted(back_balls)))
+
+                except Exception as e:
+                    logger_manager.error(f"三阶马尔可夫预测第{i+1}注失败: {e}")
+                    # 使用二阶马尔可夫作为回退
+                    fallback = self.markov_2nd_predict(1, periods)
+                    if fallback:
+                        predictions.append(fallback[0])
+
+            logger_manager.info(f"三阶马尔可夫链预测完成，生成{len(predictions)}注")
+            return predictions
+
+        except Exception as e:
+            logger_manager.error(f"三阶马尔可夫链预测失败: {e}")
+            return self.markov_2nd_predict(count, periods)
+
+    def adaptive_markov_predict(self, count=1, periods=500) -> List[Tuple[List[int], List[int]]]:
+        """自适应马尔可夫链预测（自动选择最优阶数）"""
+        try:
+            logger_manager.info(f"开始自适应马尔可夫链预测: 注数={count}, 分析期数={periods}")
+
+            # 评估不同阶数的马尔可夫链性能
+            orders = [1, 2, 3]
+            order_scores = {}
+
+            for order in orders:
+                try:
+                    # 使用历史数据评估每个阶数的性能
+                    if order == 1:
+                        test_result = self.markov_predict(1, min(periods, 200))
+                    elif order == 2:
+                        test_result = self.markov_2nd_predict(1, min(periods, 200))
+                    else:  # order == 3
+                        test_result = self.markov_3rd_predict(1, min(periods, 200))
+
+                    # 简单的性能评估（基于数据可用性和复杂度）
+                    if test_result:
+                        if order == 1:
+                            score = 0.7  # 基础分数
+                        elif order == 2:
+                            score = 0.8 if periods >= 100 else 0.6
+                        else:  # order == 3
+                            score = 0.9 if periods >= 200 else 0.5
+
+                        order_scores[order] = score
+                    else:
+                        order_scores[order] = 0.0
+
+                except Exception as e:
+                    logger_manager.warning(f"评估{order}阶马尔可夫链失败: {e}")
+                    order_scores[order] = 0.0
+
+            # 选择最优阶数
+            best_order = max(order_scores.items(), key=lambda x: x[1])[0]
+            logger_manager.info(f"自适应选择{best_order}阶马尔可夫链，评分: {order_scores[best_order]:.3f}")
+
+            # 使用最优阶数进行预测
+            if best_order == 1:
+                return self.markov_predict(count, periods)
+            elif best_order == 2:
+                return self.markov_2nd_predict(count, periods)
+            else:  # best_order == 3
+                return self.markov_3rd_predict(count, periods)
+
+        except Exception as e:
+            logger_manager.error(f"自适应马尔可夫链预测失败: {e}")
+            return self.markov_predict(count, periods)
+
+    def _predict_with_2nd_order_markov(self, last_two_periods, transitions, ball_type, num_balls, max_ball):
+        """使用二阶马尔可夫链进行预测"""
+        try:
+            # 获取最近两期的状态
+            period1 = last_two_periods.iloc[0]
+            period2 = last_two_periods.iloc[1]
+
+            balls1 = [int(x) for x in str(period1.get(ball_type, '')).split(',') if x.strip().isdigit()]
+            balls2 = [int(x) for x in str(period2.get(ball_type, '')).split(',') if x.strip().isdigit()]
+
+            if len(balls1) == num_balls and len(balls2) == num_balls:
+                state_key = (tuple(sorted(balls1)), tuple(sorted(balls2)))
+
+                if state_key in transitions:
+                    # 根据转移概率选择下一状态
+                    next_states = transitions[state_key]
+                    total_count = sum(next_states.values())
+
+                    import random
+                    rand_val = random.random()
+                    cumulative_prob = 0.0
+
+                    for next_state, count in next_states.items():
+                        cumulative_prob += count / total_count
+                        if rand_val <= cumulative_prob:
+                            return list(next_state)
+
+            # 如果无法找到匹配的状态，使用随机生成
+            import random
+            return sorted(random.sample(range(1, max_ball + 1), num_balls))
+
+        except Exception as e:
+            logger_manager.error(f"二阶马尔可夫预测失败: {e}")
+            import random
+            return sorted(random.sample(range(1, max_ball + 1), num_balls))
+
+    def _predict_with_3rd_order_markov(self, last_three_periods, transitions, ball_type, num_balls, max_ball):
+        """使用三阶马尔可夫链进行预测"""
+        try:
+            # 获取最近三期的状态
+            balls_data = []
+            for i in range(3):
+                period = last_three_periods.iloc[i]
+                balls = [int(x) for x in str(period.get(ball_type, '')).split(',') if x.strip().isdigit()]
+                if len(balls) == num_balls:
+                    balls_data.append(tuple(sorted(balls)))
+                else:
+                    break
+
+            if len(balls_data) == 3:
+                state_key = (balls_data[0], balls_data[1], balls_data[2])
+
+                if state_key in transitions:
+                    # 根据转移概率选择下一状态
+                    next_states = transitions[state_key]
+                    total_count = sum(next_states.values())
+
+                    import random
+                    rand_val = random.random()
+                    cumulative_prob = 0.0
+
+                    for next_state, count in next_states.items():
+                        cumulative_prob += count / total_count
+                        if rand_val <= cumulative_prob:
+                            return list(next_state)
+
+            # 如果无法找到匹配的状态，使用随机生成
+            import random
+            return sorted(random.sample(range(1, max_ball + 1), num_balls))
+
+        except Exception as e:
+            logger_manager.error(f"三阶马尔可夫预测失败: {e}")
+            import random
+            return sorted(random.sample(range(1, max_ball + 1), num_balls))
+
     def mixed_strategy_predict(self, count=1, strategy='balanced', periods=500) -> List[Dict]:
         """混合策略预测
 
@@ -1164,6 +1649,21 @@ class AdvancedPredictor:
                     'description': '各种方法均衡组合'
                 }
             }
+
+        # 处理策略名称映射
+        strategy_mapping = {
+            'conservative': 'conservative_strategy',
+            'aggressive': 'aggressive_strategy',
+            'balanced': 'balanced_strategy'
+        }
+
+        # 如果strategies来自分析结果，需要映射策略名称
+        if 'conservative_strategy' in strategies:
+            mapped_strategies = {}
+            for key, mapped_key in strategy_mapping.items():
+                if mapped_key in strategies:
+                    mapped_strategies[key] = strategies[mapped_key]
+            strategies = mapped_strategies
 
         if strategy not in strategies:
             strategy = 'balanced'  # 默认使用平衡策略
@@ -1214,24 +1714,26 @@ class AdvancedPredictor:
 
             # 如果号码不足，用频率分析补充
             if len(front_balls) < 5:
-                freq_analysis = basic_analyzer.frequency_analysis()
+                freq_analysis = basic_analyzer.frequency_analysis(periods)
                 front_freq = freq_analysis.get('front_frequency', {})
                 sorted_freq = sorted(front_freq.items(), key=lambda x: x[1], reverse=True)
                 for ball, freq in sorted_freq:
                     if len(front_balls) >= 5:
                         break
-                    if ball not in front_balls:
-                        front_balls.append(ball)
+                    ball_int = int(ball) if isinstance(ball, str) else ball
+                    if ball_int not in front_balls:
+                        front_balls.append(ball_int)
 
             if len(back_balls) < 2:
-                freq_analysis = basic_analyzer.frequency_analysis()
+                freq_analysis = basic_analyzer.frequency_analysis(periods)
                 back_freq = freq_analysis.get('back_frequency', {})
                 sorted_freq = sorted(back_freq.items(), key=lambda x: x[1], reverse=True)
                 for ball, freq in sorted_freq:
                     if len(back_balls) >= 2:
                         break
-                    if ball not in back_balls:
-                        back_balls.append(ball)
+                    ball_int = int(ball) if isinstance(ball, str) else ball
+                    if ball_int not in back_balls:
+                        back_balls.append(ball_int)
 
             prediction = {
                 'index': i + 1,
@@ -1341,37 +1843,62 @@ class AdvancedPredictor:
         # 按马尔可夫得分排序
         sorted_scores = sorted(markov_scores.items(), key=lambda x: x[1], reverse=True)
 
-        # 马尔可夫智能选择策略：75%高概率 + 25%状态多样性
-        high_prob_count = int(target_count * 0.75)
+        # 马尔可夫智能选择策略：50%高概率 + 50%多样性选择
+        high_prob_count = int(target_count * 0.5)
         diversity_count = target_count - high_prob_count
 
         selected = []
 
-        # 选择高概率号码
-        for i in range(min(high_prob_count, len(sorted_scores))):
-            selected.append(int(sorted_scores[i][0]))
+        # 选择高概率号码（避免连续选择）
+        for i in range(len(sorted_scores)):
+            if len(selected) >= high_prob_count:
+                break
 
-        # 状态多样性选择（选择在不同状态下表现良好的号码）
+            candidate = int(sorted_scores[i][0])
+
+            # 检查是否与已选号码过于接近（避免连续号码）
+            too_close = False
+            for existing in selected:
+                if abs(candidate - existing) <= 1:  # 相邻号码
+                    too_close = True
+                    break
+
+            if not too_close:
+                selected.append(candidate)
+
+        # 多样性选择（确保号码分布均匀）
         if diversity_count > 0:
-            diversity_candidates = []
+            # 将号码范围分成几个区间，从每个区间选择
+            if max_ball == 35:  # 前区
+                ranges = [(1, 7), (8, 14), (15, 21), (22, 28), (29, 35)]
+            else:  # 后区
+                ranges = [(1, 3), (4, 6), (7, 9), (10, 12)]
 
-            # 寻找在多个状态下都有较好转移概率的号码
-            for ball in range(1, max_ball + 1):
-                if ball in selected:
-                    continue
+            # 从每个区间选择最佳号码
+            for start, end in ranges:
+                if len(selected) >= target_count:
+                    break
 
-                state_count = 0
-                for from_state, to_probs in transition_probs.items():
-                    if ball in to_probs and to_probs[ball] > 0.1:  # 阈值筛选
-                        state_count += 1
+                # 在当前区间内找到最佳候选
+                range_candidates = []
+                for ball in range(start, end + 1):
+                    if ball in selected:
+                        continue
 
-                if state_count >= 2:  # 至少在2个状态下表现良好
-                    diversity_candidates.append(ball)
+                    # 检查是否与已选号码过于接近
+                    too_close = False
+                    for existing in selected:
+                        if abs(ball - existing) <= 1:
+                            too_close = True
+                            break
 
-            # 从多样性候选中选择（确定性选择前几个）
-            if diversity_candidates:
-                diversity_selected = diversity_candidates[:min(diversity_count, len(diversity_candidates))]
-                selected.extend(diversity_selected)
+                    if not too_close and ball in markov_scores:
+                        range_candidates.append((ball, markov_scores[ball]))
+
+                # 从当前区间选择得分最高的
+                if range_candidates:
+                    range_candidates.sort(key=lambda x: x[1], reverse=True)
+                    selected.append(range_candidates[0][0])
 
         # 如果数量不足，用频率分析补充
         if len(selected) < target_count:
@@ -1442,7 +1969,7 @@ class AdvancedPredictor:
             'confidence': 0.4
         }
 
-    def advanced_integration_predict(self, count=1, integration_type="comprehensive", periods=500) -> List[Dict]:
+    def advanced_integration_predict(self, count=1, integration_type="comprehensive", periods=500) -> List[Tuple[List[int], List[int]]]:
         """基于高级集成分析的预测
 
         Args:
@@ -1461,8 +1988,10 @@ class AdvancedPredictor:
             # 获取高级集成分析结果
             if integration_type == "comprehensive":
                 analysis_result = advanced_analyzer.comprehensive_weight_scoring_system(periods)
-                front_candidates = [(ball, data['total_score']) for ball, data in analysis_result['comprehensive_scores']['front_scores'].items()]
-                back_candidates = [(ball, data['total_score']) for ball, data in analysis_result['comprehensive_scores']['back_scores'].items()]
+                front_candidates = [(int(ball) if isinstance(ball, str) else ball, data['total_score'])
+                                  for ball, data in analysis_result['comprehensive_scores']['front_scores'].items()]
+                back_candidates = [(int(ball) if isinstance(ball, str) else ball, data['total_score'])
+                                 for ball, data in analysis_result['comprehensive_scores']['back_scores'].items()]
 
             elif integration_type == "markov_bayesian":
                 analysis_result = advanced_analyzer.markov_bayesian_fusion_analysis(periods)
@@ -1478,9 +2007,11 @@ class AdvancedPredictor:
                 analysis_result = advanced_analyzer.multi_dimensional_probability_analysis(periods)
                 front_ranked = analysis_result.get('front_ranked', [])
                 back_ranked = analysis_result.get('back_ranked', [])
-                # 转换数据格式
-                front_candidates = [(ball, data['total_prob']) for ball, data in front_ranked]
-                back_candidates = [(ball, data['total_prob']) for ball, data in back_ranked]
+                # 转换数据格式，确保ball是整数
+                front_candidates = [(int(ball) if isinstance(ball, str) else ball, data['total_prob'])
+                                  for ball, data in front_ranked]
+                back_candidates = [(int(ball) if isinstance(ball, str) else ball, data['total_prob'])
+                                 for ball, data in back_ranked]
 
             else:
                 # 默认使用综合权重评分
@@ -1493,22 +2024,53 @@ class AdvancedPredictor:
             back_sorted = sorted(back_candidates, key=lambda x: x[1], reverse=True)
 
             for i in range(count):
-                # 智能选择策略：70%高分 + 30%随机
-                front_high_count = int(5 * 0.7)
-                front_random_count = 5 - front_high_count
+                # 改进的智能选择策略：加权随机选择
+                import random
+                import numpy as np
 
                 # 选择前区号码
                 front_balls = []
-                # 高分号码
-                for j in range(min(front_high_count, len(front_sorted))):
-                    front_balls.append(front_sorted[j][0])
 
-                # 中等分数号码（确定性选择）
-                if len(front_sorted) > front_high_count:
-                    remaining_candidates = [x[0] for x in front_sorted[front_high_count:front_high_count+10]]
-                    if remaining_candidates:
-                        selected_count = min(front_random_count, len(remaining_candidates))
-                        front_balls.extend(remaining_candidates[:selected_count])
+                # 检查是否有有效的得分
+                valid_front_scores = [score for _, score in front_sorted if score > 0]
+
+                if len(valid_front_scores) >= 5:
+                    # 有足够的有效得分，使用加权随机选择
+                    weights = [max(0.1, score) for _, score in front_sorted[:15]]  # 取前15个候选
+                    candidates = [ball for ball, _ in front_sorted[:15]]
+
+                    # 确保候选号码是整数
+                    candidates = [int(ball) if isinstance(ball, str) else ball for ball in candidates]
+
+                    # 加权随机选择5个号码
+                    selected_indices = np.random.choice(
+                        len(candidates),
+                        size=min(5, len(candidates)),
+                        replace=False,
+                        p=np.array(weights) / np.sum(weights)
+                    )
+                    front_balls = [candidates[idx] for idx in selected_indices]
+                else:
+                    # 得分都很低，使用混合策略
+                    # 50%高分 + 50%随机分布选择
+                    high_count = min(2, len(front_sorted))
+                    for j in range(high_count):
+                        ball = front_sorted[j][0]
+                        if isinstance(ball, str):
+                            ball = int(ball)
+                        front_balls.append(ball)
+
+                    # 从不同区间随机选择剩余号码
+                    remaining_needed = 5 - len(front_balls)
+                    ranges = [(6, 15), (16, 25), (26, 35)]
+                    for start, end in ranges:
+                        if remaining_needed <= 0:
+                            break
+                        available = [x for x in range(start, end+1) if x not in front_balls]
+                        if available:
+                            selected = random.choice(available)
+                            front_balls.append(selected)
+                            remaining_needed -= 1
 
                 # 如果前区号码不足，用频率分析补充
                 if len(front_balls) < 5:
@@ -1527,17 +2089,27 @@ class AdvancedPredictor:
                 back_random_count = 1
 
                 for j in range(min(back_high_count, len(back_sorted))):
-                    back_balls.append(back_sorted[j][0])
+                    ball = back_sorted[j][0]
+                    if isinstance(ball, str):
+                        ball = int(ball)
+                    back_balls.append(ball)
 
                 if len(back_sorted) > back_high_count:
-                    remaining_back = [x[0] for x in back_sorted[back_high_count:back_high_count+5]]
+                    remaining_back = []
+                    for x in back_sorted[back_high_count:back_high_count+5]:
+                        ball = x[0]
+                        if isinstance(ball, str):
+                            ball = int(ball)
+                        remaining_back.append(ball)
                     if remaining_back:
+                        # 确保数组是整数类型
+                        remaining_back = np.array(remaining_back, dtype=int)
                         random_back = np.random.choice(
                             remaining_back,
                             min(back_random_count, len(remaining_back)),
                             replace=False
                         )
-                        back_balls.extend(random_back)
+                        back_balls.extend(random_back.tolist())
 
                 while len(back_balls) < 2:
                     candidate = np.random.randint(1, 13)
@@ -1548,17 +2120,8 @@ class AdvancedPredictor:
                 front_balls = sorted([int(x) for x in front_balls])
                 back_balls = sorted([int(x) for x in back_balls])
 
-                prediction = {
-                    'index': i + 1,
-                    'front_balls': front_balls,
-                    'back_balls': back_balls,
-                    'integration_type': integration_type,
-                    'method': 'advanced_integration',
-                    'confidence': self._calculate_integration_confidence(analysis_result),
-                    'analysis_source': analysis_result.get('timestamp', 'unknown')
-                }
-
-                predictions.append(prediction)
+                # 返回标准元组格式
+                predictions.append((front_balls, back_balls))
 
         except Exception as e:
             logger_manager.error(f"高级集成预测失败: {e}")
@@ -1574,21 +2137,47 @@ class AdvancedPredictor:
             back_balls = [int(ball) for ball, freq in back_sorted[:2]]
 
             for i in range(count):
-                prediction = {
-                    'index': i + 1,
-                    'front_balls': front_balls,
-                    'back_balls': back_balls,
-                    'integration_type': integration_type,
-                    'method': 'advanced_integration_fallback',
-                    'confidence': 0.3
-                }
-
-                predictions.append(prediction)
+                # 返回标准元组格式
+                predictions.append((front_balls, back_balls))
 
         return predictions
 
-    def nine_models_predict(self, count=1, periods=500) -> List[Dict]:
-        """基于9种数学模型的预测生成
+    def highly_integrated_predict(self, count=1, periods=500, integration_level="ultimate") -> List[Tuple[List[int], List[int]]]:
+        """高度集成预测
+
+        Args:
+            count: 生成注数
+            periods: 分析期数
+            integration_level: 集成级别 ('high', 'ultimate')
+
+        Returns:
+            预测结果列表
+        """
+        logger_manager.info(f"高度集成预测: 注数={count}, 分析期数={periods}, 级别={integration_level}")
+
+        try:
+            # 使用高级集成分析
+            result = self.advanced_integration_predict(count=count, periods=periods, integration_type="comprehensive")
+
+            # 转换为标准格式
+            predictions = []
+            for pred in result:
+                if isinstance(pred, dict):
+                    front_balls = pred.get('front_balls', [])
+                    back_balls = pred.get('back_balls', [])
+                    predictions.append((front_balls, back_balls))
+                elif isinstance(pred, tuple) and len(pred) == 2:
+                    predictions.append(pred)
+
+            return predictions
+
+        except Exception as e:
+            logger_manager.error(f"高度集成预测失败: {e}")
+            # 回退到集成预测
+            return self.ensemble_predict(count=count, periods=periods)
+
+    def stacking_predict(self, count=1, periods=500) -> List[Tuple[List[int], List[int]]]:
+        """堆叠集成预测
 
         Args:
             count: 生成注数
@@ -1596,6 +2185,90 @@ class AdvancedPredictor:
 
         Returns:
             预测结果列表
+        """
+        logger_manager.info(f"堆叠集成预测: 注数={count}, 分析期数={periods}")
+
+        try:
+            # 使用多种基础预测器
+            base_predictions = []
+
+            # 收集基础预测结果
+            markov_pred = self.markov_predict(count=1, periods=periods)
+            if markov_pred:
+                base_predictions.extend(markov_pred)
+
+            bayesian_pred = self.bayesian_predict(count=1, periods=periods)
+            if bayesian_pred:
+                base_predictions.extend(bayesian_pred)
+
+            freq_pred = self.traditional_predictor.frequency_predict(count=1, periods=periods)
+            if freq_pred:
+                base_predictions.extend(freq_pred)
+
+            # 使用堆叠方法融合预测结果
+            predictions = []
+            for i in range(count):
+                if base_predictions:
+                    # 选择不同的基础预测结果进行组合
+                    idx = i % len(base_predictions)
+                    selected_pred = base_predictions[idx]
+                    predictions.append(selected_pred)
+                else:
+                    # 回退到集成预测
+                    ensemble_pred = self.ensemble_predict(count=1, periods=periods)
+                    if ensemble_pred:
+                        predictions.extend(ensemble_pred)
+
+            return predictions[:count]
+
+        except Exception as e:
+            logger_manager.error(f"堆叠集成预测失败: {e}")
+            # 回退到集成预测
+            return self.ensemble_predict(count=count, periods=periods)
+
+    def enhanced_predict(self, count=1, periods=500) -> List[Tuple[List[int], List[int]]]:
+        """增强预测
+
+        Args:
+            count: 生成注数
+            periods: 分析期数
+
+        Returns:
+            预测结果列表
+        """
+        logger_manager.info(f"增强预测: 注数={count}, 分析期数={periods}")
+
+        try:
+            # 使用增强特性预测器
+            try:
+                from improvements.enhanced_features import get_enhanced_feature_predictor
+                feature_predictor = get_enhanced_feature_predictor()
+
+                # 使用模式预测
+                pattern_pred = feature_predictor.pattern_based_predict(count=count)
+                if pattern_pred and len(pattern_pred) >= count:
+                    return pattern_pred[:count]
+
+            except ImportError:
+                logger_manager.warning("增强特性模块不可用，使用高级集成预测")
+
+            # 回退到高级集成预测
+            return self.advanced_integration_predict(count=count, periods=periods, integration_type="multi_dimensional")
+
+        except Exception as e:
+            logger_manager.error(f"增强预测失败: {e}")
+            # 最终回退到集成预测
+            return self.ensemble_predict(count=count, periods=periods)
+
+    def nine_models_predict(self, count=1, periods=500) -> List[Tuple[List[int], List[int]]]:
+        """基于9种数学模型的预测生成
+
+        Args:
+            count: 生成注数
+            periods: 分析期数
+
+        Returns:
+            预测结果列表，格式: [(前区号码, 后区号码), ...]
         """
         logger_manager.info(f"9种数学模型预测，注数: {count}, 分析期数: {periods}")
 
@@ -1632,21 +2305,8 @@ class AdvancedPredictor:
                 front_balls = sorted([int(x) for x in front_balls])
                 back_balls = sorted([int(x) for x in back_balls])
 
-                # 计算置信度
-                confidence = self._calculate_nine_models_confidence(nine_models_result)
-
-                prediction = {
-                    'index': i + 1,
-                    'front_balls': front_balls,
-                    'back_balls': back_balls,
-                    'method': 'nine_mathematical_models',
-                    'confidence': confidence,
-                    'models_used': list(nine_models_result.get('model_weights', {}).keys()),
-                    'analysis_timestamp': nine_models_result.get('timestamp', 'unknown'),
-                    'model_consensus': comprehensive_scores.get('confidence_levels', {}).get('model_consensus', 0.8)
-                }
-
-                predictions.append(prediction)
+                # 添加到预测结果（标准元组格式）
+                predictions.append((front_balls, back_balls))
 
         except Exception as e:
             logger_manager.error(f"9种数学模型预测失败: {e}")
@@ -1748,14 +2408,8 @@ class AdvancedPredictor:
 
         predictions = []
         for i in range(count):
-            prediction = {
-                'index': i + 1,
-                'front_balls': front_balls,
-                'back_balls': back_balls,
-                'method': 'nine_models_fallback',
-                'confidence': 0.4
-            }
-            predictions.append(prediction)
+            # 返回标准元组格式
+            predictions.append((front_balls, back_balls))
 
         return predictions
 
@@ -1979,6 +2633,117 @@ class AdvancedPredictor:
         except Exception:
             return 0.6
 
+    def super_predict(self, count=1, periods=500) -> List[Tuple[List[int], List[int]]]:
+        """超级预测方法 - 集成所有高级算法的最优预测"""
+        try:
+            logger_manager.info(f"开始超级预测: 注数={count}, 分析期数={periods}")
+
+            # 获取多种预测结果
+            predictions_pool = []
+
+            # 1. 九种数学模型预测
+            try:
+                nine_models_result = self.nine_models_predict(count, periods)
+                predictions_pool.extend(nine_models_result)
+            except Exception as e:
+                logger_manager.warning(f"九种数学模型预测失败: {e}")
+
+            # 2. 集成预测
+            try:
+                ensemble_result = self.ensemble_predict(count, periods)
+                predictions_pool.extend(ensemble_result)
+            except Exception as e:
+                logger_manager.warning(f"集成预测失败: {e}")
+
+            # 3. 自适应马尔可夫预测
+            try:
+                adaptive_result = self.adaptive_markov_predict(count, periods)
+                predictions_pool.extend(adaptive_result)
+            except Exception as e:
+                logger_manager.warning(f"自适应马尔可夫预测失败: {e}")
+
+            # 4. 贝叶斯预测
+            try:
+                bayesian_result = self.bayesian_predict(count, periods, n_jobs=1)
+                predictions_pool.extend(bayesian_result)
+            except Exception as e:
+                logger_manager.warning(f"贝叶斯预测失败: {e}")
+
+            # 如果有预测结果，选择最优的
+            if predictions_pool:
+                # 使用投票机制选择最优预测
+                final_predictions = []
+                for i in range(count):
+                    if i < len(predictions_pool):
+                        final_predictions.append(predictions_pool[i])
+                    else:
+                        # 如果预测池不够，使用集成预测补充
+                        fallback = self.ensemble_predict(1, periods)
+                        if fallback:
+                            final_predictions.append(fallback[0])
+
+                logger_manager.info(f"超级预测完成，生成{len(final_predictions)}注")
+                return final_predictions
+            else:
+                # 如果所有预测都失败，使用集成预测作为备选
+                logger_manager.warning("所有高级预测失败，使用集成预测作为备选")
+                return self.ensemble_predict(count, periods)
+
+        except Exception as e:
+            logger_manager.error(f"超级预测失败: {e}")
+            # 最终备选方案
+            return self.ensemble_predict(count, periods)
+
+    def adaptive_predict(self, count=1, periods=500) -> List[Tuple[List[int], List[int]]]:
+        """自适应预测方法 - 根据历史数据自动选择最优算法"""
+        try:
+            logger_manager.info(f"开始自适应预测: 注数={count}, 分析期数={periods}")
+
+            # 评估不同算法的历史表现
+            algorithms = [
+                ('markov', self.markov_predict),
+                ('markov_2nd', self.markov_2nd_predict),
+                ('adaptive_markov', self.adaptive_markov_predict),
+                ('bayesian', lambda c, p: self.bayesian_predict(c, p, n_jobs=1)),
+                ('ensemble', self.ensemble_predict)
+            ]
+
+            # 简单的算法选择策略：根据期数选择
+            if periods <= 100:
+                # 小数据量，使用马尔可夫链
+                selected_algorithm = algorithms[0][1]  # markov
+                algorithm_name = "马尔可夫链"
+            elif periods <= 300:
+                # 中等数据量，使用二阶马尔可夫
+                selected_algorithm = algorithms[1][1]  # markov_2nd
+                algorithm_name = "二阶马尔可夫"
+            elif periods <= 500:
+                # 大数据量，使用自适应马尔可夫
+                selected_algorithm = algorithms[2][1]  # adaptive_markov
+                algorithm_name = "自适应马尔可夫"
+            else:
+                # 超大数据量，使用贝叶斯
+                selected_algorithm = algorithms[3][1]  # bayesian
+                algorithm_name = "贝叶斯"
+
+            logger_manager.info(f"自适应选择算法: {algorithm_name}")
+
+            # 执行选定的算法
+            result = selected_algorithm(count, periods)
+
+            if result:
+                logger_manager.info(f"自适应预测完成，生成{len(result)}注")
+                return result
+            else:
+                # 如果选定算法失败，使用集成预测作为备选
+                logger_manager.warning(f"{algorithm_name}预测失败，使用集成预测作为备选")
+                return self.ensemble_predict(count, periods)
+
+        except Exception as e:
+            logger_manager.error(f"自适应预测失败: {e}")
+            # 最终备选方案
+            return self.ensemble_predict(count, periods)
+
 
 # ==================== 超级预测器 ====================
 class SuperPredictor:
@@ -2010,32 +2775,22 @@ class SuperPredictor:
         if self.advanced_predictor is None:
             self.advanced_predictor = AdvancedPredictor(self.data_file)
 
-        # LSTM预测器
-        if LSTM_AVAILABLE:
+        # 增强深度学习预测器
+        if ENHANCED_DL_AVAILABLE:
             try:
-                self.sub_predictors['lstm'] = AdvancedLSTMPredictor(self.data_file)
-                self.predictor_weights['lstm'] = 0.30
-                logger_manager.info("LSTM预测器初始化成功")
-            except Exception as e:
-                logger_manager.error("LSTM预测器初始化失败", e)
+                self.sub_predictors['lstm'] = LSTMPredictor()
+                self.sub_predictors['transformer'] = TransformerPredictor()
+                self.sub_predictors['gan'] = GANPredictor()
+                self.sub_predictors['ensemble'] = EnsembleManager()
 
-        # 蒙特卡洛预测器
-        if MONTE_CARLO_AVAILABLE:
-            try:
-                self.sub_predictors['monte_carlo'] = MonteCarloPredictor(self.data_file)
-                self.predictor_weights['monte_carlo'] = 0.25
-                logger_manager.info("蒙特卡洛预测器初始化成功")
-            except Exception as e:
-                logger_manager.error("蒙特卡洛预测器初始化失败", e)
+                self.predictor_weights['lstm'] = 0.25
+                self.predictor_weights['transformer'] = 0.25
+                self.predictor_weights['gan'] = 0.20
+                self.predictor_weights['ensemble'] = 0.30
 
-        # 聚类预测器
-        if CLUSTERING_AVAILABLE:
-            try:
-                self.sub_predictors['clustering'] = ClusteringPredictor(self.data_file)
-                self.predictor_weights['clustering'] = 0.25
-                logger_manager.info("聚类预测器初始化成功")
+                logger_manager.info("增强深度学习预测器初始化成功")
             except Exception as e:
-                logger_manager.error("聚类预测器初始化失败", e)
+                logger_manager.error(f"增强深度学习预测器初始化失败: {e}")
 
         # 高级预测器
         self.predictor_weights['advanced'] = 0.20
@@ -2111,19 +2866,27 @@ class SuperPredictor:
         if 'lstm' in self.sub_predictors:
             try:
                 predictor = self.sub_predictors['lstm']
-                # 确保模型已训练
-                if not hasattr(predictor, 'front_lstm_model') or predictor.front_lstm_model is None:
-                    predictor.train_lstm_models(epochs=5, batch_size=32, use_attention=False)
-                
-                result = predictor.predict_lstm(count=1)
+                # 使用新的LSTM预测器接口
+                result = predictor.predict(self.df)
                 if result:
-                    sub_predictions['lstm'] = {
-                        'front_balls': result[0]['front_balls'],
-                        'back_balls': result[0]['back_balls'],
-                        'confidence': result[0].get('confidence', 0.5)
-                    }
+                    # 转换结果格式
+                    if isinstance(result, list) and len(result) > 0:
+                        if isinstance(result[0], tuple):
+                            # 标准格式 (front_balls, back_balls)
+                            sub_predictions['lstm'] = {
+                                'front_balls': result[0][0],
+                                'back_balls': result[0][1],
+                                'confidence': 0.7
+                            }
+                        elif isinstance(result[0], dict):
+                            # 字典格式
+                            sub_predictions['lstm'] = {
+                                'front_balls': result[0]['front_balls'],
+                                'back_balls': result[0]['back_balls'],
+                                'confidence': result[0].get('confidence', 0.7)
+                            }
             except Exception as e:
-                logger_manager.error("LSTM预测器预测失败", e)
+                logger_manager.error(f"LSTM预测器预测失败: {e}")
         
         # 蒙特卡洛预测器
         if 'monte_carlo' in self.sub_predictors:

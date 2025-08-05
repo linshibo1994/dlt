@@ -121,10 +121,39 @@ class CacheManager:
                 for filename in os.listdir(dir_path):
                     file_path = os.path.join(dir_path, filename)
                     try:
-                        os.remove(file_path)
-                        cleared_count += 1
+                        # 如果是目录，尝试递归删除
+                        if os.path.isdir(file_path):
+                            import shutil
+                            try:
+                                shutil.rmtree(file_path)
+                                cleared_count += 1
+                            except PermissionError:
+                                # 权限不足时，尝试修改权限后删除
+                                try:
+                                    import stat
+                                    os.chmod(file_path, stat.S_IWRITE)
+                                    shutil.rmtree(file_path)
+                                    cleared_count += 1
+                                except Exception:
+                                    # 如果仍然无法删除，跳过并记录警告
+                                    logger_manager.warning(f"跳过无法删除的目录: {filename}")
+                        else:
+                            # 普通文件
+                            os.remove(file_path)
+                            cleared_count += 1
+                    except PermissionError:
+                        # 权限不足时，尝试修改权限后删除
+                        try:
+                            import stat
+                            os.chmod(file_path, stat.S_IWRITE)
+                            os.remove(file_path)
+                            cleared_count += 1
+                        except Exception:
+                            # 如果仍然无法删除，跳过并记录警告
+                            logger_manager.warning(f"跳过无法删除的文件: {filename}")
                     except Exception as e:
-                        print(f"❌ 删除缓存文件失败 {filename}: {e}")
+                        # 其他错误，记录警告但不中断程序
+                        logger_manager.warning(f"删除缓存文件失败 {filename}: {e}")
         
         return cleared_count
     

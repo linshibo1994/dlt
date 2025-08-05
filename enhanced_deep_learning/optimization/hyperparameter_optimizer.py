@@ -145,13 +145,22 @@ class GridSearchOptimizer:
         try:
             trials = []
             start_time = time.time()
-            
+
+            # 初始化智能早停机制
+            from ..utils.intelligent_early_stopping import GeneralIntelligentEarlyStopping
+            early_stopping = GeneralIntelligentEarlyStopping(
+                patience=20,  # 连续20次相同结果时停止
+                min_delta=1e-6,
+                verbose=1
+            )
+            early_stopping.reset()
+
             for i, params in enumerate(self.param_grid):
                 # 检查时间限制
                 if self.config.max_time and (time.time() - start_time) > self.config.max_time:
                     logger_manager.info(f"达到时间限制，停止优化")
                     break
-                
+
                 # 执行试验
                 trial_start = time.time()
                 try:
@@ -161,9 +170,9 @@ class GridSearchOptimizer:
                     logger_manager.error(f"试验 {i} 失败: {e}")
                     score = float('-inf')
                     status = 'failed'
-                
+
                 trial_duration = time.time() - trial_start
-                
+
                 trial = Trial(
                     trial_id=i,
                     parameters=params,
@@ -171,10 +180,15 @@ class GridSearchOptimizer:
                     duration=trial_duration,
                     status=status
                 )
-                
+
                 trials.append(trial)
-                
+
                 logger_manager.debug(f"试验 {i}: 分数={score:.4f}, 参数={params}")
+
+                # 智能早停检查（使用负分数，因为我们要最大化分数）
+                if status == 'completed' and early_stopping.update(-score):
+                    logger_manager.info(f"网格搜索智能早停，已完成 {i + 1} 次试验")
+                    break
             
             # 按分数排序
             trials.sort(key=lambda x: x.score, reverse=True)
@@ -254,16 +268,25 @@ class RandomSearchOptimizer:
         try:
             trials = []
             start_time = time.time()
-            
+
+            # 初始化智能早停机制
+            from ..utils.intelligent_early_stopping import GeneralIntelligentEarlyStopping
+            early_stopping = GeneralIntelligentEarlyStopping(
+                patience=20,  # 连续20次相同结果时停止
+                min_delta=1e-6,
+                verbose=1
+            )
+            early_stopping.reset()
+
             for i in range(self.config.max_trials):
                 # 检查时间限制
                 if self.config.max_time and (time.time() - start_time) > self.config.max_time:
                     logger_manager.info(f"达到时间限制，停止优化")
                     break
-                
+
                 # 采样参数
                 params = self._sample_parameters()
-                
+
                 # 执行试验
                 trial_start = time.time()
                 try:
@@ -273,9 +296,9 @@ class RandomSearchOptimizer:
                     logger_manager.error(f"试验 {i} 失败: {e}")
                     score = float('-inf')
                     status = 'failed'
-                
+
                 trial_duration = time.time() - trial_start
-                
+
                 trial = Trial(
                     trial_id=i,
                     parameters=params,
@@ -283,10 +306,15 @@ class RandomSearchOptimizer:
                     duration=trial_duration,
                     status=status
                 )
-                
+
                 trials.append(trial)
-                
+
                 logger_manager.debug(f"试验 {i}: 分数={score:.4f}, 参数={params}")
+
+                # 智能早停检查（使用负分数，因为我们要最大化分数）
+                if status == 'completed' and early_stopping.update(-score):
+                    logger_manager.info(f"随机搜索智能早停，已完成 {i + 1} 次试验")
+                    break
             
             # 按分数排序
             trials.sort(key=lambda x: x.score, reverse=True)
@@ -407,16 +435,25 @@ class BayesianOptimizer:
         """
         try:
             start_time = time.time()
-            
+
+            # 初始化智能早停机制
+            from ..utils.intelligent_early_stopping import GeneralIntelligentEarlyStopping
+            early_stopping = GeneralIntelligentEarlyStopping(
+                patience=20,  # 连续20次相同结果时停止
+                min_delta=1e-6,
+                verbose=1
+            )
+            early_stopping.reset()
+
             for i in range(self.config.max_trials):
                 # 检查时间限制
                 if self.config.max_time and (time.time() - start_time) > self.config.max_time:
                     logger_manager.info(f"达到时间限制，停止优化")
                     break
-                
+
                 # 建议参数
                 params = self._suggest_next_parameters()
-                
+
                 # 执行试验
                 trial_start = time.time()
                 try:
@@ -426,9 +463,9 @@ class BayesianOptimizer:
                     logger_manager.error(f"试验 {i} 失败: {e}")
                     score = float('-inf')
                     status = 'failed'
-                
+
                 trial_duration = time.time() - trial_start
-                
+
                 trial = Trial(
                     trial_id=i,
                     parameters=params,
@@ -436,10 +473,15 @@ class BayesianOptimizer:
                     duration=trial_duration,
                     status=status
                 )
-                
+
                 self.trials_history.append(trial)
-                
+
                 logger_manager.debug(f"试验 {i}: 分数={score:.4f}, 参数={params}")
+
+                # 智能早停检查（使用负分数，因为我们要最大化分数）
+                if status == 'completed' and early_stopping.update(-score):
+                    logger_manager.info(f"超参数优化智能早停，已完成 {i + 1} 次试验")
+                    break
             
             # 按分数排序
             self.trials_history.sort(key=lambda x: x.score, reverse=True)

@@ -1,0 +1,154 @@
+# 硬件加速配置文件
+# Hardware Acceleration Configuration
+
+# 默认加速设置
+acceleration:
+  # 默认加速模式: auto, cpu, cpu_multi, gpu, gpu_cuda
+  default_mode: auto
+  
+  # CPU配置
+  cpu:
+    # CPU线程数 (-1表示使用所有核心)
+    threads: -1
+    # 是否启用CPU多线程
+    enable_multiprocessing: true
+    # 进程池大小 (-1表示自动)
+    process_pool_size: -1
+  
+  # GPU配置
+  gpu:
+    # 默认GPU设备ID
+    device_id: 0
+    # GPU内存限制 (GB, null表示无限制)
+    memory_limit: null
+    # 是否启用混合精度训练
+    mixed_precision: false
+    # 批次大小倍数
+    batch_size_multiplier: 1.0
+  
+  # 优雅降级设置
+  fallback:
+    # 是否启用优雅降级
+    enabled: true
+    # 降级策略: gpu->cpu_multi->cpu, gpu->cpu, auto
+    strategy: "gpu->cpu_multi->cpu"
+    # 降级超时时间 (秒)
+    timeout: 30
+
+# 硬件基准测试配置
+benchmark:
+  # 是否启用缓存
+  cache_enabled: true
+  # 缓存有效期 (小时)
+  cache_duration: 24
+  # 基准测试超时时间 (秒)
+  timeout: 60
+  # 测试矩阵大小
+  matrix_size: 1000
+  # 测试迭代次数
+  iterations: 3
+
+# 任务特定配置
+task_configs:
+  # 深度学习训练
+  deep_learning_training:
+    preferred_acceleration: gpu_cuda
+    cpu_fallback: cpu_multi
+    gpu_memory_fraction: 0.8
+    mixed_precision: true
+  
+  # 深度学习推理
+  deep_learning_inference:
+    preferred_acceleration: gpu_cuda
+    cpu_fallback: cpu_multi
+    gpu_memory_fraction: 0.6
+    mixed_precision: false
+  
+  # 传统机器学习
+  traditional_ml:
+    preferred_acceleration: cpu_multi
+    cpu_fallback: cpu
+    parallel_jobs: -1
+  
+  # 数据处理
+  data_processing:
+    preferred_acceleration: cpu_multi
+    cpu_fallback: cpu
+    parallel_jobs: -1
+  
+  # 聚类分析
+  clustering:
+    preferred_acceleration: cpu_multi
+    cpu_fallback: cpu
+    parallel_jobs: -1
+  
+  # 马尔可夫链
+  markov_chain:
+    preferred_acceleration: cpu_multi
+    cpu_fallback: cpu
+    parallel_jobs: 4
+  
+  # 贝叶斯推理
+  bayesian_inference:
+    preferred_acceleration: cpu_multi
+    cpu_fallback: cpu
+    parallel_jobs: -1
+
+# 性能阈值
+performance_thresholds:
+  # CPU得分阈值
+  cpu_score:
+    low: 25
+    medium: 50
+    high: 75
+  
+  # GPU得分阈值
+  gpu_score:
+    low: 30
+    medium: 60
+    high: 80
+  
+  # 内存得分阈值
+  memory_score:
+    low: 20
+    medium: 40
+    high: 70
+
+# 自动选择规则
+auto_selection_rules:
+  # GPU优先条件
+  gpu_priority:
+    min_gpu_score: 50
+    task_types: ["deep_learning_training", "deep_learning_inference"]
+    min_data_size: 1000
+  
+  # CPU多线程优先条件
+  cpu_multi_priority:
+    min_cpu_cores: 4
+    min_cpu_score: 40
+    task_types: ["traditional_ml", "clustering", "markov_chain", "bayesian_inference"]
+  
+  # CPU单线程条件
+  cpu_single_fallback:
+    max_data_size: 500
+    low_complexity_tasks: true
+
+# 监控和日志
+monitoring:
+  # 是否启用性能监控
+  enabled: true
+  # 监控间隔 (秒)
+  interval: 10
+  # 日志级别: DEBUG, INFO, WARNING, ERROR
+  log_level: INFO
+  # 是否记录详细的硬件信息
+  detailed_hardware_info: false
+
+# 实验性功能
+experimental:
+  # 是否启用实验性GPU优化
+  gpu_optimization: false
+  # 是否启用动态批次大小调整
+  dynamic_batch_size: false
+  # 是否启用自适应线程数调整
+  adaptive_thread_count: false

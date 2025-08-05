@@ -21,6 +21,12 @@ from .hardware_acceleration import (
     HardwareAccelerator, AcceleratorType, AcceleratorConfig,
     hardware_accelerator
 )
+from .enhanced_hardware_accelerator import (
+    EnhancedHardwareAccelerator, HardwareInfo, PerformanceBenchmark
+)
+from .acceleration_selector import (
+    AccelerationSelector, TaskType, TaskProfile, AccelerationRecommendation
+)
 from .model_optimization import (
     ModelOptimizer, CompressionMethod, OptimizationConfig,
     model_optimizer
@@ -50,7 +56,18 @@ __all__ = [
     'AcceleratorType',
     'AcceleratorConfig',
     'hardware_accelerator',
-    
+
+    # 增强硬件加速
+    'EnhancedHardwareAccelerator',
+    'HardwareInfo',
+    'PerformanceBenchmark',
+    'AccelerationRecommendation',
+
+    # 加速选择器
+    'AccelerationSelector',
+    'TaskType',
+    'TaskProfile',
+
     # 模型优化
     'ModelOptimizer',
     'CompressionMethod',

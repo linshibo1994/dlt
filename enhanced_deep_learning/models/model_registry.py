@@ -23,17 +23,8 @@ class BaseDeepLearningModel:
         """预测方法"""
         raise NotImplementedError("子类必须实现predict方法")
 
-class ModelMetadata:
-    """模型元数据"""
-    def __init__(self, name: str, version: str = "1.0.0", description: str = ""):
-        self.name = name
-        self.version = version
-        self.description = description
-        self.created_at = datetime.now()
-        self.tags = []
-        self.parameters = {}
-        self.metrics = {}
-        self.dependencies = []  # 添加依赖属性
+# 导入模型元数据
+from .metadata import ModelMetadata
 
 
 class ModelRegistry:
@@ -484,8 +475,11 @@ model_registry = ModelRegistry()
 def _register_default_models():
     """注册默认的深度学习模型"""
     try:
-        # 导入模型类
-        from . import LSTMPredictor, TransformerPredictor, GANPredictor, EnsembleManager
+        # 导入模型类 - 使用具体的模块导入
+        from .lstm_predictor import LSTMPredictor
+        from .transformer_predictor import TransformerPredictor
+        from .gan_predictor import GANPredictor
+        from .ensemble_manager import EnsembleManager
 
         # 注册LSTM模型
         lstm_metadata = ModelMetadata(

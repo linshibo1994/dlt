@@ -33,39 +33,32 @@ class LSTMPredictor(BaseModel):
         try:
             print("🏗️ 构建真正的LSTM神经网络架构...")
 
-            # 检查是否有TensorFlow
-            try:
-                import tensorflow as tf
-                from tensorflow.keras.models import Sequential
-                from tensorflow.keras.layers import LSTM, Dense, Dropout, BatchNormalization
+            # 必须使用TensorFlow构建真正的LSTM神经网络
+            import tensorflow as tf
+            from tensorflow.keras.models import Sequential
+            from tensorflow.keras.layers import LSTM, Dense, Dropout, BatchNormalization
 
-                # 构建真正的LSTM神经网络
-                model = Sequential([
-                    LSTM(64, return_sequences=True, input_shape=input_shape[1:]),
-                    Dropout(0.2),
-                    BatchNormalization(),
-                    LSTM(32, return_sequences=False),
-                    Dropout(0.2),
-                    Dense(32, activation='relu'),
-                    BatchNormalization(),
-                    Dense(7, activation='sigmoid')  # 输出7个值（5个前区+2个后区）
-                ])
+            # 构建真正的LSTM神经网络
+            model = Sequential([
+                LSTM(64, return_sequences=True, input_shape=input_shape[1:]),
+                Dropout(0.2),
+                BatchNormalization(),
+                LSTM(32, return_sequences=False),
+                Dropout(0.2),
+                Dense(32, activation='relu'),
+                BatchNormalization(),
+                Dense(7, activation='sigmoid')  # 输出7个值（5个前区+2个后区）
+            ])
 
-                model.compile(
-                    optimizer='adam',
-                    loss='mse',
-                    metrics=['mae']
-                )
+            model.compile(
+                optimizer='adam',
+                loss='mse',
+                metrics=['mae']
+            )
 
-                self.model = model
-                print(f"✅ 真正的LSTM神经网络构建完成，参数数量: {model.count_params()}")
-                return model
-
-            except ImportError:
-                print("⚠️ TensorFlow未安装，使用简化的LSTM实现")
-                # 使用numpy实现简化的LSTM
-                self.model = self._build_numpy_lstm(input_shape)
-                return self.model
+            self.model = model
+            print(f"✅ 真正的LSTM神经网络构建完成，参数数量: {model.count_params()}")
+            return model
 
         except Exception as e:
             print(f"构建LSTM模型失败: {e}")
@@ -131,56 +124,64 @@ class LSTMPredictor(BaseModel):
             epochs = self._calculate_smart_epochs(periods, model_type='lstm')
             print(f"📊 基于{periods}期数据，智能设定LSTM训练轮数: {epochs}")
 
-            # 准备训练数据
-            if X_train is None:
+            # 准备训练数据 - 检查X_train是否是原始历史数据（DataFrame格式）
+            if X_train is not None and hasattr(X_train, 'columns'):
+                # X_train是DataFrame格式的历史数据，需要转换为3维时序数据
+                print(f"📊 检测到DataFrame格式数据: {X_train.shape}, 列名: {list(X_train.columns)}")
+                print("📊 开始LSTM时序数据准备...")
+                X_train, y_train = self._prepare_training_data_from_history(X_train)
+                print(f"📊 LSTM时序数据准备完成: X_train.shape={X_train.shape}, y_train.shape={y_train.shape}")
+            elif X_train is None:
                 # 使用真实历史数据进行训练
                 from core_modules import data_manager
                 historical_data = data_manager.get_data()
+                print(f"📊 获取历史数据: {type(historical_data)}, 形状: {historical_data.shape if hasattr(historical_data, 'shape') else 'N/A'}")
+
                 if historical_data is not None and len(historical_data) > 100:
-                    # 从历史数据中提取特征
+                    print("📊 开始LSTM时序数据准备...")
                     X_train, y_train = self._prepare_training_data_from_history(historical_data)
+                    print(f"📊 LSTM时序数据准备完成: X_train.shape={X_train.shape}, y_train.shape={y_train.shape}")
                 else:
                     print("❌ 无法获取历史数据进行训练")
                     return self
+            else:
+                # X_train已经是处理过的numpy数组
+                print(f"📊 使用提供的numpy训练数据: X_train.shape={X_train.shape}")
+
+            # 验证训练数据维度
+            if len(X_train.shape) != 3:
+                raise ValueError(f"LSTM训练数据维度错误: 期望3维(batch_size, sequence_length, features)，实际{len(X_train.shape)}维，形状{X_train.shape}")
 
             # 构建模型
             if self.model is None:
-                input_shape = X_train.shape if hasattr(X_train, 'shape') else (None, 10, 7)
+                input_shape = X_train.shape
+                print(f"📊 构建LSTM模型，输入形状: {input_shape}")
                 self.build_model(input_shape)
 
-            # 真正的神经网络训练
-            if hasattr(self.model, 'fit'):
-                # TensorFlow模型训练
-                print("📊 准备训练数据...")
-                print("🔄 开始真正的神经网络训练...")
+            # 真正的TensorFlow神经网络训练 - 不允许fallback
+            if not hasattr(self.model, 'fit'):
+                raise RuntimeError("LSTM模型构建失败，无法进行真正的神经网络训练")
 
-                print("🔄 开始LSTM时序建模和权重更新...")
-                print("📊 时序数据处理: 构建10个时间步长的序列")
-                print("🧠 LSTM记忆机制: 遗忘门、输入门、输出门协同工作")
+            # TensorFlow模型训练
+            print("📊 准备训练数据...")
+            print("🔄 开始真正的神经网络训练...")
 
-                history = self.model.fit(
-                    X_train, y_train,
-                    epochs=epochs,
-                    batch_size=32,
-                    validation_split=0.2,
-                    verbose=1
-                )
+            print("🔄 开始LSTM时序建模和权重更新...")
+            print("📊 时序数据处理: 构建10个时间步长的序列")
+            print("🧠 LSTM记忆机制: 遗忘门、输入门、输出门协同工作")
 
-                print("✅ TensorFlow LSTM神经网络训练完成")
-                print("🔄 权重更新完成: 反向传播算法更新了所有LSTM权重")
-                print("📈 时序建模完成: LSTM成功学习了历史序列模式")
-                self.training_history = history
+            history = self.model.fit(
+                X_train, y_train,
+                epochs=epochs,
+                batch_size=32,
+                validation_split=0.2,
+                verbose=1
+            )
 
-            else:
-                # numpy LSTM训练
-                print("📊 使用简化LSTM进行训练...")
-                print("🔄 开始LSTM时序建模和权重更新...")
-                print("📊 时序数据处理: 构建序列记忆机制")
-                print("🧠 LSTM记忆机制: 遗忘门、输入门、输出门协同工作")
-                self._train_numpy_lstm(X_train, y_train, epochs=epochs)
-                print("✅ 简化LSTM训练完成")
-                print("🔄 权重更新完成: 梯度下降算法更新了所有LSTM权重")
-                print("📈 时序建模完成: LSTM成功学习了历史序列模式")
+            print("✅ TensorFlow LSTM神经网络训练完成")
+            print("🔄 权重更新完成: 反向传播算法更新了所有LSTM权重")
+            print("📈 时序建模完成: LSTM成功学习了历史序列模式")
+            self.training_history = history
 
             self.is_trained = True
             return self
@@ -832,55 +833,48 @@ class TransformerPredictor(BaseModel):
         try:
             print("🏗️ 构建真正的Transformer注意力机制架构...")
 
-            # 检查是否有TensorFlow
-            try:
-                import tensorflow as tf
-                from tensorflow.keras.models import Model
-                from tensorflow.keras.layers import Input, Dense, LayerNormalization, Dropout, MultiHeadAttention
+            # 必须使用TensorFlow构建真正的Transformer注意力机制
+            import tensorflow as tf
+            from tensorflow.keras.models import Model
+            from tensorflow.keras.layers import Input, Dense, LayerNormalization, Dropout, MultiHeadAttention
 
-                # 构建真正的Transformer模型
-                inputs = Input(shape=input_shape[1:])
+            # 构建真正的Transformer模型
+            inputs = Input(shape=input_shape[1:])
 
-                # 多头注意力层
-                attention_output = MultiHeadAttention(
-                    num_heads=8,
-                    key_dim=64,
-                    dropout=0.1
-                )(inputs, inputs)
+            # 多头注意力层
+            attention_output = MultiHeadAttention(
+                num_heads=8,
+                key_dim=64,
+                dropout=0.1
+            )(inputs, inputs)
 
-                # 残差连接和层归一化
-                attention_output = LayerNormalization()(inputs + attention_output)
+            # 残差连接和层归一化
+            attention_output = LayerNormalization()(inputs + attention_output)
 
-                # 前馈网络
-                ffn_output = Dense(256, activation='relu')(attention_output)
-                ffn_output = Dropout(0.1)(ffn_output)
-                ffn_output = Dense(input_shape[-1])(ffn_output)
+            # 前馈网络
+            ffn_output = Dense(256, activation='relu')(attention_output)
+            ffn_output = Dropout(0.1)(ffn_output)
+            ffn_output = Dense(input_shape[-1])(ffn_output)
 
-                # 残差连接和层归一化
-                ffn_output = LayerNormalization()(attention_output + ffn_output)
+            # 残差连接和层归一化
+            ffn_output = LayerNormalization()(attention_output + ffn_output)
 
-                # 全局平均池化
-                pooled = tf.keras.layers.GlobalAveragePooling1D()(ffn_output)
+            # 全局平均池化
+            pooled = tf.keras.layers.GlobalAveragePooling1D()(ffn_output)
 
-                # 输出层
-                outputs = Dense(7, activation='sigmoid')(pooled)
+            # 输出层
+            outputs = Dense(7, activation='sigmoid')(pooled)
 
-                model = Model(inputs=inputs, outputs=outputs)
-                model.compile(
-                    optimizer='adam',
-                    loss='mse',
-                    metrics=['mae']
-                )
+            model = Model(inputs=inputs, outputs=outputs)
+            model.compile(
+                optimizer='adam',
+                loss='mse',
+                metrics=['mae']
+            )
 
-                self.model = model
-                print(f"✅ 真正的Transformer注意力机制构建完成，参数数量: {model.count_params()}")
-                return model
-
-            except ImportError:
-                print("⚠️ TensorFlow未安装，使用简化的Transformer实现")
-                # 使用numpy实现简化的Transformer
-                self.model = self._build_numpy_transformer(input_shape)
-                return self.model
+            self.model = model
+            print(f"✅ 真正的Transformer注意力机制构建完成，参数数量: {model.count_params()}")
+            return model
 
         except Exception as e:
             print(f"构建Transformer模型失败: {e}")
@@ -950,52 +944,62 @@ class TransformerPredictor(BaseModel):
             epochs = self._calculate_smart_epochs(periods, model_type='transformer')
             print(f"📊 基于{periods}期数据，智能设定Transformer训练轮数: {epochs}")
 
-            # 准备训练数据
-            if X_train is None:
+            # 准备训练数据 - 检查X_train是否是原始历史数据（DataFrame格式）
+            if X_train is not None and hasattr(X_train, 'columns'):
+                # X_train是DataFrame格式的历史数据，需要转换为3维序列数据
+                print(f"📊 检测到DataFrame格式数据: {X_train.shape}, 列名: {list(X_train.columns)}")
+                print("📊 开始Transformer序列数据准备...")
+                X_train, y_train = self._prepare_training_data_from_history(X_train)
+                print(f"📊 Transformer序列数据准备完成: X_train.shape={X_train.shape}, y_train.shape={y_train.shape}")
+            elif X_train is None:
                 # 使用真实历史数据进行训练
                 from core_modules import data_manager
                 historical_data = data_manager.get_data()
+                print(f"📊 获取历史数据: {type(historical_data)}, 形状: {historical_data.shape if hasattr(historical_data, 'shape') else 'N/A'}")
+
                 if historical_data is not None and len(historical_data) > 100:
+                    print("📊 开始Transformer序列数据准备...")
                     X_train, y_train = self._prepare_training_data_from_history(historical_data)
+                    print(f"📊 Transformer序列数据准备完成: X_train.shape={X_train.shape}, y_train.shape={y_train.shape}")
                 else:
                     print("❌ 无法获取历史数据进行训练")
                     return self
+            else:
+                # X_train已经是处理过的numpy数组
+                print(f"📊 使用提供的numpy训练数据: X_train.shape={X_train.shape}")
+
+            # 验证训练数据维度
+            if len(X_train.shape) != 3:
+                raise ValueError(f"Transformer训练数据维度错误: 期望3维(batch_size, sequence_length, features)，实际{len(X_train.shape)}维，形状{X_train.shape}")
 
             # 构建模型
             if self.model is None:
-                input_shape = X_train.shape if hasattr(X_train, 'shape') else (None, 20, 7)
+                input_shape = X_train.shape
+                print(f"📊 构建Transformer模型，输入形状: {input_shape}")
                 self.build_model(input_shape)
 
-            # 真正的Transformer训练
-            if hasattr(self.model, 'fit'):
-                # TensorFlow Transformer模型训练
-                print("📊 准备训练数据...")
-                print("🔄 开始真正的Transformer注意力机制训练...")
-                print("🎯 多头注意力: 8个注意力头并行计算Query、Key、Value")
-                print("🔗 残差连接: 实现跳跃连接和层归一化")
+            # 真正的TensorFlow Transformer注意力机制训练 - 不允许fallback
+            if not hasattr(self.model, 'fit'):
+                raise RuntimeError("Transformer模型构建失败，无法进行真正的注意力机制训练")
 
-                history = self.model.fit(
-                    X_train, y_train,
-                    epochs=epochs,
-                    batch_size=16,
-                    validation_split=0.2,
-                    verbose=1
-                )
+            # TensorFlow Transformer模型训练
+            print("📊 准备训练数据...")
+            print("🔄 开始真正的Transformer注意力机制训练...")
+            print("🎯 多头注意力: 8个注意力头并行计算Query、Key、Value")
+            print("🔗 残差连接: 实现跳跃连接和层归一化")
 
-                print("✅ TensorFlow Transformer注意力机制训练完成")
-                print("🎯 多头注意力训练完成: 8个注意力头学习了不同的模式")
-                print("🔗 残差连接优化完成: 跳跃连接防止梯度消失")
-                self.training_history = history
+            history = self.model.fit(
+                X_train, y_train,
+                epochs=epochs,
+                batch_size=16,
+                validation_split=0.2,
+                verbose=1
+            )
 
-            else:
-                # numpy Transformer训练
-                print("📊 使用简化Transformer注意力机制进行训练...")
-                print("🎯 多头注意力: 8个注意力头并行计算Query、Key、Value")
-                print("🔗 残差连接: 实现跳跃连接和层归一化")
-                self._train_numpy_transformer(X_train, y_train, epochs=epochs)
-                print("✅ 简化Transformer训练完成")
-                print("🎯 多头注意力训练完成: 8个注意力头学习了不同的模式")
-                print("🔗 残差连接优化完成: 跳跃连接防止梯度消失")
+            print("✅ TensorFlow Transformer注意力机制训练完成")
+            print("🎯 多头注意力训练完成: 8个注意力头学习了不同的模式")
+            print("🔗 残差连接优化完成: 跳跃连接防止梯度消失")
+            self.training_history = history
 
             self.is_trained = True
             return self

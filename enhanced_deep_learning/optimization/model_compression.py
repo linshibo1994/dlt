@@ -298,26 +298,44 @@ class ModelPruner:
             剪枝后的模型
         """
         try:
+            # 初始化智能早停机制
+            from ..utils.intelligent_early_stopping import GeneralIntelligentEarlyStopping
+            early_stopping = GeneralIntelligentEarlyStopping(
+                patience=20,  # 连续20次相同结果时停止
+                min_delta=1e-6,
+                verbose=1
+            )
+            early_stopping.reset()
+
             # 简化的渐进式剪枝实现
             initial_sparsity = 0.0
             final_sparsity = self.sparsity
-            
+
             for epoch in range(epochs):
                 # 计算当前稀疏度
                 current_sparsity = initial_sparsity + (final_sparsity - initial_sparsity) * (epoch / epochs)
-                
+
                 # 应用剪枝
+                total_weights_pruned = 0
                 for layer in model.layers:
                     if hasattr(layer, 'kernel'):
                         weights = layer.get_weights()[0]
                         pruned_weights, mask = self.magnitude_pruning(weights)
-                        
+
+                        # 计算剪枝的权重数量
+                        total_weights_pruned += np.sum(mask == 0)
+
                         # 更新权重
                         layer.set_weights([pruned_weights] + layer.get_weights()[1:])
-                
+
+                # 智能早停检查（使用剪枝权重数量作为指标）
+                if early_stopping.update(total_weights_pruned):
+                    logger_manager.info(f"渐进式剪枝智能早停，轮次: {epoch + 1}")
+                    break
+
                 # 微调训练（简化实现）
                 logger_manager.debug(f"渐进式剪枝 - 轮次 {epoch + 1}, 稀疏度: {current_sparsity:.3f}")
-            
+
             logger_manager.info("渐进式剪枝完成")
             return model
             

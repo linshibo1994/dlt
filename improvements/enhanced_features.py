@@ -19,10 +19,12 @@ import seaborn as sns
 # 尝试导入核心模块
 try:
     from core_modules import logger_manager, data_manager, cache_manager
+    from smart_cache_system import smart_cache_manager
 except ImportError:
     # 如果在不同目录运行，添加父目录到路径
     sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
     from core_modules import logger_manager, data_manager, cache_manager
+    from smart_cache_system import smart_cache_manager
 
 # 尝试导入scikit-learn
 try:
@@ -58,8 +60,8 @@ class EnhancedFeatureAnalyzer:
             logger_manager.error(f"数据不足，无法分析号码模式")
             return {}
         
-        cache_key = f"number_patterns_{periods}"
-        cached_result = cache_manager.load_cache("analysis", cache_key)
+        method_name = "number_patterns"
+        cached_result = smart_cache_manager.load_cache("analysis", method_name, periods)
         if cached_result:
             return cached_result
         
@@ -129,30 +131,31 @@ class EnhancedFeatureAnalyzer:
         }
         
         # 缓存结果
-        cache_manager.save_cache("analysis", cache_key, result)
+        smart_cache_manager.save_cache("analysis", method_name, result, periods)
         
         return result
 
-    def cluster_analysis(self, periods: int = 500, n_clusters: int = 5) -> Dict:
-        """聚类分析
-        
+    def cluster_analysis(self, periods: int = 500, n_clusters: int = 5, n_jobs: int = -1) -> Dict:
+        """聚类分析（支持并行化）
+
         Args:
             periods: 分析期数
             n_clusters: 聚类数量
-            
+            n_jobs: 并行作业数，-1表示使用所有CPU核心
+
         Returns:
             Dict: 分析结果
         """
         if not SKLEARN_AVAILABLE:
             logger_manager.error("scikit-learn未安装，无法进行聚类分析")
             return {}
-        
+
         if self.df is None or len(self.df) < periods:
             logger_manager.error(f"数据不足，无法进行聚类分析")
             return {}
-        
-        cache_key = f"cluster_analysis_{periods}_{n_clusters}"
-        cached_result = cache_manager.load_cache("analysis", cache_key)
+
+        method_name = "cluster_analysis"
+        cached_result = smart_cache_manager.load_cache("analysis", method_name, periods, n_clusters=n_clusters, n_jobs=n_jobs)
         if cached_result:
             return cached_result
         
@@ -195,16 +198,45 @@ class EnhancedFeatureAnalyzer:
         pca = PCA(n_components=min(5, features.shape[1]))
         features_pca = pca.fit_transform(features_scaled)
         
-        # K-Means聚类
-        kmeans = KMeans(n_clusters=n_clusters, random_state=42)
+        # K-Means聚类（并行化，添加智能早停）
+        from enhanced_deep_learning.utils.intelligent_early_stopping import GeneralIntelligentEarlyStopping
+
+        # 使用智能早停的K-Means
+        early_stopping = GeneralIntelligentEarlyStopping(patience=20, min_delta=1e-6, verbose=1)
+        early_stopping.reset()
+
+        # 自定义K-Means训练循环以支持智能早停
+        kmeans = KMeans(n_clusters=n_clusters, random_state=42, n_jobs=n_jobs, max_iter=1)
+
+        # 迭代训练直到收敛或早停
+        max_iterations = 300
+        for iteration in range(max_iterations):
+            kmeans.max_iter = iteration + 1
+            clusters = kmeans.fit_predict(features_scaled)
+
+            # 使用惯性作为收敛指标
+            inertia = kmeans.inertia_
+
+            # 检查智能早停
+            if early_stopping.update(inertia):
+                logger_manager.info(f"K-Means聚类智能早停，迭代次数: {iteration + 1}")
+                break
+
+            # 检查传统收敛
+            if hasattr(kmeans, 'n_iter_') and kmeans.n_iter_ < iteration + 1:
+                logger_manager.info(f"K-Means聚类传统收敛，迭代次数: {iteration + 1}")
+                break
+
+        # 最终训练
+        kmeans = KMeans(n_clusters=n_clusters, random_state=42, n_jobs=n_jobs)
         clusters = kmeans.fit_predict(features_scaled)
-        
-        # 高斯混合模型
+
+        # 高斯混合模型（并行化）
         gmm = GaussianMixture(n_components=n_clusters, random_state=42)
         gmm_clusters = gmm.fit_predict(features_scaled)
-        
-        # DBSCAN聚类
-        dbscan = DBSCAN(eps=1.0, min_samples=5)
+
+        # DBSCAN聚类（并行化）
+        dbscan = DBSCAN(eps=1.0, min_samples=5, n_jobs=n_jobs)
         dbscan_clusters = dbscan.fit_predict(features_scaled)
         
         # 分析聚类结果
@@ -255,7 +287,7 @@ class EnhancedFeatureAnalyzer:
         }
         
         # 缓存结果
-        cache_manager.save_cache("analysis", cache_key, result)
+        smart_cache_manager.save_cache("analysis", method_name, result, periods, n_clusters=n_clusters, n_jobs=n_jobs)
         
         return result
     

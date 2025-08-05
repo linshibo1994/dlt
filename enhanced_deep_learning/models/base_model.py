@@ -23,6 +23,17 @@ from datetime import datetime
 from core_modules import logger_manager
 from ..utils.exceptions import ModelException
 
+# 导入ModelMetadata
+try:
+    from .metadata import ModelMetadata
+except ImportError:
+    # 如果导入失败，创建一个简单的ModelMetadata类
+    class ModelMetadata:
+        def __init__(self, name: str, version: str = "1.0.0", description: str = ""):
+            self.name = name
+            self.version = version
+            self.description = description
+
 
 class ModelType(Enum):
     """模型类型枚举"""

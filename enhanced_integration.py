@@ -15,6 +15,7 @@ from datetime import datetime
 
 # 导入原有核心模块
 from core_modules import logger_manager, cache_manager, data_manager
+from smart_cache_system import smart_cache_manager
 
 # 导入新开发的增强模块
 try:

@@ -19,9 +19,13 @@ Enhanced Deep Learning Module
 # 模型模块
 from .models import (
     BaseDeepPredictor, BaseDeepLearningModel, ModelMetadata,
-    ModelRegistry, model_registry,
+    get_model_registry, get_model_registry_class,
     LSTMPredictor, TransformerPredictor, GANPredictor, EnsembleManager
 )
+
+# 为了兼容性，创建别名
+ModelRegistry = get_model_registry_class()
+model_registry = get_model_registry()
 
 # 数据处理模块
 from .data import (

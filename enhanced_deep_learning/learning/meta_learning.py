@@ -256,13 +256,32 @@ class MetaLearningOptimizer(OptimizerInterface):
             if task_data is None or task_data.empty:
                 return adapted_params
             
+            # 初始化智能早停机制
+            from ..utils.intelligent_early_stopping import GeneralIntelligentEarlyStopping
+            early_stopping = GeneralIntelligentEarlyStopping(
+                patience=20,  # 连续20次相同结果时停止
+                min_delta=1e-6,
+                verbose=1
+            )
+            early_stopping.reset()
+
             # 快速适应步骤
             for step in range(self.adaptation_steps):
                 # 计算梯度（简化版）
                 gradient = self._compute_gradient(objective_function, adapted_params, task_data)
-                
+
                 # 更新参数
                 adapted_params = self._apply_gradient(adapted_params, gradient, self.learning_rate)
+
+                # 计算当前损失作为早停指标
+                try:
+                    current_loss = objective_function(adapted_params)
+                    if early_stopping.update(current_loss):
+                        logger_manager.info(f"元学习快速适应智能早停，步骤: {step + 1}")
+                        break
+                except Exception:
+                    # 如果无法计算损失，继续训练
+                    pass
             
             return adapted_params
             

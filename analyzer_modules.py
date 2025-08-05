@@ -20,14 +20,24 @@ from sklearn.cluster import KMeans
 import warnings
 warnings.filterwarnings('ignore')
 
-from core_modules import cache_manager, logger_manager, data_manager
+import core_modules as cm
+cache_manager = cm.cache_manager
+logger_manager = cm.logger_manager
+data_manager = cm.data_manager
+
+# 导入智能缓存系统
+from smart_cache_system import smart_cache_manager
+
+# 导入复式预测功能
+from compound_modules.compound_predictor import CompoundPredictorMixin, CompoundConfig, CompoundResult
 
 
 # ==================== 基础分析器 ====================
-class BasicAnalyzer:
-    """基础分析器"""
+class BasicAnalyzer(CompoundPredictorMixin):
+    """基础分析器（支持复式预测）"""
     
     def __init__(self, data_file="data/dlt_data_all.csv"):
+        super().__init__()
         self.data_file = data_file
         self.df = data_manager.get_data()
         
@@ -39,8 +49,8 @@ class BasicAnalyzer:
         if self.df is None:
             return {}
 
-        cache_key = f"enhanced_frequency_analysis_{periods or 'all'}"
-        cached_result = cache_manager.load_cache("analysis", cache_key)
+        method_name = "frequency_analysis"
+        cached_result = smart_cache_manager.load_cache("analysis", method_name, periods)
         if cached_result:
             return cached_result
 
@@ -71,7 +81,7 @@ class BasicAnalyzer:
             'timestamp': datetime.now().isoformat()
         }
 
-        cache_manager.save_cache("analysis", cache_key, result)
+        smart_cache_manager.save_cache("analysis", method_name, result, periods)
         return result
 
     def _enhanced_frequency_analysis(self, counter: Counter, total_periods: int,
@@ -235,8 +245,8 @@ class BasicAnalyzer:
         if self.df is None:
             return {}
 
-        cache_key = f"enhanced_missing_analysis_{periods or 'all'}"
-        cached_result = cache_manager.load_cache("analysis", cache_key)
+        method_name = "missing_analysis"
+        cached_result = smart_cache_manager.load_cache("analysis", method_name, periods)
         if cached_result:
             return cached_result
 
@@ -298,7 +308,7 @@ class BasicAnalyzer:
             'timestamp': datetime.now().isoformat()
         }
 
-        cache_manager.save_cache("analysis", cache_key, result)
+        smart_cache_manager.save_cache("analysis", method_name, result, periods)
         return result
 
     def _enhanced_missing_analysis(self, current_missing: Dict, missing_history: Dict,
@@ -490,8 +500,8 @@ class BasicAnalyzer:
         if self.df is None:
             return {}
 
-        cache_key = f"enhanced_hot_cold_analysis_{periods}"
-        cached_result = cache_manager.load_cache("analysis", cache_key)
+        method_name = "hot_cold_analysis"
+        cached_result = smart_cache_manager.load_cache("analysis", method_name, periods)
         if cached_result:
             return cached_result
 
@@ -526,7 +536,7 @@ class BasicAnalyzer:
             'timestamp': datetime.now().isoformat()
         }
 
-        cache_manager.save_cache("analysis", cache_key, result)
+        smart_cache_manager.save_cache("analysis", method_name, result, periods)
         return result
 
     def _enhanced_hot_cold_analysis(self, frequency_dict: Dict, periods: int,
@@ -800,8 +810,8 @@ class BasicAnalyzer:
         if self.df is None:
             return {}
         
-        cache_key = f"sum_analysis_{periods or 'all'}"
-        cached_result = cache_manager.load_cache("analysis", cache_key)
+        method_name = "sum_analysis"
+        cached_result = smart_cache_manager.load_cache("analysis", method_name, periods)
         if cached_result:
             return cached_result
         
@@ -848,7 +858,7 @@ class BasicAnalyzer:
             'timestamp': datetime.now().isoformat()
         }
         
-        cache_manager.save_cache("analysis", cache_key, result)
+        smart_cache_manager.save_cache("analysis", method_name, result, periods)
         return result
 
     def statistical_features_analysis(self, periods=None) -> Dict:
@@ -856,8 +866,8 @@ class BasicAnalyzer:
         if self.df is None:
             return {}
 
-        cache_key = f"statistical_features_{periods or 'all'}"
-        cached_result = cache_manager.load_cache("analysis", cache_key)
+        method_name = "statistical_features_analysis"
+        cached_result = smart_cache_manager.load_cache("analysis", method_name, periods)
         if cached_result:
             return cached_result
 
@@ -961,8 +971,112 @@ class BasicAnalyzer:
             'timestamp': datetime.now().isoformat()
         }
 
-        cache_manager.save_cache("analysis", cache_key, result)
+        smart_cache_manager.save_cache("analysis", method_name, result, periods)
         return result
+
+    def predict_compound(self, config: Optional[CompoundConfig] = None) -> CompoundResult:
+        """
+        基础分析器复式预测
+
+        Args:
+            config: 复式预测配置
+
+        Returns:
+            复式预测结果
+        """
+        if config is None:
+            config = self.compound_config or CompoundConfig()
+
+        # 验证参数
+        if not self.validate_compound_params(config.front_count, config.back_count, config.max_cost):
+            raise ValueError("基础分析器复式预测参数验证失败")
+
+        logger_manager.info(f"开始基础分析器复式预测: {config.front_count}+{config.back_count}")
+
+        try:
+            # 综合多种分析方法
+            freq_result = self.frequency_analysis(config.periods)
+            hot_cold_result = self.hot_cold_analysis(config.periods)
+            missing_result = self.missing_analysis(config.periods)
+
+            # 收集候选号码
+            front_candidates = set()
+            back_candidates = set()
+
+            # 从频率分析中选择
+            if 'front_frequency' in freq_result:
+                front_freq = sorted(freq_result['front_frequency'].items(), key=lambda x: x[1], reverse=True)
+                front_candidates.update([ball for ball, freq in front_freq[:config.front_count * 2]])
+
+            if 'back_frequency' in freq_result:
+                back_freq = sorted(freq_result['back_frequency'].items(), key=lambda x: x[1], reverse=True)
+                back_candidates.update([ball for ball, freq in back_freq[:config.back_count * 2]])
+
+            # 从冷热分析中选择
+            if 'front_hot' in hot_cold_result:
+                front_candidates.update(hot_cold_result['front_hot'][:config.front_count])
+            if 'back_hot' in hot_cold_result:
+                back_candidates.update(hot_cold_result['back_hot'][:config.back_count])
+
+            # 从遗漏分析中选择
+            if 'front_urgent' in missing_result:
+                front_candidates.update(missing_result['front_urgent'][:config.front_count])
+            if 'back_urgent' in missing_result:
+                back_candidates.update(missing_result['back_urgent'][:config.back_count])
+
+            # 确保有足够的候选号码
+            while len(front_candidates) < config.front_count:
+                for i in range(1, 36):
+                    if i not in front_candidates:
+                        front_candidates.add(i)
+                        if len(front_candidates) >= config.front_count:
+                            break
+
+            while len(back_candidates) < config.back_count:
+                for i in range(1, 13):
+                    if i not in back_candidates:
+                        back_candidates.add(i)
+                        if len(back_candidates) >= config.back_count:
+                            break
+
+            # 选择最终号码
+            front_balls = sorted(list(front_candidates)[:config.front_count])
+            back_balls = sorted(list(back_candidates)[:config.back_count])
+
+            # 计算组合数和成本
+            combinations = self.calculate_combinations(config.front_count, config.back_count)
+            cost = self.calculate_cost(combinations)
+
+            # 计算置信度
+            confidence = min(0.8, max(0.4, len(front_candidates) / (config.front_count * 3)))
+
+            # 创建结果
+            from datetime import datetime
+            result = CompoundResult(
+                front_balls=front_balls,
+                back_balls=back_balls,
+                front_count=config.front_count,
+                back_count=config.back_count,
+                total_combinations=combinations,
+                total_cost=cost,
+                confidence=confidence,
+                method="基础分析器复式预测",
+                analysis_periods=config.periods,
+                timestamp=datetime.now().isoformat(),
+                details={
+                    'analysis_methods': ['frequency', 'hot_cold', 'missing'],
+                    'candidate_sources': 3,
+                    'selection_strategy': 'multi_method_fusion'
+                }
+            )
+
+            logger_manager.info(f"基础分析器复式预测完成: {config.front_count}+{config.back_count}, 置信度: {confidence:.3f}")
+            return result
+
+        except Exception as e:
+            logger_manager.error(f"基础分析器复式预测失败: {e}")
+            # 返回默认结果
+            return super().predict_compound(config)
 
 
 # ==================== 高级分析器 ====================
@@ -977,35 +1091,30 @@ class AdvancedAnalyzer:
         if self.df is None:
             logger_manager.error("数据未加载")
     
-    def markov_analysis(self, periods=500) -> Dict:
-        """马尔可夫链分析"""
+    def markov_analysis(self, periods=500, n_jobs=1) -> Dict:
+        """马尔可夫链分析（支持并行化）
+
+        Args:
+            periods: 分析期数
+            n_jobs: 并行作业数，1表示单线程，-1表示使用所有CPU核心
+        """
         if self.df is None:
             return {}
-        
-        cache_key = f"markov_analysis_{periods}"
-        cached_result = cache_manager.load_cache("analysis", cache_key)
+
+        method_name = "markov_analysis"
+        cached_result = smart_cache_manager.load_cache("analysis", method_name, periods)
         if cached_result:
             return cached_result
         
         df_subset = self.df.tail(periods)
-        
-        # 构建转移矩阵
-        front_transitions = defaultdict(lambda: defaultdict(int))
-        back_transitions = defaultdict(lambda: defaultdict(int))
-        
-        for i in range(len(df_subset) - 1):
-            current_front, current_back = data_manager.parse_balls(df_subset.iloc[i])
-            next_front, next_back = data_manager.parse_balls(df_subset.iloc[i + 1])
-            
-            # 前区转移
-            for curr_ball in current_front:
-                for next_ball in next_front:
-                    front_transitions[curr_ball][next_ball] += 1
-            
-            # 后区转移
-            for curr_ball in current_back:
-                for next_ball in next_back:
-                    back_transitions[curr_ball][next_ball] += 1
+
+        # 根据n_jobs决定是否使用并行化
+        if n_jobs == 1:
+            # 单线程处理
+            front_transitions, back_transitions = self._compute_transitions_single(df_subset)
+        else:
+            # 并行处理
+            front_transitions, back_transitions = self._compute_transitions_parallel(df_subset, n_jobs)
         
         # 转换为概率
         front_probs = {}
@@ -1027,24 +1136,119 @@ class AdvancedAnalyzer:
             'timestamp': datetime.now().isoformat()
         }
         
-        cache_manager.save_cache("analysis", cache_key, result)
+        smart_cache_manager.save_cache("analysis", method_name, result, periods)
         return result
+
+    def _compute_transitions_single(self, df_subset):
+        """单线程计算转移矩阵"""
+        front_transitions = defaultdict(lambda: defaultdict(int))
+        back_transitions = defaultdict(lambda: defaultdict(int))
+
+        for i in range(len(df_subset) - 1):
+            current_front, current_back = data_manager.parse_balls(df_subset.iloc[i])
+            next_front, next_back = data_manager.parse_balls(df_subset.iloc[i + 1])
+
+            # 前区转移
+            for curr_ball in current_front:
+                for next_ball in next_front:
+                    front_transitions[curr_ball][next_ball] += 1
+
+            # 后区转移
+            for curr_ball in current_back:
+                for next_ball in next_back:
+                    back_transitions[curr_ball][next_ball] += 1
+
+        return front_transitions, back_transitions
+
+    def _compute_transitions_parallel(self, df_subset, n_jobs):
+        """并行计算转移矩阵"""
+        try:
+            from joblib import Parallel, delayed
+            import multiprocessing as mp
+
+            # 确定实际使用的进程数
+            if n_jobs == -1:
+                n_jobs = mp.cpu_count()
+            else:
+                n_jobs = min(n_jobs, mp.cpu_count())
+
+            # 将数据分块
+            chunk_size = max(1, (len(df_subset) - 1) // n_jobs)
+            chunks = []
+            for i in range(0, len(df_subset) - 1, chunk_size):
+                end_idx = min(i + chunk_size + 1, len(df_subset))  # +1 for transition calculation
+                chunks.append(df_subset.iloc[i:end_idx])
+
+            # 并行计算每个块的转移矩阵
+            results = Parallel(n_jobs=n_jobs)(
+                delayed(self._compute_chunk_transitions)(chunk) for chunk in chunks
+            )
+
+            # 合并结果
+            front_transitions = defaultdict(lambda: defaultdict(int))
+            back_transitions = defaultdict(lambda: defaultdict(int))
+
+            for front_trans, back_trans in results:
+                for from_ball, to_dict in front_trans.items():
+                    for to_ball, count in to_dict.items():
+                        front_transitions[from_ball][to_ball] += count
+
+                for from_ball, to_dict in back_trans.items():
+                    for to_ball, count in to_dict.items():
+                        back_transitions[from_ball][to_ball] += count
+
+            return front_transitions, back_transitions
+
+        except ImportError:
+            logger_manager.warning("joblib未安装，使用单线程计算")
+            return self._compute_transitions_single(df_subset)
+
+    def _compute_chunk_transitions(self, chunk):
+        """计算数据块的转移矩阵"""
+        front_transitions = defaultdict(lambda: defaultdict(int))
+        back_transitions = defaultdict(lambda: defaultdict(int))
+
+        for i in range(len(chunk) - 1):
+            current_front, current_back = data_manager.parse_balls(chunk.iloc[i])
+            next_front, next_back = data_manager.parse_balls(chunk.iloc[i + 1])
+
+            # 前区转移
+            for curr_ball in current_front:
+                for next_ball in next_front:
+                    front_transitions[curr_ball][next_ball] += 1
+
+            # 后区转移
+            for curr_ball in current_back:
+                for next_ball in next_back:
+                    back_transitions[curr_ball][next_ball] += 1
+
+        return front_transitions, back_transitions
     
-    def bayesian_analysis(self, periods=300) -> Dict:
-        """增强贝叶斯分析 - 完整的贝叶斯推理过程"""
+    def bayesian_analysis(self, periods=300, n_jobs=1) -> Dict:
+        """增强贝叶斯分析 - 完整的贝叶斯推理过程（支持并行化）
+
+        Args:
+            periods: 分析期数
+            n_jobs: 并行作业数，1表示单线程，-1表示使用所有CPU核心
+        """
         if self.df is None:
             return {}
 
-        cache_key = f"enhanced_bayesian_analysis_{periods}"
-        cached_result = cache_manager.load_cache("analysis", cache_key)
+        method_name = "enhanced_bayesian_analysis"
+        cached_result = smart_cache_manager.load_cache("analysis", method_name, periods)
         if cached_result:
             return cached_result
 
         df_subset = self.df.tail(periods)
 
-        # 增强贝叶斯分析
-        front_enhanced = self._enhanced_bayesian_analysis(df_subset, 35, 5)
-        back_enhanced = self._enhanced_bayesian_analysis(df_subset, 12, 2)
+        # 根据n_jobs决定是否使用并行化
+        if n_jobs == 1:
+            # 单线程处理
+            front_enhanced = self._enhanced_bayesian_analysis(df_subset, 35, 5)
+            back_enhanced = self._enhanced_bayesian_analysis(df_subset, 12, 2)
+        else:
+            # 并行处理
+            front_enhanced, back_enhanced = self._parallel_bayesian_analysis(df_subset, n_jobs)
 
         # 传统贝叶斯分析（保持兼容性）
         traditional_result = self._traditional_bayesian_analysis(df_subset)
@@ -1060,8 +1264,35 @@ class AdvancedAnalyzer:
             'timestamp': datetime.now().isoformat()
         }
 
-        cache_manager.save_cache("analysis", cache_key, result)
+        smart_cache_manager.save_cache("analysis", method_name, result, periods)
         return result
+
+    def _parallel_bayesian_analysis(self, df_subset, n_jobs):
+        """并行贝叶斯分析"""
+        try:
+            from joblib import Parallel, delayed
+            import multiprocessing as mp
+
+            # 确定实际使用的进程数
+            if n_jobs == -1:
+                n_jobs = mp.cpu_count()
+            else:
+                n_jobs = min(n_jobs, mp.cpu_count())
+
+            # 并行计算前区和后区
+            results = Parallel(n_jobs=min(n_jobs, 2))(
+                delayed(self._enhanced_bayesian_analysis)(df_subset, max_num, draw_count)
+                for max_num, draw_count in [(35, 5), (12, 2)]
+            )
+
+            front_enhanced, back_enhanced = results
+            return front_enhanced, back_enhanced
+
+        except ImportError:
+            logger_manager.warning("joblib未安装，使用单线程贝叶斯分析")
+            front_enhanced = self._enhanced_bayesian_analysis(df_subset, 35, 5)
+            back_enhanced = self._enhanced_bayesian_analysis(df_subset, 12, 2)
+            return front_enhanced, back_enhanced
 
     def _enhanced_bayesian_analysis(self, df_subset, max_number: int, numbers_per_draw: int) -> Dict:
         """增强贝叶斯分析 - 完整的贝叶斯推理"""
@@ -1573,8 +1804,8 @@ class AdvancedAnalyzer:
         if self.df is None:
             return {}
         
-        cache_key = f"correlation_analysis_{periods}"
-        cached_result = cache_manager.load_cache("analysis", cache_key)
+        method_name = "correlation_analysis"
+        cached_result = smart_cache_manager.load_cache("analysis", method_name, periods)
         if cached_result:
             return cached_result
         
@@ -1626,7 +1857,7 @@ class AdvancedAnalyzer:
             'timestamp': datetime.now().isoformat()
         }
         
-        cache_manager.save_cache("analysis", cache_key, result)
+        smart_cache_manager.save_cache("analysis", method_name, result, periods)
         return result
 
     def trend_generation_analysis(self, periods=500) -> Dict:
@@ -1634,8 +1865,8 @@ class AdvancedAnalyzer:
         if self.df is None:
             return {}
 
-        cache_key = f"trend_generation_{periods}"
-        cached_result = cache_manager.load_cache("analysis", cache_key)
+        method_name = "trend_generation_analysis"
+        cached_result = smart_cache_manager.load_cache("analysis", method_name, periods)
         if cached_result:
             return cached_result
 
@@ -1705,7 +1936,7 @@ class AdvancedAnalyzer:
             'timestamp': datetime.now().isoformat()
         }
 
-        cache_manager.save_cache("analysis", cache_key, result)
+        smart_cache_manager.save_cache("analysis", method_name, result, periods)
         return result
 
     def mixed_strategy_analysis(self, periods=500) -> Dict:
@@ -1713,8 +1944,8 @@ class AdvancedAnalyzer:
         if self.df is None:
             return {}
 
-        cache_key = f"mixed_strategy_{periods}"
-        cached_result = cache_manager.load_cache("analysis", cache_key)
+        method_name = "mixed_strategy_analysis"
+        cached_result = smart_cache_manager.load_cache("analysis", method_name, periods)
         if cached_result:
             return cached_result
 
@@ -1781,7 +2012,7 @@ class AdvancedAnalyzer:
             'timestamp': datetime.now().isoformat()
         }
 
-        cache_manager.save_cache("analysis", cache_key, result)
+        smart_cache_manager.save_cache("analysis", method_name, result, periods)
         return result
 
     def markov_bayesian_fusion_analysis(self, periods=500) -> Dict:
@@ -1789,8 +2020,8 @@ class AdvancedAnalyzer:
         if self.df is None:
             return {}
 
-        cache_key = f"markov_bayesian_fusion_{periods}"
-        cached_result = cache_manager.load_cache("analysis", cache_key)
+        method_name = "markov_bayesian_fusion_analysis"
+        cached_result = smart_cache_manager.load_cache("analysis", method_name, periods)
         if cached_result:
             return cached_result
 
@@ -1854,7 +2085,7 @@ class AdvancedAnalyzer:
             'timestamp': datetime.now().isoformat()
         }
 
-        cache_manager.save_cache("analysis", cache_key, result)
+        smart_cache_manager.save_cache("analysis", method_name, result, periods)
         return result
 
     def hot_cold_markov_integration(self, periods=500) -> Dict:
@@ -1862,8 +2093,8 @@ class AdvancedAnalyzer:
         if self.df is None:
             return {}
 
-        cache_key = f"hot_cold_markov_{periods}"
-        cached_result = cache_manager.load_cache("analysis", cache_key)
+        method_name = "hot_cold_markov_integration"
+        cached_result = smart_cache_manager.load_cache("analysis", method_name, periods)
         if cached_result:
             return cached_result
 
@@ -1935,7 +2166,7 @@ class AdvancedAnalyzer:
             'timestamp': datetime.now().isoformat()
         }
 
-        cache_manager.save_cache("analysis", cache_key, result)
+        smart_cache_manager.save_cache("analysis", method_name, result, periods)
         return result
 
     def multi_dimensional_probability_analysis(self, periods=500) -> Dict:
@@ -1943,8 +2174,8 @@ class AdvancedAnalyzer:
         if self.df is None:
             return {}
 
-        cache_key = f"multi_dimensional_prob_{periods}"
-        cached_result = cache_manager.load_cache("analysis", cache_key)
+        method_name = "multi_dimensional_probability_analysis"
+        cached_result = smart_cache_manager.load_cache("analysis", method_name, periods)
         if cached_result:
             return cached_result
 
@@ -2033,7 +2264,7 @@ class AdvancedAnalyzer:
             'timestamp': datetime.now().isoformat()
         }
 
-        cache_manager.save_cache("analysis", cache_key, result)
+        smart_cache_manager.save_cache("analysis", method_name, result, periods)
         return result
 
     def comprehensive_weight_scoring_system(self, periods=500) -> Dict:
@@ -2041,8 +2272,8 @@ class AdvancedAnalyzer:
         if self.df is None:
             return {}
 
-        cache_key = f"comprehensive_weight_scoring_{periods}"
-        cached_result = cache_manager.load_cache("analysis", cache_key)
+        method_name = "comprehensive_weight_scoring_system"
+        cached_result = smart_cache_manager.load_cache("analysis", method_name, periods)
         if cached_result:
             return cached_result
 
@@ -2075,8 +2306,10 @@ class AdvancedAnalyzer:
             total_score = 0
             detail_scores = {}
 
-            # 频率得分
-            freq_score = frequency_result.get('front_frequency', {}).get(ball, 0) / periods
+            # 频率得分（处理键的数据类型）
+            front_freq = frequency_result.get('front_frequency', {})
+            freq_count = front_freq.get(ball, front_freq.get(str(ball), 0))
+            freq_score = freq_count / periods if periods > 0 else 0
             total_score += freq_score * weights['frequency']
             detail_scores['frequency'] = freq_score
 
@@ -2091,9 +2324,10 @@ class AdvancedAnalyzer:
             total_score += hot_cold_score * weights['hot_cold']
             detail_scores['hot_cold'] = hot_cold_score
 
-            # 遗漏得分
-            missing_periods = missing_result.get('front_missing', {}).get(ball, 0)
-            missing_score = min(1.0, missing_periods / 20)  # 标准化
+            # 遗漏得分（处理键的数据类型）
+            front_missing = missing_result.get('front_missing', {})
+            missing_periods = front_missing.get(ball, front_missing.get(str(ball), 0))
+            missing_score = min(1.0, missing_periods / 20) if missing_periods > 0 else 0  # 标准化
             total_score += missing_score * weights['missing']
             detail_scores['missing'] = missing_score
 
@@ -2106,8 +2340,9 @@ class AdvancedAnalyzer:
             total_score += markov_score * weights['markov']
             detail_scores['markov'] = markov_score
 
-            # 贝叶斯得分
-            bayesian_score = bayesian_result.get('front_posterior', {}).get(ball, 0)
+            # 贝叶斯得分（处理键的数据类型）
+            front_posterior = bayesian_result.get('front_posterior', {})
+            bayesian_score = front_posterior.get(ball, front_posterior.get(str(ball), 0))
             total_score += bayesian_score * weights['bayesian']
             detail_scores['bayesian'] = bayesian_score
 
@@ -2131,7 +2366,10 @@ class AdvancedAnalyzer:
             total_score = 0
             detail_scores = {}
 
-            freq_score = frequency_result.get('back_frequency', {}).get(ball, 0) / periods
+            # 频率得分（处理键的数据类型）
+            back_freq = frequency_result.get('back_frequency', {})
+            freq_count = back_freq.get(ball, back_freq.get(str(ball), 0))
+            freq_score = freq_count / periods if periods > 0 else 0
             total_score += freq_score * weights['frequency']
             detail_scores['frequency'] = freq_score
 
@@ -2145,8 +2383,10 @@ class AdvancedAnalyzer:
             total_score += hot_cold_score * weights['hot_cold']
             detail_scores['hot_cold'] = hot_cold_score
 
-            missing_periods = missing_result.get('back_missing', {}).get(ball, 0)
-            missing_score = min(1.0, missing_periods / 15)
+            # 遗漏得分（处理键的数据类型）
+            back_missing = missing_result.get('back_missing', {})
+            missing_periods = back_missing.get(ball, back_missing.get(str(ball), 0))
+            missing_score = min(1.0, missing_periods / 15) if missing_periods > 0 else 0
             total_score += missing_score * weights['missing']
             detail_scores['missing'] = missing_score
 
@@ -2158,7 +2398,9 @@ class AdvancedAnalyzer:
             total_score += markov_score * weights['markov']
             detail_scores['markov'] = markov_score
 
-            bayesian_score = bayesian_result.get('back_posterior', {}).get(ball, 0)
+            # 贝叶斯得分（处理键的数据类型）
+            back_posterior = bayesian_result.get('back_posterior', {})
+            bayesian_score = back_posterior.get(ball, back_posterior.get(str(ball), 0))
             total_score += bayesian_score * weights['bayesian']
             detail_scores['bayesian'] = bayesian_score
 
@@ -2191,7 +2433,7 @@ class AdvancedAnalyzer:
             'timestamp': datetime.now().isoformat()
         }
 
-        cache_manager.save_cache("analysis", cache_key, result)
+        smart_cache_manager.save_cache("analysis", method_name, result, periods)
         return result
 
     def advanced_pattern_recognition(self, periods=500) -> Dict:
@@ -2199,8 +2441,8 @@ class AdvancedAnalyzer:
         if self.df is None:
             return {}
 
-        cache_key = f"advanced_pattern_recognition_{periods}"
-        cached_result = cache_manager.load_cache("analysis", cache_key)
+        method_name = "advanced_pattern_recognition"
+        cached_result = smart_cache_manager.load_cache("analysis", method_name, periods)
         if cached_result:
             return cached_result
 
@@ -2309,7 +2551,7 @@ class AdvancedAnalyzer:
             'timestamp': datetime.now().isoformat()
         }
 
-        cache_manager.save_cache("analysis", cache_key, result)
+        smart_cache_manager.save_cache("analysis", method_name, result, periods)
         return result
 
     def nine_mathematical_models_analysis(self, periods=500) -> Dict:
@@ -2321,8 +2563,8 @@ class AdvancedAnalyzer:
         if self.df is None:
             return {}
 
-        cache_key = f"nine_mathematical_models_{periods}"
-        cached_result = cache_manager.load_cache("analysis", cache_key)
+        method_name = "nine_mathematical_models_analysis"
+        cached_result = smart_cache_manager.load_cache("analysis", method_name, periods)
         if cached_result:
             return cached_result
 
@@ -2386,7 +2628,7 @@ class AdvancedAnalyzer:
             'timestamp': datetime.now().isoformat()
         }
 
-        cache_manager.save_cache("analysis", cache_key, result)
+        smart_cache_manager.save_cache("analysis", method_name, result, periods)
         logger_manager.info("9种数学模型综合分析完成")
         return result
 
@@ -3051,8 +3293,8 @@ class ComprehensiveAnalyzer:
         """综合分析"""
         logger_manager.info(f"开始综合分析，期数: {periods}")
         
-        cache_key = f"comprehensive_analysis_{periods}"
-        cached_result = cache_manager.load_cache("analysis", cache_key)
+        method_name = "comprehensive_analysis"
+        cached_result = smart_cache_manager.load_cache("analysis", method_name, periods)
         if cached_result:
             logger_manager.info("从缓存加载综合分析结果")
             return cached_result
@@ -3110,7 +3352,7 @@ class ComprehensiveAnalyzer:
                 'timestamp': datetime.now().isoformat()
             }
             
-            cache_manager.save_cache("analysis", cache_key, result)
+            smart_cache_manager.save_cache("analysis", method_name, result, periods)
             logger_manager.info("综合分析完成")
             
             return result
@@ -3374,11 +3616,84 @@ class VisualizationAnalyzer:
         return success_count > 0
 
 
+# ==================== 智能缓存系统集成 ====================
+
+def migrate_to_smart_cache():
+    """迁移到智能缓存系统"""
+    try:
+        from smart_cache_system import migrate_cache_system
+        return migrate_cache_system()
+    except Exception as e:
+        logger_manager.error(f"智能缓存系统迁移失败: {e}")
+        return False
+
+def clear_all_analysis_cache():
+    """清理所有分析缓存"""
+    try:
+        # 清理智能缓存
+        cleared_smart = smart_cache_manager.clear_cache("analysis")
+
+        # 清理旧缓存
+        cleared_old = cache_manager.clear_cache("analysis")
+
+        total_cleared = cleared_smart + cleared_old
+        logger_manager.info(f"清理分析缓存完成，删除 {total_cleared} 个缓存项")
+        return total_cleared
+
+    except Exception as e:
+        logger_manager.error(f"清理分析缓存失败: {e}")
+        return 0
+
+def get_analysis_cache_status():
+    """获取分析缓存状态"""
+    try:
+        smart_stats = smart_cache_manager.get_cache_stats()
+        old_stats = cache_manager.get_cache_info()
+
+        return {
+            'smart_cache': smart_stats,
+            'old_cache': old_stats,
+            'data_signature': smart_stats.get('data_signature', 'unknown'),
+            'migration_recommended': True
+        }
+
+    except Exception as e:
+        logger_manager.error(f"获取分析缓存状态失败: {e}")
+        return {}
+
+def force_refresh_cache(method_name: str = None):
+    """强制刷新缓存"""
+    try:
+        if method_name:
+            # 清理特定方法的缓存
+            cleared = smart_cache_manager.clear_cache("analysis", method_name)
+            logger_manager.info(f"强制刷新 {method_name} 缓存，删除 {cleared} 个缓存项")
+        else:
+            # 清理所有分析缓存
+            cleared = clear_all_analysis_cache()
+            logger_manager.info(f"强制刷新所有分析缓存，删除 {cleared} 个缓存项")
+
+        return cleared
+
+    except Exception as e:
+        logger_manager.error(f"强制刷新缓存失败: {e}")
+        return 0
+
+
 # ==================== 全局实例 ====================
 basic_analyzer = BasicAnalyzer()
 advanced_analyzer = AdvancedAnalyzer()
 comprehensive_analyzer = ComprehensiveAnalyzer()
 visualization_analyzer = VisualizationAnalyzer()
+
+# 在模块加载时自动迁移缓存系统
+try:
+    if migrate_to_smart_cache():
+        logger_manager.info("✅ 智能缓存系统已启用")
+    else:
+        logger_manager.warning("⚠️ 智能缓存系统启用失败，使用传统缓存")
+except Exception as e:
+    logger_manager.error(f"缓存系统初始化失败: {e}")
 
 
 if __name__ == "__main__":

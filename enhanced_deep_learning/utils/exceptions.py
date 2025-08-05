@@ -151,6 +151,9 @@ def handle_model_error(func):
             return None
         except Exception as e:
             logger_manager.error(f"未知错误: {e}")
-            return None
+            import traceback
+            logger_manager.error(f"错误堆栈: {traceback.format_exc()}")
+            # 重新抛出异常，不使用回退机制
+            raise e
     
     return wrapper

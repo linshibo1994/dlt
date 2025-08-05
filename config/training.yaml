@@ -1,0 +1,295 @@
+# 训练优化配置文件
+# Training Optimization Configuration
+
+# 智能训练轮数配置
+smart_epochs:
+  # 是否启用智能训练轮数
+  enabled: true
+  
+  # 基础训练轮数比例
+  base_ratios:
+    lstm: 0.6
+    transformer: 0.5
+    gan: 0.7
+    traditional_ml: 0.3
+    clustering: 0.2
+    markov_chain: 0.1
+    bayesian: 0.25
+  
+  # 性能模式倍数
+  performance_multipliers:
+    low: 0.5
+    medium: 1.0
+    high: 1.5
+  
+  # 硬件性能阈值
+  hardware_thresholds:
+    high_performance: 75
+    medium_performance: 50
+    low_performance: 25
+  
+  # 数据量阈值
+  data_size_thresholds:
+    small: 500
+    medium: 1000
+    large: 2000
+
+# 模型特定配置
+model_configs:
+  # LSTM配置
+  lstm:
+    min_epochs: 50
+    max_epochs: 1000
+    default_epochs: 200
+    complexity_factor: 1.2
+    time_per_epoch: 0.5  # 分钟
+    early_stopping_patience: 15
+    
+  # Transformer配置
+  transformer:
+    min_epochs: 30
+    max_epochs: 800
+    default_epochs: 100
+    complexity_factor: 1.4
+    time_per_epoch: 1.0  # 分钟
+    early_stopping_patience: 10
+    
+  # GAN配置
+  gan:
+    min_epochs: 100
+    max_epochs: 1500
+    default_epochs: 200
+    complexity_factor: 1.5
+    time_per_epoch: 1.5  # 分钟
+    early_stopping_patience: 20
+    
+  # 传统机器学习
+  traditional_ml:
+    min_epochs: 10
+    max_epochs: 200
+    default_epochs: 50
+    complexity_factor: 0.8
+    time_per_epoch: 0.1  # 分钟
+    early_stopping_patience: 5
+    
+  # 聚类分析
+  clustering:
+    min_iterations: 5
+    max_iterations: 100
+    default_iterations: 20
+    complexity_factor: 0.6
+    time_per_iteration: 0.05  # 分钟
+    convergence_tolerance: 1e-4
+    
+  # 马尔可夫链
+  markov_chain:
+    min_iterations: 3
+    max_iterations: 50
+    default_iterations: 10
+    complexity_factor: 0.5
+    time_per_iteration: 0.02  # 分钟
+    convergence_tolerance: 1e-3
+    
+  # 贝叶斯推理
+  bayesian:
+    min_iterations: 10
+    max_iterations: 500
+    default_iterations: 100
+    complexity_factor: 0.7
+    time_per_iteration: 0.08  # 分钟
+    convergence_tolerance: 1e-3
+
+# 自适应早停配置
+early_stopping:
+  # 是否启用自适应早停
+  enabled: true
+  
+  # 监控指标
+  monitor: "val_loss"
+  
+  # 最小改善阈值
+  min_delta: 0.001
+  
+  # 是否恢复最佳权重
+  restore_best_weights: true
+  
+  # 详细输出
+  verbose: 1
+  
+  # 模式 (min/max)
+  mode: "min"
+
+# 训练监控配置
+training_monitoring:
+  # 是否启用训练监控
+  enabled: true
+  
+  # 监控间隔 (轮数)
+  monitor_interval: 5
+  
+  # 异常检测阈值
+  anomaly_thresholds:
+    loss_explosion_factor: 2.0
+    gradient_vanishing_threshold: 1e-6
+    overfitting_ratio: 1.5
+  
+  # 趋势分析窗口
+  trend_analysis_window: 5
+  
+  # 收敛检测
+  convergence_detection:
+    variance_threshold: 0.001
+    improvement_threshold: 0.01
+
+# 自适应调整配置
+adaptive_adjustment:
+  # 是否启用自适应调整
+  enabled: true
+  
+  # 学习率调整
+  learning_rate_adjustment:
+    decrease_factor: 0.8
+    significant_decrease_factor: 0.5
+    increase_factor: 1.2
+    min_lr: 1e-6
+    max_lr: 0.1
+  
+  # Dropout调整
+  dropout_adjustment:
+    increase_step: 0.1
+    decrease_step: 0.1
+    min_dropout: 0.0
+    max_dropout: 0.8
+  
+  # 批次大小调整
+  batch_size_adjustment:
+    enabled: false
+    increase_factor: 1.5
+    decrease_factor: 0.7
+    min_batch_size: 8
+    max_batch_size: 256
+
+# 性能优化配置
+performance_optimization:
+  # 混合精度训练
+  mixed_precision:
+    enabled: false
+    loss_scale: "dynamic"
+  
+  # 梯度累积
+  gradient_accumulation:
+    enabled: false
+    accumulation_steps: 4
+  
+  # 梯度裁剪
+  gradient_clipping:
+    enabled: true
+    max_norm: 1.0
+    norm_type: 2
+  
+  # 学习率调度
+  learning_rate_scheduler:
+    type: "cosine_annealing"  # cosine_annealing, step, exponential
+    warmup_steps: 0
+    min_lr_ratio: 0.1
+
+# 验证配置
+validation:
+  # 验证集比例
+  validation_split: 0.2
+  
+  # 验证频率 (轮数)
+  validation_frequency: 5
+  
+  # 交叉验证
+  cross_validation:
+    enabled: false
+    folds: 5
+    shuffle: true
+    random_state: 42
+
+# 检查点配置
+checkpointing:
+  # 是否启用检查点
+  enabled: true
+  
+  # 保存频率 (轮数)
+  save_frequency: 10
+  
+  # 保存最佳模型
+  save_best_only: true
+  
+  # 最大保存数量
+  max_checkpoints: 5
+  
+  # 检查点目录
+  checkpoint_dir: "checkpoints"
+
+# 日志配置
+logging:
+  # 日志级别
+  level: "INFO"
+  
+  # 是否记录详细训练信息
+  detailed_logging: true
+  
+  # 指标记录频率 (轮数)
+  metrics_frequency: 1
+  
+  # 是否保存训练历史
+  save_history: true
+  
+  # 历史文件格式
+  history_format: "json"  # json, csv, pickle
+
+# 资源管理
+resource_management:
+  # 内存管理
+  memory_management:
+    # 最大内存使用率
+    max_memory_usage: 0.8
+    
+    # 内存清理频率 (轮数)
+    cleanup_frequency: 50
+    
+    # 是否启用垃圾回收
+    garbage_collection: true
+  
+  # GPU内存管理
+  gpu_memory_management:
+    # 是否允许内存增长
+    allow_growth: true
+    
+    # 内存限制 (MB)
+    memory_limit: null
+    
+    # 是否启用内存映射
+    memory_mapping: false
+
+# 实验性功能
+experimental:
+  # 动态批次大小
+  dynamic_batch_size:
+    enabled: false
+    min_batch_size: 16
+    max_batch_size: 128
+    adjustment_factor: 1.2
+  
+  # 自适应学习率
+  adaptive_learning_rate:
+    enabled: false
+    patience: 5
+    factor: 0.5
+    min_lr: 1e-7
+  
+  # 模型剪枝
+  model_pruning:
+    enabled: false
+    pruning_ratio: 0.1
+    structured_pruning: false
+  
+  # 知识蒸馏
+  knowledge_distillation:
+    enabled: false
+    temperature: 3.0
+    alpha: 0.7

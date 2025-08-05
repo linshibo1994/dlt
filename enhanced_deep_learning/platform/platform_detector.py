@@ -45,12 +45,19 @@ class HardwareInfo:
     """硬件信息"""
     cpu_count: int
     cpu_freq: float
+    cpu_brand: str
+    cpu_architecture: str
     memory_total: int
     memory_available: int
     disk_total: int
     disk_free: int
     gpu_count: int = 0
     gpu_info: List[Dict[str, Any]] = field(default_factory=list)
+    cuda_available: bool = False
+    cuda_version: str = ""
+    opencl_available: bool = False
+    mkl_available: bool = False
+    performance_score: float = 0.0
 
 
 @dataclass
@@ -255,10 +262,17 @@ class PlatformDetector:
             
             # GPU信息
             gpu_count, gpu_info = self._detect_gpu_info()
-            
+
+            # CPU品牌和架构信息
+            import platform
+            cpu_brand = platform.processor() or "Unknown"
+            cpu_architecture = platform.machine() or "Unknown"
+
             hardware_info = HardwareInfo(
                 cpu_count=cpu_count,
                 cpu_freq=cpu_freq,
+                cpu_brand=cpu_brand,
+                cpu_architecture=cpu_architecture,
                 memory_total=memory_total,
                 memory_available=memory_available,
                 disk_total=disk_total,
@@ -271,13 +285,18 @@ class PlatformDetector:
             
         except Exception as e:
             logger_manager.error(f"检测硬件信息失败: {e}")
+            import platform
             return HardwareInfo(
                 cpu_count=1,
                 cpu_freq=0.0,
+                cpu_brand=platform.processor() or "Unknown",
+                cpu_architecture=platform.machine() or "Unknown",
                 memory_total=0,
                 memory_available=0,
                 disk_total=0,
-                disk_free=0
+                disk_free=0,
+                gpu_count=0,
+                gpu_info=[]
             )
     
     def _detect_gpu_info(self) -> Tuple[int, List[Dict[str, Any]]]:

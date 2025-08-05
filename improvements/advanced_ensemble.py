@@ -134,15 +134,50 @@ class AdvancedEnsemblePredictor:
         return self.weighted_ensemble_predict(count)
     
     def _update_adaptive_weights(self):
-        """基于历史表现更新权重"""
-        for name in self.base_predictors.keys():
-            history = self.performance_history.get(name, [])
-            if len(history) > 0:
-                # 计算最近表现的加权平均
-                recent_performance = np.mean(history[-10:])  # 最近10次表现
-                
-                # 更新权重（表现好的预测器权重增加）
-                self.ensemble_weights[name] = max(0.1, recent_performance)
+        """基于历史表现更新权重（添加智能早停机制）"""
+        from enhanced_deep_learning.utils.intelligent_early_stopping import GeneralIntelligentEarlyStopping
+
+        # 初始化智能早停机制
+        early_stopping = GeneralIntelligentEarlyStopping(
+            patience=20,  # 连续20次相同结果时停止
+            min_delta=1e-6,
+            verbose=1
+        )
+        early_stopping.reset()
+
+        # 记录权重变化
+        previous_weights = self.ensemble_weights.copy()
+
+        for iteration in range(100):  # 最大迭代次数
+            weight_changed = False
+
+            for name in self.base_predictors.keys():
+                history = self.performance_history.get(name, [])
+                if len(history) > 0:
+                    # 计算最近表现的加权平均
+                    recent_performance = np.mean(history[-10:])  # 最近10次表现
+
+                    # 更新权重（表现好的预测器权重增加）
+                    new_weight = max(0.1, recent_performance)
+                    if abs(new_weight - self.ensemble_weights[name]) > 1e-6:
+                        self.ensemble_weights[name] = new_weight
+                        weight_changed = True
+
+            # 计算权重变化的总和作为收敛指标
+            weight_diff = sum(abs(self.ensemble_weights[name] - previous_weights.get(name, 0))
+                            for name in self.ensemble_weights.keys())
+
+            # 智能早停检查
+            if early_stopping.update(weight_diff):
+                logger_manager.info(f"自适应权重更新智能早停，迭代次数: {iteration + 1}")
+                break
+
+            # 如果权重没有变化，也可以停止
+            if not weight_changed:
+                logger_manager.info(f"权重收敛，迭代次数: {iteration + 1}")
+                break
+
+            previous_weights = self.ensemble_weights.copy()
     
     def _voting_selection(self, candidates: List[int], target_count: int, 
                          min_val: int, max_val: int) -> List[int]:

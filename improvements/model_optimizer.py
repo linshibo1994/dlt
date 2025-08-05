@@ -117,21 +117,30 @@ class ModelOptimizer:
         else:
             iterator = param_combinations
         
+        # 初始化智能早停机制
+        from enhanced_deep_learning.utils.intelligent_early_stopping import GeneralIntelligentEarlyStopping
+        early_stopping = GeneralIntelligentEarlyStopping(
+            patience=20,  # 连续20次相同结果时停止
+            min_delta=1e-6,
+            verbose=1
+        )
+        early_stopping.reset()
+
         # 评估每个参数组合
-        for params in iterator:
+        for i, params in enumerate(iterator):
             try:
                 # 使用当前参数创建模型
                 model = self.model_creator(**params)
-                
+
                 # 训练模型
                 if hasattr(model, 'fit'):
                     model.fit(train_data)
                 elif hasattr(model, 'train'):
                     model.train(train_data)
-                
+
                 # 在验证集上评估
                 score = self._evaluate_model(model, val_data, metric)
-                
+
                 # 记录结果
                 result = {
                     'params': params,
@@ -139,16 +148,21 @@ class ModelOptimizer:
                     'timestamp': datetime.now().isoformat()
                 }
                 self.results.append(result)
-                
+
                 # 更新最佳参数
                 if score > self.best_score:
                     self.best_score = score
                     self.best_params = params
                     self.best_model = model
-                    
+
                     if verbose:
                         logger_manager.info(f"发现更好的参数: {params}, 得分: {score:.4f}")
-                
+
+                # 智能早停检查（使用负分数，因为我们要最大化分数）
+                if early_stopping.update(-score):
+                    logger_manager.info(f"参数优化智能早停，已评估 {i + 1} 个参数组合")
+                    break
+
             except Exception as e:
                 logger_manager.error(f"评估参数 {params} 失败: {e}")
         

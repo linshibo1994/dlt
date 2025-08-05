@@ -9,6 +9,7 @@
 import os
 import numpy as np
 import pandas as pd
+import tensorflow as tf
 from typing import List, Tuple, Dict, Any, Optional
 from sklearn.preprocessing import MinMaxScaler, StandardScaler
 from datetime import datetime
@@ -16,6 +17,7 @@ from datetime import datetime
 from ..utils.config import DEFAULT_DATA_MANAGER_CONFIG
 from ..utils.exceptions import TrainingDataError
 from core_modules import logger_manager, data_manager, cache_manager, task_manager, with_progress
+from smart_cache_system import smart_cache_manager
 
 
 class DeepLearningDataManager:
@@ -35,6 +37,7 @@ class DeepLearningDataManager:
         
         self.df = data_manager.get_data()
         self.cache_manager = cache_manager
+        self.smart_cache_manager = smart_cache_manager
         self.cached_features = {}
         self.cached_sequences = {}
         
@@ -114,7 +117,7 @@ class DeepLearningDataManager:
             # 尝试解析一行数据
             if len(new_data) > 0:
                 row = new_data.iloc[0]
-                front_balls, back_balls = data_manager.parse_balls(row)
+                front_balls, back_balls = self.parse_balls(row)
                 
                 # 检查号码格式
                 if len(front_balls) != 5 or len(back_balls) != 2:
@@ -314,7 +317,7 @@ class DeepLearningDataManager:
         features = []
         
         for _, row in self.df.iterrows():
-            front_balls, back_balls = data_manager.parse_balls(row)
+            front_balls, back_balls = self.parse_balls(row)
             
             # 基础特征 (7维)
             feature_vector = front_balls + back_balls
@@ -411,3 +414,42 @@ class DeepLearningDataManager:
         except Exception as e:
             logger_manager.error(f"加载缓存数据失败: {e}")
             return False
+
+    def parse_balls(self, row):
+        """
+        解析一行数据中的前区和后区号码
+
+        Args:
+            row: 数据行（pandas Series）
+
+        Returns:
+            tuple: (前区号码列表, 后区号码列表)
+        """
+        try:
+            # 数据格式：CSV有列名 issue,date,front_balls,back_balls
+            # front_balls和back_balls是字符串，格式如 "05,13,14,16,20" 和 "03,08"
+
+            if hasattr(row, 'front_balls') and hasattr(row, 'back_balls'):
+                # 解析前区号码字符串
+                front_str = str(row.front_balls).strip('"')
+                front_balls = [int(x.strip()) for x in front_str.split(',')]
+
+                # 解析后区号码字符串
+                back_str = str(row.back_balls).strip('"')
+                back_balls = [int(x.strip()) for x in back_str.split(',')]
+
+                return front_balls, back_balls
+            else:
+                # 如果没有列名，尝试按索引访问
+                front_str = str(row.iloc[2]).strip('"')  # 第3列是front_balls
+                front_balls = [int(x.strip()) for x in front_str.split(',')]
+
+                back_str = str(row.iloc[3]).strip('"')   # 第4列是back_balls
+                back_balls = [int(x.strip()) for x in back_str.split(',')]
+
+                return front_balls, back_balls
+
+        except Exception as e:
+            logger_manager.error(f"解析号码失败: {e}")
+            # 返回默认值
+            return [1, 2, 3, 4, 5], [1, 2]

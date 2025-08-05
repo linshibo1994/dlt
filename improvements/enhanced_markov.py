@@ -17,10 +17,12 @@ from datetime import datetime
 # 尝试导入核心模块
 try:
     from core_modules import logger_manager, data_manager, cache_manager
+    from smart_cache_system import smart_cache_manager
 except ImportError:
     # 如果在不同目录运行，添加父目录到路径
     sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
     from core_modules import logger_manager, data_manager, cache_manager
+    from smart_cache_system import smart_cache_manager
 
 
 class EnhancedMarkovAnalyzer:
@@ -47,12 +49,12 @@ class EnhancedMarkovAnalyzer:
         # 检查参数有效性
         max_order = min(max(1, max_order), 3)  # 限制在1-3之间
         
-        cache_key = f"multi_order_markov_analysis_{periods}_{max_order}"
-        cached_result = cache_manager.load_cache("analysis", cache_key)
+        method_name = "multi_order_markov_analysis"
+        cached_result = smart_cache_manager.load_cache("analysis", method_name, periods, max_order=max_order)
         if cached_result:
             return cached_result
         
-        df_subset = self.df.head(periods)
+        df_subset = self.df.tail(periods)
         
         result = {
             'orders': {},
@@ -65,7 +67,7 @@ class EnhancedMarkovAnalyzer:
             order_result = self._analyze_nth_order_markov(df_subset, order)
             result['orders'][order] = order_result
         
-        cache_manager.save_cache("analysis", cache_key, result)
+        smart_cache_manager.save_cache("analysis", method_name, result, periods, max_order=max_order)
         return result
     
     def _analyze_nth_order_markov(self, df_subset, order=1) -> Dict:
@@ -199,9 +201,10 @@ class EnhancedMarkovPredictor:
         # 获取最近n期的号码作为条件状态
         condition_front = []
         condition_back = []
-        
+
         for i in range(min(order, len(self.df))):
-            front, back = data_manager.parse_balls(self.df.iloc[i])
+            # 从最新的数据开始取，而不是从最早的数据开始
+            front, back = data_manager.parse_balls(self.df.iloc[-(i+1)])
             condition_front.extend(front)
             condition_back.extend(back)
         
@@ -229,6 +232,8 @@ class EnhancedMarkovPredictor:
             back_balls = self._predict_balls_with_condition_diverse(
                 back_transitions, condition_back_str, 2, 12, i, strategy_seed + 500
             )
+
+
 
             predictions.append((sorted(front_balls), sorted(back_balls)))
 
@@ -451,6 +456,7 @@ class EnhancedMarkovPredictor:
             if str(order) in markov_result['orders']:
                 preds = self.multi_order_markov_predict(count, periods, order)
                 order_predictions[order] = preds
+
         
         # 融合各阶预测结果
         predictions = []
@@ -474,37 +480,19 @@ class EnhancedMarkovPredictor:
             # 统计各号码出现频率
             front_counter = Counter(front_candidates)
             back_counter = Counter(back_candidates)
-            
-            # 选择出现频率最高的号码
-            front_balls = [ball for ball, _ in front_counter.most_common(5)]
-            back_balls = [ball for ball, _ in back_counter.most_common(2)]
-            
-            # 如果号码不足，使用频率分析补充
-            if len(front_balls) < 5:
-                from analyzer_modules import basic_analyzer
-                freq_analysis = basic_analyzer.frequency_analysis()
-                front_freq = freq_analysis.get('front_frequency', {})
-                sorted_freq = sorted(front_freq.items(), key=lambda x: x[1], reverse=True)
 
-                for ball_str, _ in sorted_freq:
-                    if len(front_balls) >= 5:
-                        break
-                    ball_int = int(ball_str) if isinstance(ball_str, str) else ball_str
-                    if ball_int not in front_balls and 1 <= ball_int <= 35:
-                        front_balls.append(ball_int)
+            # 为每注使用不同的选择策略，确保多样性
+            front_balls = self._select_balls_with_diversity(front_counter, 5, i, periods)
+            back_balls = self._select_balls_with_diversity(back_counter, 2, i, periods)
+
+
+            
+            # 如果号码不足，使用多样化的回退策略
+            if len(front_balls) < 5:
+                front_balls = self._fallback_ball_selection(front_balls, 5, 35, i, 'front')
 
             if len(back_balls) < 2:
-                from analyzer_modules import basic_analyzer
-                freq_analysis = basic_analyzer.frequency_analysis()
-                back_freq = freq_analysis.get('back_frequency', {})
-                sorted_freq = sorted(back_freq.items(), key=lambda x: x[1], reverse=True)
-
-                for ball_str, _ in sorted_freq:
-                    if len(back_balls) >= 2:
-                        break
-                    ball_int = int(ball_str) if isinstance(ball_str, str) else ball_str
-                    if ball_int not in back_balls and 1 <= ball_int <= 12:
-                        back_balls.append(ball_int)
+                back_balls = self._fallback_ball_selection(back_balls, 2, 12, i, 'back')
             
             # 构建预测结果
             prediction = {
@@ -520,7 +508,206 @@ class EnhancedMarkovPredictor:
             predictions.append(prediction)
         
         return predictions
-    
+
+    def _select_balls_with_diversity(self, counter, target_count, prediction_index, periods=500):
+        """根据预测索引使用不同策略选择号码，确保多样性"""
+        import random
+        import numpy as np
+        import time
+
+        # 为每注设置不同的随机种子，同时考虑期数的影响
+        seed_base = prediction_index * 1000 + int(time.time() * 1000) % 10000 + periods
+        random.seed(seed_base)
+        np.random.seed(seed_base % 2**32)
+
+        if not counter:
+            return []
+
+        # 获取所有候选号码和频率
+        all_balls = list(counter.keys())
+        all_counts = list(counter.values())
+
+        if len(all_balls) <= target_count:
+            return all_balls
+
+        selected_balls = []
+
+        # 策略1：第1注 - 期数敏感的频率策略
+        if prediction_index == 0:
+            # 根据分析期数调整选择策略
+            if periods <= 300:
+                # 短期分析：纯频率最高
+                selected_balls = [ball for ball, _ in counter.most_common(target_count)]
+            elif periods <= 800:
+                # 中期分析：80%高频 + 20%随机
+                high_freq_count = max(1, int(target_count * 0.8))
+                high_freq_balls = [ball for ball, _ in counter.most_common(high_freq_count)]
+                selected_balls.extend(high_freq_balls)
+
+                remaining_balls = [ball for ball in all_balls if ball not in high_freq_balls]
+                if remaining_balls and len(selected_balls) < target_count:
+                    random_count = target_count - len(selected_balls)
+                    random_balls = random.sample(remaining_balls, min(random_count, len(remaining_balls)))
+                    selected_balls.extend(random_balls)
+            else:
+                # 长期分析：70%高频 + 30%加权随机
+                high_freq_count = max(1, int(target_count * 0.7))
+                high_freq_balls = [ball for ball, _ in counter.most_common(high_freq_count)]
+                selected_balls.extend(high_freq_balls)
+
+                # 剩余位置用加权随机填充
+                remaining_balls = [ball for ball in all_balls if ball not in high_freq_balls]
+                remaining_counts = [counter[ball] for ball in remaining_balls]
+
+                if remaining_balls and len(selected_balls) < target_count:
+                    random_count = target_count - len(selected_balls)
+                    if sum(remaining_counts) > 0:
+                        probabilities = [count / sum(remaining_counts) for count in remaining_counts]
+                        weighted_balls = list(np.random.choice(
+                            remaining_balls, size=min(random_count, len(remaining_balls)),
+                            replace=False, p=probabilities
+                        ))
+                        selected_balls.extend(weighted_balls)
+                    else:
+                        random_balls = random.sample(remaining_balls, min(random_count, len(remaining_balls)))
+                        selected_balls.extend(random_balls)
+
+        # 策略2：第2注 - 频率加权随机选择
+        elif prediction_index == 1:
+            # 计算概率权重
+            total_count = sum(all_counts)
+            probabilities = [count / total_count for count in all_counts]
+
+            # 概率加权随机选择
+            selected_balls = list(np.random.choice(
+                all_balls, size=min(target_count, len(all_balls)),
+                replace=False, p=probabilities
+            ))
+
+        # 策略3：第3注 - 混合策略（50%高频 + 50%随机）
+        elif prediction_index == 2:
+            high_freq_count = max(1, target_count // 2)
+            random_count = target_count - high_freq_count
+
+            # 选择高频号码
+            high_freq_balls = [ball for ball, _ in counter.most_common(high_freq_count)]
+            selected_balls.extend(high_freq_balls)
+
+            # 从剩余号码中随机选择
+            remaining_balls = [ball for ball in all_balls if ball not in high_freq_balls]
+            if remaining_balls and random_count > 0:
+                random_balls = random.sample(remaining_balls, min(random_count, len(remaining_balls)))
+                selected_balls.extend(random_balls)
+
+        # 策略4：第4注及以后 - 平衡策略
+        else:
+            # 将号码按频率分为三档
+            sorted_balls = [ball for ball, _ in counter.most_common()]
+            total_balls = len(sorted_balls)
+
+            tier1_end = max(1, total_balls // 3)
+            tier2_end = max(2, total_balls * 2 // 3)
+
+            tier1_balls = sorted_balls[:tier1_end]  # 高频
+            tier2_balls = sorted_balls[tier1_end:tier2_end]  # 中频
+            tier3_balls = sorted_balls[tier2_end:]  # 低频
+
+            # 按比例从各档选择：60%高频，30%中频，10%低频
+            tier1_count = max(1, int(target_count * 0.6))
+            tier2_count = max(0, int(target_count * 0.3))
+            tier3_count = target_count - tier1_count - tier2_count
+
+            # 从各档随机选择
+            if tier1_balls:
+                selected_balls.extend(random.sample(tier1_balls, min(tier1_count, len(tier1_balls))))
+            if tier2_balls and tier2_count > 0:
+                selected_balls.extend(random.sample(tier2_balls, min(tier2_count, len(tier2_balls))))
+            if tier3_balls and tier3_count > 0:
+                selected_balls.extend(random.sample(tier3_balls, min(tier3_count, len(tier3_balls))))
+
+        # 确保返回正确数量的号码
+        if len(selected_balls) < target_count:
+            # 从剩余号码中补充
+            remaining = [ball for ball in all_balls if ball not in selected_balls]
+            if remaining:
+                need_count = target_count - len(selected_balls)
+                additional = random.sample(remaining, min(need_count, len(remaining)))
+                selected_balls.extend(additional)
+
+        return selected_balls[:target_count]
+
+    def _fallback_ball_selection(self, existing_balls, target_count, max_ball, prediction_index, ball_type):
+        """多样化的回退号码选择策略"""
+        import random
+        import time
+
+        # 为每注设置不同的随机种子
+        random.seed(prediction_index * 1000 + int(time.time() * 1000) % 10000)
+
+        # 获取频率分析结果
+        from analyzer_modules import basic_analyzer
+        freq_analysis = basic_analyzer.frequency_analysis()
+
+        if ball_type == 'front':
+            freq_data = freq_analysis.get('front_frequency', {})
+        else:
+            freq_data = freq_analysis.get('back_frequency', {})
+
+        # 转换为整数并排序
+        freq_balls = []
+        for ball_str, freq in freq_data.items():
+            try:
+                ball_int = int(ball_str) if isinstance(ball_str, str) else ball_str
+                if 1 <= ball_int <= max_ball:
+                    freq_balls.append((ball_int, freq))
+            except (ValueError, TypeError):
+                continue
+
+        freq_balls.sort(key=lambda x: x[1], reverse=True)
+
+        # 为每注使用不同的选择策略
+        need_count = target_count - len(existing_balls)
+        selected_balls = list(existing_balls)
+
+        if prediction_index == 0:
+            # 第1注：高频优先
+            for ball, _ in freq_balls:
+                if len(selected_balls) >= target_count:
+                    break
+                if ball not in selected_balls:
+                    selected_balls.append(ball)
+
+        elif prediction_index == 1:
+            # 第2注：随机选择
+            available_balls = [ball for ball, _ in freq_balls if ball not in selected_balls]
+            if available_balls and need_count > 0:
+                random_balls = random.sample(available_balls, min(need_count, len(available_balls)))
+                selected_balls.extend(random_balls)
+
+        else:
+            # 第3注及以后：混合策略
+            high_freq_balls = [ball for ball, _ in freq_balls[:len(freq_balls)//2] if ball not in selected_balls]
+            low_freq_balls = [ball for ball, _ in freq_balls[len(freq_balls)//2:] if ball not in selected_balls]
+
+            # 50%高频，50%低频
+            high_count = need_count // 2
+            low_count = need_count - high_count
+
+            if high_freq_balls and high_count > 0:
+                selected_balls.extend(random.sample(high_freq_balls, min(high_count, len(high_freq_balls))))
+
+            if low_freq_balls and low_count > 0:
+                selected_balls.extend(random.sample(low_freq_balls, min(low_count, len(low_freq_balls))))
+
+        # 如果还不够，随机补充
+        if len(selected_balls) < target_count:
+            remaining_balls = [i for i in range(1, max_ball + 1) if i not in selected_balls]
+            if remaining_balls:
+                need_more = target_count - len(selected_balls)
+                selected_balls.extend(random.sample(remaining_balls, min(need_more, len(remaining_balls))))
+
+        return selected_balls[:target_count]
+
     def _calculate_order_weights(self, markov_result):
         """计算各阶马尔可夫链的权重"""
         weights = {}

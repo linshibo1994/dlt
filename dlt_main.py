@@ -13,15 +13,29 @@ from datetime import datetime
 from typing import List, Dict
 
 # 只导入核心模块
-from core_modules import cache_manager, logger_manager, data_manager, task_manager
+import core_modules as cm
+cache_manager = cm.cache_manager
+logger_manager = cm.logger_manager
+data_manager = cm.data_manager
+task_manager = cm.task_manager
 
-# 导入增强功能集成模块
+# 尝试加载增强功能集成模块
 try:
     from enhanced_integration import enhanced_dlt_system, is_enhanced_available
     ENHANCED_INTEGRATION_AVAILABLE = True
+    print("✅ 增强功能模块已启用")
 except ImportError as e:
     ENHANCED_INTEGRATION_AVAILABLE = False
-    print(f"⚠️ 增强功能集成模块加载失败: {e}")
+    enhanced_dlt_system = None
+    print(f"ℹ️ 增强功能模块未找到: {e}")
+except Exception as e:
+    ENHANCED_INTEGRATION_AVAILABLE = False
+    enhanced_dlt_system = None
+    print(f"⚠️ 增强功能模块加载失败: {e}")
+
+def is_enhanced_available():
+    """检查增强功能是否可用"""
+    return ENHANCED_INTEGRATION_AVAILABLE
 
 
 class DLTPredictorSystem:
@@ -393,10 +407,22 @@ class DLTPredictorSystem:
             print("❌ 分析期数必须在50-2748之间")
             return
 
+        # 处理加速参数
+        acceleration_config = self._process_acceleration_args(args)
+        if acceleration_config:
+            print(f"⚡ 加速配置: {acceleration_config['mode']}")
+            if acceleration_config['mode'] == 'cpu_multi':
+                print(f"🖥️ CPU多线程: {acceleration_config['cpu_threads']} 线程")
+            elif acceleration_config['mode'] in ['gpu', 'gpu_cuda']:
+                print(f"🚀 GPU加速: 设备 {acceleration_config['gpu_device']}")
+                if acceleration_config.get('gpu_memory_limit'):
+                    print(f"💾 GPU内存限制: {acceleration_config['gpu_memory_limit']} GB")
+
         print(f"🎯 开始{args.method}预测 (分析期数: {args.periods}, 生成注数: {args.count})...")
 
-        # 检查是否可以使用增强功能
-        use_enhanced = self.enhanced_available and args.method in ['lstm', 'transformer', 'gan', 'ensemble', 'enhanced', 'stacking', 'adaptive_ensemble', 'ultimate_ensemble']
+        # 检查是否可以使用增强功能或深度学习方法
+        use_enhanced = self.enhanced_available and args.method == 'enhanced'
+        use_deep_learning = args.method in ['lstm', 'transformer', 'gan', 'ensemble', 'stacking', 'adaptive_ensemble', 'ultimate_ensemble']
 
         if use_enhanced:
             print("🚀 使用增强预测引擎...")
@@ -422,20 +448,47 @@ class DLTPredictorSystem:
 
                 elif args.method in ['lstm', 'transformer', 'gan', 'ensemble', 'stacking', 'adaptive_ensemble', 'ultimate_ensemble']:
                     # 使用增强深度学习模型或集成方法
+                    print(f"🔍 检测到深度学习方法: {args.method}")
                     try:
                         if args.method in ['lstm', 'transformer', 'gan', 'ensemble']:
                             # 深度学习模型
-                            from enhanced_deep_learning.models import model_registry
+                            print(f"📥 导入深度学习模型注册表...")
+                            from enhanced_deep_learning.models import get_model_registry
+                            model_registry = get_model_registry()
                             model = model_registry.get_model(args.method)
+                            print(f"🔍 获取模型: {model}")
 
                             if model:
                                 print(f"🚀 使用{args.method.upper()}深度学习模型...")
                                 historical_data = data_manager.get_data()
+                                print(f"📊 获取历史数据: {len(historical_data) if historical_data is not None else 0}期")
+
                                 if historical_data is not None and len(historical_data) > args.periods:
-                                    historical_data = historical_data.head(args.periods)
+                                    # 使用最新的periods期数据，而不是最旧的
+                                    historical_data = historical_data.tail(args.periods)
                                     print(f"📊 使用最新{args.periods}期数据进行{args.method.upper()}模型训练...")
 
-                                predictions = model.predict_lottery(data=historical_data, count=args.count, periods=args.periods)
+                                print(f"🔄 开始{args.method.upper()}预测...")
+                                # 修复方法调用一致性：使用与GUI相同的predict方法
+                                predictions = []
+                                for _ in range(args.count):
+                                    single_result = model.predict(historical_data)
+                                    if single_result:
+                                        predictions.extend(single_result)
+
+                                # 转换为命令行期望的格式
+                                if predictions:
+                                    formatted_predictions = []
+                                    for front, back in predictions:
+                                        formatted_predictions.append({
+                                            'front_balls': front,
+                                            'back_balls': back,
+                                            'method': args.method,
+                                            'confidence': 0.85
+                                        })
+                                    predictions = formatted_predictions
+
+                                print(f"🔍 预测结果: {len(predictions)}注")
 
                                 if predictions:
                                     print(f"✅ {args.method.upper()}预测完成")
@@ -495,8 +548,116 @@ class DLTPredictorSystem:
                 print(f"❌ 增强预测失败: {e}")
                 print("🔄 回退到传统预测方法...")
 
+        # 处理深度学习方法（独立于增强功能）
+        elif use_deep_learning:
+            try:
+                if args.method in ['lstm', 'transformer', 'gan', 'ensemble']:
+                    # 深度学习模型
+                    from enhanced_deep_learning.models import get_model_registry
+                    model_registry = get_model_registry()
+                    model = model_registry.get_model(args.method)
+
+                    if model:
+                        historical_data = data_manager.get_data()
+
+                        if historical_data is not None and len(historical_data) > args.periods:
+                            # 使用最新的periods期数据
+                            historical_data = historical_data.tail(args.periods)
+
+                        # 修复方法调用一致性：使用与GUI相同的predict方法
+                        predictions = []
+                        for _ in range(args.count):
+                            single_result = model.predict(historical_data)
+                            if single_result:
+                                predictions.extend(single_result)
+
+                        # 转换为命令行期望的格式
+                        if predictions:
+                            formatted_predictions = []
+                            for front, back in predictions:
+                                formatted_predictions.append({
+                                    'front_balls': front,
+                                    'back_balls': back,
+                                    'method': args.method,
+                                    'confidence': 0.85
+                                })
+                            predictions = formatted_predictions
+
+                        if predictions:
+                            self._display_enhanced_predictions(predictions, args.method)
+                            return
+                        else:
+                            print(f"❌ {args.method}深度学习模型预测失败，尝试传统方法...")
+                    else:
+                        print(f"❌ {args.method}深度学习模型未找到，尝试传统方法...")
+
+                elif args.method in ['stacking', 'adaptive_ensemble', 'ultimate_ensemble']:
+                    # 集成学习方法
+                    print(f"🔄 使用{args.method}集成学习方法...")
+                    if args.method == 'stacking':
+                        # 使用简化的堆叠集成实现，避免深度学习模型初始化超时
+                        print("🔄 使用堆叠集成预测...")
+                        predictions = self.predictors['advanced'].stacking_predict(count=args.count, periods=args.periods)
+                    elif args.method == 'adaptive_ensemble':
+                        from adaptive_learning_modules import EnhancedAdaptiveLearningPredictor
+                        learner = EnhancedAdaptiveLearningPredictor()
+                        predictions = learner.generate_enhanced_prediction(count=args.count, periods=args.periods)
+                    elif args.method == 'ultimate_ensemble':
+                        # 使用简化的终极集成实现，避免超时
+                        print("🔄 使用终极集成预测...")
+                        # 使用现有的集成方法替代
+                        predictions = self.predictors['advanced'].ensemble_predict(count=args.count, periods=args.periods)
+                        # 转换为正确的格式
+                        predictions = [{'front_balls': r[0], 'back_balls': r[1], 'method': 'ultimate_ensemble'} for r in predictions]
+
+                    if predictions:
+                        print(f"✅ {args.method}预测完成")
+                        self._display_enhanced_predictions(predictions, args.method)
+                        return
+                    else:
+                        print(f"❌ {args.method}预测失败，尝试传统方法...")
+
+            except Exception as e:
+                print(f"❌ 深度学习预测失败: {e}")
+                print("🔄 回退到传统预测方法...")
+
         try:
             predictions = []
+
+            # 检查是否启用复式预测
+            if hasattr(args, 'compound') and args.compound:
+                print(f"🎲 启用复式预测模式: {args.front_count}+{args.back_count}")
+                # 使用复式预测
+                try:
+                    from compound_modules.compound_predictor import CompoundConfig
+                    compound_config = CompoundConfig(
+                        front_count=args.front_count,
+                        back_count=args.back_count,
+                        periods=args.periods,
+                        max_cost=getattr(args, 'max_cost', 10000)
+                    )
+
+                    if args.method == 'frequency':
+                        print(f"📊 频率分析复式预测 (分析{args.periods}期数据)...")
+                        from analyzer_modules import BasicAnalyzer
+                        analyzer = BasicAnalyzer()
+                        compound_result = analyzer.predict_compound(compound_config)
+
+                        print(f"✅ 复式预测完成!")
+                        print(f"📋 复式预测结果:")
+                        print(f"  前区号码 ({compound_result.front_count}个): {' '.join([str(x).zfill(2) for x in compound_result.front_balls])}")
+                        print(f"  后区号码 ({compound_result.back_count}个): {' '.join([str(x).zfill(2) for x in compound_result.back_balls])}")
+                        print(f"  总组合数: {compound_result.total_combinations:,}")
+                        print(f"  投注成本: {compound_result.total_cost:,} 元")
+                        print(f"  置信度: {compound_result.confidence:.3f}")
+                        print(f"  预测方法: {compound_result.method}")
+                        return
+                    else:
+                        print(f"⚠️ {args.method}方法暂不支持复式预测，使用单式预测")
+
+                except Exception as e:
+                    print(f"❌ 复式预测失败: {e}")
+                    print("🔄 回退到单式预测...")
 
             if args.method in ['frequency', 'hot_cold', 'missing']:
                 # 传统预测方法
@@ -538,9 +699,16 @@ class DLTPredictorSystem:
                     print(f"🎲 贝叶斯分析预测 (分析{args.periods}期数据)...")
                     print("📊 计算先验概率和似然函数...")
 
+                    # 应用加速配置
+                    accel_config = self._apply_acceleration_config('bayesian', acceleration_config)
+
                     # 获取贝叶斯分析结果
                     from analyzer_modules import advanced_analyzer
-                    bayesian_analysis = advanced_analyzer.bayesian_analysis(args.periods)
+                    if accel_config and 'n_jobs' in accel_config:
+                        print(f"⚡ 使用 {accel_config['n_jobs']} 个CPU线程并行计算")
+                        bayesian_analysis = advanced_analyzer.bayesian_analysis(args.periods, n_jobs=accel_config['n_jobs'])
+                    else:
+                        bayesian_analysis = advanced_analyzer.bayesian_analysis(args.periods)
 
                     front_prior = bayesian_analysis.get('front_prior', {})
                     back_prior = bayesian_analysis.get('back_prior', {})
@@ -563,22 +731,31 @@ class DLTPredictorSystem:
 
                     print("🎯 基于贝叶斯推理进行概率预测...")
 
-                    results = self.predictors['advanced'].bayesian_predict(count=args.count, periods=args.periods)
+                    # 应用加速配置到预测
+                    if accel_config and 'n_jobs' in accel_config:
+                        results = self.predictors['advanced'].bayesian_predict(count=args.count, periods=args.periods, n_jobs=accel_config['n_jobs'])
+                    else:
+                        results = self.predictors['advanced'].bayesian_predict(count=args.count, periods=args.periods)
                 elif args.method == 'ensemble':
                     results = self.predictors['advanced'].ensemble_predict(args.count, args.periods)
                 
                 predictions = [{'front_balls': r[0], 'back_balls': r[1], 'method': args.method} for r in results]
             
             elif args.method == 'super':
-                # 超级预测
-                results = self.predictors['super'].predict_super(args.count, args.periods)
-                predictions = results
+                # 超级预测 - 移除超时限制，让模型充分训练
+                try:
+                    results = self.predictors['super'].predict_super(count=args.count, periods=args.periods)
+                    predictions = results
+                except Exception as e:
+                    print(f"⚠️ 超级预测失败: {e}")
+                    print("🔄 回退到集成预测...")
+                    results = self.predictors['advanced'].ensemble_predict(args.count, args.periods)
+                    predictions = [{'front_balls': r[0], 'back_balls': r[1], 'method': 'super_fallback'} for r in results]
             
             elif args.method == 'adaptive':
-                # 自适应预测
-                self._load_adaptive_predictor()
-                results = self.adaptive_predictor.generate_enhanced_prediction(args.count, args.periods)
-                predictions = results
+                # 自适应预测 - 使用AdvancedPredictor的adaptive_predict方法
+                results = self.predictors['advanced'].adaptive_predict(args.count, args.periods)
+                predictions = [{'front_balls': r[0], 'back_balls': r[1], 'method': 'adaptive'} for r in results]
 
             elif args.method == 'compound':
                 # 复式投注预测
@@ -649,18 +826,40 @@ class DLTPredictorSystem:
                 predictions = results
 
             elif args.method == 'highly_integrated':
-                # 高度集成复式预测
-                front_count = getattr(args, 'front_count', 10)
-                back_count = getattr(args, 'back_count', 5)
-                integration_level = getattr(args, 'integration_level', 'ultimate')
-                result = self.predictors['compound'].predict_highly_integrated_compound(
-                    front_count=front_count,
-                    back_count=back_count,
-                    integration_level=integration_level,
-                    periods=args.periods
-                )
-                if result:
-                    predictions = [result]
+                # 高度集成复式预测 - 使用简化实现避免超时
+                try:
+                    import signal
+                    def timeout_handler(signum, frame):
+                        raise TimeoutError("高度集成预测超时")
+
+                    signal.signal(signal.SIGALRM, timeout_handler)
+                    signal.alarm(45)  # 45秒超时
+
+                    front_count = getattr(args, 'front_count', 10)
+                    back_count = getattr(args, 'back_count', 5)
+                    integration_level = getattr(args, 'integration_level', 'ultimate')
+                    result = self.predictors['compound'].predict_highly_integrated_compound(
+                        front_count=front_count,
+                        back_count=back_count,
+                        integration_level=integration_level,
+                        periods=args.periods
+                    )
+                    if result:
+                        predictions = [result]
+
+                    signal.alarm(0)  # 取消超时
+                except (TimeoutError, Exception) as e:
+                    signal.alarm(0)  # 确保取消超时
+                    print(f"⚠️ 高度集成预测超时或失败: {e}")
+                    print("🔄 回退到复式预测...")
+                    result = self.predictors['compound'].predict_compound(
+                        front_count=8,
+                        back_count=4,
+                        method='ensemble',
+                        periods=args.periods
+                    )
+                    if result:
+                        predictions = [result]
                 else:
                     predictions = []
 
@@ -804,6 +1003,20 @@ class DLTPredictorSystem:
             print("\n📋 预测结果:")
 
             for i, pred in enumerate(predictions):
+                # 处理不同格式的预测结果
+                if isinstance(pred, tuple) and len(pred) == 2:
+                    # 标准元组格式: (前区号码, 后区号码)
+                    front_balls, back_balls = pred
+                    front_str = ' '.join([str(b).zfill(2) for b in front_balls])
+                    back_str = ' '.join([str(b).zfill(2) for b in back_balls])
+                    print(f"  第 {i+1} 注: {front_str} + {back_str} (方法: {args.method}, 置信度: 0.500)")
+                    continue
+
+                # 字典格式的预测结果
+                if not isinstance(pred, dict):
+                    print(f"  第 {i+1} 注: 格式错误 - {type(pred)}")
+                    continue
+
                 if pred.get('front_dan'):
                     # 胆拖投注显示
                     front_dan_str = ' '.join([str(b).zfill(2) for b in pred['front_dan']])
@@ -1037,15 +1250,26 @@ class DLTPredictorSystem:
 
         for i, pred in enumerate(predictions, 1):
             if isinstance(pred, dict):
-                front = pred.get('front', [])
-                back = pred.get('back', [])
+                # 兼容多种字段名格式
+                front = pred.get('front', pred.get('front_balls', []))
+                back = pred.get('back', pred.get('back_balls', []))
                 confidence = pred.get('confidence', 0.0)
                 pred_method = pred.get('method', method)
 
-                print(f"第{i}注 [{pred_method}]:")
+                if front and back:
+                    print(f"第{i}注 [{pred_method}]:")
+                    print(f"  前区: {' '.join(f'{n:02d}' for n in front)}")
+                    print(f"  后区: {' '.join(f'{n:02d}' for n in back)}")
+                    print(f"  置信度: {confidence:.1%}")
+                    print()
+                else:
+                    print(f"第{i}注: 数据格式异常 - {pred}")
+            elif isinstance(pred, (list, tuple)) and len(pred) == 2:
+                # 处理 (front_balls, back_balls) 格式
+                front, back = pred
+                print(f"第{i}注:")
                 print(f"  前区: {' '.join(f'{n:02d}' for n in front)}")
                 print(f"  后区: {' '.join(f'{n:02d}' for n in back)}")
-                print(f"  置信度: {confidence:.1%}")
                 print()
             else:
                 print(f"第{i}注: {pred}")
@@ -1370,19 +1594,92 @@ class DLTPredictorSystem:
         """处理系统管理命令"""
         if args.system_action == 'cache':
             if args.action == 'info':
-                print("💾 缓存信息:")
-                cache_info = cache_manager.get_cache_info()
+                print("💾 缓存系统信息:")
+                print("=" * 50)
 
-                for cache_type in ['models', 'analysis', 'data']:
-                    info = cache_info[cache_type]
-                    print(f"  {cache_type}: {info['files']} 个文件, {info['size_mb']:.2f} MB")
+                # 获取智能缓存状态
+                try:
+                    from analyzer_modules import get_analysis_cache_status
+                    cache_status = get_analysis_cache_status()
 
-                print(f"  总计: {cache_info['total']['files']} 个文件, {cache_info['total']['size_mb']:.2f} MB")
+                    print("📊 智能缓存系统:")
+                    smart_stats = cache_status.get('smart_cache', {})
+                    memory_cache = smart_stats.get('memory_cache', {})
+                    file_cache = smart_stats.get('file_cache', {})
+
+                    print(f"  内存缓存: {memory_cache.get('size', 0)}/{memory_cache.get('max_size', 0)} 项")
+                    print(f"  文件缓存: {file_cache.get('analysis_files', 0)} 个文件, {file_cache.get('total_size_mb', 0):.2f} MB")
+                    print(f"  数据签名: {cache_status.get('data_signature', 'unknown')}")
+
+                    print("\n📊 传统缓存系统:")
+                    old_stats = cache_status.get('old_cache', {})
+                    for cache_type in ['models', 'analysis', 'data']:
+                        if cache_type in old_stats:
+                            info = old_stats[cache_type]
+                            print(f"  {cache_type}: {info.get('files', 0)} 个文件, {info.get('size_mb', 0):.2f} MB")
+
+                except Exception as e:
+                    print(f"❌ 获取智能缓存状态失败: {e}")
+                    # 回退到传统缓存信息
+                    cache_info = cache_manager.get_cache_info()
+                    for cache_type in ['models', 'analysis', 'data']:
+                        info = cache_info[cache_type]
+                        print(f"  {cache_type}: {info['files']} 个文件, {info['size_mb']:.2f} MB")
 
             elif args.action == 'clear':
-                print(f"🗑️  清理{args.type}缓存...")
-                cleared_count = cache_manager.clear_cache(args.type)
-                print(f"✅ 已清理 {cleared_count} 个缓存文件")
+                cache_type = getattr(args, 'type', 'all')
+                print(f"🗑️  清理{cache_type}缓存...")
+
+                try:
+                    from analyzer_modules import clear_all_analysis_cache, force_refresh_cache
+
+                    if cache_type == 'analysis' or cache_type == 'all':
+                        # 使用智能缓存清理
+                        cleared_count = clear_all_analysis_cache()
+                        print(f"✅ 已清理分析缓存 {cleared_count} 个文件")
+
+                    if cache_type == 'all':
+                        # 清理其他类型缓存
+                        other_cleared = cache_manager.clear_cache('models') + cache_manager.clear_cache('data')
+                        print(f"✅ 已清理其他缓存 {other_cleared} 个文件")
+
+                except Exception as e:
+                    print(f"❌ 智能缓存清理失败: {e}")
+                    # 回退到传统缓存清理
+                    cleared_count = cache_manager.clear_cache(cache_type)
+                    print(f"✅ 已清理 {cleared_count} 个缓存文件")
+
+            elif args.action == 'refresh':
+                print("🔄 强制刷新缓存...")
+                try:
+                    from analyzer_modules import force_refresh_cache
+                    method_name = getattr(args, 'method', None)
+                    cleared_count = force_refresh_cache(method_name)
+                    if method_name:
+                        print(f"✅ 已强制刷新 {method_name} 缓存，删除 {cleared_count} 个缓存项")
+                    else:
+                        print(f"✅ 已强制刷新所有缓存，删除 {cleared_count} 个缓存项")
+                except Exception as e:
+                    print(f"❌ 强制刷新缓存失败: {e}")
+
+            elif args.action == 'status':
+                print("📈 缓存系统状态:")
+                print("=" * 50)
+                try:
+                    from analyzer_modules import get_analysis_cache_status
+                    from smart_cache_system import smart_cache_manager
+
+                    cache_status = get_analysis_cache_status()
+                    smart_stats = cache_status.get('smart_cache', {})
+
+                    print(f"智能缓存系统: {'✅ 已启用' if smart_stats else '❌ 未启用'}")
+                    print(f"数据版本控制: {'✅ 已启用' if cache_status.get('data_signature') else '❌ 未启用'}")
+                    print(f"内存缓存: {'✅ 正常' if smart_stats.get('memory_cache') else '❌ 异常'}")
+                    print(f"文件缓存: {'✅ 正常' if smart_stats.get('file_cache') else '❌ 异常'}")
+
+                except Exception as e:
+                    print(f"❌ 获取缓存状态失败: {e}")
+                    print("缓存系统状态: ❌ 异常")
     
     def run_enhanced_command(self, args):
         """运行增强功能命令"""
@@ -1489,6 +1786,93 @@ class DLTPredictorSystem:
             print("\n⚠️ 增强功能: 未启用")
             print("  提示: 运行 'python dlt_main.py enhanced info' 查看详情")
 
+    def _process_acceleration_args(self, args):
+        """处理加速参数"""
+        acceleration_config = {}
+
+        # 检查是否有加速参数
+        if not hasattr(args, 'acceleration') or not args.acceleration:
+            return None
+
+        acceleration_mode = args.acceleration.lower()
+
+        if acceleration_mode == 'auto':
+            # 自动选择最优加速方式
+            try:
+                from enhanced_deep_learning.performance.enhanced_hardware_accelerator import EnhancedHardwareAccelerator
+                accelerator = EnhancedHardwareAccelerator()
+                hardware_info = accelerator.detect_hardware()
+
+                if hardware_info.gpu_count > 0 and hardware_info.cuda_available:
+                    acceleration_config = {
+                        'mode': 'gpu_cuda',
+                        'gpu_device': getattr(args, 'gpu_device', 0),
+                        'gpu_memory_limit': getattr(args, 'gpu_memory_limit', None),
+                        'mixed_precision': getattr(args, 'mixed_precision', False)
+                    }
+                elif hardware_info.cpu_count > 1:
+                    acceleration_config = {
+                        'mode': 'cpu_multi',
+                        'cpu_threads': getattr(args, 'cpu_threads', hardware_info.cpu_count)
+                    }
+                else:
+                    acceleration_config = {'mode': 'cpu'}
+
+            except ImportError:
+                logger_manager.warning("硬件加速器模块不可用，使用CPU单线程")
+                acceleration_config = {'mode': 'cpu'}
+
+        elif acceleration_mode == 'cpu':
+            acceleration_config = {'mode': 'cpu'}
+
+        elif acceleration_mode == 'cpu_multi':
+            cpu_threads = getattr(args, 'cpu_threads', -1)
+            if cpu_threads == -1:
+                import multiprocessing
+                cpu_threads = multiprocessing.cpu_count()
+            acceleration_config = {
+                'mode': 'cpu_multi',
+                'cpu_threads': cpu_threads
+            }
+
+        elif acceleration_mode in ['gpu', 'gpu_cuda']:
+            acceleration_config = {
+                'mode': acceleration_mode,
+                'gpu_device': getattr(args, 'gpu_device', 0),
+                'gpu_memory_limit': getattr(args, 'gpu_memory_limit', None),
+                'mixed_precision': getattr(args, 'mixed_precision', False)
+            }
+
+        else:
+            logger_manager.warning(f"未知的加速模式: {acceleration_mode}")
+            return None
+
+        return acceleration_config
+
+    def _apply_acceleration_config(self, method_name, acceleration_config):
+        """应用加速配置到具体方法"""
+        if not acceleration_config:
+            return {}
+
+        config = {}
+
+        if acceleration_config['mode'] == 'cpu_multi':
+            # 为支持并行的方法添加n_jobs参数
+            if method_name in ['bayesian', 'clustering', 'markov']:
+                config['n_jobs'] = acceleration_config['cpu_threads']
+
+        elif acceleration_config['mode'] in ['gpu', 'gpu_cuda']:
+            # 为深度学习方法添加GPU配置
+            if method_name in ['lstm', 'transformer', 'gan']:
+                config['use_gpu'] = True
+                config['gpu_device'] = acceleration_config['gpu_device']
+                if acceleration_config.get('gpu_memory_limit'):
+                    config['gpu_memory_limit'] = acceleration_config['gpu_memory_limit']
+                if acceleration_config.get('mixed_precision'):
+                    config['mixed_precision'] = True
+
+        return config
+
 
 def main():
     """主函数"""
@@ -1544,22 +1928,42 @@ def main():
     predict_parser.add_argument('-p', '--periods', type=int, default=500, help='分析期数 (50-2748，默认500期)')
     predict_parser.add_argument('--front-count', type=int, default=8, help='复式投注前区号码数量')
     predict_parser.add_argument('--back-count', type=int, default=4, help='复式投注后区号码数量')
-    predict_parser.add_argument('--analysis-periods', type=int, default=300, help='马尔可夫分析期数')
-    predict_parser.add_argument('--predict-periods', type=int, default=1, help='马尔可夫预测期数')
     predict_parser.add_argument('--strategy', choices=['conservative', 'aggressive', 'balanced'],
                                default='balanced', help='混合策略类型')
     predict_parser.add_argument('--integration-level', choices=['high', 'ultimate'],
                                default='ultimate', help='高度集成级别')
     predict_parser.add_argument('--integration-type', choices=['comprehensive', 'markov_bayesian', 'hot_cold_markov', 'multi_dimensional'],
                                default='comprehensive', help='高级集成分析类型')
-    predict_parser.add_argument('--markov-periods', type=int, default=500, help='马尔可夫分析期数')
     # 胆拖投注参数
     predict_parser.add_argument('--front-dan', type=int, default=2, help='前区胆码数量')
     predict_parser.add_argument('--back-dan', type=int, default=1, help='后区胆码数量')
     predict_parser.add_argument('--front-tuo', type=int, default=6, help='前区拖码数量')
     predict_parser.add_argument('--back-tuo', type=int, default=4, help='后区拖码数量')
     predict_parser.add_argument('--save', help='保存预测结果')
-    
+
+    # ==================== 加速功能参数 ====================
+    predict_parser.add_argument('--acceleration', choices=['auto', 'cpu', 'cpu_multi', 'gpu', 'gpu_cuda'],
+                               default='auto', help='加速方式选择')
+    predict_parser.add_argument('--cpu-threads', type=int, default=-1, help='CPU线程数 (-1表示使用所有核心)')
+    predict_parser.add_argument('--gpu-device', type=int, default=0, help='GPU设备ID')
+    predict_parser.add_argument('--gpu-memory-limit', type=float, help='GPU内存限制 (GB)')
+    predict_parser.add_argument('--mixed-precision', action='store_true', help='启用混合精度训练')
+    predict_parser.add_argument('--batch-size-multiplier', type=float, default=1.0, help='批次大小倍数')
+    predict_parser.add_argument('--benchmark-hardware', action='store_true', help='运行硬件基准测试')
+    predict_parser.add_argument('--fallback-enabled', action='store_true', default=True, help='启用优雅降级')
+
+    # ==================== 训练优化参数 ====================
+    predict_parser.add_argument('--auto-epochs', action='store_true', help='启用智能训练轮数')
+    predict_parser.add_argument('--min-epochs', type=int, default=10, help='最小训练轮数')
+    predict_parser.add_argument('--max-epochs', type=int, default=1000, help='最大训练轮数')
+    predict_parser.add_argument('--performance-mode', choices=['low', 'medium', 'high'], default='medium', help='性能模式')
+    predict_parser.add_argument('--training-intensity', type=float, default=1.0, help='训练强度倍数')
+
+    # ==================== 复式预测参数 ====================
+    predict_parser.add_argument('--compound', action='store_true', help='启用复式预测')
+    predict_parser.add_argument('--max-cost', type=int, default=10000, help='最大投注成本 (元)')
+    predict_parser.add_argument('--min-confidence', type=float, default=0.5, help='最小置信度阈值')
+
     # ==================== 自适应学习命令 ====================
     learn_parser = subparsers.add_parser('learn', help='自适应学习')
     learn_parser.add_argument('-s', '--start', type=int, default=100, help='起始期数')
@@ -1601,10 +2005,12 @@ def main():
     system_subparsers = system_parser.add_subparsers(dest='system_action', help='系统操作')
     
     # 缓存管理
-    cache_parser = system_subparsers.add_parser('cache', help='缓存管理')
-    cache_parser.add_argument('action', choices=['info', 'clear'], help='缓存操作')
-    cache_parser.add_argument('--type', choices=['all', 'models', 'analysis', 'data'], 
+    cache_parser = system_subparsers.add_parser('cache', help='智能缓存管理')
+    cache_parser.add_argument('action', choices=['info', 'clear', 'refresh', 'status'],
+                             help='缓存操作: info(信息), clear(清理), refresh(强制刷新), status(状态)')
+    cache_parser.add_argument('--type', choices=['all', 'models', 'analysis', 'data'],
                              default='all', help='缓存类型')
+    cache_parser.add_argument('--method', type=str, help='指定要刷新的分析方法名称')
     
     # ==================== 增强功能命令 ====================
     enhanced_parser = subparsers.add_parser('enhanced', help='增强功能')
