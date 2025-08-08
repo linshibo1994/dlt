@@ -392,7 +392,15 @@ class TraditionalPredictor:
                 if len(extreme_missing_back) >= 2:
                     back_balls = random.sample(extreme_missing_back, 2)
                 else:
-                    back_balls = extreme_missing_back + [int(ball) for ball, missing in back_sorted[:2-len(extreme_missing_back)]]
+                    # 确保不重复添加号码
+                    back_balls = extreme_missing_back[:]
+                    needed = 2 - len(extreme_missing_back)
+                    for ball, missing in back_sorted:
+                        if len(back_balls) >= 2:
+                            break
+                        ball_int = int(ball)
+                        if ball_int not in back_balls:
+                            back_balls.append(ball_int)
 
             # 策略2: 中期遗漏策略 (第2注)
             elif i == 1:
@@ -415,7 +423,15 @@ class TraditionalPredictor:
                 if len(mid_missing_back) >= 2:
                     back_balls = random.sample(mid_missing_back, 2)
                 else:
-                    back_balls = mid_missing_back + [int(ball) for ball, missing in back_sorted[:2-len(mid_missing_back)]]
+                    # 确保不重复添加号码
+                    back_balls = mid_missing_back[:]
+                    needed = 2 - len(mid_missing_back)
+                    for ball, missing in back_sorted:
+                        if len(back_balls) >= 2:
+                            break
+                        ball_int = int(ball)
+                        if ball_int not in back_balls:
+                            back_balls.append(ball_int)
 
             # 策略3: 混合遗漏策略 (第3注)
             elif i == 2:

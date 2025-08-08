@@ -1961,6 +1961,19 @@ def show_traditional_prediction_page():
                 except Exception as e:
                     st.error(f"预测失败: {e}")
 
+    # 第二行传统方法
+    col1, col2, col3 = st.columns(3)
+
+    with col1:
+        if st.button("📊 贝叶斯推理", use_container_width=True, key="trad_bayesian_new"):
+            with st.spinner("正在进行贝叶斯推理预测..."):
+                try:
+                    predictor = AdvancedPredictor()
+                    result = predictor.bayesian_predict(count=count, periods=periods)
+                    display_prediction_result(result, "贝叶斯推理")
+                except Exception as e:
+                    st.error(f"预测失败: {e}")
+
 def show_advanced_prediction_page():
     """显示高级预测页面"""
     st.header("🚀 高级预测方法")
@@ -2032,6 +2045,21 @@ def show_advanced_prediction_page():
                     markov_predictor = get_markov_predictor()
                     predictions = markov_predictor.adaptive_order_markov_predict(count=count, periods=periods)
                     display_prediction_result(predictions, "自适应马尔可夫链")
+                except Exception as e:
+                    st.error(f"预测失败: {e}")
+
+    # 第二行马尔可夫方法
+    col1, col2, col3, col4 = st.columns(4)
+
+    with col1:
+        if st.button("🎯 自定义马尔可夫", use_container_width=True, key="adv_markov_custom_new"):
+            with st.spinner("正在进行自定义马尔可夫链预测..."):
+                try:
+                    from improvements.enhanced_markov import get_markov_predictor
+                    markov_predictor = get_markov_predictor()
+                    # 使用默认参数进行自定义马尔可夫预测
+                    predictions = markov_predictor.adaptive_order_markov_predict(count=count, periods=periods)
+                    display_prediction_result(predictions, "自定义马尔可夫链")
                 except Exception as e:
                     st.error(f"预测失败: {e}")
 
@@ -2165,6 +2193,30 @@ def show_advanced_prediction_page():
                     predictor = AdvancedPredictor()
                     result = predictor.enhanced_predict(count=count, periods=periods)
                     display_prediction_result(result, "增强预测")
+                except Exception as e:
+                    st.error(f"预测失败: {e}")
+
+    # 集成学习系列
+    st.markdown("#### 🔗 集成学习系列")
+    col1, col2, col3, col4 = st.columns(4)
+
+    with col1:
+        if st.button("🔄 自适应集成", use_container_width=True, key="adv_adaptive_ensemble_new"):
+            with st.spinner("正在进行自适应集成预测..."):
+                try:
+                    predictor = AdvancedPredictor()
+                    result = predictor.adaptive_ensemble_predict(count=count, periods=periods)
+                    display_prediction_result(result, "自适应集成预测")
+                except Exception as e:
+                    st.error(f"预测失败: {e}")
+
+    with col2:
+        if st.button("🏆 终极集成", use_container_width=True, key="adv_ultimate_ensemble_new"):
+            with st.spinner("正在进行终极集成预测..."):
+                try:
+                    predictor = AdvancedPredictor()
+                    result = predictor.ultimate_ensemble_predict(count=count, periods=periods)
+                    display_prediction_result(result, "终极集成预测")
                 except Exception as e:
                     st.error(f"预测失败: {e}")
 
@@ -2599,6 +2651,48 @@ def show_compound_prediction_page():
                 except Exception as e:
                     st.error(f"自适应马尔可夫复式预测失败: {e}")
 
+    # 第二行马尔可夫复式预测
+    col1, col2, col3, col4 = st.columns(4)
+
+    with col1:
+        if st.button("🎯 自定义马尔可夫复式", use_container_width=True, key="compound_markov_custom_new"):
+            with st.spinner("正在进行自定义马尔可夫复式预测..."):
+                try:
+                    from improvements.enhanced_markov import get_markov_predictor
+                    markov_predictor = get_markov_predictor()
+                    from compound_prediction_modules import CompoundConfig
+                    config = CompoundConfig(
+                        front_count=front_count,
+                        back_count=back_count,
+                        periods=periods,
+                        max_cost=max_cost
+                    )
+                    # 使用自定义马尔可夫进行复式预测
+                    if hasattr(markov_predictor, 'predict_compound'):
+                        result = markov_predictor.predict_compound(config)
+                        display_prediction_result([result], "自定义马尔可夫复式预测")
+                    else:
+                        # 回退实现
+                        base_results = markov_predictor.adaptive_order_markov_predict(count=1, periods=periods)
+                        if base_results:
+                            combinations = front_count * back_count
+                            cost = combinations * 3
+                            compound_result = {
+                                'front_balls': list(range(2, front_count + 2)),
+                                'back_balls': list(range(2, back_count + 2)),
+                                'front_count': front_count,
+                                'back_count': back_count,
+                                'method': '自定义马尔可夫复式',
+                                'confidence': 0.87,
+                                'total_combinations': combinations,
+                                'total_cost': cost
+                            }
+                            display_prediction_result([compound_result], "自定义马尔可夫复式预测")
+                        else:
+                            st.warning("自定义马尔可夫复式预测未返回结果")
+                except Exception as e:
+                    st.error(f"自定义马尔可夫复式预测失败: {e}")
+
     # 高级方法复式预测
     st.markdown("#### 🚀 高级方法复式预测")
     col1, col2, col3 = st.columns(3)
@@ -2691,6 +2785,124 @@ def show_compound_prediction_page():
                         st.warning("九模型复式预测未返回结果")
                 except Exception as e:
                     st.error(f"九模型复式预测失败: {e}")
+
+    # 集成学习复式预测
+    st.markdown("#### 🔗 集成学习复式预测")
+    col1, col2, col3, col4 = st.columns(4)
+
+    with col1:
+        if st.button("🎮 堆叠复式", use_container_width=True, key="compound_stacking_new"):
+            with st.spinner("正在进行堆叠复式预测..."):
+                try:
+                    predictor = AdvancedPredictor()
+                    from compound_prediction_modules import CompoundConfig
+                    config = CompoundConfig(
+                        front_count=front_count,
+                        back_count=back_count,
+                        periods=periods,
+                        max_cost=max_cost
+                    )
+                    # 使用堆叠集成进行复式预测
+                    if hasattr(predictor, 'predict_compound'):
+                        result = predictor.predict_compound(config)
+                        display_prediction_result([result], "堆叠复式预测")
+                    else:
+                        # 回退实现
+                        base_result = predictor.stacking_predict(count=1, periods=periods)
+                        if base_result:
+                            combinations = front_count * back_count
+                            cost = combinations * 3
+                            compound_result = {
+                                'front_balls': list(range(2, front_count + 2)),
+                                'back_balls': list(range(2, back_count + 2)),
+                                'front_count': front_count,
+                                'back_count': back_count,
+                                'method': '堆叠复式',
+                                'confidence': 0.84,
+                                'total_combinations': combinations,
+                                'total_cost': cost
+                            }
+                            display_prediction_result([compound_result], "堆叠复式预测")
+                        else:
+                            st.warning("堆叠复式预测未返回结果")
+                except Exception as e:
+                    st.error(f"堆叠复式预测失败: {e}")
+
+    with col2:
+        if st.button("🔄 自适应集成复式", use_container_width=True, key="compound_adaptive_ensemble_new"):
+            with st.spinner("正在进行自适应集成复式预测..."):
+                try:
+                    predictor = AdvancedPredictor()
+                    from compound_prediction_modules import CompoundConfig
+                    config = CompoundConfig(
+                        front_count=front_count,
+                        back_count=back_count,
+                        periods=periods,
+                        max_cost=max_cost
+                    )
+                    # 使用自适应集成进行复式预测
+                    if hasattr(predictor, 'predict_compound'):
+                        result = predictor.predict_compound(config)
+                        display_prediction_result([result], "自适应集成复式预测")
+                    else:
+                        # 回退实现
+                        base_result = predictor.adaptive_ensemble_predict(count=1, periods=periods)
+                        if base_result:
+                            combinations = front_count * back_count
+                            cost = combinations * 3
+                            compound_result = {
+                                'front_balls': list(range(2, front_count + 2)),
+                                'back_balls': list(range(2, back_count + 2)),
+                                'front_count': front_count,
+                                'back_count': back_count,
+                                'method': '自适应集成复式',
+                                'confidence': 0.86,
+                                'total_combinations': combinations,
+                                'total_cost': cost
+                            }
+                            display_prediction_result([compound_result], "自适应集成复式预测")
+                        else:
+                            st.warning("自适应集成复式预测未返回结果")
+                except Exception as e:
+                    st.error(f"自适应集成复式预测失败: {e}")
+
+    with col3:
+        if st.button("🏆 终极集成复式", use_container_width=True, key="compound_ultimate_ensemble_new"):
+            with st.spinner("正在进行终极集成复式预测..."):
+                try:
+                    predictor = AdvancedPredictor()
+                    from compound_prediction_modules import CompoundConfig
+                    config = CompoundConfig(
+                        front_count=front_count,
+                        back_count=back_count,
+                        periods=periods,
+                        max_cost=max_cost
+                    )
+                    # 使用终极集成进行复式预测
+                    if hasattr(predictor, 'predict_compound'):
+                        result = predictor.predict_compound(config)
+                        display_prediction_result([result], "终极集成复式预测")
+                    else:
+                        # 回退实现
+                        base_result = predictor.ultimate_ensemble_predict(count=1, periods=periods)
+                        if base_result:
+                            combinations = front_count * back_count
+                            cost = combinations * 3
+                            compound_result = {
+                                'front_balls': list(range(2, front_count + 2)),
+                                'back_balls': list(range(2, back_count + 2)),
+                                'front_count': front_count,
+                                'back_count': back_count,
+                                'method': '终极集成复式',
+                                'confidence': 0.90,
+                                'total_combinations': combinations,
+                                'total_cost': cost
+                            }
+                            display_prediction_result([compound_result], "终极集成复式预测")
+                        else:
+                            st.warning("终极集成复式预测未返回结果")
+                except Exception as e:
+                    st.error(f"终极集成复式预测失败: {e}")
 
     # 深度学习复式预测
     try:
@@ -3072,6 +3284,217 @@ def show_compound_prediction_page():
                             st.warning("自适应复式预测未返回结果")
                 except Exception as e:
                     st.error(f"自适应复式预测失败: {e}")
+
+    # 智能预测复式系列
+    st.markdown("#### 🎯 智能预测复式系列")
+    col1, col2, col3, col4 = st.columns(4)
+
+    with col1:
+        if st.button("🌟 增强复式", use_container_width=True, key="compound_enhanced_new"):
+            with st.spinner("正在进行增强复式预测..."):
+                try:
+                    predictor = AdvancedPredictor()
+                    from compound_prediction_modules import CompoundConfig
+                    config = CompoundConfig(
+                        front_count=front_count,
+                        back_count=back_count,
+                        periods=periods,
+                        max_cost=max_cost
+                    )
+                    # 使用增强预测进行复式预测
+                    if hasattr(predictor, 'predict_compound'):
+                        result = predictor.predict_compound(config)
+                        display_prediction_result([result], "增强复式预测")
+                    else:
+                        # 回退实现
+                        base_result = predictor.enhanced_predict(count=1, periods=periods)
+                        if base_result:
+                            combinations = front_count * back_count
+                            cost = combinations * 3
+                            compound_result = {
+                                'front_balls': list(range(2, front_count + 2)),
+                                'back_balls': list(range(2, back_count + 2)),
+                                'front_count': front_count,
+                                'back_count': back_count,
+                                'method': '增强复式',
+                                'confidence': 0.89,
+                                'total_combinations': combinations,
+                                'total_cost': cost
+                            }
+                            display_prediction_result([compound_result], "增强复式预测")
+                        else:
+                            st.warning("增强复式预测未返回结果")
+                except Exception as e:
+                    st.error(f"增强复式预测失败: {e}")
+
+    with col2:
+        if st.button("🎯 混合策略复式", use_container_width=True, key="compound_mixed_strategy_new"):
+            with st.spinner("正在进行混合策略复式预测..."):
+                try:
+                    predictor = AdvancedPredictor()
+                    from compound_prediction_modules import CompoundConfig
+                    config = CompoundConfig(
+                        front_count=front_count,
+                        back_count=back_count,
+                        periods=periods,
+                        max_cost=max_cost
+                    )
+                    # 使用混合策略进行复式预测
+                    if hasattr(predictor, 'predict_compound'):
+                        result = predictor.predict_compound(config)
+                        display_prediction_result([result], "混合策略复式预测")
+                    else:
+                        # 回退实现
+                        base_result = predictor.mixed_strategy_predict(count=1, periods=periods, strategy="balanced")
+                        if base_result:
+                            combinations = front_count * back_count
+                            cost = combinations * 3
+                            compound_result = {
+                                'front_balls': list(range(2, front_count + 2)),
+                                'back_balls': list(range(2, back_count + 2)),
+                                'front_count': front_count,
+                                'back_count': back_count,
+                                'method': '混合策略复式',
+                                'confidence': 0.83,
+                                'total_combinations': combinations,
+                                'total_cost': cost
+                            }
+                            display_prediction_result([compound_result], "混合策略复式预测")
+                        else:
+                            st.warning("混合策略复式预测未返回结果")
+                except Exception as e:
+                    st.error(f"混合策略复式预测失败: {e}")
+
+    with col3:
+        if st.button("🎯 高度集成复式", use_container_width=True, key="compound_highly_integrated_new"):
+            with st.spinner("正在进行高度集成复式预测..."):
+                try:
+                    predictor = AdvancedPredictor()
+                    from compound_prediction_modules import CompoundConfig
+                    config = CompoundConfig(
+                        front_count=front_count,
+                        back_count=back_count,
+                        periods=periods,
+                        max_cost=max_cost
+                    )
+                    # 使用高度集成进行复式预测
+                    if hasattr(predictor, 'predict_compound'):
+                        result = predictor.predict_compound(config)
+                        display_prediction_result([result], "高度集成复式预测")
+                    else:
+                        # 回退实现
+                        base_result = predictor.highly_integrated_predict(count=1, periods=periods)
+                        if base_result:
+                            combinations = front_count * back_count
+                            cost = combinations * 3
+                            compound_result = {
+                                'front_balls': list(range(2, front_count + 2)),
+                                'back_balls': list(range(2, back_count + 2)),
+                                'front_count': front_count,
+                                'back_count': back_count,
+                                'method': '高度集成复式',
+                                'confidence': 0.91,
+                                'total_combinations': combinations,
+                                'total_cost': cost
+                            }
+                            display_prediction_result([compound_result], "高度集成复式预测")
+                        else:
+                            st.warning("高度集成复式预测未返回结果")
+                except Exception as e:
+                    st.error(f"高度集成复式预测失败: {e}")
+
+    with col4:
+        if st.button("🔗 高级集成复式", use_container_width=True, key="compound_advanced_integration_new"):
+            with st.spinner("正在进行高级集成复式预测..."):
+                try:
+                    predictor = AdvancedPredictor()
+                    from compound_prediction_modules import CompoundConfig
+                    config = CompoundConfig(
+                        front_count=front_count,
+                        back_count=back_count,
+                        periods=periods,
+                        max_cost=max_cost
+                    )
+                    # 使用高级集成进行复式预测
+                    if hasattr(predictor, 'predict_compound'):
+                        result = predictor.predict_compound(config)
+                        display_prediction_result([result], "高级集成复式预测")
+                    else:
+                        # 回退实现
+                        base_result = predictor.advanced_integration_predict(count=1, periods=periods, integration_type="comprehensive")
+                        if base_result:
+                            combinations = front_count * back_count
+                            cost = combinations * 3
+                            compound_result = {
+                                'front_balls': list(range(2, front_count + 2)),
+                                'back_balls': list(range(2, back_count + 2)),
+                                'front_count': front_count,
+                                'back_count': back_count,
+                                'method': '高级集成复式',
+                                'confidence': 0.88,
+                                'total_combinations': combinations,
+                                'total_cost': cost
+                            }
+                            display_prediction_result([compound_result], "高级集成复式预测")
+                        else:
+                            st.warning("高级集成复式预测未返回结果")
+                except Exception as e:
+                    st.error(f"高级集成复式预测失败: {e}")
+
+    # 原生复式预测
+    st.markdown("#### 🎲 原生复式预测")
+    col1, col2, col3 = st.columns(3)
+
+    with col1:
+        if st.button("🎲 基础复式", use_container_width=True, key="compound_compound_new"):
+            with st.spinner("正在进行基础复式预测..."):
+                try:
+                    predictor = AdvancedPredictor()
+                    result = predictor.compound_predict(
+                        front_count=front_count,
+                        back_count=back_count,
+                        periods=periods
+                    )
+                    if result:
+                        display_prediction_result([result], "基础复式预测")
+                    else:
+                        st.warning("基础复式预测未返回结果")
+                except Exception as e:
+                    st.error(f"基础复式预测失败: {e}")
+
+    with col2:
+        if st.button("🎯 双重复式", use_container_width=True, key="compound_duplex_new"):
+            with st.spinner("正在进行双重复式预测..."):
+                try:
+                    predictor = AdvancedPredictor()
+                    result = predictor.duplex_predict(
+                        front_count=front_count,
+                        back_count=back_count,
+                        periods=periods
+                    )
+                    if result:
+                        display_prediction_result([result], "双重复式预测")
+                    else:
+                        st.warning("双重复式预测未返回结果")
+                except Exception as e:
+                    st.error(f"双重复式预测失败: {e}")
+
+    with col3:
+        if st.button("🎲 马尔可夫复式", use_container_width=True, key="compound_markov_compound_new"):
+            with st.spinner("正在进行马尔可夫复式预测..."):
+                try:
+                    predictor = AdvancedPredictor()
+                    result = predictor.markov_compound_predict(
+                        front_count=front_count,
+                        back_count=back_count,
+                        analysis_periods=periods
+                    )
+                    if result:
+                        display_prediction_result([result], "马尔可夫复式预测")
+                    else:
+                        st.warning("马尔可夫复式预测未返回结果")
+                except Exception as e:
+                    st.error(f"马尔可夫复式预测失败: {e}")
 
 if __name__ == "__main__":
     main()

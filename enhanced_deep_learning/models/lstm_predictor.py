@@ -107,6 +107,9 @@ class LSTMPredictor(BaseDeepLearningModel, CompoundPredictorMixin):
         self.front_scaler = MinMaxScaler()
         self.back_scaler = MinMaxScaler()
 
+        # 训练状态
+        self.is_trained = False
+
         # 模型保存目录
         self.model_dir = self.config_params.get('model_dir', 'models/lstm')
         os.makedirs(self.model_dir, exist_ok=True)
@@ -464,13 +467,13 @@ class LSTMPredictor(BaseDeepLearningModel, CompoundPredictorMixin):
             # 智能训练轮数计算
             epochs_calculator = SmartEpochsCalculator()
             # 使用智能早停机制，允许更多训练轮数以获得更好效果
-            dynamic_max_epochs = min(200, max(50, len(data) // 10))  # 增加训练轮数上限
+            dynamic_max_epochs = min(200, max(50, len(data) // 10))  # 恢复原始训练轮数上限
             training_config = TrainingConfig(
                 model_type=SmartModelType.LSTM,
                 data_size=len(data),
                 feature_dim=7,
                 performance_mode=PerformanceMode.MEDIUM,  # 使用中等性能模式
-                min_epochs=20,  # 增加最小轮数
+                min_epochs=20,  # 恢复原始最小轮数
                 max_epochs=dynamic_max_epochs
             )
             epochs_recommendation = epochs_calculator.calculate_optimal_epochs(training_config)
@@ -535,7 +538,10 @@ class LSTMPredictor(BaseDeepLearningModel, CompoundPredictorMixin):
             }
             
             logger_manager.info(f"LSTM模型训练完成: 前区损失 {front_loss:.4f}, 后区损失 {back_loss:.4f}")
-            
+
+            # 设置训练状态
+            self.is_trained = True
+
             return result
             
         except Exception as e:
@@ -744,6 +750,7 @@ class LSTMPredictor(BaseDeepLearningModel, CompoundPredictorMixin):
             self.back_scaler = joblib.load(back_scaler_path)
             
             logger_manager.info("LSTM模型加载成功")
+            self.is_trained = True
             return True
             
         except Exception as e:
@@ -814,9 +821,11 @@ class LSTMPredictor(BaseDeepLearningModel, CompoundPredictorMixin):
         try:
             # 确保模型已训练
             if not self.is_trained:
-                if not self._load_model():
+                if not self.load_models():
                     logger_manager.info("LSTM模型未训练，开始训练...")
-                    if not self.train():
+                    # 获取数据进行训练
+                    data = data_manager.get_data()
+                    if not self.train(data):
                         raise Exception("LSTM模型训练失败")
 
             # 生成多个候选预测

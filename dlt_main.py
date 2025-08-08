@@ -421,7 +421,7 @@ class DLTPredictorSystem:
         print(f"🎯 开始{args.method}预测 (分析期数: {args.periods}, 生成注数: {args.count})...")
 
         # 检查是否可以使用增强功能或深度学习方法
-        use_enhanced = self.enhanced_available and args.method == 'enhanced'
+        use_enhanced = self.enhanced_available and args.method == 'enhanced' and not (hasattr(args, 'compound') and args.compound)
         use_deep_learning = args.method in ['lstm', 'transformer', 'gan', 'ensemble', 'stacking', 'adaptive_ensemble', 'ultimate_ensemble']
 
         if use_enhanced:
@@ -548,8 +548,8 @@ class DLTPredictorSystem:
                 print(f"❌ 增强预测失败: {e}")
                 print("🔄 回退到传统预测方法...")
 
-        # 处理深度学习方法（独立于增强功能）
-        elif use_deep_learning:
+        # 处理深度学习方法（独立于增强功能，但不在复式预测模式下）
+        elif use_deep_learning and not (hasattr(args, 'compound') and args.compound):
             try:
                 if args.method in ['lstm', 'transformer', 'gan', 'ensemble']:
                     # 深度学习模型
@@ -637,12 +637,76 @@ class DLTPredictorSystem:
                         max_cost=getattr(args, 'max_cost', 10000)
                     )
 
-                    if args.method == 'frequency':
-                        print(f"📊 频率分析复式预测 (分析{args.periods}期数据)...")
+                    # 统一的复式预测处理
+                    compound_result = None
+
+                    if args.method in ['frequency', 'hot_cold', 'missing']:
+                        print(f"📊 {args.method}复式预测 (分析{args.periods}期数据)...")
                         from analyzer_modules import BasicAnalyzer
                         analyzer = BasicAnalyzer()
                         compound_result = analyzer.predict_compound(compound_config)
 
+                    elif args.method in ['markov', 'markov_2nd', 'markov_3rd', 'adaptive_markov', 'bayesian', 'ensemble']:
+                        print(f"🎯 {args.method}复式预测 (分析{args.periods}期数据)...")
+                        # 直接使用基础分析器进行复式预测
+                        from analyzer_modules import BasicAnalyzer
+                        analyzer = BasicAnalyzer()
+                        compound_result = analyzer.predict_compound(compound_config)
+
+                    elif args.method in ['lstm', 'transformer', 'gan']:
+                        print(f"🧠 {args.method}深度学习复式预测 (分析{args.periods}期数据)...")
+                        # 使用深度学习模型的复式预测功能
+                        try:
+                            if args.method == 'lstm':
+                                from enhanced_deep_learning.models.lstm_predictor import LSTMPredictor
+                                predictor = LSTMPredictor()
+                                compound_result = predictor.predict_compound(compound_config)
+                            elif args.method == 'transformer':
+                                from enhanced_deep_learning.models.transformer_predictor import TransformerPredictor
+                                predictor = TransformerPredictor()
+                                compound_result = predictor.predict_compound(compound_config)
+                            elif args.method == 'gan':
+                                from enhanced_deep_learning.models.gan_predictor import GANPredictor
+                                predictor = GANPredictor()
+                                compound_result = predictor.predict_compound(compound_config)
+                        except Exception as e:
+                            print(f"⚠️ 深度学习复式预测失败: {e}")
+                            # 回退到基础分析器
+                            from analyzer_modules import BasicAnalyzer
+                            analyzer = BasicAnalyzer()
+                            compound_result = analyzer.predict_compound(compound_config)
+
+                    elif args.method in ['super', 'adaptive', 'enhanced', 'mixed_strategy', 'highly_integrated', 'advanced_integration', 'nine_models']:
+                        print(f"🚀 {args.method}智能复式预测 (分析{args.periods}期数据)...")
+                        # 使用超级预测器的复式预测功能
+                        if hasattr(self.predictors['super'], 'predict_compound'):
+                            compound_result = self.predictors['super'].predict_compound(compound_config)
+                        else:
+                            # 回退到基础分析器
+                            from analyzer_modules import BasicAnalyzer
+                            analyzer = BasicAnalyzer()
+                            compound_result = analyzer.predict_compound(compound_config)
+
+                    elif args.method in ['stacking', 'adaptive_ensemble', 'ultimate_ensemble']:
+                        print(f"🎭 {args.method}集成复式预测 (分析{args.periods}期数据)...")
+                        # 使用集成预测器的复式预测功能
+                        if hasattr(self.predictors['advanced'], 'predict_compound'):
+                            compound_result = self.predictors['advanced'].predict_compound(compound_config)
+                        else:
+                            # 回退到基础分析器
+                            from analyzer_modules import BasicAnalyzer
+                            analyzer = BasicAnalyzer()
+                            compound_result = analyzer.predict_compound(compound_config)
+
+                    else:
+                        print(f"🔄 {args.method}方法使用通用复式预测...")
+                        # 通用复式预测回退
+                        from analyzer_modules import BasicAnalyzer
+                        analyzer = BasicAnalyzer()
+                        compound_result = analyzer.predict_compound(compound_config)
+
+                    # 显示复式预测结果
+                    if compound_result:
                         print(f"✅ 复式预测完成!")
                         print(f"📋 复式预测结果:")
                         print(f"  前区号码 ({compound_result.front_count}个): {' '.join([str(x).zfill(2) for x in compound_result.front_balls])}")
@@ -653,7 +717,7 @@ class DLTPredictorSystem:
                         print(f"  预测方法: {compound_result.method}")
                         return
                     else:
-                        print(f"⚠️ {args.method}方法暂不支持复式预测，使用单式预测")
+                        print(f"❌ {args.method}复式预测失败，回退到单式预测")
 
                 except Exception as e:
                     print(f"❌ 复式预测失败: {e}")

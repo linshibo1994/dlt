@@ -188,11 +188,11 @@ class EnhancedMarkovPredictor:
         # 获取马尔可夫分析结果
         markov_result = self.analyzer.multi_order_markov_analysis(periods, max_order=order)
         
-        if not markov_result or 'orders' not in markov_result or str(order) not in markov_result['orders']:
+        if not markov_result or 'orders' not in markov_result or order not in markov_result['orders']:
             logger_manager.error(f"{order}阶马尔可夫分析结果不可用")
             return []
 
-        order_result = markov_result['orders'][str(order)]
+        order_result = markov_result['orders'][order]
         front_transitions = order_result.get('front_transition_probs', {})
         back_transitions = order_result.get('back_transition_probs', {})
         
@@ -453,7 +453,7 @@ class EnhancedMarkovPredictor:
         # 获取各阶的预测结果
         order_predictions = {}
         for order in range(1, 4):
-            if str(order) in markov_result['orders']:
+            if order in markov_result['orders']:
                 preds = self.multi_order_markov_predict(count, periods, order)
                 order_predictions[order] = preds
 

@@ -28,6 +28,7 @@ project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(_
 sys.path.insert(0, project_root)
 
 import core_modules as cm
+from core_modules import data_manager as core_data_manager
 logger_manager = cm.logger_manager
 core_data_manager = cm.data_manager
 
@@ -416,11 +417,13 @@ class TransformerPredictor(BaseDeepPredictor, CompoundPredictorMixin):
                     logger_manager.error(f"{self.name}模型训练失败")
                     return []
         
-        # 获取最近的序列数据 - 使用传入的数据或内部数据
+        # 获取最近的序列数据 - 使用传入的数据或从数据管理器获取
         if data is not None:
             recent_data = data.tail(self.sequence_length)
         else:
-            recent_data = self.df.head(self.sequence_length)
+            # 从数据管理器获取数据
+            all_data = core_data_manager.get_data()
+            recent_data = all_data.tail(self.sequence_length)
 
         # 提取特征 - 使用data_manager的parse_balls方法
         import core_modules as cm
@@ -686,7 +689,7 @@ class TransformerPredictor(BaseDeepPredictor, CompoundPredictorMixin):
 
             # 生成多样化的预测
             for i in range(candidate_count):
-                predictions = self.predict(1)
+                predictions = self.predict(data=None, count=1)
                 if predictions:
                     candidates.append(predictions[0])
 
