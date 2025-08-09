@@ -161,13 +161,84 @@ class ZhcwCrawler(BaseCrawler):
 
     def __init__(self, data_file="data/dlt_data_all.csv"):
         super().__init__(data_file)
-        self.api_url = "https://webapi.sporttery.cn/gateway/lottery/getHistoryPageListV1.qry"
+        # 多个真实数据源（严格使用真实开奖数据）
+        self.data_sources = [
+            {
+                'name': '中彩网API',
+                'type': 'api',
+                'url': 'https://webapi.sporttery.cn/gateway/lottery/getHistoryPageListV1.qry',
+                'method': 'api'
+            },
+            {
+                'name': '中彩网开奖结果页面',
+                'type': 'web',
+                'url': 'https://www.zhcw.com/kjxx/dlt/kjjg/',
+                'method': 'zhcw_web'
+            },
+            {
+                'name': '500彩票网',
+                'type': 'web',
+                'url': 'https://kaijiang.500.com/dlt.shtml',
+                'method': '500_web'
+            },
+            {
+                'name': '中国体彩网',
+                'type': 'web',
+                'url': 'http://www.lottery.gov.cn/historykj/history.jspx?_ltype=dlt',
+                'method': 'lottery_gov_web'
+            },
+            {
+                'name': '新浪彩票',
+                'type': 'web',
+                'url': 'https://kaijiang.sina.com.cn/dlt/',
+                'method': 'sina_web'
+            }
+        ]
+        self.current_api_index = 0
         self.session.headers.update({
-            'Referer': 'https://www.zhcw.com/'
+            'Referer': 'https://www.zhcw.com/',
+            'Accept': 'application/json, text/plain, */*',
+            'Accept-Language': 'zh-CN,zh;q=0.9,en;q=0.8',
+            'Cache-Control': 'no-cache'
         })
 
     def crawl_page(self, page: int = 1) -> List[Dict]:
-        """爬取指定页面的数据"""
+        """爬取指定页面的数据（严格使用真实开奖数据）"""
+        # 尝试所有真实数据源
+        for attempt, source in enumerate(self.data_sources):
+            try:
+                logger_manager.info(f"尝试数据源 {attempt + 1}/{len(self.data_sources)}: {source['name']}")
+
+                if source['method'] == 'api':
+                    # 使用API接口
+                    return self._crawl_api_page(page, source['url'])
+                elif source['method'] == 'zhcw_web':
+                    # 中彩网网页爬取
+                    return self._crawl_zhcw_web_page(page, source['url'])
+                elif source['method'] == '500_web':
+                    # 500彩票网页爬取
+                    return self._crawl_500_web_page(page, source['url'])
+                elif source['method'] == 'lottery_gov_web':
+                    # 中国体彩网页爬取
+                    return self._crawl_lottery_gov_web_page(page, source['url'])
+                elif source['method'] == 'sina_web':
+                    # 新浪彩票网页爬取
+                    return self._crawl_sina_web_page(page, source['url'])
+
+            except Exception as e:
+                logger_manager.error(f"数据源 {source['name']} 失败: {e}")
+
+                if attempt == len(self.data_sources) - 1:
+                    logger_manager.error("所有真实数据源都失败了，无法获取数据")
+                    return []
+
+                # 等待一下再尝试下一个数据源
+                time.sleep(2)
+
+        return []
+
+    def _crawl_api_page(self, page: int, api_url: str) -> List[Dict]:
+        """使用API接口爬取数据"""
         try:
             # 构建API请求参数
             params = {
@@ -179,7 +250,7 @@ class ZhcwCrawler(BaseCrawler):
             }
 
             # 发送API请求
-            response = self.session.get(self.api_url, params=params, timeout=15)
+            response = self.session.get(api_url, params=params, timeout=15)
             response.raise_for_status()
 
             # 解析JSON响应
@@ -218,11 +289,11 @@ class ZhcwCrawler(BaseCrawler):
                             back_balls = [num.zfill(2) for num in numbers[5:7]]
 
                             data.append({
-                                'issue': issue,
-                                'date': date,
-                                'front_balls': ','.join(front_balls),
-                                'back_balls': ','.join(back_balls)
-                            })
+                                    'issue': issue,
+                                    'date': date,
+                                    'front_balls': ','.join(front_balls),
+                                    'back_balls': ','.join(back_balls)
+                                })
 
                 except Exception as e:
                     logger_manager.warning(f"解析数据项失败: {e}")
@@ -233,16 +304,316 @@ class ZhcwCrawler(BaseCrawler):
 
         except Exception as e:
             logger_manager.error(f"爬取页面 {page} 失败: {e}")
-            return []
-    
+            raise
+
+    def _crawl_zhcw_web_page(self, page: int, base_url: str) -> List[Dict]:
+        """中彩网网页爬取（真实开奖数据）"""
+        try:
+            logger_manager.info(f"从中彩网爬取真实开奖数据，页面: {page}")
+
+            # 构建中彩网URL
+            url = f"{base_url}?page={page}"
+
+            response = self.session.get(url, timeout=15)
+            response.raise_for_status()
+            response.encoding = 'utf-8'
+
+            soup = BeautifulSoup(response.text, 'html.parser')
+            data = []
+
+            # 中彩网特定的表格选择器
+            table_selectors = [
+                'table.kjjg_table',
+                'table[class*="kjjg"]',
+                '.lottery-table table',
+                'table'
+            ]
+
+            table = None
+            for selector in table_selectors:
+                table = soup.select_one(selector)
+                if table:
+                    break
+
+            if not table:
+                logger_manager.warning("中彩网：未找到开奖数据表格")
+                return []
+
+            # 解析表格行
+            rows = table.find_all('tr')[1:]  # 跳过表头
+
+            for row in rows[:30]:  # 限制每页最多30条
+                try:
+                    cells = row.find_all(['td', 'th'])
+                    if len(cells) >= 3:
+                        # 提取期号、日期、号码
+                        issue = cells[0].get_text().strip()
+                        date = cells[1].get_text().strip()
+                        numbers_text = cells[2].get_text().strip()
+
+                        if issue and date and numbers_text:
+                            # 解析号码
+                            numbers = re.findall(r'\d+', numbers_text)
+
+                            if len(numbers) >= 7:
+                                front_balls = [num.zfill(2) for num in numbers[:5]]
+                                back_balls = [num.zfill(2) for num in numbers[5:7]]
+
+                                data.append({
+                                    'issue': issue,
+                                    'date': date,
+                                    'front_balls': ','.join(front_balls),
+                                    'back_balls': ','.join(back_balls)
+                                })
+
+                except Exception as e:
+                    logger_manager.error(f"解析中彩网数据行失败: {e}")
+                    continue
+
+            logger_manager.info(f"中彩网爬取成功，获取 {len(data)} 期真实开奖数据")
+            return data
+
+        except Exception as e:
+            logger_manager.error(f"中彩网爬取失败: {e}")
+            raise
+
+    def _crawl_500_web_page(self, page: int, base_url: str) -> List[Dict]:
+        """500彩票网页爬取（真实开奖数据）"""
+        try:
+            logger_manager.info(f"从500彩票网爬取真实开奖数据，页面: {page}")
+
+            # 500彩票网的URL构建
+            url = base_url if page == 1 else f"{base_url}?page={page}"
+
+            response = self.session.get(url, timeout=15)
+            response.raise_for_status()
+            response.encoding = 'utf-8'
+
+            soup = BeautifulSoup(response.text, 'html.parser')
+            data = []
+
+            # 500彩票网特定的选择器
+            table_selectors = [
+                '.kj-table table',
+                'table[class*="kj"]',
+                'table[class*="result"]',
+                'table'
+            ]
+
+            table = None
+            for selector in table_selectors:
+                table = soup.select_one(selector)
+                if table:
+                    break
+
+            if not table:
+                logger_manager.warning("500彩票网：未找到开奖数据表格")
+                return []
+
+            # 解析表格行
+            rows = table.find_all('tr')[1:]  # 跳过表头
+
+            for row in rows[:30]:
+                try:
+                    cells = row.find_all(['td', 'th'])
+                    if len(cells) >= 3:
+                        issue = cells[0].get_text().strip()
+                        date = cells[1].get_text().strip()
+                        numbers_text = cells[2].get_text().strip()
+
+                        if issue and date and numbers_text:
+                            numbers = re.findall(r'\d+', numbers_text)
+
+                            if len(numbers) >= 7:
+                                front_balls = [num.zfill(2) for num in numbers[:5]]
+                                back_balls = [num.zfill(2) for num in numbers[5:7]]
+
+                                data.append({
+                                    'issue': issue,
+                                    'date': date,
+                                    'front_balls': ','.join(front_balls),
+                                    'back_balls': ','.join(back_balls)
+                                })
+
+                except Exception as e:
+                    logger_manager.error(f"解析500彩票网数据行失败: {e}")
+                    continue
+
+            logger_manager.info(f"500彩票网爬取成功，获取 {len(data)} 期真实开奖数据")
+            return data
+
+        except Exception as e:
+            logger_manager.error(f"500彩票网爬取失败: {e}")
+            raise
+
+    def _crawl_lottery_gov_web_page(self, page: int, base_url: str) -> List[Dict]:
+        """中国体彩网页爬取（真实开奖数据）"""
+        try:
+            logger_manager.info(f"从中国体彩网爬取真实开奖数据，页面: {page}")
+
+            # 中国体彩网的URL构建
+            url = f"{base_url}&page={page}" if page > 1 else base_url
+
+            response = self.session.get(url, timeout=15)
+            response.raise_for_status()
+            response.encoding = 'utf-8'
+
+            soup = BeautifulSoup(response.text, 'html.parser')
+            data = []
+
+            # 中国体彩网特定的选择器
+            table_selectors = [
+                '.lottery-table table',
+                'table[class*="lottery"]',
+                'table[class*="history"]',
+                'table'
+            ]
+
+            table = None
+            for selector in table_selectors:
+                table = soup.select_one(selector)
+                if table:
+                    break
+
+            if not table:
+                logger_manager.warning("中国体彩网：未找到开奖数据表格")
+                return []
+
+            # 解析表格行
+            rows = table.find_all('tr')[1:]  # 跳过表头
+
+            for row in rows[:30]:
+                try:
+                    cells = row.find_all(['td', 'th'])
+                    if len(cells) >= 3:
+                        issue = cells[0].get_text().strip()
+                        date = cells[1].get_text().strip()
+                        numbers_text = cells[2].get_text().strip()
+
+                        if issue and date and numbers_text:
+                            numbers = re.findall(r'\d+', numbers_text)
+
+                            if len(numbers) >= 7:
+                                front_balls = [num.zfill(2) for num in numbers[:5]]
+                                back_balls = [num.zfill(2) for num in numbers[5:7]]
+
+                                data.append({
+                                    'issue': issue,
+                                    'date': date,
+                                    'front_balls': ','.join(front_balls),
+                                    'back_balls': ','.join(back_balls)
+                                })
+
+                except Exception as e:
+                    logger_manager.error(f"解析中国体彩网数据行失败: {e}")
+                    continue
+
+            logger_manager.info(f"中国体彩网爬取成功，获取 {len(data)} 期真实开奖数据")
+            return data
+
+        except Exception as e:
+            logger_manager.error(f"中国体彩网爬取失败: {e}")
+            raise
+
+    def _crawl_sina_web_page(self, page: int, base_url: str) -> List[Dict]:
+        """新浪彩票网页爬取（真实开奖数据）"""
+        try:
+            logger_manager.info(f"从新浪彩票网爬取真实开奖数据，页面: {page}")
+
+            # 新浪彩票网的URL构建
+            url = f"{base_url}?page={page}" if page > 1 else base_url
+
+            response = self.session.get(url, timeout=15)
+            response.raise_for_status()
+            response.encoding = 'utf-8'
+
+            soup = BeautifulSoup(response.text, 'html.parser')
+            data = []
+
+            # 新浪彩票网特定的选择器
+            table_selectors = [
+                '.kj_tablelist02 table',
+                'table[class*="kj"]',
+                'table[class*="tablelist"]',
+                'table'
+            ]
+
+            table = None
+            for selector in table_selectors:
+                table = soup.select_one(selector)
+                if table:
+                    break
+
+            if not table:
+                logger_manager.warning("新浪彩票网：未找到开奖数据表格")
+                return []
+
+            # 解析表格行
+            rows = table.find_all('tr')[1:]  # 跳过表头
+
+            for row in rows[:30]:
+                try:
+                    cells = row.find_all(['td', 'th'])
+                    if len(cells) >= 3:
+                        issue = cells[0].get_text().strip()
+                        date = cells[1].get_text().strip()
+                        numbers_text = cells[2].get_text().strip()
+
+                        if issue and date and numbers_text:
+                            numbers = re.findall(r'\d+', numbers_text)
+
+                            if len(numbers) >= 7:
+                                front_balls = [num.zfill(2) for num in numbers[:5]]
+                                back_balls = [num.zfill(2) for num in numbers[5:7]]
+
+                                data.append({
+                                    'issue': issue,
+                                    'date': date,
+                                    'front_balls': ','.join(front_balls),
+                                    'back_balls': ','.join(back_balls)
+                                })
+
+                except Exception as e:
+                    logger_manager.error(f"解析新浪彩票网数据行失败: {e}")
+                    continue
+
+            logger_manager.info(f"新浪彩票网爬取成功，获取 {len(data)} 期真实开奖数据")
+            return data
+
+        except Exception as e:
+            logger_manager.error(f"新浪彩票网爬取失败: {e}")
+            raise
+
+
+
     def crawl_recent_data(self, max_pages_or_periods) -> int:
         """爬取最近的数据（支持按页数或期数）"""
-        if isinstance(max_pages_or_periods, int) and max_pages_or_periods <= 10:
-            # 如果是小数字，认为是页数（增量更新）
-            return self._crawl_by_pages(max_pages_or_periods)
-        else:
-            # 否则认为是期数
-            return self._crawl_by_periods(int(max_pages_or_periods))
+        max_retries = 3
+        retry_delay = 5
+
+        for attempt in range(max_retries):
+            try:
+                if isinstance(max_pages_or_periods, int) and max_pages_or_periods <= 10:
+                    # 如果是小数字，认为是页数（增量更新）
+                    return self._crawl_by_pages(max_pages_or_periods)
+                else:
+                    # 否则认为是期数
+                    return self._crawl_by_periods(int(max_pages_or_periods))
+
+            except Exception as e:
+                logger_manager.error(f"数据爬取失败 (尝试 {attempt + 1}/{max_retries}): {e}")
+
+                if attempt < max_retries - 1:
+                    logger_manager.info(f"等待 {retry_delay} 秒后重试...")
+                    time.sleep(retry_delay)
+                    retry_delay *= 2  # 指数退避
+                else:
+                    logger_manager.error("所有重试都失败了")
+                    # 如果是增量更新且所有重试都失败，返回0而不是抛出异常
+                    if isinstance(max_pages_or_periods, int) and max_pages_or_periods <= 10:
+                        logger_manager.warning("增量更新失败，但系统将继续使用现有数据")
+                        return 0
+                    raise
 
     def _crawl_by_pages(self, max_pages: int) -> int:
         """按页数爬取（增量更新）"""

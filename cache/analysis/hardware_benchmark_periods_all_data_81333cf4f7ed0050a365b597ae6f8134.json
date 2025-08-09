@@ -1,0 +1,17 @@
+{
+  "data": {
+    "cpu_score": 100,
+    "memory_score": 8.63763682818101,
+    "gpu_score": 0.0,
+    "overall_score": 42.5912910484543,
+    "recommended_acceleration": "AccelerationType.CPU_MULTI",
+    "benchmark_time": 0.4301760196685791
+  },
+  "metadata": {
+    "timestamp": "2025-08-10T03:17:02.058693",
+    "data_signature": "81333cf4f7ed0050a365b597ae6f8134",
+    "method_name": "hardware_benchmark",
+    "periods": null,
+    "kwargs": {}
+  }
+}

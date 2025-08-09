@@ -12,6 +12,12 @@ import os
 from datetime import datetime
 from typing import List, Dict
 
+# 网络相关模块
+try:
+    import requests
+except ImportError:
+    requests = None
+
 # 只导入核心模块
 import core_modules as cm
 cache_manager = cm.cache_manager
@@ -145,23 +151,40 @@ class DLTPredictorSystem:
 
                 if incremental:
                     # 增量更新：只获取最新的几页数据
+                    print("📡 正在检查网络连接和数据源...")
                     count = crawler.crawl_recent_data(3)
                 elif periods:
                     # 更新指定期数
+                    print(f"📡 正在获取最近 {periods} 期数据...")
                     count = crawler.crawl_recent_data(periods)
                 else:
                     # 更新所有数据
+                    print("📡 正在获取所有历史数据...")
                     count = crawler.crawl_all_data()
 
                 # 清理缓存并重新加载数据
                 cache_manager.clear_cache('data')
                 data_manager._load_data()
-                print(f"✅ 数据更新完成，新增 {count} 期数据")
+
+                if count > 0:
+                    print(f"✅ 数据更新完成，新增 {count} 期数据")
+                else:
+                    print("ℹ️ 没有新数据需要更新，当前数据已是最新")
 
             except ImportError:
                 print("❌ 爬虫模块未找到，请检查crawlers.py文件")
+            except requests.exceptions.ConnectionError:
+                print("❌ 网络连接失败，请检查网络连接")
+                print("💡 提示：可以尝试使用离线模式或稍后重试")
+            except requests.exceptions.Timeout:
+                print("❌ 网络请求超时，请稍后重试")
+            except requests.exceptions.HTTPError as e:
+                print(f"❌ 服务器响应错误: {e}")
+                print("💡 提示：数据源服务器可能暂时不可用，请稍后重试")
             except Exception as e:
                 print(f"❌ 数据更新失败: {e}")
+                print("💡 提示：系统严格要求使用真实开奖数据，不允许使用模拟数据")
+                print("💡 建议：检查网络连接，或稍后重试多个真实数据源")
 
         elif args.data_action == 'check':
             print("🔍 开始数据完整性检查...")

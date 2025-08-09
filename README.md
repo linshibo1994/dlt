@@ -395,8 +395,6 @@ python3 dlt_main.py predict -m ensemble -c 5 --save --format json
 
 ### � **复式预测和加速功能说明**
 
-**重要提示**：项目中所有预测方法都已实现复式预测功能！
-
 #### 🎲 **复式预测的正确使用方式**
 
 **方式一：使用 `--compound` 参数启用复式模式**
