@@ -144,7 +144,7 @@ class ModelPool:
             )
             
             # 从注册表创建实例
-            model_instance = model_registry.create_model_instance(model_name, config, model_version)
+            model_instance = model_registry.create_model(model_name, config.__dict__)
             
             return model_instance
             
@@ -191,24 +191,31 @@ class ModelPool:
 
 class PredictionScheduler:
     """预测调度器"""
-    
-    def __init__(self, max_workers: int = 4):
+
+    def __init__(self, max_workers: int = 4, model_pool: ModelPool = None):
         """
         初始化预测调度器
-        
+
         Args:
             max_workers: 最大工作线程数
+            model_pool: 模型池实例
         """
         self.max_workers = max_workers
+        self.model_pool = model_pool
         self.executor = ThreadPoolExecutor(max_workers=max_workers)
         self.request_queue = queue.PriorityQueue()
         self.active_requests = {}  # request_id -> Future
         self.completed_requests = {}  # request_id -> PredictionResult
         self.running = False
         self.scheduler_thread = None
-        
+
         logger_manager.info(f"预测调度器初始化完成，工作线程数: {max_workers}")
-    
+
+    def set_model_pool(self, model_pool: ModelPool):
+        """设置模型池"""
+        self.model_pool = model_pool
+        logger_manager.info("模型池已设置到预测调度器")
+
     def submit_request(self, request: PredictionRequest) -> str:
         """提交预测请求"""
         try:
@@ -275,6 +282,12 @@ class PredictionScheduler:
         )
         
         try:
+            # 检查模型池是否可用
+            if self.model_pool is None:
+                result.status = PredictionStatus.FAILED
+                result.error_message = "模型池未初始化"
+                return result
+
             # 调用实际的预测逻辑，基于真实数据
             # 获取模型实例
             model = self.model_pool.get_model(request.model_name)
@@ -365,19 +378,19 @@ class PredictionEngine:
     def __init__(self, max_models: int = 10, max_workers: int = 4):
         """
         初始化预测引擎
-        
+
         Args:
             max_models: 最大模型数量
             max_workers: 最大工作线程数
         """
         self.model_pool = ModelPool(max_models)
-        self.scheduler = PredictionScheduler(max_workers)
+        self.scheduler = PredictionScheduler(max_workers, self.model_pool)
         self.prediction_history = []
         self.lock = threading.RLock()
-        
+
         # 启动调度器
         self.scheduler.start_scheduler()
-        
+
         logger_manager.info("预测引擎初始化完成")
     
     def predict(self, model_name: str, input_data: np.ndarray,

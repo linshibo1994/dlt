@@ -75,13 +75,13 @@ class SmartEpochsCalculator:
         
         # 基础训练轮数比例
         self.base_ratios = {
-            ModelType.LSTM: 0.6,
-            ModelType.TRANSFORMER: 0.5,
-            ModelType.GAN: 0.7,
-            ModelType.TRADITIONAL_ML: 0.3,
-            ModelType.CLUSTERING: 0.2,
-            ModelType.MARKOV_CHAIN: 0.1,
-            ModelType.BAYESIAN: 0.25
+            ModelType.LSTM: 0.1,
+            ModelType.TRANSFORMER: 0.08,
+            ModelType.GAN: 0.12,
+            ModelType.TRADITIONAL_ML: 0.05,
+            ModelType.CLUSTERING: 0.03,
+            ModelType.MARKOV_CHAIN: 0.02,
+            ModelType.BAYESIAN: 0.04
         }
         
         # 性能模式倍数
@@ -228,13 +228,13 @@ class SmartEpochsCalculator:
         
         # 模型特定的最小轮数
         min_epochs_by_type = {
-            ModelType.LSTM: 50,
-            ModelType.TRANSFORMER: 30,
-            ModelType.GAN: 100,
-            ModelType.TRADITIONAL_ML: 10,
-            ModelType.CLUSTERING: 5,
-            ModelType.MARKOV_CHAIN: 3,
-            ModelType.BAYESIAN: 10
+            ModelType.LSTM: 20,
+            ModelType.TRANSFORMER: 15,
+            ModelType.GAN: 30,
+            ModelType.TRADITIONAL_ML: 5,
+            ModelType.CLUSTERING: 3,
+            ModelType.MARKOV_CHAIN: 2,
+            ModelType.BAYESIAN: 5
         }
         
         min_epochs = min_epochs_by_type.get(model_type, 10)
