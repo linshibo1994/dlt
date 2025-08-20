@@ -969,7 +969,8 @@ class GANPredictor(BaseDeepPredictor, CompoundPredictorMixin):
             logger_manager.info(f"{self.name}预测完成，置信度: {confidence:.2f}")
         
         return predictions
-    
+
+
     def predict_with_details(self, count=1) -> Dict[str, Any]:
         """
         生成带详细信息的预测结果

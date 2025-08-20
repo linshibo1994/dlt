@@ -515,10 +515,11 @@ class EnhancedMarkovPredictor:
         import numpy as np
         import time
 
-        # 为每注设置不同的随机种子，同时考虑期数的影响
-        seed_base = prediction_index * 1000 + int(time.time() * 1000) % 10000 + periods
+        # 为每注设置不同的随机种子，确保多样性
+        # 使用更稳定的种子生成方式，避免时间相关的重复
+        seed_base = (prediction_index * 7919 + periods * 31 + hash(str(counter)) % 10000) % (2**31)
         random.seed(seed_base)
-        np.random.seed(seed_base % 2**32)
+        np.random.seed(seed_base % (2**32))
 
         if not counter:
             return []
@@ -532,15 +533,23 @@ class EnhancedMarkovPredictor:
 
         selected_balls = []
 
-        # 策略1：第1注 - 期数敏感的频率策略
+        # 策略1：第1注 - 期数敏感的频率策略（增加多样性）
         if prediction_index == 0:
-            # 根据分析期数调整选择策略
+            # 根据分析期数调整选择策略，增加随机性
             if periods <= 300:
-                # 短期分析：纯频率最高
-                selected_balls = [ball for ball, _ in counter.most_common(target_count)]
+                # 短期分析：60%高频 + 40%随机（增加多样性）
+                high_freq_count = max(1, int(target_count * 0.6))
+                high_freq_balls = [ball for ball, _ in counter.most_common(high_freq_count)]
+                selected_balls.extend(high_freq_balls)
+
+                remaining_balls = [ball for ball in all_balls if ball not in high_freq_balls]
+                if remaining_balls and len(selected_balls) < target_count:
+                    random_count = target_count - len(selected_balls)
+                    random_balls = random.sample(remaining_balls, min(random_count, len(remaining_balls)))
+                    selected_balls.extend(random_balls)
             elif periods <= 800:
-                # 中期分析：80%高频 + 20%随机
-                high_freq_count = max(1, int(target_count * 0.8))
+                # 中期分析：50%高频 + 50%随机（增加多样性）
+                high_freq_count = max(1, int(target_count * 0.5))
                 high_freq_balls = [ball for ball, _ in counter.most_common(high_freq_count)]
                 selected_balls.extend(high_freq_balls)
 
@@ -550,8 +559,8 @@ class EnhancedMarkovPredictor:
                     random_balls = random.sample(remaining_balls, min(random_count, len(remaining_balls)))
                     selected_balls.extend(random_balls)
             else:
-                # 长期分析：70%高频 + 30%加权随机
-                high_freq_count = max(1, int(target_count * 0.7))
+                # 长期分析：40%高频 + 60%加权随机（增加多样性）
+                high_freq_count = max(1, int(target_count * 0.4))
                 high_freq_balls = [ball for ball, _ in counter.most_common(high_freq_count)]
                 selected_balls.extend(high_freq_balls)
 
@@ -572,32 +581,45 @@ class EnhancedMarkovPredictor:
                         random_balls = random.sample(remaining_balls, min(random_count, len(remaining_balls)))
                         selected_balls.extend(random_balls)
 
-        # 策略2：第2注 - 频率加权随机选择
+        # 策略2：第2注 - 反向频率策略（偏向中低频号码）
         elif prediction_index == 1:
-            # 计算概率权重
-            total_count = sum(all_counts)
-            probabilities = [count / total_count for count in all_counts]
+            # 将号码按频率分为三档，偏向选择中低频号码
+            sorted_balls = [ball for ball, _ in counter.most_common()]
+            total_balls = len(sorted_balls)
 
-            # 概率加权随机选择
-            selected_balls = list(np.random.choice(
-                all_balls, size=min(target_count, len(all_balls)),
-                replace=False, p=probabilities
-            ))
+            if total_balls >= 3:
+                tier1_end = max(1, total_balls // 3)
+                tier2_end = max(2, total_balls * 2 // 3)
 
-        # 策略3：第3注 - 混合策略（50%高频 + 50%随机）
+                tier1_balls = sorted_balls[:tier1_end]  # 高频
+                tier2_balls = sorted_balls[tier1_end:tier2_end]  # 中频
+                tier3_balls = sorted_balls[tier2_end:]  # 低频
+
+                # 反向权重：20%高频，40%中频，40%低频
+                tier1_count = max(0, int(target_count * 0.2))
+                tier2_count = max(1, int(target_count * 0.4))
+                tier3_count = target_count - tier1_count - tier2_count
+
+                # 从各档随机选择
+                if tier1_balls and tier1_count > 0:
+                    selected_balls.extend(random.sample(tier1_balls, min(tier1_count, len(tier1_balls))))
+                if tier2_balls and tier2_count > 0:
+                    selected_balls.extend(random.sample(tier2_balls, min(tier2_count, len(tier2_balls))))
+                if tier3_balls and tier3_count > 0:
+                    selected_balls.extend(random.sample(tier3_balls, min(tier3_count, len(tier3_balls))))
+            else:
+                # 如果号码太少，使用加权随机
+                total_count = sum(all_counts)
+                probabilities = [count / total_count for count in all_counts]
+                selected_balls = list(np.random.choice(
+                    all_balls, size=min(target_count, len(all_balls)),
+                    replace=False, p=probabilities
+                ))
+
+        # 策略3：第3注 - 完全随机策略
         elif prediction_index == 2:
-            high_freq_count = max(1, target_count // 2)
-            random_count = target_count - high_freq_count
-
-            # 选择高频号码
-            high_freq_balls = [ball for ball, _ in counter.most_common(high_freq_count)]
-            selected_balls.extend(high_freq_balls)
-
-            # 从剩余号码中随机选择
-            remaining_balls = [ball for ball in all_balls if ball not in high_freq_balls]
-            if remaining_balls and random_count > 0:
-                random_balls = random.sample(remaining_balls, min(random_count, len(remaining_balls)))
-                selected_balls.extend(random_balls)
+            # 完全随机选择，不考虑频率
+            selected_balls = random.sample(all_balls, min(target_count, len(all_balls)))
 
         # 策略4：第4注及以后 - 平衡策略
         else:
@@ -641,8 +663,9 @@ class EnhancedMarkovPredictor:
         import random
         import time
 
-        # 为每注设置不同的随机种子
-        random.seed(prediction_index * 1000 + int(time.time() * 1000) % 10000)
+        # 为每注设置不同的随机种子，确保多样性
+        seed_base = (prediction_index * 8191 + max_ball * 17 + hash(ball_type) % 1000) % (2**31)
+        random.seed(seed_base)
 
         # 获取频率分析结果
         from analyzer_modules import basic_analyzer

@@ -277,27 +277,38 @@ class LSTMPredictor(BaseDeepLearningModel, CompoundPredictorMixin):
         self.back_scaler = model_data['back_scaler']
         self.sequence_length = model_data.get('sequence_length', self.sequence_length)
 
-    def prepare_data(self, data: pd.DataFrame) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+    def prepare_data(self, data) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
         """
         准备训练数据
-        
+
         Args:
-            data: 历史数据
-            
+            data: 历史数据 (可以是 pd.DataFrame 或 np.ndarray)
+
         Returns:
             (X_front, y_front, X_back, y_back)
         """
         try:
-            # 提取前区和后区号码
-            front_numbers = []
-            back_numbers = []
-            
-            for _, row in data.iterrows():
-                front_balls = [int(x) for x in row['front_balls'].split(',')]
-                back_balls = [int(x) for x in row['back_balls'].split(',')]
-                
-                front_numbers.append(front_balls)
-                back_numbers.append(back_balls)
+            # 处理不同类型的输入数据
+            if isinstance(data, np.ndarray):
+                # 如果是numpy数组，假设已经是处理好的数字格式
+                if data.shape[1] >= 7:  # 至少包含前区5个+后区2个号码
+                    front_numbers = data[:, :5].tolist()
+                    back_numbers = data[:, 5:7].tolist()
+                else:
+                    raise ValueError(f"数据维度不正确，期望至少7列，实际{data.shape[1]}列")
+            elif isinstance(data, pd.DataFrame):
+                # 提取前区和后区号码
+                front_numbers = []
+                back_numbers = []
+
+                for _, row in data.iterrows():
+                    front_balls = [int(x) for x in row['front_balls'].split(',')]
+                    back_balls = [int(x) for x in row['back_balls'].split(',')]
+
+                    front_numbers.append(front_balls)
+                    back_numbers.append(back_balls)
+            else:
+                raise ValueError(f"不支持的数据类型: {type(data)}")
             
             # 转换为numpy数组
             front_array = np.array(front_numbers)
@@ -521,7 +532,7 @@ class LSTMPredictor(BaseDeepLearningModel, CompoundPredictorMixin):
 
         return model
     
-    def train(self, data: pd.DataFrame) -> Dict[str, Any]:
+    def train(self, data) -> Dict[str, Any]:
         """
         训练LSTM模型
         
@@ -618,7 +629,7 @@ class LSTMPredictor(BaseDeepLearningModel, CompoundPredictorMixin):
             logger_manager.error(f"LSTM模型训练失败: {e}")
             raise
     
-    def predict(self, data: Optional[pd.DataFrame] = None, count: int = 1) -> List[Tuple[List[int], List[int]]]:
+    def predict(self, data=None, count: int = 1) -> List[Tuple[List[int], List[int]]]:
         """
         使用LSTM模型预测
 
@@ -646,19 +657,38 @@ class LSTMPredictor(BaseDeepLearningModel, CompoundPredictorMixin):
                         raise ValueError("LSTM模型训练失败")
                     logger_manager.info("模型训练完成，开始预测...")
 
-            # 准备最近的序列数据
-            recent_data = data.tail(self.sequence_length)
-            
-            # 提取号码 - 使用data_manager的parse_balls方法
-            import core_modules as cm
+            # 处理不同类型的输入数据
             front_numbers = []
             back_numbers = []
 
-            for _, row in recent_data.iterrows():
-                front_balls, back_balls = cm.data_manager.parse_balls(row)
-                if len(front_balls) == 5 and len(back_balls) == 2:
-                    front_numbers.append(front_balls)
-                    back_numbers.append(back_balls)
+            if isinstance(data, np.ndarray):
+                # 如果是numpy数组，取最后几行作为序列数据
+                if len(data) >= self.sequence_length:
+                    recent_data = data[-self.sequence_length:]
+                else:
+                    recent_data = data
+
+                # 直接从numpy数组提取号码
+                if recent_data.shape[1] >= 7:
+                    front_numbers = recent_data[:, :5].tolist()
+                    back_numbers = recent_data[:, 5:7].tolist()
+                else:
+                    raise ValueError(f"数据维度不正确，期望至少7列，实际{recent_data.shape[1]}列")
+
+            elif isinstance(data, pd.DataFrame):
+                # 准备最近的序列数据
+                recent_data = data.tail(self.sequence_length)
+
+                # 提取号码 - 使用data_manager的parse_balls方法
+                import core_modules as cm
+
+                for _, row in recent_data.iterrows():
+                    front_balls, back_balls = cm.data_manager.parse_balls(row)
+                    if len(front_balls) == 5 and len(back_balls) == 2:
+                        front_numbers.append(front_balls)
+                        back_numbers.append(back_balls)
+            else:
+                raise ValueError(f"不支持的数据类型: {type(data)}")
 
             # 确保有足够的数据
             if len(front_numbers) < self.sequence_length:
@@ -780,6 +810,8 @@ class LSTMPredictor(BaseDeepLearningModel, CompoundPredictorMixin):
             logger_manager.error(f"错误堆栈: {traceback.format_exc()}")
             # 重新抛出异常，不使用回退机制
             raise e
+
+
     
     def save_models(self) -> bool:
         """保存模型"""

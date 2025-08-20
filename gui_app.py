@@ -46,6 +46,174 @@ except ImportError as e:
     st.error(f"核心模块导入失败: {e}")
     MODULES_LOADED = False
 
+# 添加结果解析函数
+import re
+
+def parse_compound_prediction_output(output_text: str, method_name: str) -> dict:
+    """解析复式预测的文本输出"""
+    try:
+        lines = output_text.split('\n')
+
+        # 查找预测结果行 - 支持多种格式
+        for i, line in enumerate(lines):
+            # 格式1: "第 1 注复式 (Ensemble): 03 11 24 29 30 32 33 35 + 06 07 10"
+            if ('第 1 注复式' in line and '+' in line) or ('复式 (Ensemble)' in line and '+' in line) or ('复式 (Markov Compound)' in line and '+' in line):
+                # 解析号码
+                parts = line.split('+')
+                if len(parts) >= 2:
+                    # 提取前区号码
+                    front_part = parts[0]
+                    front_numbers = re.findall(r'\b\d{2}\b', front_part)
+
+                    # 提取后区号码
+                    back_part = parts[1]
+                    back_numbers = re.findall(r'\b\d{2}\b', back_part)
+
+                    if len(front_numbers) >= 5 and len(back_numbers) >= 2:
+                        # 查找组合数和成本
+                        combinations = 0
+                        cost = 0
+                        confidence = 0.7
+
+                        for j in range(i+1, min(i+10, len(lines))):
+                            if '总组合数:' in lines[j]:
+                                match = re.search(r'(\d+)\s*注', lines[j])
+                                if match:
+                                    combinations = int(match.group(1))
+                            elif '总投注额:' in lines[j]:
+                                match = re.search(r'(\d+)\s*元', lines[j])
+                                if match:
+                                    cost = int(match.group(1))
+                            elif '置信度:' in lines[j]:
+                                match = re.search(r'(\d+\.\d+)', lines[j])
+                                if match:
+                                    confidence = float(match.group(1))
+
+                        return {
+                            'front_balls': [int(x) for x in front_numbers],
+                            'back_balls': [int(x) for x in back_numbers],
+                            'front_count': len(front_numbers),
+                            'back_count': len(back_numbers),
+                            'method': method_name,
+                            'confidence': confidence,
+                            'total_combinations': combinations,
+                            'total_cost': cost
+                        }
+
+            # 格式2: "前区号码 (8个): 01 04 06 10 32 33 34 35"
+            elif '前区号码' in line and '个):' in line:
+                front_numbers = re.findall(r'\b\d{2}\b', line)
+
+                # 查找后区号码
+                back_numbers = []
+                combinations = 0
+                cost = 0
+                confidence = 0.7
+
+                for j in range(i+1, min(i+10, len(lines))):
+                    if '后区号码' in lines[j] and '个):' in lines[j]:
+                        back_numbers = re.findall(r'\b\d{2}\b', lines[j])
+                    elif '总组合数:' in lines[j]:
+                        match = re.search(r'(\d+)', lines[j])
+                        if match:
+                            combinations = int(match.group(1))
+                    elif '投注成本:' in lines[j]:
+                        match = re.search(r'(\d+)', lines[j])
+                        if match:
+                            cost = int(match.group(1))
+                    elif '置信度:' in lines[j]:
+                        match = re.search(r'(\d+\.\d+)', lines[j])
+                        if match:
+                            confidence = float(match.group(1))
+
+                if len(front_numbers) >= 5 and len(back_numbers) >= 2:
+                    return {
+                        'front_balls': [int(x) for x in front_numbers],
+                        'back_balls': [int(x) for x in back_numbers],
+                        'front_count': len(front_numbers),
+                        'back_count': len(back_numbers),
+                        'method': method_name,
+                        'confidence': confidence,
+                        'total_combinations': combinations,
+                        'total_cost': cost
+                    }
+
+        return None
+    except Exception as e:
+        print(f"解析复式预测输出失败: {e}")
+        return None
+
+def parse_duplex_prediction_output(output_text: str, method_name: str) -> dict:
+    """解析胆拖预测的文本输出"""
+    try:
+        lines = output_text.split('\n')
+
+        # 查找胆拖结果
+        for i, line in enumerate(lines):
+            if '第 1 注胆拖:' in line:
+                # 查找前区和后区信息
+                front_dan = []
+                front_tuo = []
+                back_dan = []
+                back_tuo = []
+                combinations = 0
+                cost = 0
+
+                for j in range(i+1, min(i+10, len(lines))):
+                    if '前区:' in lines[j] and '+' in lines[j]:
+                        # 解析前区胆拖: "前区: 09 24 + (04 05 07 27 31 35)"
+                        parts = lines[j].split('+')
+                        if len(parts) >= 2:
+                            # 胆码部分
+                            dan_part = parts[0].replace('前区:', '').strip()
+                            front_dan = re.findall(r'\b\d{2}\b', dan_part)
+
+                            # 拖码部分 (去掉括号)
+                            tuo_part = parts[1].strip()
+                            tuo_part = tuo_part.replace('(', '').replace(')', '')
+                            front_tuo = re.findall(r'\b\d{2}\b', tuo_part)
+
+                    elif '后区:' in lines[j] and '+' in lines[j]:
+                        # 解析后区胆拖: "后区: 09 + (05 08 11 12)"
+                        parts = lines[j].split('+')
+                        if len(parts) >= 2:
+                            # 胆码部分
+                            dan_part = parts[0].replace('后区:', '').strip()
+                            back_dan = re.findall(r'\b\d{2}\b', dan_part)
+
+                            # 拖码部分 (去掉括号)
+                            tuo_part = parts[1].strip()
+                            tuo_part = tuo_part.replace('(', '').replace(')', '')
+                            back_tuo = re.findall(r'\b\d{2}\b', tuo_part)
+
+                    elif '总组合数:' in lines[j]:
+                        match = re.search(r'(\d+)\s*注', lines[j])
+                        if match:
+                            combinations = int(match.group(1))
+                    elif '总投注额:' in lines[j]:
+                        match = re.search(r'(\d+)\s*元', lines[j])
+                        if match:
+                            cost = int(match.group(1))
+
+                if front_dan and front_tuo and back_dan and back_tuo:
+                    return {
+                        'front_balls': [int(x) for x in front_dan + front_tuo],
+                        'back_balls': [int(x) for x in back_dan + back_tuo],
+                        'front_dan': [int(x) for x in front_dan],
+                        'front_tuo': [int(x) for x in front_tuo],
+                        'back_dan': [int(x) for x in back_dan],
+                        'back_tuo': [int(x) for x in back_tuo],
+                        'method': method_name,
+                        'confidence': 0.75,
+                        'total_combinations': combinations,
+                        'total_cost': cost
+                    }
+
+        return None
+    except Exception as e:
+        print(f"解析胆拖预测输出失败: {e}")
+        return None
+
 # 页面配置
 st.set_page_config(
     page_title="大乐透预测系统",
@@ -2204,21 +2372,53 @@ def show_advanced_prediction_page():
         if st.button("🔄 自适应集成", use_container_width=True, key="adv_adaptive_ensemble_new"):
             with st.spinner("正在进行自适应集成预测..."):
                 try:
-                    predictor = AdvancedPredictor()
-                    result = predictor.adaptive_ensemble_predict(count=count, periods=periods)
-                    display_prediction_result(result, "自适应集成预测")
+                    # 使用正确的集成预测器
+                    from improvements.integration import IntegratedPredictor
+                    integrator = IntegratedPredictor()
+                    result = integrator.adaptive_ensemble_predict(count=count)
+
+                    # 转换结果格式
+                    if result:
+                        converted_result = []
+                        for pred in result:
+                            if isinstance(pred, dict):
+                                front = pred.get('front_balls', [])
+                                back = pred.get('back_balls', [])
+                                converted_result.append((front, back))
+                            else:
+                                converted_result.append(pred)
+                        display_prediction_result(converted_result, "自适应集成预测")
+                    else:
+                        st.warning("自适应集成预测未返回结果")
                 except Exception as e:
                     st.error(f"预测失败: {e}")
+                    st.info("💡 提示：自适应集成基于历史表现动态调整权重")
 
     with col2:
         if st.button("🏆 终极集成", use_container_width=True, key="adv_ultimate_ensemble_new"):
             with st.spinner("正在进行终极集成预测..."):
                 try:
-                    predictor = AdvancedPredictor()
-                    result = predictor.ultimate_ensemble_predict(count=count, periods=periods)
-                    display_prediction_result(result, "终极集成预测")
+                    # 使用正确的集成预测器
+                    from improvements.integration import IntegratedPredictor
+                    integrator = IntegratedPredictor()
+                    result = integrator.ultimate_ensemble_predict(count=count)
+
+                    # 转换结果格式
+                    if result:
+                        converted_result = []
+                        for pred in result:
+                            if isinstance(pred, dict):
+                                front = pred.get('front_balls', [])
+                                back = pred.get('back_balls', [])
+                                converted_result.append((front, back))
+                            else:
+                                converted_result.append(pred)
+                        display_prediction_result(converted_result, "终极集成预测")
+                    else:
+                        st.warning("终极集成预测未返回结果")
                 except Exception as e:
                     st.error(f"预测失败: {e}")
+                    st.info("💡 提示：终极集成融合所有可用的预测算法")
 
 def show_deep_learning_page():
     """显示深度学习页面"""
@@ -2658,38 +2858,36 @@ def show_compound_prediction_page():
         if st.button("🎯 自定义马尔可夫复式", use_container_width=True, key="compound_markov_custom_new"):
             with st.spinner("正在进行自定义马尔可夫复式预测..."):
                 try:
-                    from improvements.enhanced_markov import get_markov_predictor
-                    markov_predictor = get_markov_predictor()
-                    from compound_prediction_modules import CompoundConfig
-                    config = CompoundConfig(
-                        front_count=front_count,
-                        back_count=back_count,
-                        periods=periods,
-                        max_cost=max_cost
-                    )
-                    # 使用自定义马尔可夫进行复式预测
-                    if hasattr(markov_predictor, 'predict_compound'):
-                        result = markov_predictor.predict_compound(config)
-                        display_prediction_result([result], "自定义马尔可夫复式预测")
-                    else:
-                        # 回退实现
-                        base_results = markov_predictor.adaptive_order_markov_predict(count=1, periods=periods)
-                        if base_results:
-                            combinations = front_count * back_count
-                            cost = combinations * 3
-                            compound_result = {
-                                'front_balls': list(range(2, front_count + 2)),
-                                'back_balls': list(range(2, back_count + 2)),
-                                'front_count': front_count,
-                                'back_count': back_count,
-                                'method': '自定义马尔可夫复式',
-                                'confidence': 0.87,
-                                'total_combinations': combinations,
-                                'total_cost': cost
-                            }
-                            display_prediction_result([compound_result], "自定义马尔可夫复式预测")
+                    # 使用命令行方式调用复式预测
+                    import subprocess
+                    import json
+
+                    cmd = [
+                        'python3', 'dlt_main.py', 'predict',
+                        '-m', 'markov_custom',
+                        '-p', str(periods),
+                        '--compound',
+                        '--front-count', str(front_count),
+                        '--back-count', str(back_count)
+                    ]
+
+                    result = subprocess.run(cmd, capture_output=True, text=True, cwd='.')
+
+                    if result.returncode == 0:
+                        # 解析文本输出结果
+                        output_text = result.stdout.strip()
+
+                        # 解析自定义马尔可夫复式预测结果
+                        prediction_data = parse_compound_prediction_output(output_text, "自定义马尔可夫复式")
+
+                        if prediction_data:
+                            display_prediction_result([prediction_data], "自定义马尔可夫复式预测")
                         else:
-                            st.warning("自定义马尔可夫复式预测未返回结果")
+                            st.success("自定义马尔可夫复式预测完成！")
+                            st.text(output_text)
+                    else:
+                        st.error(f"自定义马尔可夫复式预测失败: {result.stderr}")
+
                 except Exception as e:
                     st.error(f"自定义马尔可夫复式预测失败: {e}")
 
@@ -2794,37 +2992,36 @@ def show_compound_prediction_page():
         if st.button("🎮 堆叠复式", use_container_width=True, key="compound_stacking_new"):
             with st.spinner("正在进行堆叠复式预测..."):
                 try:
-                    predictor = AdvancedPredictor()
-                    from compound_prediction_modules import CompoundConfig
-                    config = CompoundConfig(
-                        front_count=front_count,
-                        back_count=back_count,
-                        periods=periods,
-                        max_cost=max_cost
-                    )
-                    # 使用堆叠集成进行复式预测
-                    if hasattr(predictor, 'predict_compound'):
-                        result = predictor.predict_compound(config)
-                        display_prediction_result([result], "堆叠复式预测")
-                    else:
-                        # 回退实现
-                        base_result = predictor.stacking_predict(count=1, periods=periods)
-                        if base_result:
-                            combinations = front_count * back_count
-                            cost = combinations * 3
-                            compound_result = {
-                                'front_balls': list(range(2, front_count + 2)),
-                                'back_balls': list(range(2, back_count + 2)),
-                                'front_count': front_count,
-                                'back_count': back_count,
-                                'method': '堆叠复式',
-                                'confidence': 0.84,
-                                'total_combinations': combinations,
-                                'total_cost': cost
-                            }
-                            display_prediction_result([compound_result], "堆叠复式预测")
+                    # 使用命令行方式调用复式预测
+                    import subprocess
+                    import json
+
+                    cmd = [
+                        'python3', 'dlt_main.py', 'predict',
+                        '-m', 'stacking',
+                        '-p', str(periods),
+                        '--compound',
+                        '--front-count', str(front_count),
+                        '--back-count', str(back_count)
+                    ]
+
+                    result = subprocess.run(cmd, capture_output=True, text=True, cwd='.')
+
+                    if result.returncode == 0:
+                        # 解析文本输出结果
+                        output_text = result.stdout.strip()
+
+                        # 解析堆叠复式预测结果
+                        prediction_data = parse_compound_prediction_output(output_text, "堆叠复式")
+
+                        if prediction_data:
+                            display_prediction_result([prediction_data], "堆叠复式预测")
                         else:
-                            st.warning("堆叠复式预测未返回结果")
+                            st.success("堆叠复式预测完成！")
+                            st.text(output_text)
+                    else:
+                        st.error(f"堆叠复式预测失败: {result.stderr}")
+
                 except Exception as e:
                     st.error(f"堆叠复式预测失败: {e}")
 
@@ -2832,37 +3029,36 @@ def show_compound_prediction_page():
         if st.button("🔄 自适应集成复式", use_container_width=True, key="compound_adaptive_ensemble_new"):
             with st.spinner("正在进行自适应集成复式预测..."):
                 try:
-                    predictor = AdvancedPredictor()
-                    from compound_prediction_modules import CompoundConfig
-                    config = CompoundConfig(
-                        front_count=front_count,
-                        back_count=back_count,
-                        periods=periods,
-                        max_cost=max_cost
-                    )
-                    # 使用自适应集成进行复式预测
-                    if hasattr(predictor, 'predict_compound'):
-                        result = predictor.predict_compound(config)
-                        display_prediction_result([result], "自适应集成复式预测")
-                    else:
-                        # 回退实现
-                        base_result = predictor.adaptive_ensemble_predict(count=1, periods=periods)
-                        if base_result:
-                            combinations = front_count * back_count
-                            cost = combinations * 3
-                            compound_result = {
-                                'front_balls': list(range(2, front_count + 2)),
-                                'back_balls': list(range(2, back_count + 2)),
-                                'front_count': front_count,
-                                'back_count': back_count,
-                                'method': '自适应集成复式',
-                                'confidence': 0.86,
-                                'total_combinations': combinations,
-                                'total_cost': cost
-                            }
-                            display_prediction_result([compound_result], "自适应集成复式预测")
+                    # 使用命令行方式调用复式预测
+                    import subprocess
+                    import json
+
+                    cmd = [
+                        'python3', 'dlt_main.py', 'predict',
+                        '-m', 'adaptive_ensemble',
+                        '-p', str(periods),
+                        '--compound',
+                        '--front-count', str(front_count),
+                        '--back-count', str(back_count)
+                    ]
+
+                    result = subprocess.run(cmd, capture_output=True, text=True, cwd='.')
+
+                    if result.returncode == 0:
+                        # 解析文本输出结果
+                        output_text = result.stdout.strip()
+
+                        # 解析自适应集成复式预测结果
+                        prediction_data = parse_compound_prediction_output(output_text, "自适应集成复式")
+
+                        if prediction_data:
+                            display_prediction_result([prediction_data], "自适应集成复式预测")
                         else:
-                            st.warning("自适应集成复式预测未返回结果")
+                            st.success("自适应集成复式预测完成！")
+                            st.text(output_text)
+                    else:
+                        st.error(f"自适应集成复式预测失败: {result.stderr}")
+
                 except Exception as e:
                     st.error(f"自适应集成复式预测失败: {e}")
 
@@ -2870,37 +3066,36 @@ def show_compound_prediction_page():
         if st.button("🏆 终极集成复式", use_container_width=True, key="compound_ultimate_ensemble_new"):
             with st.spinner("正在进行终极集成复式预测..."):
                 try:
-                    predictor = AdvancedPredictor()
-                    from compound_prediction_modules import CompoundConfig
-                    config = CompoundConfig(
-                        front_count=front_count,
-                        back_count=back_count,
-                        periods=periods,
-                        max_cost=max_cost
-                    )
-                    # 使用终极集成进行复式预测
-                    if hasattr(predictor, 'predict_compound'):
-                        result = predictor.predict_compound(config)
-                        display_prediction_result([result], "终极集成复式预测")
-                    else:
-                        # 回退实现
-                        base_result = predictor.ultimate_ensemble_predict(count=1, periods=periods)
-                        if base_result:
-                            combinations = front_count * back_count
-                            cost = combinations * 3
-                            compound_result = {
-                                'front_balls': list(range(2, front_count + 2)),
-                                'back_balls': list(range(2, back_count + 2)),
-                                'front_count': front_count,
-                                'back_count': back_count,
-                                'method': '终极集成复式',
-                                'confidence': 0.90,
-                                'total_combinations': combinations,
-                                'total_cost': cost
-                            }
-                            display_prediction_result([compound_result], "终极集成复式预测")
+                    # 使用命令行方式调用复式预测
+                    import subprocess
+                    import json
+
+                    cmd = [
+                        'python3', 'dlt_main.py', 'predict',
+                        '-m', 'ultimate_ensemble',
+                        '-p', str(periods),
+                        '--compound',
+                        '--front-count', str(front_count),
+                        '--back-count', str(back_count)
+                    ]
+
+                    result = subprocess.run(cmd, capture_output=True, text=True, cwd='.')
+
+                    if result.returncode == 0:
+                        # 解析文本输出结果
+                        output_text = result.stdout.strip()
+
+                        # 解析终极集成复式预测结果
+                        prediction_data = parse_compound_prediction_output(output_text, "终极集成复式")
+
+                        if prediction_data:
+                            display_prediction_result([prediction_data], "终极集成复式预测")
                         else:
-                            st.warning("终极集成复式预测未返回结果")
+                            st.success("终极集成复式预测完成！")
+                            st.text(output_text)
+                    else:
+                        st.error(f"终极集成复式预测失败: {result.stderr}")
+
                 except Exception as e:
                     st.error(f"终极集成复式预测失败: {e}")
 
@@ -3009,97 +3204,36 @@ def show_compound_prediction_page():
             if st.button("🔄 Transformer复式", use_container_width=True, key="compound_transformer_new"):
                 with st.spinner("正在进行Transformer复式预测..."):
                     try:
-                        from compound_modules.compound_predictor import CompoundConfig
-                        from enhanced_deep_learning.models import get_model_registry
-                        import core_modules as cm
-                        data = cm.data_manager.get_data()
+                        # 使用命令行方式调用复式预测
+                        import subprocess
+                        import json
 
-                        # 获取Transformer模型实例
-                        model_registry = get_model_registry()
-                        transformer_model = model_registry.get_model('transformer')
-                        if transformer_model:
-                            config = CompoundConfig(
-                                front_count=front_count,
-                                back_count=back_count,
-                                periods=periods,
-                                max_cost=max_cost
-                            )
-                            # 使用Transformer进行复式预测
-                            if hasattr(transformer_model, 'predict_compound'):
-                                result = transformer_model.predict_compound(config)
-                                if result:
-                                    display_prediction_result([result], "Transformer复式预测")
-                                else:
-                                    st.warning("Transformer复式预测未返回结果")
+                        cmd = [
+                            'python3', 'dlt_main.py', 'predict',
+                            '-m', 'transformer',
+                            '-p', str(periods),
+                            '--compound',
+                            '--front-count', str(front_count),
+                            '--back-count', str(back_count)
+                        ]
+
+                        result = subprocess.run(cmd, capture_output=True, text=True, cwd='.')
+
+                        if result.returncode == 0:
+                            # 解析文本输出结果
+                            output_text = result.stdout.strip()
+
+                            # 解析Transformer复式预测结果
+                            prediction_data = parse_compound_prediction_output(output_text, "Transformer复式")
+
+                            if prediction_data:
+                                display_prediction_result([prediction_data], "Transformer复式预测")
                             else:
-                                # 回退实现：基于Transformer预测结果生成复式
-                                base_result = transformer_model.predict(data)
-                            if base_result and len(base_result) > 0:
-                                # 获取基础预测的号码
-                                front_base, back_base = base_result[0]
+                                st.success("Transformer复式预测完成！")
+                                st.text(output_text)
+                        else:
+                            st.error(f"Transformer复式预测失败: {result.stderr}")
 
-                                # 基于预测结果扩展为复式（使用不同的策略）
-                                from collections import Counter
-                                front_candidates = Counter()
-                                back_candidates = Counter()
-
-                                # 将预测号码作为核心候选
-                                for ball in front_base:
-                                    front_candidates[ball] += 12
-                                for ball in back_base:
-                                    back_candidates[ball] += 12
-
-                                # 添加数学关联号码
-                                for ball in front_base:
-                                    # 添加同尾号码
-                                    tail = ball % 10
-                                    for i in range(1, 36):
-                                        if i % 10 == tail and i != ball:
-                                            front_candidates[i] += 3
-
-                                    # 添加相邻号码
-                                    if ball > 1:
-                                        front_candidates[ball - 1] += 6
-                                    if ball < 35:
-                                        front_candidates[ball + 1] += 6
-
-                                for ball in back_base:
-                                    # 添加相邻号码
-                                    if ball > 1:
-                                        back_candidates[ball - 1] += 6
-                                    if ball < 12:
-                                        back_candidates[ball + 1] += 6
-
-                                # 选择最高分的号码
-                                front_balls = [ball for ball, _ in front_candidates.most_common(front_count)]
-                                back_balls = [ball for ball, _ in back_candidates.most_common(back_count)]
-
-                                # 确保号码数量足够
-                                while len(front_balls) < front_count:
-                                    for i in range(1, 36):
-                                        if i not in front_balls:
-                                            front_balls.append(i)
-                                            break
-
-                                while len(back_balls) < back_count:
-                                    for i in range(1, 13):
-                                        if i not in back_balls:
-                                            back_balls.append(i)
-                                            break
-
-                                compound_result = {
-                                    'front_balls': sorted(front_balls[:front_count]),
-                                    'back_balls': sorted(back_balls[:back_count]),
-                                    'front_count': front_count,
-                                    'back_count': back_count,
-                                    'method': 'Transformer复式',
-                                    'confidence': 0.83,
-                                    'total_combinations': combinations,
-                                    'total_cost': cost
-                                }
-                                display_prediction_result([compound_result], "Transformer复式预测")
-                            else:
-                                st.warning("Transformer复式预测未返回结果")
                     except Exception as e:
                         st.error(f"Transformer复式预测失败: {e}")
 
@@ -3107,101 +3241,36 @@ def show_compound_prediction_page():
             if st.button("🎨 GAN复式", use_container_width=True, key="compound_gan_new"):
                 with st.spinner("正在进行GAN复式预测..."):
                     try:
-                        from compound_modules.compound_predictor import CompoundConfig
-                        from enhanced_deep_learning.models import get_model_registry
-                        import core_modules as cm
-                        data = cm.data_manager.get_data()
+                        # 使用命令行方式调用复式预测
+                        import subprocess
+                        import json
 
-                        # 获取GAN模型实例
-                        model_registry = get_model_registry()
-                        gan_model = model_registry.get_model('gan')
-                        if gan_model:
-                            config = CompoundConfig(
-                                front_count=front_count,
-                                back_count=back_count,
-                                periods=periods,
-                                max_cost=max_cost
-                            )
-                            # 使用GAN进行复式预测
-                            if hasattr(gan_model, 'predict_compound'):
-                                result = gan_model.predict_compound(config)
-                                if result:
-                                    display_prediction_result([result], "GAN复式预测")
-                                else:
-                                    st.warning("GAN复式预测未返回结果")
+                        cmd = [
+                            'python3', 'dlt_main.py', 'predict',
+                            '-m', 'gan',
+                            '-p', str(periods),
+                            '--compound',
+                            '--front-count', str(front_count),
+                            '--back-count', str(back_count)
+                        ]
+
+                        result = subprocess.run(cmd, capture_output=True, text=True, cwd='.')
+
+                        if result.returncode == 0:
+                            # 解析文本输出结果
+                            output_text = result.stdout.strip()
+
+                            # 解析GAN复式预测结果
+                            prediction_data = parse_compound_prediction_output(output_text, "GAN复式")
+
+                            if prediction_data:
+                                display_prediction_result([prediction_data], "GAN复式预测")
                             else:
-                                # 回退实现：基于GAN预测结果生成复式
-                                base_result = gan_model.predict(data)
-                            if base_result and len(base_result) > 0:
-                                # 获取基础预测的号码
-                                front_base, back_base = base_result[0]
+                                st.success("GAN复式预测完成！")
+                                st.text(output_text)
+                        else:
+                            st.error(f"GAN复式预测失败: {result.stderr}")
 
-                                # 基于预测结果扩展为复式（使用GAN的生成策略）
-                                from collections import Counter
-                                import random
-                                front_candidates = Counter()
-                                back_candidates = Counter()
-
-                                # 将预测号码作为核心候选
-                                for ball in front_base:
-                                    front_candidates[ball] += 15
-                                for ball in back_base:
-                                    back_candidates[ball] += 15
-
-                                # 添加随机变化（模拟GAN的生成特性）
-                                for ball in front_base:
-                                    # 添加随机相邻号码
-                                    for offset in [-2, -1, 1, 2]:
-                                        new_ball = ball + offset
-                                        if 1 <= new_ball <= 35:
-                                            front_candidates[new_ball] += random.randint(3, 8)
-
-                                    # 添加随机号码
-                                    for _ in range(2):
-                                        random_ball = random.randint(1, 35)
-                                        front_candidates[random_ball] += random.randint(1, 4)
-
-                                for ball in back_base:
-                                    # 添加随机相邻号码
-                                    for offset in [-1, 1]:
-                                        new_ball = ball + offset
-                                        if 1 <= new_ball <= 12:
-                                            back_candidates[new_ball] += random.randint(3, 8)
-
-                                    # 添加随机号码
-                                    random_ball = random.randint(1, 12)
-                                    back_candidates[random_ball] += random.randint(1, 4)
-
-                                # 选择最高分的号码
-                                front_balls = [ball for ball, _ in front_candidates.most_common(front_count)]
-                                back_balls = [ball for ball, _ in back_candidates.most_common(back_count)]
-
-                                # 确保号码数量足够
-                                while len(front_balls) < front_count:
-                                    for i in range(1, 36):
-                                        if i not in front_balls:
-                                            front_balls.append(i)
-                                            break
-
-                                while len(back_balls) < back_count:
-                                    for i in range(1, 13):
-                                        if i not in back_balls:
-                                            back_balls.append(i)
-                                            break
-
-                                compound_result = {
-                                    'front_balls': sorted(front_balls[:front_count]),
-                                    'back_balls': sorted(back_balls[:back_count]),
-                                    'front_count': front_count,
-                                    'back_count': back_count,
-                                    'method': 'GAN复式',
-                                    'confidence': 0.80,
-                                    'total_combinations': combinations,
-                                    'total_cost': cost
-                                }
-                                display_prediction_result([compound_result], "GAN复式预测")
-                            else:
-                                st.warning("GAN复式预测未返回结果")
                     except Exception as e:
                         st.error(f"GAN复式预测失败: {e}")
     else:
@@ -3293,37 +3362,36 @@ def show_compound_prediction_page():
         if st.button("🌟 增强复式", use_container_width=True, key="compound_enhanced_new"):
             with st.spinner("正在进行增强复式预测..."):
                 try:
-                    predictor = AdvancedPredictor()
-                    from compound_prediction_modules import CompoundConfig
-                    config = CompoundConfig(
-                        front_count=front_count,
-                        back_count=back_count,
-                        periods=periods,
-                        max_cost=max_cost
-                    )
-                    # 使用增强预测进行复式预测
-                    if hasattr(predictor, 'predict_compound'):
-                        result = predictor.predict_compound(config)
-                        display_prediction_result([result], "增强复式预测")
-                    else:
-                        # 回退实现
-                        base_result = predictor.enhanced_predict(count=1, periods=periods)
-                        if base_result:
-                            combinations = front_count * back_count
-                            cost = combinations * 3
-                            compound_result = {
-                                'front_balls': list(range(2, front_count + 2)),
-                                'back_balls': list(range(2, back_count + 2)),
-                                'front_count': front_count,
-                                'back_count': back_count,
-                                'method': '增强复式',
-                                'confidence': 0.89,
-                                'total_combinations': combinations,
-                                'total_cost': cost
-                            }
-                            display_prediction_result([compound_result], "增强复式预测")
+                    # 使用命令行方式调用复式预测
+                    import subprocess
+                    import json
+
+                    cmd = [
+                        'python3', 'dlt_main.py', 'predict',
+                        '-m', 'enhanced',
+                        '-p', str(periods),
+                        '--compound',
+                        '--front-count', str(front_count),
+                        '--back-count', str(back_count)
+                    ]
+
+                    result = subprocess.run(cmd, capture_output=True, text=True, cwd='.')
+
+                    if result.returncode == 0:
+                        # 解析文本输出结果
+                        output_text = result.stdout.strip()
+
+                        # 解析增强复式预测结果
+                        prediction_data = parse_compound_prediction_output(output_text, "增强复式")
+
+                        if prediction_data:
+                            display_prediction_result([prediction_data], "增强复式预测")
                         else:
-                            st.warning("增强复式预测未返回结果")
+                            st.success("增强复式预测完成！")
+                            st.text(output_text)
+                    else:
+                        st.error(f"增强复式预测失败: {result.stderr}")
+
                 except Exception as e:
                     st.error(f"增强复式预测失败: {e}")
 
@@ -3331,37 +3399,36 @@ def show_compound_prediction_page():
         if st.button("🎯 混合策略复式", use_container_width=True, key="compound_mixed_strategy_new"):
             with st.spinner("正在进行混合策略复式预测..."):
                 try:
-                    predictor = AdvancedPredictor()
-                    from compound_prediction_modules import CompoundConfig
-                    config = CompoundConfig(
-                        front_count=front_count,
-                        back_count=back_count,
-                        periods=periods,
-                        max_cost=max_cost
-                    )
-                    # 使用混合策略进行复式预测
-                    if hasattr(predictor, 'predict_compound'):
-                        result = predictor.predict_compound(config)
-                        display_prediction_result([result], "混合策略复式预测")
-                    else:
-                        # 回退实现
-                        base_result = predictor.mixed_strategy_predict(count=1, periods=periods, strategy="balanced")
-                        if base_result:
-                            combinations = front_count * back_count
-                            cost = combinations * 3
-                            compound_result = {
-                                'front_balls': list(range(2, front_count + 2)),
-                                'back_balls': list(range(2, back_count + 2)),
-                                'front_count': front_count,
-                                'back_count': back_count,
-                                'method': '混合策略复式',
-                                'confidence': 0.83,
-                                'total_combinations': combinations,
-                                'total_cost': cost
-                            }
-                            display_prediction_result([compound_result], "混合策略复式预测")
+                    # 使用命令行方式调用复式预测
+                    import subprocess
+                    import json
+
+                    cmd = [
+                        'python3', 'dlt_main.py', 'predict',
+                        '-m', 'mixed_strategy',
+                        '-p', str(periods),
+                        '--compound',
+                        '--front-count', str(front_count),
+                        '--back-count', str(back_count)
+                    ]
+
+                    result = subprocess.run(cmd, capture_output=True, text=True, cwd='.')
+
+                    if result.returncode == 0:
+                        # 解析文本输出结果
+                        output_text = result.stdout.strip()
+
+                        # 解析混合策略复式预测结果
+                        prediction_data = parse_compound_prediction_output(output_text, "混合策略复式")
+
+                        if prediction_data:
+                            display_prediction_result([prediction_data], "混合策略复式预测")
                         else:
-                            st.warning("混合策略复式预测未返回结果")
+                            st.success("混合策略复式预测完成！")
+                            st.text(output_text)
+                    else:
+                        st.error(f"混合策略复式预测失败: {result.stderr}")
+
                 except Exception as e:
                     st.error(f"混合策略复式预测失败: {e}")
 
@@ -3369,37 +3436,36 @@ def show_compound_prediction_page():
         if st.button("🎯 高度集成复式", use_container_width=True, key="compound_highly_integrated_new"):
             with st.spinner("正在进行高度集成复式预测..."):
                 try:
-                    predictor = AdvancedPredictor()
-                    from compound_prediction_modules import CompoundConfig
-                    config = CompoundConfig(
-                        front_count=front_count,
-                        back_count=back_count,
-                        periods=periods,
-                        max_cost=max_cost
-                    )
-                    # 使用高度集成进行复式预测
-                    if hasattr(predictor, 'predict_compound'):
-                        result = predictor.predict_compound(config)
-                        display_prediction_result([result], "高度集成复式预测")
-                    else:
-                        # 回退实现
-                        base_result = predictor.highly_integrated_predict(count=1, periods=periods)
-                        if base_result:
-                            combinations = front_count * back_count
-                            cost = combinations * 3
-                            compound_result = {
-                                'front_balls': list(range(2, front_count + 2)),
-                                'back_balls': list(range(2, back_count + 2)),
-                                'front_count': front_count,
-                                'back_count': back_count,
-                                'method': '高度集成复式',
-                                'confidence': 0.91,
-                                'total_combinations': combinations,
-                                'total_cost': cost
-                            }
-                            display_prediction_result([compound_result], "高度集成复式预测")
+                    # 使用命令行方式调用复式预测
+                    import subprocess
+                    import json
+
+                    cmd = [
+                        'python3', 'dlt_main.py', 'predict',
+                        '-m', 'highly_integrated',
+                        '-p', str(periods),
+                        '--compound',
+                        '--front-count', str(front_count),
+                        '--back-count', str(back_count)
+                    ]
+
+                    result = subprocess.run(cmd, capture_output=True, text=True, cwd='.')
+
+                    if result.returncode == 0:
+                        # 解析文本输出结果
+                        output_text = result.stdout.strip()
+
+                        # 解析高度集成复式预测结果
+                        prediction_data = parse_compound_prediction_output(output_text, "高度集成复式")
+
+                        if prediction_data:
+                            display_prediction_result([prediction_data], "高度集成复式预测")
                         else:
-                            st.warning("高度集成复式预测未返回结果")
+                            st.success("高度集成复式预测完成！")
+                            st.text(output_text)
+                    else:
+                        st.error(f"高度集成复式预测失败: {result.stderr}")
+
                 except Exception as e:
                     st.error(f"高度集成复式预测失败: {e}")
 
@@ -3407,37 +3473,36 @@ def show_compound_prediction_page():
         if st.button("🔗 高级集成复式", use_container_width=True, key="compound_advanced_integration_new"):
             with st.spinner("正在进行高级集成复式预测..."):
                 try:
-                    predictor = AdvancedPredictor()
-                    from compound_prediction_modules import CompoundConfig
-                    config = CompoundConfig(
-                        front_count=front_count,
-                        back_count=back_count,
-                        periods=periods,
-                        max_cost=max_cost
-                    )
-                    # 使用高级集成进行复式预测
-                    if hasattr(predictor, 'predict_compound'):
-                        result = predictor.predict_compound(config)
-                        display_prediction_result([result], "高级集成复式预测")
-                    else:
-                        # 回退实现
-                        base_result = predictor.advanced_integration_predict(count=1, periods=periods, integration_type="comprehensive")
-                        if base_result:
-                            combinations = front_count * back_count
-                            cost = combinations * 3
-                            compound_result = {
-                                'front_balls': list(range(2, front_count + 2)),
-                                'back_balls': list(range(2, back_count + 2)),
-                                'front_count': front_count,
-                                'back_count': back_count,
-                                'method': '高级集成复式',
-                                'confidence': 0.88,
-                                'total_combinations': combinations,
-                                'total_cost': cost
-                            }
-                            display_prediction_result([compound_result], "高级集成复式预测")
+                    # 使用命令行方式调用复式预测
+                    import subprocess
+                    import json
+
+                    cmd = [
+                        'python3', 'dlt_main.py', 'predict',
+                        '-m', 'advanced_integration',
+                        '-p', str(periods),
+                        '--compound',
+                        '--front-count', str(front_count),
+                        '--back-count', str(back_count)
+                    ]
+
+                    result = subprocess.run(cmd, capture_output=True, text=True, cwd='.')
+
+                    if result.returncode == 0:
+                        # 解析文本输出结果
+                        output_text = result.stdout.strip()
+
+                        # 解析高级集成复式预测结果
+                        prediction_data = parse_compound_prediction_output(output_text, "高级集成复式")
+
+                        if prediction_data:
+                            display_prediction_result([prediction_data], "高级集成复式预测")
                         else:
-                            st.warning("高级集成复式预测未返回结果")
+                            st.success("高级集成复式预测完成！")
+                            st.text(output_text)
+                    else:
+                        st.error(f"高级集成复式预测失败: {result.stderr}")
+
                 except Exception as e:
                     st.error(f"高级集成复式预测失败: {e}")
 
@@ -3449,16 +3514,35 @@ def show_compound_prediction_page():
         if st.button("🎲 基础复式", use_container_width=True, key="compound_compound_new"):
             with st.spinner("正在进行基础复式预测..."):
                 try:
-                    predictor = AdvancedPredictor()
-                    result = predictor.compound_predict(
-                        front_count=front_count,
-                        back_count=back_count,
-                        periods=periods
-                    )
-                    if result:
-                        display_prediction_result([result], "基础复式预测")
+                    # 使用命令行方式调用复式预测
+                    import subprocess
+                    import json
+
+                    cmd = [
+                        'python3', 'dlt_main.py', 'predict',
+                        '-m', 'compound',
+                        '-p', str(periods),
+                        '--front-count', str(front_count),
+                        '--back-count', str(back_count)
+                    ]
+
+                    result = subprocess.run(cmd, capture_output=True, text=True, cwd='.')
+
+                    if result.returncode == 0:
+                        # 解析文本输出结果
+                        output_text = result.stdout.strip()
+
+                        # 解析复式预测结果
+                        prediction_data = parse_compound_prediction_output(output_text, "基础复式")
+
+                        if prediction_data:
+                            display_prediction_result([prediction_data], "基础复式预测")
+                        else:
+                            st.success("基础复式预测完成！")
+                            st.text(output_text)
                     else:
-                        st.warning("基础复式预测未返回结果")
+                        st.error(f"基础复式预测失败: {result.stderr}")
+
                 except Exception as e:
                     st.error(f"基础复式预测失败: {e}")
 
@@ -3466,16 +3550,35 @@ def show_compound_prediction_page():
         if st.button("🎯 双重复式", use_container_width=True, key="compound_duplex_new"):
             with st.spinner("正在进行双重复式预测..."):
                 try:
-                    predictor = AdvancedPredictor()
-                    result = predictor.duplex_predict(
-                        front_count=front_count,
-                        back_count=back_count,
-                        periods=periods
-                    )
-                    if result:
-                        display_prediction_result([result], "双重复式预测")
+                    # 使用命令行方式调用复式预测
+                    import subprocess
+                    import json
+
+                    cmd = [
+                        'python3', 'dlt_main.py', 'predict',
+                        '-m', 'duplex',
+                        '-p', str(periods),
+                        '--front-count', str(front_count),
+                        '--back-count', str(back_count)
+                    ]
+
+                    result = subprocess.run(cmd, capture_output=True, text=True, cwd='.')
+
+                    if result.returncode == 0:
+                        # 解析文本输出结果
+                        output_text = result.stdout.strip()
+
+                        # 解析双重复式预测结果
+                        prediction_data = parse_duplex_prediction_output(output_text, "双重复式")
+
+                        if prediction_data:
+                            display_prediction_result([prediction_data], "双重复式预测")
+                        else:
+                            st.success("双重复式预测完成！")
+                            st.text(output_text)
                     else:
-                        st.warning("双重复式预测未返回结果")
+                        st.error(f"双重复式预测失败: {result.stderr}")
+
                 except Exception as e:
                     st.error(f"双重复式预测失败: {e}")
 
@@ -3483,16 +3586,35 @@ def show_compound_prediction_page():
         if st.button("🎲 马尔可夫复式", use_container_width=True, key="compound_markov_compound_new"):
             with st.spinner("正在进行马尔可夫复式预测..."):
                 try:
-                    predictor = AdvancedPredictor()
-                    result = predictor.markov_compound_predict(
-                        front_count=front_count,
-                        back_count=back_count,
-                        analysis_periods=periods
-                    )
-                    if result:
-                        display_prediction_result([result], "马尔可夫复式预测")
+                    # 使用命令行方式调用复式预测
+                    import subprocess
+                    import json
+
+                    cmd = [
+                        'python3', 'dlt_main.py', 'predict',
+                        '-m', 'markov_compound',
+                        '-p', str(periods),
+                        '--front-count', str(front_count),
+                        '--back-count', str(back_count)
+                    ]
+
+                    result = subprocess.run(cmd, capture_output=True, text=True, cwd='.')
+
+                    if result.returncode == 0:
+                        # 解析文本输出结果
+                        output_text = result.stdout.strip()
+
+                        # 解析马尔可夫复式预测结果
+                        prediction_data = parse_compound_prediction_output(output_text, "马尔可夫复式")
+
+                        if prediction_data:
+                            display_prediction_result([prediction_data], "马尔可夫复式预测")
+                        else:
+                            st.success("马尔可夫复式预测完成！")
+                            st.text(output_text)
                     else:
-                        st.warning("马尔可夫复式预测未返回结果")
+                        st.error(f"马尔可夫复式预测失败: {result.stderr}")
+
                 except Exception as e:
                     st.error(f"马尔可夫复式预测失败: {e}")
 

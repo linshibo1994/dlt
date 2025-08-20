@@ -8,13 +8,13 @@ smart_epochs:
   
   # 基础训练轮数比例
   base_ratios:
-    lstm: 0.6
-    transformer: 0.5
-    gan: 0.7
-    traditional_ml: 0.3
-    clustering: 0.2
-    markov_chain: 0.1
-    bayesian: 0.25
+    lstm: 0.1
+    transformer: 0.08
+    gan: 0.12
+    traditional_ml: 0.05
+    clustering: 0.03
+    markov_chain: 0.02
+    bayesian: 0.04
   
   # 性能模式倍数
   performance_multipliers:
