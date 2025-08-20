@@ -763,33 +763,74 @@ class CommandDefinition:
         # 显示GPU信息
         if args.gpu:
             try:
-                from .gpu_accelerator import GPUAccelerator
-                
-                # 创建GPU加速器
-                accelerator = GPUAccelerator()
-                
+                from ..performance.enhanced_hardware_accelerator import EnhancedHardwareAccelerator
+
+                # 创建增强硬件加速器
+                accelerator = EnhancedHardwareAccelerator()
+                hardware_info = accelerator.detect_hardware()
+
                 print("\n🖥️ GPU信息")
                 print("=" * 50)
-                print(f"GPU可用性: {'可用' if accelerator.is_gpu_available() else '不可用'}")
-                
-                # 显示GPU设备
-                devices = accelerator.get_gpu_devices()
-                if devices:
-                    print(f"可用GPU设备: {len(devices)}")
-                    for i, device in enumerate(devices):
-                        print(f"  {i+1}. {device}")
-                else:
-                    print("没有可用的GPU设备")
-                
-                # 显示GPU内存信息
-                memory_info = accelerator.get_gpu_memory_info()
-                if memory_info:
-                    print("\nGPU内存信息:")
-                    for device, memory in memory_info.items():
-                        print(f"  {device}:")
-                        for key, value in memory.items():
-                            print(f"    {key}: {value:.2f} GB")
-                
+
+                # 首先尝试使用pynvml检测GPU
+                pynvml_gpu_count = 0
+                try:
+                    import pynvml
+                    pynvml.nvmlInit()
+                    pynvml_gpu_count = pynvml.nvmlDeviceGetCount()
+                except:
+                    pass
+
+                # 显示GPU可用性
+                total_gpu_count = max(hardware_info.gpu_count, pynvml_gpu_count)
+                print(f"GPU可用性: {'可用' if total_gpu_count > 0 else '不可用'}")
+                print(f"GPU数量: {total_gpu_count}")
+                print(f"CUDA可用: {'是' if hardware_info.cuda_available else '否'}")
+
+                if hardware_info.cuda_version:
+                    print(f"CUDA版本: {hardware_info.cuda_version}")
+
+                # 显示GPU设备详细信息
+                if total_gpu_count > 0:
+                    print("\nGPU设备详情:")
+                    try:
+                        import torch
+                        if torch.cuda.is_available():
+                            for i in range(torch.cuda.device_count()):
+                                props = torch.cuda.get_device_properties(i)
+                                print(f"  GPU {i}: {props.name}")
+                                print(f"    显存: {props.total_memory / 1024**3:.2f} GB")
+                                print(f"    计算能力: {props.major}.{props.minor}")
+                                print(f"    多处理器数量: {props.multi_processor_count}")
+                    except Exception as e:
+                        logger_manager.debug(f"获取GPU详细信息失败: {e}")
+
+                    # 尝试显示NVIDIA GPU信息
+                    try:
+                        import pynvml
+                        pynvml.nvmlInit()
+                        gpu_count = pynvml.nvmlDeviceGetCount()
+
+                        print("\nNVIDIA GPU内存使用情况:")
+                        for i in range(gpu_count):
+                            handle = pynvml.nvmlDeviceGetHandleByIndex(i)
+                            name = pynvml.nvmlDeviceGetName(handle)
+                            if isinstance(name, bytes):
+                                name = name.decode('utf-8')
+                            memory_info = pynvml.nvmlDeviceGetMemoryInfo(handle)
+
+                            total_gb = memory_info.total / 1024**3
+                            used_gb = memory_info.used / 1024**3
+                            free_gb = memory_info.free / 1024**3
+
+                            print(f"  {name}:")
+                            print(f"    总显存: {total_gb:.2f} GB")
+                            print(f"    已使用: {used_gb:.2f} GB")
+                            print(f"    可用: {free_gb:.2f} GB")
+                            print(f"    使用率: {(used_gb/total_gb)*100:.1f}%")
+                    except Exception as e:
+                        logger_manager.debug(f"获取NVIDIA GPU信息失败: {e}")
+
                 print("=" * 50)
             except Exception as e:
                 logger_manager.error(f"获取GPU信息失败: {e}")

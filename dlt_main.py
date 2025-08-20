@@ -1753,22 +1753,71 @@ class DLTPredictorSystem:
             return
 
         if args.enhanced_action == 'info':
-            print("🔍 增强系统信息")
-            print("=" * 50)
+            # 显示所有信息
+            if hasattr(args, 'all') and args.all:
+                args.gpu = True
+                args.models = True
+                args.performance = True
 
-            info = self.enhanced_system.get_system_info()
-            print(f"系统类型: {info['system_type']}")
+            # 如果没有指定任何参数，显示基本信息
+            if not any([getattr(args, 'gpu', False), getattr(args, 'models', False), getattr(args, 'performance', False)]):
+                print("🔍 增强系统信息")
+                print("=" * 50)
 
-            if 'platform' in info:
-                platform = info['platform']
-                print(f"操作系统: {platform['os']} {platform['version']}")
-                print(f"架构: {platform['architecture']}")
-                print(f"Python版本: {platform['python_version']}")
+                info = self.enhanced_system.get_system_info()
+                print(f"系统类型: {info['system_type']}")
 
-                hardware = info['hardware']
-                print(f"CPU核心: {hardware['cpu_count']}")
-                print(f"内存: {hardware['memory_total_gb']:.1f} GB")
-                print(f"GPU数量: {hardware['gpu_count']}")
+                if 'platform' in info:
+                    platform = info['platform']
+                    print(f"操作系统: {platform['os']} {platform['version']}")
+                    print(f"架构: {platform['architecture']}")
+                    print(f"Python版本: {platform['python_version']}")
+
+                    hardware = info['hardware']
+                    print(f"CPU核心: {hardware['cpu_count']}")
+                    print(f"内存: {hardware['memory_total_gb']:.1f} GB")
+                    print(f"GPU数量: {hardware['gpu_count']}")
+
+                print("=" * 50)
+                print("💡 使用 --gpu, --models, --performance 或 --all 查看详细信息")
+                return
+
+            # 显示GPU信息
+            if getattr(args, 'gpu', False):
+                try:
+                    from enhanced_deep_learning.cli.cli_commands import CommandDefinition
+                    dl_commands = CommandDefinition()
+                    dl_commands.info_command(args)
+                except Exception as e:
+                    print(f"❌ 获取GPU信息失败: {e}")
+
+            # 显示模型信息
+            if getattr(args, 'models', False):
+                print("\n📊 模型信息")
+                print("=" * 50)
+                info = self.enhanced_system.get_system_info()
+                if 'models' in info:
+                    models = info['models']
+                    print(f"已注册模型: {len(models)}")
+                    for model_name, model_info in models.items():
+                        print(f"  {model_name}: {model_info['version']}")
+                else:
+                    print("没有可用的模型信息")
+                print("=" * 50)
+
+            # 显示性能信息
+            if getattr(args, 'performance', False):
+                print("\n⚡ 性能信息")
+                print("=" * 50)
+                info = self.enhanced_system.get_system_info()
+                if 'performance' in info:
+                    perf = info['performance']
+                    print(f"CPU得分: {perf.get('cpu_score', 'N/A')}")
+                    print(f"GPU得分: {perf.get('gpu_score', 'N/A')}")
+                    print(f"推荐加速: {perf.get('recommended_acceleration', 'N/A')}")
+                else:
+                    print("没有可用的性能信息")
+                print("=" * 50)
 
         elif args.enhanced_action == 'test':
             print("🧪 运行兼容性测试")
@@ -2082,6 +2131,10 @@ def main():
 
     # 系统信息
     info_parser = enhanced_subparsers.add_parser('info', help='显示增强系统信息')
+    info_parser.add_argument('--gpu', action='store_true', help='显示GPU信息')
+    info_parser.add_argument('--models', action='store_true', help='显示模型信息')
+    info_parser.add_argument('--performance', action='store_true', help='显示性能信息')
+    info_parser.add_argument('--all', action='store_true', help='显示所有信息')
 
     # 兼容性测试
     compat_parser = enhanced_subparsers.add_parser('test', help='运行兼容性测试')

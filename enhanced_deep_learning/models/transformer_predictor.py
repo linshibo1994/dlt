@@ -53,7 +53,7 @@ class TransformerPredictor(BaseDeepPredictor, CompoundPredictorMixin):
     def __init__(self, config: Dict[str, Any] = None):
         """
         初始化Transformer预测器
-        
+
         Args:
             config: 配置参数字典
         """
@@ -61,6 +61,13 @@ class TransformerPredictor(BaseDeepPredictor, CompoundPredictorMixin):
         merged_config = DEFAULT_TRANSFORMER_CONFIG.copy()
         if config:
             merged_config.update(config)
+
+        # 提取GPU配置参数
+        self.use_gpu = merged_config.get('use_gpu', False)
+        self.gpu_device = merged_config.get('gpu_device', 0)
+        self.gpu_memory_limit = merged_config.get('gpu_memory_limit', None)
+        self.mixed_precision = merged_config.get('mixed_precision', False)
+        self._gpu_configured = False
         
         # 创建ModelConfig对象
         model_config = ModelConfig(
@@ -115,6 +122,63 @@ class TransformerPredictor(BaseDeepPredictor, CompoundPredictorMixin):
         logger_manager.info(f"初始化增强Transformer预测器: d_model={self.d_model}, heads={self.num_heads}, "
                           f"encoder_layers={self.num_encoder_layers}, decoder_layers={self.num_decoder_layers}")
 
+    def _configure_gpu(self):
+        """配置GPU设备"""
+        if self._gpu_configured:
+            return
+
+        try:
+            import tensorflow as tf
+
+            # 检查GPU可用性
+            gpus = tf.config.list_physical_devices('GPU')
+            if not gpus:
+                logger_manager.warning("未检测到GPU设备，将使用CPU")
+                self.use_gpu = False
+                return
+
+            # 选择GPU设备
+            if self.gpu_device < len(gpus):
+                gpu = gpus[self.gpu_device]
+                logger_manager.info(f"Transformer使用GPU设备: {gpu}")
+
+                # 配置GPU内存增长
+                try:
+                    tf.config.experimental.set_memory_growth(gpu, True)
+                    logger_manager.info("Transformer GPU内存增长已启用")
+                except RuntimeError as e:
+                    logger_manager.warning(f"Transformer GPU内存增长配置失败: {e}")
+
+                # 配置GPU内存限制
+                if self.gpu_memory_limit:
+                    try:
+                        memory_limit = int(self.gpu_memory_limit * 1024)  # 转换为MB
+                        tf.config.experimental.set_memory_limit(gpu, memory_limit)
+                        logger_manager.info(f"Transformer GPU内存限制设置为: {self.gpu_memory_limit}GB")
+                    except Exception as e:
+                        logger_manager.warning(f"Transformer GPU内存限制配置失败: {e}")
+
+                # 配置混合精度
+                if self.mixed_precision:
+                    try:
+                        policy = tf.keras.mixed_precision.Policy('mixed_float16')
+                        tf.keras.mixed_precision.set_global_policy(policy)
+                        logger_manager.info("Transformer混合精度训练已启用")
+                    except Exception as e:
+                        logger_manager.warning(f"Transformer混合精度配置失败: {e}")
+            else:
+                logger_manager.warning(f"Transformer GPU设备ID {self.gpu_device} 超出范围，使用CPU")
+                self.use_gpu = False
+
+            self._gpu_configured = True
+
+        except ImportError:
+            logger_manager.warning("TensorFlow未安装，Transformer无法使用GPU")
+            self.use_gpu = False
+        except Exception as e:
+            logger_manager.error(f"Transformer GPU配置失败: {e}")
+            self.use_gpu = False
+
     def build_model(self):
         """构建模型（公共接口）"""
         return self._build_model()
@@ -122,6 +186,10 @@ class TransformerPredictor(BaseDeepPredictor, CompoundPredictorMixin):
     def _build_model(self):
         """构建简化Transformer模型（仅编码器架构）"""
         try:
+            # 配置GPU设备
+            if self.use_gpu:
+                self._configure_gpu()
+
             # 输入层
             inputs = layers.Input(shape=(self.sequence_length, self.feature_dim), name='inputs')
 

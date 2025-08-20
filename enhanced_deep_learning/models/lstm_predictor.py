@@ -75,6 +75,15 @@ class LSTMPredictor(BaseDeepLearningModel, CompoundPredictorMixin):
             model_config = config
             self.config_params = {}
 
+        # 提取GPU配置参数
+        self.use_gpu = self.config_params.get('use_gpu', False)
+        self.gpu_device = self.config_params.get('gpu_device', 0)
+        self.gpu_memory_limit = self.config_params.get('gpu_memory_limit', None)
+        self.mixed_precision = self.config_params.get('mixed_precision', False)
+
+        # GPU配置状态
+        self._gpu_configured = False
+
         # 调用父类初始化
         super().__init__(model_config)
 
@@ -142,6 +151,63 @@ class LSTMPredictor(BaseDeepLearningModel, CompoundPredictorMixin):
         callbacks.append(self._create_learning_rate_scheduler())
 
         return callbacks
+
+    def _configure_gpu(self):
+        """配置GPU设备"""
+        if self._gpu_configured:
+            return
+
+        try:
+            import tensorflow as tf
+
+            # 检查GPU可用性
+            gpus = tf.config.list_physical_devices('GPU')
+            if not gpus:
+                logger_manager.warning("未检测到GPU设备，将使用CPU")
+                self.use_gpu = False
+                return
+
+            # 选择GPU设备
+            if self.gpu_device < len(gpus):
+                gpu = gpus[self.gpu_device]
+                logger_manager.info(f"使用GPU设备: {gpu}")
+
+                # 配置GPU内存增长
+                try:
+                    tf.config.experimental.set_memory_growth(gpu, True)
+                    logger_manager.info("GPU内存增长已启用")
+                except RuntimeError as e:
+                    logger_manager.warning(f"GPU内存增长配置失败: {e}")
+
+                # 配置GPU内存限制
+                if self.gpu_memory_limit:
+                    try:
+                        memory_limit = int(self.gpu_memory_limit * 1024)  # 转换为MB
+                        tf.config.experimental.set_memory_limit(gpu, memory_limit)
+                        logger_manager.info(f"GPU内存限制设置为: {self.gpu_memory_limit}GB")
+                    except Exception as e:
+                        logger_manager.warning(f"GPU内存限制配置失败: {e}")
+
+                # 配置混合精度
+                if self.mixed_precision:
+                    try:
+                        policy = tf.keras.mixed_precision.Policy('mixed_float16')
+                        tf.keras.mixed_precision.set_global_policy(policy)
+                        logger_manager.info("混合精度训练已启用")
+                    except Exception as e:
+                        logger_manager.warning(f"混合精度配置失败: {e}")
+            else:
+                logger_manager.warning(f"GPU设备ID {self.gpu_device} 超出范围，使用CPU")
+                self.use_gpu = False
+
+            self._gpu_configured = True
+
+        except ImportError:
+            logger_manager.warning("TensorFlow未安装，无法使用GPU")
+            self.use_gpu = False
+        except Exception as e:
+            logger_manager.error(f"GPU配置失败: {e}")
+            self.use_gpu = False
 
     def _build_model(self) -> Any:
         """构建LSTM模型架构"""
@@ -338,6 +404,10 @@ class LSTMPredictor(BaseDeepLearningModel, CompoundPredictorMixin):
         Returns:
             增强LSTM模型
         """
+        # 配置GPU设备
+        if self.use_gpu:
+            self._configure_gpu()
+
         # 输入层
         inputs = Input(shape=input_shape, name='input_layer')
         x = inputs

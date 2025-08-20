@@ -491,7 +491,7 @@ def _register_default_models():
             model_class=LSTMPredictor,
             name="lstm",
             metadata=lstm_metadata,
-            factory=lambda config=None, metadata=None: LSTMPredictor()
+            factory=lambda config=None, metadata=None: LSTMPredictor(config=config, metadata=metadata)
         )
 
         # 注册Transformer模型
@@ -504,7 +504,7 @@ def _register_default_models():
             model_class=TransformerPredictor,
             name="transformer",
             metadata=transformer_metadata,
-            factory=lambda config=None, metadata=None: TransformerPredictor()
+            factory=lambda config=None, metadata=None: TransformerPredictor(config=config)
         )
 
         # 注册GAN模型
@@ -517,7 +517,7 @@ def _register_default_models():
             model_class=GANPredictor,
             name="gan",
             metadata=gan_metadata,
-            factory=lambda config=None, metadata=None: GANPredictor()
+            factory=lambda config=None, metadata=None: GANPredictor(config=config)
         )
 
         # 注册集成模型
@@ -530,7 +530,7 @@ def _register_default_models():
             model_class=EnsembleManager,
             name="ensemble",
             metadata=ensemble_metadata,
-            factory=lambda config=None, metadata=None: EnsembleManager()
+            factory=lambda config=None, metadata=None: EnsembleManager(config=config)
         )
 
         logger_manager.info("默认模型注册完成")
