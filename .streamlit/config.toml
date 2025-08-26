@@ -1,0 +1,46 @@
+[global]
+
+# 开发模式设置
+developmentMode = false
+
+[logger]
+
+# 日志级别
+level = "error"
+
+[client]
+
+# 显示错误详情
+showErrorDetails = false
+
+[server]
+
+# 服务器设置
+headless = true
+enableCORS = false
+enableXsrfProtection = false
+
+# 端口设置
+port = 8501
+
+# 文件监控
+fileWatcherType = "none"
+
+# 最大上传大小 (MB)
+maxUploadSize = 200
+
+# 最大消息大小 (MB)
+maxMessageSize = 200
+
+[browser]
+
+# 浏览器设置
+gatherUsageStats = false
+
+[theme]
+
+# 主题设置
+primaryColor = "#667eea"
+backgroundColor = "#ffffff"
+secondaryBackgroundColor = "#f0f2f6"
+textColor = "#262730"

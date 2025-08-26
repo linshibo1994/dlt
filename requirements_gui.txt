@@ -1,29 +1,35 @@
-# GUI界面依赖包
-streamlit>=1.28.0
-plotly>=5.15.0
-pandas>=1.5.0
-numpy>=1.24.0
-psutil>=5.9.0
+# GUI界面依赖包 - Streamlit Cloud优化版
+# 精简版本，移除重型依赖以确保部署成功
 
-# 数据可视化
-plotly-express>=0.4.1
-matplotlib>=3.7.0
-seaborn>=0.12.0
+# ===== 核心GUI依赖 =====
+streamlit>=1.28.0,<2.0.0
+plotly>=5.15.0,<6.0.0
+pandas>=1.5.0,<3.0.0
+numpy>=1.24.0,<2.0.0
 
-# 机器学习
-scikit-learn>=1.3.0
-scipy>=1.10.0
+# ===== 系统监控（轻量级）=====
+psutil>=5.9.0,<6.0.0
 
-# 深度学习（可选）
-tensorflow>=2.13.0
-torch>=2.0.0
+# ===== 数据可视化（基础）=====
+matplotlib>=3.7.0,<4.0.0
+seaborn>=0.12.0,<1.0.0
 
-# 数据处理
-requests>=2.31.0
-beautifulsoup4>=4.12.0
-lxml>=4.9.0
+# ===== 机器学习（基础）=====
+scikit-learn>=1.3.0,<2.0.0
+scipy>=1.10.0,<2.0.0
 
-# 其他工具
-joblib>=1.3.0
-tqdm>=4.65.0
-colorama>=0.4.6
+# ===== 数据处理 =====
+requests>=2.31.0,<3.0.0
+beautifulsoup4>=4.12.0,<5.0.0
+lxml>=4.9.0,<5.0.0
+
+# ===== 工具库 =====
+joblib>=1.3.0,<2.0.0
+tqdm>=4.65.0,<5.0.0
+colorama>=0.4.6,<1.0.0
+
+# ===== 配置管理 =====
+pyyaml>=6.0,<7.0
+
+# 注意：移除了tensorflow和torch等重型依赖
+# 如果需要深度学习功能，请在本地环境中使用完整的requirements.txt
