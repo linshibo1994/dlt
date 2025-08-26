@@ -731,11 +731,16 @@ def show_home_page():
     # 最新开奖结果
     st.subheader("🎯 最新开奖结果")
     try:
-        data = data_manager.get_data()
+        if CLOUD_MODE:
+            # 云端模式使用示例数据
+            data = CloudDataManager().get_data()
+        else:
+            # 本地模式使用真实数据
+            data = data_manager.get_data()
+
         if data is not None and len(data) > 0:
-            # 确保获取真正的最新期（按期号排序后取最后一期）
-            data_sorted = data.sort_values('issue', ascending=True)
-            latest = data_sorted.iloc[-1]
+            # 数据已经按期号降序排列，第一行就是最新期
+            latest = data.iloc[0]
 
             col1, col2 = st.columns([2, 1])
             with col1:
@@ -811,24 +816,57 @@ def show_data_management():
     # 数据状态
     st.subheader("📈 数据状态")
     try:
-        data = data_manager.get_data()
+        if CLOUD_MODE:
+            # 云端模式使用示例数据
+            data = CloudDataManager().get_data()
+        else:
+            # 本地模式使用真实数据
+            data = data_manager.get_data()
+
         if data is not None:
             col1, col2, col3, col4 = st.columns(4)
 
             with col1:
                 st.metric("总期数", len(data))
             with col2:
-                st.metric("最新期号", data.iloc[-1].get('issue', 'N/A'))
+                # 数据已经按期号降序排列，第一行是最新期
+                latest_issue = str(data.iloc[0].get('issue', 'N/A'))
+                st.metric("最新期号", latest_issue)
             with col3:
-                st.metric("最早期号", data.iloc[0].get('issue', 'N/A'))
+                # 最后一行是最早期
+                earliest_issue = str(data.iloc[-1].get('issue', 'N/A'))
+                st.metric("最早期号", earliest_issue)
             with col4:
                 st.metric("数据完整性", f"{len(data.dropna())}/{len(data)}")
 
             # 数据预览
             st.subheader("🔍 数据预览")
-            # 确保显示真正的最新10期（按期号排序后取最新10期）
-            latest_data = data.nlargest(10, 'issue').sort_values('issue', ascending=False)
-            st.dataframe(latest_data, use_container_width=True, hide_index=True)
+            # 显示最新10期数据（数据已经按期号降序排列）
+            latest_data = data.head(10)
+
+            # 格式化显示数据
+            display_data = latest_data.copy()
+
+            # 格式化开奖号码显示
+            if 'front_balls' in display_data.columns and 'back_balls' in display_data.columns:
+                for idx, row in display_data.iterrows():
+                    try:
+                        # 解析前区号码
+                        front_str = str(row['front_balls']).strip('"')
+                        front_nums = [int(x.strip()) for x in front_str.split(',') if x.strip().isdigit()]
+                        front_formatted = ' '.join([str(num).zfill(2) for num in front_nums])
+
+                        # 解析后区号码
+                        back_str = str(row['back_balls']).strip('"')
+                        back_nums = [int(x.strip()) for x in back_str.split(',') if x.strip().isdigit()]
+                        back_formatted = ' '.join([str(num).zfill(2) for num in back_nums])
+
+                        display_data.at[idx, 'front_balls'] = front_formatted
+                        display_data.at[idx, 'back_balls'] = back_formatted
+                    except Exception as e:
+                        logger_manager.warning(f"格式化第{row.get('issue', 'unknown')}期号码失败: {e}")
+
+            st.dataframe(display_data, use_container_width=True, hide_index=True)
 
             # 数据统计
             st.subheader("📊 数据统计")
@@ -1525,7 +1563,7 @@ def show_prediction_page():
                                 result = predictor.nine_models_compound_predict(
                                     front_count=front_count,
                                     back_count=back_count,
-                                    periods=periods
+                                    analysis_periods=periods
                                 )
                                 if result:
                                     display_prediction_result([result], "九模型复式预测")
@@ -3132,7 +3170,7 @@ def show_compound_prediction_page():
                     result = predictor.nine_models_compound_predict(
                         front_count=front_count,
                         back_count=back_count,
-                        periods=periods
+                        analysis_periods=periods
                     )
                     if result:
                         display_prediction_result([result], "九模型复式预测")

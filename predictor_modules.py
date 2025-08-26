@@ -640,6 +640,360 @@ class AdvancedPredictor:
             import random
             return random.sample(range(min_num, max_num + 1), target_count)
 
+    def _generate_diverse_markov_sequence(self, transitions, target_count, min_num, max_num, sequence_index):
+        """生成多样化的马尔可夫序列
+
+        Args:
+            transitions: 转移概率矩阵
+            target_count: 目标序列长度
+            min_num: 最小号码
+            max_num: 最大号码
+            sequence_index: 序列索引（用于多样性）
+
+        Returns:
+            生成的号码序列
+        """
+        try:
+            import random
+            import numpy as np
+            import time
+
+            # 为每个序列设置不同的随机种子
+            seed = int(time.time() * 1000000) + sequence_index * 10000
+            random.seed(seed)
+            np.random.seed(seed % 2**32)
+
+            sequence = []
+
+            # 根据序列索引使用不同的策略
+            strategy = sequence_index % 4
+
+            if strategy == 0:
+                # 策略1：高概率优先
+                sequence = self._high_probability_strategy(transitions, target_count, min_num, max_num)
+            elif strategy == 1:
+                # 策略2：平衡策略
+                sequence = self._balanced_strategy(transitions, target_count, min_num, max_num)
+            elif strategy == 2:
+                # 策略3：多样性策略
+                sequence = self._diversity_strategy(transitions, target_count, min_num, max_num)
+            else:
+                # 策略4：混合策略
+                sequence = self._hybrid_strategy(transitions, target_count, min_num, max_num)
+
+            # 确保序列长度正确
+            if len(sequence) < target_count:
+                # 补充缺失的号码
+                available = [num for num in range(min_num, max_num + 1) if num not in sequence]
+                needed = target_count - len(sequence)
+                if len(available) >= needed:
+                    sequence.extend(random.sample(available, needed))
+                else:
+                    sequence.extend(available)
+
+            return sequence[:target_count]
+
+        except Exception as e:
+            logger_manager.error(f"多样化马尔可夫序列生成失败: {e}")
+            # 回退到简单随机选择
+            import random
+            return random.sample(range(min_num, max_num + 1), target_count)
+
+    def _high_probability_strategy(self, transitions, target_count, min_num, max_num):
+        """高概率策略"""
+        import random
+        sequence = []
+
+        # 获取所有转移概率
+        all_probs = {}
+        for state, trans in transitions.items():
+            for next_state, prob in trans.items():
+                try:
+                    next_num = int(next_state)
+                    if min_num <= next_num <= max_num:
+                        all_probs[next_num] = all_probs.get(next_num, 0) + prob
+                except ValueError:
+                    continue
+
+        # 按概率排序
+        sorted_probs = sorted(all_probs.items(), key=lambda x: x[1], reverse=True)
+        high_prob_nums = [num for num, _ in sorted_probs[:target_count * 2]]
+
+        if len(high_prob_nums) >= target_count:
+            sequence = random.sample(high_prob_nums, target_count)
+        else:
+            sequence = high_prob_nums
+
+        return sequence
+
+    def _balanced_strategy(self, transitions, target_count, min_num, max_num):
+        """平衡策略"""
+        import random
+        sequence = []
+
+        # 平衡选择高、中、低概率号码
+        all_probs = {}
+        for state, trans in transitions.items():
+            for next_state, prob in trans.items():
+                try:
+                    next_num = int(next_state)
+                    if min_num <= next_num <= max_num:
+                        all_probs[next_num] = all_probs.get(next_num, 0) + prob
+                except ValueError:
+                    continue
+
+        if all_probs:
+            sorted_probs = sorted(all_probs.items(), key=lambda x: x[1], reverse=True)
+            total_nums = len(sorted_probs)
+
+            # 分三档选择
+            high_count = target_count // 3
+            mid_count = target_count // 3
+            low_count = target_count - high_count - mid_count
+
+            high_nums = [num for num, _ in sorted_probs[:total_nums//3]]
+            mid_nums = [num for num, _ in sorted_probs[total_nums//3:2*total_nums//3]]
+            low_nums = [num for num, _ in sorted_probs[2*total_nums//3:]]
+
+            if len(high_nums) >= high_count:
+                sequence.extend(random.sample(high_nums, high_count))
+            else:
+                sequence.extend(high_nums)
+
+            if len(mid_nums) >= mid_count:
+                sequence.extend(random.sample(mid_nums, mid_count))
+            else:
+                sequence.extend(mid_nums)
+
+            if len(low_nums) >= low_count:
+                sequence.extend(random.sample(low_nums, low_count))
+            else:
+                sequence.extend(low_nums)
+
+        return sequence
+
+    def _diversity_strategy(self, transitions, target_count, min_num, max_num):
+        """多样性策略"""
+        import random
+        sequence = []
+
+        # 尽量选择分散的号码
+        all_nums = list(range(min_num, max_num + 1))
+        random.shuffle(all_nums)
+
+        # 确保号码分散
+        for num in all_nums:
+            if len(sequence) >= target_count:
+                break
+
+            # 检查与已选号码的距离
+            too_close = False
+            for existing in sequence:
+                if abs(num - existing) <= 2:  # 距离太近
+                    too_close = True
+                    break
+
+            if not too_close:
+                sequence.append(num)
+
+        # 如果不够，随机补充
+        if len(sequence) < target_count:
+            remaining = [num for num in all_nums if num not in sequence]
+            needed = target_count - len(sequence)
+            if len(remaining) >= needed:
+                sequence.extend(random.sample(remaining, needed))
+            else:
+                sequence.extend(remaining)
+
+        return sequence
+
+    def _hybrid_strategy(self, transitions, target_count, min_num, max_num):
+        """混合策略"""
+        import random
+
+        # 结合高概率和多样性
+        high_prob_seq = self._high_probability_strategy(transitions, target_count//2, min_num, max_num)
+        diversity_seq = self._diversity_strategy(transitions, target_count//2, min_num, max_num)
+
+        # 合并并去重
+        combined = list(set(high_prob_seq + diversity_seq))
+
+        if len(combined) >= target_count:
+            return random.sample(combined, target_count)
+        else:
+            # 补充随机号码
+            all_nums = list(range(min_num, max_num + 1))
+            remaining = [num for num in all_nums if num not in combined]
+            needed = target_count - len(combined)
+            if len(remaining) >= needed:
+                combined.extend(random.sample(remaining, needed))
+            else:
+                combined.extend(remaining)
+
+            return combined[:target_count]
+
+    def markov_compound_predict(self, front_count=8, back_count=4, analysis_periods=500) -> Dict:
+        """马尔可夫复式预测
+
+        Args:
+            front_count: 前区号码数量 (6-15)
+            back_count: 后区号码数量 (3-12)
+            analysis_periods: 分析期数
+
+        Returns:
+            马尔可夫复式预测结果
+        """
+        logger_manager.info(f"马尔可夫复式预测: {front_count}+{back_count}, 分析期数: {analysis_periods}")
+
+        try:
+            # 构建马尔可夫转移矩阵
+            transitions = self._build_markov_transitions(analysis_periods)
+
+            if not transitions:
+                logger_manager.warning("马尔可夫转移矩阵为空，使用备选方案")
+                return self._fallback_markov_compound_prediction(front_count, back_count)
+
+            # 基于马尔可夫链的复式号码选择
+            front_balls = self._markov_compound_selection(
+                transitions, front_count, True, analysis_periods
+            )
+            back_balls = self._markov_compound_selection(
+                transitions, back_count, False, analysis_periods
+            )
+
+            # 计算复式投注信息
+            from math import comb
+            total_combinations = comb(front_count, 5) * comb(back_count, 2)
+            total_cost = total_combinations * 3  # 每注3元
+
+            # 计算置信度
+            confidence = self._calculate_markov_compound_confidence(
+                transitions, front_count, back_count
+            )
+
+            result = {
+                'front_balls': front_balls,
+                'back_balls': back_balls,
+                'front_count': front_count,
+                'back_count': back_count,
+                'total_combinations': total_combinations,
+                'total_cost': total_cost,
+                'method': 'markov_compound',
+                'confidence': confidence,
+                'analysis_periods': analysis_periods,
+                'markov_details': {
+                    'transition_count': len(transitions),
+                    'state_coverage': len(set().union(*[t.keys() for t in transitions.values()])),
+                    'avg_transition_prob': sum(sum(t.values()) for t in transitions.values()) / max(1, len(transitions))
+                },
+                'timestamp': datetime.now().isoformat()
+            }
+
+            return result
+
+        except Exception as e:
+            logger_manager.error(f"马尔可夫复式预测失败: {e}")
+            return self._fallback_markov_compound_prediction(front_count, back_count)
+
+    def _markov_compound_selection(self, transitions, target_count, is_front, analysis_periods):
+        """基于马尔可夫链的复式号码选择"""
+        try:
+            import random
+
+            # 获取转移概率统计
+            state_probs = {}
+            for state, trans in transitions.items():
+                for next_state, prob in trans.items():
+                    try:
+                        next_num = int(next_state)
+                        max_num = 35 if is_front else 12
+                        if 1 <= next_num <= max_num:
+                            state_probs[next_num] = state_probs.get(next_num, 0) + prob
+                    except ValueError:
+                        continue
+
+            # 按概率排序
+            sorted_probs = sorted(state_probs.items(), key=lambda x: x[1], reverse=True)
+
+            # 智能选择策略
+            selected = []
+
+            # 选择高概率号码（60%）
+            high_prob_count = int(target_count * 0.6)
+            high_prob_nums = [num for num, _ in sorted_probs[:high_prob_count * 2]]
+            if len(high_prob_nums) >= high_prob_count:
+                selected.extend(random.sample(high_prob_nums, high_prob_count))
+            else:
+                selected.extend(high_prob_nums)
+
+            # 选择中等概率号码（30%）
+            mid_prob_count = int(target_count * 0.3)
+            mid_start = len(sorted_probs) // 3
+            mid_end = 2 * len(sorted_probs) // 3
+            mid_prob_nums = [num for num, _ in sorted_probs[mid_start:mid_end] if num not in selected]
+            if len(mid_prob_nums) >= mid_prob_count:
+                selected.extend(random.sample(mid_prob_nums, mid_prob_count))
+            else:
+                selected.extend(mid_prob_nums)
+
+            # 补充剩余号码
+            max_num = 35 if is_front else 12
+            all_nums = list(range(1, max_num + 1))
+            remaining = [num for num in all_nums if num not in selected]
+            needed = target_count - len(selected)
+
+            if needed > 0 and remaining:
+                selected.extend(random.sample(remaining, min(needed, len(remaining))))
+
+            return sorted(selected[:target_count])
+
+        except Exception as e:
+            logger_manager.error(f"马尔可夫复式号码选择失败: {e}")
+            # 回退到随机选择
+            import random
+            max_num = 35 if is_front else 12
+            return sorted(random.sample(range(1, max_num + 1), target_count))
+
+    def _calculate_markov_compound_confidence(self, transitions, front_count, back_count):
+        """计算马尔可夫复式预测的置信度"""
+        try:
+            # 基础置信度
+            base_confidence = 0.65
+
+            # 转移矩阵质量加成
+            transition_bonus = min(0.15, len(transitions) * 0.001)
+
+            # 复式规模加成
+            scale_bonus = min(0.1, (front_count - 5) * 0.01 + (back_count - 2) * 0.02)
+
+            final_confidence = base_confidence + transition_bonus + scale_bonus
+            return min(0.85, max(0.5, final_confidence))
+
+        except Exception:
+            return 0.65
+
+    def _fallback_markov_compound_prediction(self, front_count, back_count):
+        """马尔可夫复式预测的备选方案"""
+        import numpy as np
+        from math import comb
+
+        front_balls = sorted(np.random.choice(range(1, 36), front_count, replace=False))
+        back_balls = sorted(np.random.choice(range(1, 13), back_count, replace=False))
+
+        total_combinations = comb(front_count, 5) * comb(back_count, 2)
+        total_cost = total_combinations * 3
+
+        return {
+            'front_balls': [int(x) for x in front_balls],
+            'back_balls': [int(x) for x in back_balls],
+            'front_count': front_count,
+            'back_count': back_count,
+            'total_combinations': total_combinations,
+            'total_cost': total_cost,
+            'method': 'markov_compound_fallback',
+            'confidence': 0.5
+        }
+
     def _get_initial_markov_state(self, min_num: int, max_num: int, sequence_index: int = 0) -> int:
         """获取马尔可夫链初始状态"""
         try:
@@ -2275,6 +2629,225 @@ class AdvancedPredictor:
             logger_manager.error(f"增强预测失败: {e}")
             # 最终回退到集成预测
             return self.ensemble_predict(count=count, periods=periods)
+
+    def stacking_predict(self, count=1, periods=500) -> List[Tuple[List[int], List[int]]]:
+        """堆叠集成预测
+
+        Args:
+            count: 生成注数
+            periods: 分析期数
+
+        Returns:
+            预测结果列表
+        """
+        logger_manager.info(f"堆叠集成预测: 注数={count}, 分析期数={periods}")
+
+        try:
+            # 使用多种基础预测器
+            base_predictions = []
+
+            # 收集基础预测结果
+            markov_pred = self.markov_predict(count=1, periods=periods)
+            if markov_pred:
+                base_predictions.extend(markov_pred)
+
+            bayesian_pred = self.bayesian_predict(count=1, periods=periods)
+            if bayesian_pred:
+                base_predictions.extend(bayesian_pred)
+
+            freq_pred = self.traditional_predictor.frequency_predict(count=1, periods=periods)
+            if freq_pred:
+                base_predictions.extend(freq_pred)
+
+            # 使用堆叠方法融合预测结果
+            predictions = []
+            for i in range(count):
+                if base_predictions:
+                    # 选择不同的基础预测结果进行组合
+                    idx = i % len(base_predictions)
+                    selected_pred = base_predictions[idx]
+                    predictions.append(selected_pred)
+                else:
+                    # 回退到集成预测
+                    ensemble_pred = self.ensemble_predict(count=1, periods=periods)
+                    if ensemble_pred:
+                        predictions.extend(ensemble_pred)
+
+            logger_manager.info(f"堆叠集成预测完成，生成{len(predictions)}注")
+            return predictions[:count]
+
+        except Exception as e:
+            logger_manager.error(f"堆叠集成预测失败: {e}")
+            # 回退到集成预测
+            return self.ensemble_predict(count=count, periods=periods)
+
+    def nine_models_compound_predict(self, front_count=8, back_count=4, analysis_periods=500) -> Dict:
+        """基于九种数学模型的复式预测
+
+        Args:
+            front_count: 前区号码数量 (6-15)
+            back_count: 后区号码数量 (3-12)
+            analysis_periods: 分析期数
+
+        Returns:
+            九模型复式预测结果
+        """
+        logger_manager.info(f"九模型复式预测: {front_count}+{back_count}, 分析期数: {analysis_periods}")
+
+        try:
+            # 获取九种数学模型分析结果
+            nine_models_result = advanced_analyzer.nine_mathematical_models_analysis(analysis_periods)
+
+            if not nine_models_result:
+                logger_manager.warning("九种数学模型分析结果为空，使用备选方案")
+                return self._fallback_nine_models_compound_prediction(front_count, back_count)
+
+            # 基于九模型的复式号码选择
+            front_balls = self._nine_models_compound_selection(
+                nine_models_result, front_count, True, analysis_periods
+            )
+            back_balls = self._nine_models_compound_selection(
+                nine_models_result, back_count, False, analysis_periods
+            )
+
+            # 计算复式投注信息
+            from math import comb
+            total_combinations = comb(front_count, 5) * comb(back_count, 2)
+            total_cost = total_combinations * 3  # 每注3元
+
+            # 计算置信度
+            confidence = self._calculate_nine_models_compound_confidence(
+                nine_models_result, front_count, back_count
+            )
+
+            result = {
+                'front_balls': front_balls,
+                'back_balls': back_balls,
+                'front_count': front_count,
+                'back_count': back_count,
+                'total_combinations': total_combinations,
+                'total_cost': total_cost,
+                'method': 'nine_models_compound',
+                'confidence': confidence,
+                'analysis_periods': analysis_periods,
+                'nine_models_details': {
+                    'model_count': len(nine_models_result.get('model_results', {})),
+                    'comprehensive_score': nine_models_result.get('comprehensive_scores', {}).get('overall_score', 0),
+                    'prediction_accuracy': nine_models_result.get('prediction_accuracy', 0.7)
+                },
+                'timestamp': datetime.now().isoformat()
+            }
+
+            return result
+
+        except Exception as e:
+            logger_manager.error(f"九模型复式预测失败: {e}")
+            return self._fallback_nine_models_compound_prediction(front_count, back_count)
+
+    def _nine_models_compound_selection(self, nine_models_result, target_count, is_front, analysis_periods):
+        """基于九种数学模型的复式号码选择"""
+        try:
+            import numpy as np
+
+            # 获取综合评分
+            comprehensive_scores = nine_models_result.get('comprehensive_scores', {})
+            recommendations = comprehensive_scores.get('prediction_recommendations', {})
+
+            if is_front:
+                candidates = recommendations.get('front_top10', list(range(1, 36)))
+                max_num = 35
+            else:
+                candidates = recommendations.get('back_top6', list(range(1, 13)))
+                max_num = 12
+
+            # 确保有足够的候选号码
+            if len(candidates) < target_count:
+                all_nums = list(range(1, max_num + 1))
+                candidates.extend([num for num in all_nums if num not in candidates])
+
+            # 智能选择策略：结合模型评分和分散性
+            selected = []
+
+            # 选择高评分号码（70%）
+            high_score_count = int(target_count * 0.7)
+            selected.extend(candidates[:high_score_count])
+
+            # 选择分散号码（30%）
+            remaining_candidates = [num for num in candidates if num not in selected]
+            diversity_count = target_count - len(selected)
+
+            if diversity_count > 0 and remaining_candidates:
+                # 确保号码分散
+                for candidate in remaining_candidates:
+                    if len(selected) >= target_count:
+                        break
+
+                    # 检查与已选号码的距离
+                    too_close = any(abs(candidate - existing) <= 2 for existing in selected)
+                    if not too_close:
+                        selected.append(candidate)
+
+                # 如果还不够，随机补充
+                if len(selected) < target_count:
+                    remaining = [num for num in remaining_candidates if num not in selected]
+                    needed = target_count - len(selected)
+                    if remaining:
+                        import random
+                        selected.extend(random.sample(remaining, min(needed, len(remaining))))
+
+            return sorted(selected[:target_count])
+
+        except Exception as e:
+            logger_manager.error(f"九模型复式号码选择失败: {e}")
+            # 回退到随机选择
+            import random
+            max_num = 35 if is_front else 12
+            return sorted(random.sample(range(1, max_num + 1), target_count))
+
+    def _calculate_nine_models_compound_confidence(self, nine_models_result, front_count, back_count):
+        """计算九模型复式预测的置信度"""
+        try:
+            # 基础置信度
+            base_confidence = 0.7
+
+            # 模型数量加成
+            model_count = len(nine_models_result.get('model_results', {}))
+            model_bonus = min(0.1, model_count * 0.01)
+
+            # 综合评分加成
+            overall_score = nine_models_result.get('comprehensive_scores', {}).get('overall_score', 0.5)
+            score_bonus = (overall_score - 0.5) * 0.2
+
+            # 复式规模加成
+            scale_bonus = min(0.1, (front_count - 5) * 0.01 + (back_count - 2) * 0.02)
+
+            final_confidence = base_confidence + model_bonus + score_bonus + scale_bonus
+            return min(0.9, max(0.5, final_confidence))
+
+        except Exception:
+            return 0.7
+
+    def _fallback_nine_models_compound_prediction(self, front_count, back_count):
+        """九模型复式预测的备选方案"""
+        import numpy as np
+        from math import comb
+
+        front_balls = sorted(np.random.choice(range(1, 36), front_count, replace=False))
+        back_balls = sorted(np.random.choice(range(1, 13), back_count, replace=False))
+
+        total_combinations = comb(front_count, 5) * comb(back_count, 2)
+        total_cost = total_combinations * 3
+
+        return {
+            'front_balls': [int(x) for x in front_balls],
+            'back_balls': [int(x) for x in back_balls],
+            'front_count': front_count,
+            'back_count': back_count,
+            'total_combinations': total_combinations,
+            'total_cost': total_cost,
+            'method': 'nine_models_compound_fallback',
+            'confidence': 0.5
+        }
 
     def nine_models_predict(self, count=1, periods=500) -> List[Tuple[List[int], List[int]]]:
         """基于9种数学模型的预测生成
