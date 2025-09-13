@@ -130,3 +130,10 @@ Thumbs.db
 # *.pdf
 # 忽略kiro文件
 .kiro/
+# 忽略Claude 文件
+.claude/
+CLAUDE.md
+# 忽略缓存
+.cache/
+# 忽略日志
+.log/

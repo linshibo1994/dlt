@@ -1784,6 +1784,79 @@ class DLTPredictorSystem:
                     print(f"❌ 获取缓存状态失败: {e}")
                     print("缓存系统状态: ❌ 异常")
     
+    def run_compare_command(self, args):
+        """处理批量预测对比命令"""
+        print("🎯 批量预测对比功能")
+        print("="*60)
+        
+        # 导入批量对比模块
+        try:
+            from batch_comparison_module import BatchComparison, BatchComparisonConfig
+        except ImportError as e:
+            print(f"❌ 批量对比模块导入失败: {e}")
+            return
+        
+        # 创建配置
+        config = BatchComparisonConfig(
+            target_issue=args.issue,
+            method=args.method,
+            analysis_periods=args.periods,
+            comparison_times=args.times,
+            random_periods=args.random_periods,
+            min_random_periods=args.min_periods,
+            max_random_periods=args.max_periods,
+            export_excel=args.export,
+            show_progress=not args.no_progress
+        )
+        
+        # 验证配置
+        is_valid, error_msg = config.validate()
+        if not is_valid:
+            print(f"❌ 配置验证失败: {error_msg}")
+            return
+        
+        # 显示配置信息
+        print(f"📋 配置信息:")
+        print(f"  目标期号: {config.target_issue}")
+        print(f"  预测方法: {config.method}")
+        if config.random_periods:
+            print(f"  分析期数: 随机 ({config.min_random_periods}-{config.max_random_periods}期)")
+        else:
+            print(f"  分析期数: 固定 {config.analysis_periods}期")
+        print(f"  对比次数: {config.comparison_times}次")
+        print(f"  导出Excel: {'是' if config.export_excel else '否'}")
+        
+        # 创建批量对比器并执行
+        try:
+            batch_comparison = BatchComparison()
+            
+            # 进度回调函数
+            def progress_callback(current, total, message):
+                if not args.no_progress:
+                    progress = current / total * 100
+                    print(f"\r⏳ {message} - {progress:.1f}%", end="", flush=True)
+            
+            print(f"\n🚀 开始执行批量预测对比...")
+            result = batch_comparison.execute(config, progress_callback)
+            
+            if not args.no_progress:
+                print()  # 换行
+            
+            # 显示结果摘要
+            result.print_summary()
+            
+            # 导出Excel
+            if args.export:
+                try:
+                    filename = result.export_to_excel()
+                    print(f"\n📊 Excel文件已导出: {filename}")
+                except Exception as e:
+                    print(f"\n❌ Excel导出失败: {e}")
+                    
+        except Exception as e:
+            print(f"\n❌ 批量对比执行失败: {e}")
+            logger_manager.error(f"批量对比执行失败: {e}")
+    
     def run_enhanced_command(self, args):
         """运行增强功能命令"""
         if not self.enhanced_available:
@@ -2188,6 +2261,22 @@ def main():
     evisualize_parser.add_argument('-d', '--data', help='可视化数据')
     evisualize_parser.add_argument('-t', '--type', default='auto', help='图表类型')
 
+    # ==================== 批量对比功能 ====================
+    compare_parser = subparsers.add_parser('compare', help='批量预测对比')
+    compare_parser.add_argument('--issue', type=str, required=True, help='目标期号（如：25104）')
+    compare_parser.add_argument('-m', '--method', type=str, default='markov',
+                              choices=['frequency', 'hot_cold', 'missing', 'markov', 'markov_2nd', 'markov_3rd',
+                                      'adaptive_markov', 'bayesian', 'ensemble', 'clustering', 'super', 'adaptive',
+                                      'nine_models', 'advanced_integration', 'mixed_strategy', 'highly_integrated'],
+                              help='预测方法（默认：markov）')
+    compare_parser.add_argument('-p', '--periods', type=int, default=100, help='分析期数（默认：100）')
+    compare_parser.add_argument('-t', '--times', type=int, default=50, help='对比次数（默认：50）')
+    compare_parser.add_argument('--random-periods', action='store_true', help='使用随机期数分析')
+    compare_parser.add_argument('--min-periods', type=int, default=20, help='随机期数最小值（默认：20）')
+    compare_parser.add_argument('--max-periods', type=int, default=None, help='随机期数最大值（默认：最大可用期数）')
+    compare_parser.add_argument('--export', action='store_true', help='导出Excel文件')
+    compare_parser.add_argument('--no-progress', action='store_true', help='不显示进度信息')
+    
     # ==================== 帮助和版本 ====================
     version_parser = subparsers.add_parser('version', help='显示版本信息')
     
@@ -2218,6 +2307,8 @@ def main():
             system.run_backtest_command(args)
         elif args.command == 'system':
             system.run_system_command(args)
+        elif args.command == 'compare':
+            system.run_compare_command(args)
         elif args.command == 'enhanced':
             system.run_enhanced_command(args)
         elif args.command == 'version':

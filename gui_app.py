@@ -670,6 +670,7 @@ def main():
             "🚀 高级预测",
             "🧠 深度学习",
             "🎲 复式预测",
+            "🎯 批量预测对比",
             "📈 数据分析",
             "🎓 学习功能",
             "⚡ 性能优化",
@@ -710,6 +711,8 @@ def main():
         show_deep_learning_page()
     elif page == "🎲 复式预测":
         show_compound_prediction_page()
+    elif page == "🎯 批量预测对比":
+        show_batch_comparison_page()
     elif page == "📈 数据分析":
         show_analysis_page()
     elif page == "🎓 学习功能":
@@ -3812,6 +3815,444 @@ def show_compound_prediction_page():
 
                 except Exception as e:
                     st.error(f"马尔可夫复式预测失败: {e}")
+
+def show_batch_comparison_page():
+    """显示批量预测对比页面"""
+    st.header("🎯 批量预测对比")
+    st.markdown("通过多次预测同一期号，统计分析算法的稳定性和中奖概率")
+    
+    # 导入批量对比模块
+    try:
+        from batch_comparison_module import BatchComparison, BatchComparisonConfig, AVAILABLE_METHODS, get_method_description
+    except ImportError as e:
+        st.error(f"❌ 批量对比模块导入失败: {e}")
+        st.info("请确保 batch_comparison_module.py 文件存在且可正常导入")
+        return
+    
+    # 获取当前数据状态
+    try:
+        if not CLOUD_MODE:
+            data = data_manager.get_data()
+            if data is None or len(data) == 0:
+                st.error("❌ 数据未加载，请先到数据管理页面加载数据")
+                return
+            
+            latest_issue = str(data.iloc[0]['issue'])
+            total_periods = len(data)
+            st.info(f"📊 数据状态: {total_periods} 期历史数据，最新期号: {latest_issue}")
+        else:
+            latest_issue = "25103"
+            total_periods = 500
+            st.info("🌐 云端模式：使用示例数据")
+    except Exception as e:
+        st.error(f"❌ 获取数据状态失败: {e}")
+        return
+    
+    # 参数配置区域
+    st.subheader("📋 配置参数")
+    
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        # 目标期号
+        target_issue = st.text_input(
+            "🎯 目标期号",
+            value=latest_issue,
+            help="输入要进行对比分析的期号，如：25104"
+        )
+        
+        # 预测方法选择
+        method_options = {method: f"{method} - {get_method_description(method)}" for method in AVAILABLE_METHODS}
+        selected_method = st.selectbox(
+            "🔮 预测方法",
+            options=list(method_options.keys()),
+            format_func=lambda x: method_options[x],
+            index=AVAILABLE_METHODS.index('markov') if 'markov' in AVAILABLE_METHODS else 0,
+            help="选择要测试的预测算法"
+        )
+        
+        # 对比次数
+        comparison_times = st.slider(
+            "🔄 对比次数",
+            min_value=5,
+            max_value=1000,
+            value=50,
+            step=5,
+            help="重复预测的次数，次数越多统计越准确"
+        )
+    
+    with col2:
+        # 分析期数设置
+        use_random_periods = st.checkbox(
+            "🎲 使用随机期数分析",
+            value=False,
+            help="开启后每次预测使用随机的分析期数"
+        )
+        
+        if use_random_periods:
+            col2_1, col2_2 = st.columns(2)
+            with col2_1:
+                min_periods = st.number_input(
+                    "最小分析期数",
+                    min_value=20,
+                    max_value=total_periods - 1,
+                    value=50,
+                    step=10
+                )
+            with col2_2:
+                max_periods = st.number_input(
+                    "最大分析期数", 
+                    min_value=min_periods + 10,
+                    max_value=total_periods,
+                    value=min(500, total_periods),
+                    step=10
+                )
+            analysis_periods = None  # 随机模式
+        else:
+            analysis_periods = st.slider(
+                "📊 分析期数",
+                min_value=50,
+                max_value=min(2000, total_periods),
+                value=100,
+                step=10,
+                help="用于分析的历史期数"
+            )
+            min_periods = max_periods = None
+        
+        # 导出选项
+        export_excel = st.checkbox(
+            "📊 导出Excel报告",
+            value=True,
+            help="生成包含详细统计的Excel文件"
+        )
+    
+    # 执行控制区域
+    st.subheader("🚀 执行控制")
+    
+    col1, col2, col3 = st.columns([2, 1, 1])
+    
+    with col1:
+        start_button = st.button(
+            "🚀 开始批量对比",
+            type="primary",
+            use_container_width=True,
+            help="点击开始执行批量预测对比"
+        )
+    
+    with col2:
+        if 'batch_comparison_running' not in st.session_state:
+            st.session_state.batch_comparison_running = False
+        
+        if st.session_state.batch_comparison_running:
+            if st.button("⏹️ 停止", use_container_width=True):
+                st.session_state.batch_comparison_running = False
+                st.rerun()
+    
+    with col3:
+        if st.button("🧹 清除结果", use_container_width=True):
+            if 'batch_result' in st.session_state:
+                del st.session_state.batch_result
+            st.rerun()
+    
+    # 执行批量对比
+    if start_button and not st.session_state.batch_comparison_running:
+        # 参数验证
+        if not target_issue or len(target_issue.strip()) < 5:
+            st.error("❌ 请输入有效的期号")
+            return
+        
+        # 创建配置
+        config = BatchComparisonConfig(
+            target_issue=target_issue.strip(),
+            method=selected_method,
+            analysis_periods=analysis_periods or 100,
+            comparison_times=comparison_times,
+            random_periods=use_random_periods,
+            min_random_periods=min_periods or 50,
+            max_random_periods=max_periods or 500,
+            export_excel=export_excel,
+            show_progress=True
+        )
+        
+        # 验证配置
+        is_valid, error_msg = config.validate()
+        if not is_valid:
+            st.error(f"❌ 配置验证失败: {error_msg}")
+            return
+        
+        # 显示配置摘要
+        st.info(f"📋 配置: 期号={config.target_issue}, 方法={config.method}, "
+               f"期数={'随机' if use_random_periods else config.analysis_periods}, "
+               f"次数={config.comparison_times}")
+        
+        # 执行批量对比
+        st.session_state.batch_comparison_running = True
+        
+        # 创建进度显示区域
+        progress_container = st.container()
+        
+        with progress_container:
+            progress_bar = st.progress(0)
+            status_text = st.empty()
+            
+            try:
+                batch_comparison = BatchComparison()
+                
+                # 进度回调函数
+                def progress_callback(current, total, message):
+                    progress = current / total
+                    progress_bar.progress(progress)
+                    status_text.text(f"📊 {message} ({current}/{total})")
+                
+                # 执行对比
+                with st.spinner("🔄 正在执行批量预测对比..."):
+                    result = batch_comparison.execute(config, progress_callback)
+                
+                # 保存结果到session state
+                st.session_state.batch_result = result
+                st.session_state.batch_comparison_running = False
+                
+                st.success("✅ 批量预测对比完成！")
+                st.rerun()
+                
+            except Exception as e:
+                st.session_state.batch_comparison_running = False
+                st.error(f"❌ 批量对比执行失败: {e}")
+                logger_manager.error(f"GUI批量对比失败: {e}")
+    
+    # 显示结果
+    if 'batch_result' in st.session_state:
+        show_batch_comparison_results(st.session_state.batch_result)
+
+def show_batch_comparison_results(result):
+    """显示批量预测对比结果"""
+    import plotly.express as px
+    import plotly.graph_objects as go
+    
+    st.subheader("📊 对比结果分析")
+    
+    # 基本信息
+    st.markdown("#### 📋 基本信息")
+    col1, col2, col3, col4 = st.columns(4)
+    
+    with col1:
+        st.metric("🎯 目标期号", result.config.target_issue)
+    with col2:
+        st.metric("🔮 预测方法", result.config.method)
+    with col3:
+        st.metric("🔄 对比次数", result.statistics.total_comparisons)
+    with col4:
+        st.metric("⏱️ 总用时", f"{result.execution_time:.2f}秒")
+    
+    # 开奖号码
+    st.markdown("#### 🎲 开奖号码")
+    front_str = " ".join([f"{n:02d}" for n in result.actual_front])
+    back_str = " ".join([f"{n:02d}" for n in result.actual_back])
+    st.info(f"🎯 第{result.config.target_issue}期开奖号码: **{front_str}** + **{back_str}**")
+    
+    # 中奖统计
+    st.markdown("#### 🏆 中奖统计概览")
+    col1, col2, col3 = st.columns(3)
+    
+    with col1:
+        st.metric(
+            "总中奖次数", 
+            f"{result.statistics.total_wins}/{result.statistics.total_comparisons}",
+            delta=f"{result.statistics.total_win_rate:.2%}"
+        )
+    with col2:
+        st.metric("平均执行时间", f"{result.statistics.avg_execution_time:.3f}秒")
+    with col3:
+        if result.statistics.total_wins > 0:
+            avg_prize_level = sum(
+                level * count for level, count in result.statistics.prize_counts.items() if level > 0
+            ) / result.statistics.total_wins
+            st.metric("平均中奖等级", f"{avg_prize_level:.1f}等")
+        else:
+            st.metric("平均中奖等级", "未中奖")
+    
+    # 各等级中奖详情
+    st.markdown("#### 🎊 各等级中奖详情")
+    
+    # 创建中奖统计表格
+    prize_data = []
+    from batch_comparison_module import PrizeChecker
+    
+    for level in range(1, 10):
+        count = result.statistics.prize_counts.get(level, 0)
+        prob = result.statistics.prize_probabilities.get(level, 0.0)
+        description = PrizeChecker.get_prize_description(level)
+        
+        prize_data.append({
+            "奖级": f"{level}等奖",
+            "中奖次数": count,
+            "中奖概率": f"{prob:.4%}",
+            "描述": description
+        })
+    
+    # 添加未中奖
+    no_win_count = result.statistics.prize_counts.get(0, 0)
+    no_win_prob = result.statistics.prize_probabilities.get(0, 0.0)
+    prize_data.append({
+        "奖级": "未中奖",
+        "中奖次数": no_win_count,
+        "中奖概率": f"{no_win_prob:.4%}",
+        "描述": "未达到中奖标准"
+    })
+    
+    # 显示表格
+    import pandas as pd
+    prize_df = pd.DataFrame(prize_data)
+    
+    # 高亮显示有中奖的行
+    def highlight_wins(row):
+        if row['中奖次数'] > 0 and row['奖级'] != '未中奖':
+            return ['background-color: #e8f5e8'] * len(row)
+        elif row['奖级'] == '未中奖':
+            return ['background-color: #ffebee'] * len(row)
+        else:
+            return [''] * len(row)
+    
+    styled_df = prize_df.style.apply(highlight_wins, axis=1)
+    st.dataframe(styled_df, use_container_width=True, hide_index=True)
+    
+    # 中奖概率可视化
+    if result.statistics.total_wins > 0:
+        st.markdown("#### 📊 中奖概率分布图")
+        
+        # 准备图表数据（只显示有中奖的等级）
+        chart_data = []
+        for level, count in result.statistics.prize_counts.items():
+            if level > 0 and count > 0:
+                prob = result.statistics.prize_probabilities[level]
+                chart_data.append({
+                    "奖级": f"{level}等奖",
+                    "中奖概率": prob * 100,
+                    "中奖次数": count
+                })
+        
+        if chart_data:
+            chart_df = pd.DataFrame(chart_data)
+            
+            # 创建柱状图
+            fig = px.bar(
+                chart_df, 
+                x="奖级", 
+                y="中奖概率",
+                text="中奖次数",
+                title="各等级中奖概率分布",
+                labels={"中奖概率": "中奖概率 (%)"},
+                color="中奖概率",
+                color_continuous_scale="viridis"
+            )
+            
+            fig.update_traces(texttemplate='%{text}次', textposition='outside')
+            fig.update_layout(height=400)
+            st.plotly_chart(fig, use_container_width=True)
+    
+    # 详细预测记录
+    st.markdown("#### 📋 详细预测记录")
+    
+    # 创建详细记录表格
+    if result.predictions:
+        detail_data = []
+        for pred in result.predictions:
+            front_str = " ".join([f"{n:02d}" for n in pred.predicted_front])
+            back_str = " ".join([f"{n:02d}" for n in pred.predicted_back])
+            hit_front_str = " ".join([f"{n:02d}" for n in pred.actual_front if n in pred.predicted_front])
+            hit_back_str = " ".join([f"{n:02d}" for n in pred.actual_back if n in pred.predicted_back])
+            
+            detail_data.append({
+                "轮次": pred.round_number,
+                "分析期数": pred.analysis_periods,
+                "预测前区": front_str,
+                "预测后区": back_str,
+                "命中前区": hit_front_str if hit_front_str else "-",
+                "命中后区": hit_back_str if hit_back_str else "-",
+                "前区命中": f"{pred.front_hits}/5",
+                "后区命中": f"{pred.back_hits}/2",
+                "中奖等级": f"{pred.prize_level}等奖" if pred.prize_level > 0 else "未中奖",
+                "执行时间": f"{pred.execution_time:.3f}s"
+            })
+        
+        detail_df = pd.DataFrame(detail_data)
+        
+        # 分页显示
+        page_size = 20
+        total_pages = (len(detail_df) + page_size - 1) // page_size
+        
+        if total_pages > 1:
+            page = st.selectbox("选择页面", range(1, total_pages + 1), format_func=lambda x: f"第 {x} 页")
+            start_idx = (page - 1) * page_size
+            end_idx = start_idx + page_size
+            display_df = detail_df.iloc[start_idx:end_idx]
+        else:
+            display_df = detail_df
+        
+        # 高亮显示中奖记录
+        def highlight_prizes(row):
+            if row['中奖等级'] != '未中奖':
+                return ['background-color: #e8f5e8'] * len(row)
+            else:
+                return [''] * len(row)
+        
+        styled_detail_df = display_df.style.apply(highlight_prizes, axis=1)
+        st.dataframe(styled_detail_df, use_container_width=True, hide_index=True)
+    
+    # 导出功能
+    st.markdown("#### 📥 导出结果")
+    
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        if st.button("📊 导出Excel报告", type="primary", use_container_width=True):
+            try:
+                # 生成Excel文件
+                filename = result.export_to_excel()
+                
+                # 读取文件内容
+                with open(filename, 'rb') as f:
+                    excel_data = f.read()
+                
+                # 提供下载
+                st.download_button(
+                    label="⬇️ 下载Excel文件",
+                    data=excel_data,
+                    file_name=filename,
+                    mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                    use_container_width=True
+                )
+                
+                st.success(f"✅ Excel文件已生成: {filename}")
+                
+                # 清理临时文件
+                import os
+                try:
+                    os.remove(filename)
+                except:
+                    pass
+                    
+            except Exception as e:
+                st.error(f"❌ Excel导出失败: {e}")
+    
+    with col2:
+        if st.button("📄 导出JSON数据", use_container_width=True):
+            try:
+                json_data = result.to_json()
+                filename = f"batch_comparison_{result.config.target_issue}_{result.config.method}_{result.timestamp.strftime('%Y%m%d_%H%M%S')}.json"
+                
+                st.download_button(
+                    label="⬇️ 下载JSON文件",
+                    data=json_data,
+                    file_name=filename,
+                    mime="application/json",
+                    use_container_width=True
+                )
+                
+                st.success("✅ JSON数据已准备下载")
+                
+            except Exception as e:
+                st.error(f"❌ JSON导出失败: {e}")
 
 if __name__ == "__main__":
     main()
