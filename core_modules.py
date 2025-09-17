@@ -420,7 +420,7 @@ class DataManager:
                 self.df = pd.read_csv(self.data_file)
 
                 # 数据文件已经按期号降序排列（最新的在前面），无需重新排序
-                print(f"✅ 从文件加载数据: {len(self.df)} 期")
+                print(f"[OK] 从文件加载数据: {len(self.df)} 期")
 
                 # 保存到缓存
                 self.cache_manager.save_cache("data", "dlt_data_all", self.df)
@@ -428,7 +428,7 @@ class DataManager:
             self._calculate_stats()
 
         except Exception as e:
-            print(f"❌ 加载数据失败: {e}")
+            print(f"[ERROR] 加载数据失败: {e}")
     
     def _calculate_stats(self):
         """计算数据统计信息"""

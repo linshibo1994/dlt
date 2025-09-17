@@ -4,6 +4,7 @@
 """
 大乐透预测系统 - 优化版主程序
 支持延迟加载，避免启动时间过长
+支持GPU加速功能
 """
 
 import argparse
@@ -24,6 +25,15 @@ cache_manager = cm.cache_manager
 logger_manager = cm.logger_manager
 data_manager = cm.data_manager
 task_manager = cm.task_manager
+
+# GPU加速模块
+try:
+    from gpu_accelerated_predictor import get_gpu_accelerator
+    GPU_AVAILABLE = True
+    print("[OK] GPU加速模块已加载")
+except ImportError:
+    GPU_AVAILABLE = False
+    print("[WARNING] GPU加速模块不可用，使用CPU计算")
 
 # 尝试加载增强功能集成模块
 try:

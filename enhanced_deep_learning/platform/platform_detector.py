@@ -304,31 +304,87 @@ class PlatformDetector:
         try:
             gpu_info = []
             gpu_count = 0
-            
-            # 尝试使用nvidia-ml-py检测NVIDIA GPU
+
+            # 方法1: 首选nvidia-smi直接检测（适用于所有Python版本）
             try:
-                import pynvml
-                pynvml.nvmlInit()
-                gpu_count = pynvml.nvmlDeviceGetCount()
-                
-                for i in range(gpu_count):
-                    handle = pynvml.nvmlDeviceGetHandleByIndex(i)
-                    name = pynvml.nvmlDeviceGetName(handle).decode('utf-8')
-                    memory_info = pynvml.nvmlDeviceGetMemoryInfo(handle)
-                    
-                    gpu_info.append({
-                        'index': i,
-                        'name': name,
-                        'memory_total': memory_info.total,
-                        'memory_free': memory_info.free,
-                        'memory_used': memory_info.used,
-                        'vendor': 'NVIDIA'
-                    })
-                
-            except Exception:
-                # 如果NVIDIA检测失败，尝试其他方法
+                import subprocess
+                result = subprocess.run(['nvidia-smi', '--query-gpu=name,memory.total,memory.free,memory.used,utilization.gpu',
+                                       '--format=csv,noheader,nounits'],
+                                      capture_output=True, text=True, timeout=10)
+                if result.returncode == 0:
+                    lines = result.stdout.strip().split('\n')
+                    for i, line in enumerate(lines):
+                        if line.strip():
+                            parts = [part.strip() for part in line.split(',')]
+                            if len(parts) >= 4:
+                                gpu_info.append({
+                                    'index': i,
+                                    'name': parts[0],
+                                    'memory_total': int(parts[1]) * 1024 * 1024,  # 转换为字节
+                                    'memory_free': int(parts[2]) * 1024 * 1024,
+                                    'memory_used': int(parts[3]) * 1024 * 1024,
+                                    'utilization': int(parts[4]) if len(parts) > 4 else 0,
+                                    'vendor': 'NVIDIA',
+                                    'detection_method': 'nvidia-smi'
+                                })
+                    gpu_count = len(gpu_info)
+                    logger_manager.info(f"通过nvidia-smi检测到 {gpu_count} 个GPU设备")
+                    return gpu_count, gpu_info
+            except Exception as e:
+                logger_manager.debug(f"nvidia-smi检测失败: {e}")
+
+            # 方法2: 尝试使用nvidia-ml-py检测NVIDIA GPU
+            if gpu_count == 0:
                 try:
-                    # 尝试使用PyTorch检测
+                    import pynvml
+                    pynvml.nvmlInit()
+                    gpu_count = pynvml.nvmlDeviceGetCount()
+
+                    for i in range(gpu_count):
+                        handle = pynvml.nvmlDeviceGetHandleByIndex(i)
+                        name = pynvml.nvmlDeviceGetName(handle).decode('utf-8')
+                        memory_info = pynvml.nvmlDeviceGetMemoryInfo(handle)
+
+                        gpu_info.append({
+                            'index': i,
+                            'name': name,
+                            'memory_total': memory_info.total,
+                            'memory_free': memory_info.free,
+                            'memory_used': memory_info.used,
+                            'vendor': 'NVIDIA',
+                            'detection_method': 'pynvml'
+                        })
+                    logger_manager.info(f"通过pynvml检测到 {gpu_count} 个GPU设备")
+                    return gpu_count, gpu_info
+
+                except Exception as e:
+                    logger_manager.debug(f"pynvml检测失败: {e}")
+
+            # 方法3: 尝试使用TensorFlow检测（如果可用）
+            if gpu_count == 0:
+                try:
+                    import tensorflow as tf
+                    gpus = tf.config.list_physical_devices('GPU')
+                    if gpus:
+                        gpu_count = len(gpus)
+                        for i, gpu in enumerate(gpus):
+                            gpu_info.append({
+                                'index': i,
+                                'name': gpu.name,
+                                'memory_total': 0,  # TensorFlow不直接提供内存信息
+                                'memory_free': 0,
+                                'memory_used': 0,
+                                'vendor': 'Unknown',
+                                'detection_method': 'tensorflow'
+                            })
+                        logger_manager.info(f"通过TensorFlow检测到 {gpu_count} 个GPU设备")
+                        return gpu_count, gpu_info
+                except Exception as e:
+                    logger_manager.debug(f"TensorFlow GPU检测失败: {e}")
+
+            # 方法4: 尝试使用PyTorch检测（如果可用）
+            if gpu_count == 0:
+                try:
                     import torch
                     if torch.cuda.is_available():
                         gpu_count = torch.cuda.device_count()
@@ -340,15 +396,41 @@ class PlatformDetector:
                                 'memory_total': props.total_memory,
                                 'memory_free': props.total_memory,  # PyTorch不提供空闲内存
                                 'memory_used': 0,
-                                'vendor': 'NVIDIA'
+                                'vendor': 'NVIDIA',
+                                'detection_method': 'pytorch'
                             })
+                        logger_manager.info(f"通过PyTorch检测到 {gpu_count} 个GPU设备")
+                        return gpu_count, gpu_info
+                except Exception as e:
+                    logger_manager.debug(f"PyTorch CUDA检测失败: {e}")
+
+            # 方法5: 如果所有库检测都失败，但nvidia-smi可用，说明有GPU但软件配置有问题
+            if gpu_count == 0:
+                try:
+                    result = subprocess.run(['nvidia-smi'], capture_output=True, timeout=5)
+                    if result.returncode == 0:
+                        logger_manager.warning("检测到NVIDIA驱动但无法获取GPU详细信息")
+                        logger_manager.warning("Python版本可能过新或GPU库配置有问题")
+                        logger_manager.warning("建议: 1) 使用Python 3.11/3.12  2) 运行GPU修复脚本")
+                        # 返回基本GPU信息，表明硬件存在但软件支持有限
+                        return 1, [{
+                            'index': 0,
+                            'name': 'NVIDIA GPU (软件支持受限)',
+                            'memory_total': 0,
+                            'memory_free': 0,
+                            'memory_used': 0,
+                            'vendor': 'NVIDIA',
+                            'status': 'software_limitation',
+                            'detection_method': 'nvidia-smi-basic'
+                        }]
                 except Exception:
-                    logger_manager.debug("无法检测GPU信息")
-            
-            return gpu_count, gpu_info
-            
+                    pass
+
+            logger_manager.info("未检测到GPU设备或GPU不可用")
+            return 0, []
+
         except Exception as e:
-            logger_manager.error(f"检测GPU信息失败: {e}")
+            logger_manager.error(f"GPU检测过程出现异常: {e}")
             return 0, []
     
     def _detect_environment_vars(self) -> Dict[str, str]:
