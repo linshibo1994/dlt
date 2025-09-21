@@ -277,7 +277,7 @@ class EnhancedAdaptiveLearningPredictor:
             'traditional_hot_cold': traditional_pred,
             'traditional_missing': traditional_pred,
             'advanced_markov': advanced_pred,
-            'advanced_bayesian': advanced_pred,
+            'advanced_bayesian': traditional_pred,  # bayesian_predict在TraditionalPredictor中
             'advanced_ensemble': advanced_pred,
             'super_predictor': super_pred
         }

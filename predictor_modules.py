@@ -32,6 +32,80 @@ except ImportError as e:
     ENHANCED_DL_AVAILABLE = False
 
 
+# ==================== 数据转换工具函数 ====================
+def convert_dataframe_to_numeric_array(df, periods=None):
+    """
+    将包含字符串号码的DataFrame转换为GPU可用的数值数组
+
+    Args:
+        df: 包含issue, date, front_balls, back_balls的DataFrame
+        periods: 使用的期数，None表示使用全部数据
+
+    Returns:
+        numpy数组，形状为(periods, 7)，包含[前区5个号码, 后区2个号码]
+    """
+    import numpy as np
+
+    if df is None or len(df) == 0:
+        return np.array([])
+
+    # 确定使用的数据范围
+    if periods is not None:
+        df_subset = df.tail(periods)
+    else:
+        df_subset = df
+
+    numeric_data = []
+
+    for _, row in df_subset.iterrows():
+        try:
+            # 解析前区和后区号码
+            front_balls, back_balls = data_manager.parse_balls(row)
+
+            # 确保有5个前区号码和2个后区号码
+            if len(front_balls) == 5 and len(back_balls) == 2:
+                # 合并为7个数字的数组
+                combined = front_balls + back_balls
+                numeric_data.append(combined)
+        except Exception as e:
+            # 跳过解析失败的行
+            logger_manager.warning(f"跳过解析失败的数据行: {e}")
+            continue
+
+    # 转换为numpy数组
+    if numeric_data:
+        return np.array(numeric_data, dtype=np.float32)
+    else:
+        return np.array([], dtype=np.float32).reshape(0, 7)
+
+
+def ensure_python_int_list(numbers):
+    """
+    确保数字列表中的所有元素都是Python标准整数类型
+
+    Args:
+        numbers: 数字列表，可能包含numpy类型
+
+    Returns:
+        包含Python标准整数的列表
+    """
+    import numpy as np
+
+    if not numbers:
+        return []
+
+    result = []
+    for num in numbers:
+        if isinstance(num, (np.integer, np.int32, np.int64)):
+            result.append(int(num))
+        elif isinstance(num, (np.floating, np.float32, np.float64)):
+            result.append(int(round(num)))
+        else:
+            result.append(int(num))
+
+    return result
+
+
 # ==================== 传统预测器 ====================
 class TraditionalPredictor:
     """传统预测器"""
@@ -518,6 +592,149 @@ class TraditionalPredictor:
 
         return predictions
 
+    def bayesian_predict(self, count=1, periods=500, n_jobs=1) -> List[Tuple[List[int], List[int]]]:
+        """贝叶斯预测 - 真正的贝叶斯推理和概率采样"""
+        import random
+        import numpy as np
+
+        # 使用n_jobs参数进行贝叶斯分析
+        bayesian_result = advanced_analyzer.bayesian_analysis(periods, n_jobs=n_jobs)
+
+        front_posterior = bayesian_result.get('front_posterior', {})
+        back_posterior = bayesian_result.get('back_posterior', {})
+
+        predictions = []
+
+        # 为每注生成不同的贝叶斯策略
+        for i in range(count):
+            front_balls = []
+            back_balls = []
+
+            # 策略1: 最大后验概率策略 (第1注)
+            if i % 4 == 0:
+                if front_posterior:
+                    # 选择后验概率最高的号码，但加入随机性
+                    sorted_front = sorted(front_posterior.items(), key=lambda x: x[1], reverse=True)
+                    high_prob_front = [int(ball) for ball, prob in sorted_front[:8]]
+                    front_balls = random.sample(high_prob_front, min(5, len(high_prob_front)))
+
+                if back_posterior:
+                    sorted_back = sorted(back_posterior.items(), key=lambda x: x[1], reverse=True)
+                    high_prob_back = [int(ball) for ball, prob in sorted_back[:4]]
+                    back_balls = random.sample(high_prob_back, min(2, len(high_prob_back)))
+
+            # 策略2: 中等概率策略 (第2注)
+            elif i % 4 == 1:
+                if front_posterior:
+                    # 选择中等概率的号码
+                    sorted_front = sorted(front_posterior.items(), key=lambda x: x[1], reverse=True)
+                    mid_start = len(sorted_front) // 4
+                    mid_end = len(sorted_front) * 3 // 4
+                    mid_prob_front = [int(ball) for ball, prob in sorted_front[mid_start:mid_end]]
+                    if len(mid_prob_front) >= 5:
+                        front_balls = random.sample(mid_prob_front, 5)
+                    else:
+                        front_balls = mid_prob_front + [int(ball) for ball, prob in sorted_front[:5-len(mid_prob_front)]]
+
+                if back_posterior:
+                    sorted_back = sorted(back_posterior.items(), key=lambda x: x[1], reverse=True)
+                    mid_prob_back = [int(ball) for ball, prob in sorted_back[1:5]]
+                    if len(mid_prob_back) >= 2:
+                        back_balls = random.sample(mid_prob_back, 2)
+                    else:
+                        back_balls = mid_prob_back + [int(ball) for ball, prob in sorted_back[:2-len(mid_prob_back)]]
+
+            # 策略3: 混合概率策略 (第3注)
+            elif i % 4 == 2:
+                if front_posterior:
+                    # 2个高概率 + 2个中概率 + 1个低概率
+                    sorted_front = sorted(front_posterior.items(), key=lambda x: x[1], reverse=True)
+                    high_prob = [int(ball) for ball, prob in sorted_front[:6]]
+                    mid_prob = [int(ball) for ball, prob in sorted_front[6:15]]
+                    low_prob = [int(ball) for ball, prob in sorted_front[15:25]]
+
+                    front_balls = []
+                    front_balls.extend(random.sample(high_prob, min(2, len(high_prob))))
+                    front_balls.extend(random.sample(mid_prob, min(2, len(mid_prob))))
+                    if len(low_prob) > 0:
+                        front_balls.extend(random.sample(low_prob, min(1, len(low_prob))))
+
+                    # 如果不足5个，用高概率补充
+                    while len(front_balls) < 5:
+                        remaining = [ball for ball in high_prob if ball not in front_balls]
+                        if remaining:
+                            front_balls.append(random.choice(remaining))
+                        else:
+                            break
+
+                if back_posterior:
+                    sorted_back = sorted(back_posterior.items(), key=lambda x: x[1], reverse=True)
+                    back_high = [int(ball) for ball, prob in sorted_back[:3]]
+                    back_mid = [int(ball) for ball, prob in sorted_back[3:8]]
+
+                    back_balls = []
+                    if len(back_high) > 0:
+                        back_balls.append(random.choice(back_high))
+                    if len(back_mid) > 0:
+                        back_balls.append(random.choice(back_mid))
+
+                    # 如果不足2个，用高概率补充
+                    while len(back_balls) < 2:
+                        remaining = [ball for ball in back_high if ball not in back_balls]
+                        if remaining:
+                            back_balls.append(random.choice(remaining))
+                        else:
+                            break
+
+            # 策略4: 概率加权随机采样 (第4注及以后)
+            else:
+                # 基于后验概率的加权随机采样
+                if front_posterior:
+                    front_balls_list = [int(ball) for ball in front_posterior.keys()]
+                    front_probs = [prob for prob in front_posterior.values()]
+
+                    if len(front_probs) > 0:
+                        # 归一化概率
+                        total_prob = sum(front_probs)
+                        front_probs_norm = [p/total_prob for p in front_probs]
+
+                        # 概率加权随机采样
+                        front_balls = list(np.random.choice(front_balls_list, size=5, replace=False, p=front_probs_norm))
+
+                if back_posterior:
+                    back_balls_list = [int(ball) for ball in back_posterior.keys()]
+                    back_probs = [prob for prob in back_posterior.values()]
+
+                    if len(back_probs) > 0:
+                        total_prob = sum(back_probs)
+                        back_probs_norm = [p/total_prob for p in back_probs]
+                        back_balls = list(np.random.choice(back_balls_list, size=2, replace=False, p=back_probs_norm))
+
+            # 如果没有后验概率或号码不足，使用频率分析补充
+            if len(front_balls) < 5:
+                freq_analysis = basic_analyzer.frequency_analysis(periods)
+                front_freq = freq_analysis.get('front_frequency', {})
+                sorted_freq = sorted(front_freq.items(), key=lambda x: x[1], reverse=True)
+                for ball, freq in sorted_freq:
+                    if len(front_balls) >= 5:
+                        break
+                    if int(ball) not in front_balls:
+                        front_balls.append(int(ball))
+
+            if len(back_balls) < 2:
+                freq_analysis = basic_analyzer.frequency_analysis(periods)
+                back_freq = freq_analysis.get('back_frequency', {})
+                sorted_freq = sorted(back_freq.items(), key=lambda x: x[1], reverse=True)
+                for ball, freq in sorted_freq:
+                    if len(back_balls) >= 2:
+                        break
+                    if int(ball) not in back_balls:
+                        back_balls.append(int(ball))
+
+            predictions.append((sorted(front_balls[:5]), sorted(back_balls[:2])))
+
+        return predictions
+
 
 # ==================== 高级预测器 ====================
 class AdvancedPredictor:
@@ -527,10 +744,14 @@ class AdvancedPredictor:
         self.data_file = data_file
         self.df = data_manager.get_data()
         self.traditional_predictor = TraditionalPredictor(data_file)
-        
+
         if self.df is None:
             logger_manager.error("数据未加载")
-    
+
+    def _get_traditional_predictor(self):
+        """获取传统预测器实例"""
+        return self.traditional_predictor
+
     def markov_predict(self, count=1, periods=500) -> List[Tuple[List[int], List[int]]]:
         """增强马尔可夫链预测 - 真正的状态序列生成"""
         try:
@@ -1074,7 +1295,7 @@ class AdvancedPredictor:
             if needed > 0 and remaining:
                 selected.extend(random.sample(remaining, min(needed, len(remaining))))
 
-            return sorted(selected[:target_count])
+            return ensure_python_int_list(sorted(selected[:target_count]))
 
         except Exception as e:
             logger_manager.error(f"马尔可夫复式号码选择失败: {e}")
@@ -1421,149 +1642,6 @@ class AdvancedPredictor:
 
         return float(total_score / count) if count > 0 else 0.0
 
-    def bayesian_predict(self, count=1, periods=500, n_jobs=1) -> List[Tuple[List[int], List[int]]]:
-        """贝叶斯预测 - 真正的贝叶斯推理和概率采样"""
-        import random
-        import numpy as np
-
-        # 使用n_jobs参数进行贝叶斯分析
-        bayesian_result = advanced_analyzer.bayesian_analysis(periods, n_jobs=n_jobs)
-
-        front_posterior = bayesian_result.get('front_posterior', {})
-        back_posterior = bayesian_result.get('back_posterior', {})
-
-        predictions = []
-
-        # 为每注生成不同的贝叶斯策略
-        for i in range(count):
-            front_balls = []
-            back_balls = []
-
-            # 策略1: 最大后验概率策略 (第1注)
-            if i % 4 == 0:
-                if front_posterior:
-                    # 选择后验概率最高的号码，但加入随机性
-                    sorted_front = sorted(front_posterior.items(), key=lambda x: x[1], reverse=True)
-                    high_prob_front = [int(ball) for ball, prob in sorted_front[:8]]
-                    front_balls = random.sample(high_prob_front, min(5, len(high_prob_front)))
-
-                if back_posterior:
-                    sorted_back = sorted(back_posterior.items(), key=lambda x: x[1], reverse=True)
-                    high_prob_back = [int(ball) for ball, prob in sorted_back[:4]]
-                    back_balls = random.sample(high_prob_back, min(2, len(high_prob_back)))
-
-            # 策略2: 中等概率策略 (第2注)
-            elif i % 4 == 1:
-                if front_posterior:
-                    # 选择中等概率的号码
-                    sorted_front = sorted(front_posterior.items(), key=lambda x: x[1], reverse=True)
-                    mid_start = len(sorted_front) // 4
-                    mid_end = len(sorted_front) * 3 // 4
-                    mid_prob_front = [int(ball) for ball, prob in sorted_front[mid_start:mid_end]]
-                    if len(mid_prob_front) >= 5:
-                        front_balls = random.sample(mid_prob_front, 5)
-                    else:
-                        front_balls = mid_prob_front + [int(ball) for ball, prob in sorted_front[:5-len(mid_prob_front)]]
-
-                if back_posterior:
-                    sorted_back = sorted(back_posterior.items(), key=lambda x: x[1], reverse=True)
-                    mid_prob_back = [int(ball) for ball, prob in sorted_back[1:5]]
-                    if len(mid_prob_back) >= 2:
-                        back_balls = random.sample(mid_prob_back, 2)
-                    else:
-                        back_balls = mid_prob_back + [int(ball) for ball, prob in sorted_back[:2-len(mid_prob_back)]]
-
-            # 策略3: 混合概率策略 (第3注)
-            elif i % 4 == 2:
-                if front_posterior:
-                    # 2个高概率 + 2个中概率 + 1个低概率
-                    sorted_front = sorted(front_posterior.items(), key=lambda x: x[1], reverse=True)
-                    high_prob = [int(ball) for ball, prob in sorted_front[:6]]
-                    mid_prob = [int(ball) for ball, prob in sorted_front[6:15]]
-                    low_prob = [int(ball) for ball, prob in sorted_front[15:25]]
-
-                    front_balls = []
-                    front_balls.extend(random.sample(high_prob, min(2, len(high_prob))))
-                    front_balls.extend(random.sample(mid_prob, min(2, len(mid_prob))))
-                    if len(low_prob) > 0:
-                        front_balls.extend(random.sample(low_prob, min(1, len(low_prob))))
-
-                    # 如果不足5个，用高概率补充
-                    while len(front_balls) < 5:
-                        remaining = [ball for ball in high_prob if ball not in front_balls]
-                        if remaining:
-                            front_balls.append(random.choice(remaining))
-                        else:
-                            break
-
-                if back_posterior:
-                    sorted_back = sorted(back_posterior.items(), key=lambda x: x[1], reverse=True)
-                    back_high = [int(ball) for ball, prob in sorted_back[:3]]
-                    back_mid = [int(ball) for ball, prob in sorted_back[3:8]]
-
-                    back_balls = []
-                    if len(back_high) > 0:
-                        back_balls.append(random.choice(back_high))
-                    if len(back_mid) > 0:
-                        back_balls.append(random.choice(back_mid))
-
-                    # 如果不足2个，用高概率补充
-                    while len(back_balls) < 2:
-                        remaining = [ball for ball in back_high if ball not in back_balls]
-                        if remaining:
-                            back_balls.append(random.choice(remaining))
-                        else:
-                            break
-
-            # 策略4: 概率加权随机采样 (第4注及以后)
-            else:
-                # 基于后验概率的加权随机采样
-                if front_posterior:
-                    front_balls_list = [int(ball) for ball in front_posterior.keys()]
-                    front_probs = [prob for prob in front_posterior.values()]
-
-                    if len(front_probs) > 0:
-                        # 归一化概率
-                        total_prob = sum(front_probs)
-                        front_probs_norm = [p/total_prob for p in front_probs]
-
-                        # 概率加权随机采样
-                        front_balls = list(np.random.choice(front_balls_list, size=5, replace=False, p=front_probs_norm))
-
-                if back_posterior:
-                    back_balls_list = [int(ball) for ball in back_posterior.keys()]
-                    back_probs = [prob for prob in back_posterior.values()]
-
-                    if len(back_probs) > 0:
-                        total_prob = sum(back_probs)
-                        back_probs_norm = [p/total_prob for p in back_probs]
-                        back_balls = list(np.random.choice(back_balls_list, size=2, replace=False, p=back_probs_norm))
-
-            # 如果没有后验概率或号码不足，使用频率分析补充
-            if len(front_balls) < 5:
-                freq_analysis = basic_analyzer.frequency_analysis(periods)
-                front_freq = freq_analysis.get('front_frequency', {})
-                sorted_freq = sorted(front_freq.items(), key=lambda x: x[1], reverse=True)
-                for ball, freq in sorted_freq:
-                    if len(front_balls) >= 5:
-                        break
-                    if int(ball) not in front_balls:
-                        front_balls.append(int(ball))
-
-            if len(back_balls) < 2:
-                freq_analysis = basic_analyzer.frequency_analysis(periods)
-                back_freq = freq_analysis.get('back_frequency', {})
-                sorted_freq = sorted(back_freq.items(), key=lambda x: x[1], reverse=True)
-                for ball, freq in sorted_freq:
-                    if len(back_balls) >= 2:
-                        break
-                    if int(ball) not in back_balls:
-                        back_balls.append(int(ball))
-
-            predictions.append((sorted(front_balls[:5]), sorted(back_balls[:2])))
-
-        return predictions
-    
     def ensemble_predict(self, count=1, periods=500, weights=None) -> List[Tuple[List[int], List[int]]]:
         """集成预测"""
         if weights is None:
@@ -1579,7 +1657,7 @@ class AdvancedPredictor:
 
         # 获取各种预测方法的结果（一次性获取，确保一致性）
         markov_pred = self.markov_predict(1, periods)[0]
-        bayesian_pred = self.bayesian_predict(1, periods)[0]
+        bayesian_pred = self.traditional_predictor.bayesian_predict(1, periods)[0]
         freq_pred = self.traditional_predictor.frequency_predict(1, periods)[0]
         hot_cold_pred = self.traditional_predictor.hot_cold_predict(1, periods)[0]
         missing_pred = self.traditional_predictor.missing_predict(1, periods)[0]
@@ -2623,7 +2701,7 @@ class AdvancedPredictor:
             max_ball = 12
 
         if not transition_probs:
-            return sorted(np.random.choice(range(1, max_ball + 1), target_count, replace=False))
+            return ensure_python_int_list(sorted(np.random.choice(range(1, max_ball + 1), target_count, replace=False)))
 
         # 计算每个号码的马尔可夫得分
         markov_scores = {}
@@ -2718,7 +2796,7 @@ class AdvancedPredictor:
                 if ball_int not in selected:
                     selected.append(ball_int)
 
-        return sorted(selected[:target_count])
+        return ensure_python_int_list(sorted(selected[:target_count]))
 
     def _calculate_markov_compound_confidence(self, markov_result, front_count, back_count):
         """计算马尔可夫链复式预测的置信度"""
@@ -2944,9 +3022,10 @@ class AdvancedPredictor:
         return predictions
 
     def highly_integrated_predict(self, count=1, periods=500, integration_level="ultimate") -> List[Tuple[List[int], List[int]]]:
-        """真正的高度集成预测 - 区别于终极集成的独特功能和45秒超时保护机制
+        """真正的高度集成预测 - 使用GPU加速的深度学习高度集成预测
 
         与终极集成的区别：
+        - GPU加速的深度学习集成 (LSTM, Transformer, 多种高级分析)
         - 采用分层集成架构（非平行集成）
         - 智能算法选择机制（非全算法融合）
         - 实时性能监控和调整
@@ -2962,69 +3041,385 @@ class AdvancedPredictor:
             预测结果列表
         """
         import time
-        import signal
         from threading import Timer
-        
+
         logger_manager.info(f"高度集成预测开始: 注数={count}, 分析期数={periods}, 级别={integration_level}")
-        
+
         start_time = time.time()
         timeout_occurred = [False]  # 使用列表以支持闭包修改
-        
+
         def timeout_handler():
             timeout_occurred[0] = True
             logger_manager.warning("高度集成预测超时，启动快速回退机制")
-        
+
         # 设置45秒超时定时器
         timeout_timer = Timer(45.0, timeout_handler)
         timeout_timer.start()
-        
+
         try:
-            # 1. 分层集成架构初始化
-            layered_system = _initialize_layered_integration_system(self, periods, integration_level)
-            
-            # 2. 智能算法选择机制
-            selected_algorithms = _intelligent_algorithm_selection(layered_system, periods, timeout_occurred)
-            
+            results = []
+
+            # 1. 首先尝试GPU加速的高度集成预测
+            try:
+                from gpu_accelerated_predictor import get_gpu_accelerator
+                gpu_accelerator = get_gpu_accelerator()
+
+                if gpu_accelerator.gpu_available and not timeout_occurred[0]:
+                    logger_manager.info("使用GPU加速进行高度集成预测")
+
+                    # 准备历史数据
+                    historical_data = data_manager.get_data()
+                    if historical_data is not None and len(historical_data) >= periods:
+                        # 使用最新的periods期数据
+                        recent_data = historical_data.tail(periods)
+
+                        # GPU加速的高度集成方法组合 (分层架构)
+                        if integration_level == "ultimate":
+                            # 终极级别：使用所有GPU方法
+                            gpu_methods = [
+                                'lstm',                    # 第一层：深度学习
+                                'correlation_analysis',    # 第二层：相关性分析
+                                'pattern_matching',        # 第三层：模式匹配
+                                'frequency',              # 第四层：频率分析 (GPU加速版)
+                                'moving_average'          # 第五层：移动平均 (GPU加速版)
+                            ]
+                            method_weights = {
+                                'lstm': 0.35, 'correlation_analysis': 0.25, 'pattern_matching': 0.2,
+                                'frequency': 0.1, 'moving_average': 0.1
+                            }
+                        else:
+                            # 高级别：使用核心GPU方法
+                            gpu_methods = ['lstm', 'correlation_analysis', 'pattern_matching']
+                            method_weights = {'lstm': 0.4, 'correlation_analysis': 0.3, 'pattern_matching': 0.3}
+
+                        gpu_predictions = []
+                        layer_results = {}  # 分层结果存储
+
+                        # 分层执行GPU加速预测
+                        for layer_idx, method in enumerate(gpu_methods):
+                            if timeout_occurred[0]:
+                                logger_manager.warning(f"GPU高度集成预测在第{layer_idx+1}层超时")
+                                break
+
+                            try:
+                                layer_start_time = time.time()
+                                predictions, metrics = gpu_accelerator.accelerated_prediction(
+                                    convert_dataframe_to_numeric_array(recent_data, periods), method=method
+                                )
+                                layer_time = time.time() - layer_start_time
+
+                                if predictions is not None and len(predictions) >= 7:
+                                    # 转换GPU预测结果为标准格式
+                                    front_balls = sorted([int(x) for x in predictions[:5] if 1 <= int(x) <= 35])
+                                    back_balls = sorted([int(x) for x in predictions[5:7] if 1 <= int(x) <= 12])
+
+                                    # 确保号码数量正确
+                                    if len(front_balls) >= 5 and len(back_balls) >= 2:
+                                        # 分层质量评估
+                                        layer_quality = self._evaluate_layer_quality(
+                                            front_balls[:5], back_balls[:2], layer_idx, integration_level
+                                        )
+
+                                        layer_result = {
+                                            'layer': layer_idx + 1,
+                                            'method': method,
+                                            'predictions': (front_balls[:5], back_balls[:2]),
+                                            'base_weight': method_weights.get(method, 0.1),
+                                            'layer_quality': layer_quality,
+                                            'computation_time': metrics.get('computation_time', layer_time),
+                                            'device': metrics.get('device', 'unknown'),
+                                            'acceleration_method': metrics.get('acceleration_method', 'unknown')
+                                        }
+
+                                        gpu_predictions.append(layer_result)
+                                        layer_results[f'layer_{layer_idx+1}'] = layer_result
+
+                                        logger_manager.info(f"第{layer_idx+1}层 GPU {method} 完成: 时间={layer_time:.3f}s, 质量={layer_quality:.3f}")
+
+                            except Exception as e:
+                                logger_manager.warning(f"第{layer_idx+1}层 GPU {method} 预测失败: {e}")
+
+                        # 如果GPU分层预测成功，使用分层集成结果
+                        if gpu_predictions and not timeout_occurred[0]:
+                            for i in range(count):
+                                front_scores = defaultdict(float)
+                                back_scores = defaultdict(float)
+
+                                # 分层权重融合机制
+                                for layer_result in gpu_predictions:
+                                    layer = layer_result['layer']
+                                    method = layer_result['method']
+                                    base_weight = layer_result['base_weight']
+                                    layer_quality = layer_result['layer_quality']
+                                    computation_time = layer_result['computation_time']
+                                    front, back = layer_result['predictions']
+
+                                    # 分层权重计算 (越靠前的层权重越高)
+                                    layer_factor = 1.0 - (layer - 1) * 0.1  # 第1层100%，第2层90%，以此类推
+                                    quality_factor = min(1.5, max(0.5, layer_quality / 0.6))
+                                    performance_factor = max(0.5, 1.0 - computation_time / 10.0)
+
+                                    # 分层集成权重
+                                    integrated_weight = base_weight * layer_factor * quality_factor * performance_factor
+
+                                    # 高度集成投票机制
+                                    vote_multiplier = max(1, int(integrated_weight * 200))  # 更高的投票权重
+
+                                    for _ in range(vote_multiplier):
+                                        for ball in front:
+                                            front_scores[ball] += integrated_weight
+                                        for ball in back:
+                                            back_scores[ball] += integrated_weight
+
+                                # 分层智能选号策略
+                                front_candidates = sorted(front_scores.items(), key=lambda x: x[1], reverse=True)
+                                back_candidates = sorted(back_scores.items(), key=lambda x: x[1], reverse=True)
+
+                                # 高度集成多样性保证
+                                final_front = self._highly_integrated_selection(
+                                    front_candidates, 5, 'front', integration_level, layer_results
+                                )
+                                final_back = self._highly_integrated_selection(
+                                    back_candidates, 2, 'back', integration_level, layer_results
+                                )
+
+                                # 确保号码数量和范围正确
+                                if len(final_front) < 5:
+                                    remaining = [b for b in range(1, 36) if b not in final_front]
+                                    final_front.extend(np.random.choice(remaining, 5 - len(final_front), replace=False))
+
+                                if len(final_back) < 2:
+                                    remaining = [b for b in range(1, 13) if b not in final_back]
+                                    final_back.extend(np.random.choice(remaining, 2 - len(final_back), replace=False))
+
+                                results.append((sorted(final_front[:5]), sorted(final_back[:2])))
+
+                            # 输出GPU高度集成统计信息
+                            total_time = sum(r['computation_time'] for r in gpu_predictions)
+                            avg_quality = np.mean([r['layer_quality'] for r in gpu_predictions])
+                            devices_used = set(r['device'] for r in gpu_predictions)
+                            layers_completed = len(gpu_predictions)
+
+                            elapsed_time = time.time() - start_time
+
+                            logger_manager.info(f"GPU高度集成预测完成:")
+                            logger_manager.info(f"  - 集成级别: {integration_level}")
+                            logger_manager.info(f"  - 完成层数: {layers_completed}/{len(gpu_methods)}")
+                            logger_manager.info(f"  - 总计算时间: {total_time:.3f}s")
+                            logger_manager.info(f"  - 总耗时: {elapsed_time:.3f}s")
+                            logger_manager.info(f"  - 平均层质量: {avg_quality:.3f}")
+                            logger_manager.info(f"  - 使用设备: {', '.join(devices_used)}")
+                            logger_manager.info(f"  - 生成结果: {len(results)}注")
+
+                            return results
+
+            except Exception as e:
+                logger_manager.warning(f"GPU高度集成预测失败: {e}")
+
+            # 2. GPU不可用或超时时，回退到传统高度集成预测
             if timeout_occurred[0]:
-                return _quick_fallback_prediction(count, periods)
-            
-            # 3. 实时性能监控初始化
-            performance_monitor = _initialize_performance_monitor(selected_algorithms)
-            
-            # 4. 分层执行集成预测
-            layered_predictions = _execute_layered_integration(
+                logger_manager.info("超时发生，使用快速回退机制")
+                return self._quick_fallback_prediction(count, periods)
+
+            logger_manager.info("GPU不可用，使用传统高度集成预测")
+
+            # 分层集成架构初始化
+            layered_system = self._initialize_layered_integration_system(periods, integration_level)
+
+            # 智能算法选择机制
+            selected_algorithms = self._intelligent_algorithm_selection_for_integration(layered_system, periods, timeout_occurred)
+
+            if timeout_occurred[0]:
+                return self._quick_fallback_prediction(count, periods)
+
+            # 实时性能监控初始化
+            performance_monitor = self._initialize_performance_monitor(selected_algorithms)
+
+            # 分层执行集成预测
+            layered_predictions = self._execute_layered_integration(
                 selected_algorithms, performance_monitor, count, periods, timeout_occurred
             )
-            
+
             if timeout_occurred[0]:
-                return _quick_fallback_prediction(count, periods)
-            
-            # 5. 动态策略切换系统
-            optimized_predictions = _dynamic_strategy_switching(
+                return self._quick_fallback_prediction(count, periods)
+
+            # 动态策略切换系统
+            optimized_predictions = self._dynamic_strategy_switching(
                 layered_predictions, performance_monitor, integration_level, timeout_occurred
             )
-            
+
             if timeout_occurred[0]:
-                return _quick_fallback_prediction(count, periods)
-            
-            # 6. 最终集成优化
-            final_predictions = _final_integration_optimization(
+                return self._quick_fallback_prediction(count, periods)
+
+            # 最终集成优化
+            final_predictions = self._final_integration_optimization(
                 optimized_predictions, layered_system, count, timeout_occurred
             )
-            
-            # 7. 质量验证和输出
-            validated_predictions = _validate_highly_integrated_predictions(final_predictions, count)
-            
+
+            # 质量验证和输出
+            validated_predictions = self._validate_highly_integrated_predictions(final_predictions, count)
+
             elapsed_time = time.time() - start_time
-            logger_manager.info(f"高度集成预测完成: 耗时{elapsed_time:.2f}秒, 算法数: {len(selected_algorithms)}")
-            
+            logger_manager.info(f"传统高度集成预测完成: 耗时{elapsed_time:.2f}秒, 算法数: {len(selected_algorithms)}")
+
             return validated_predictions
-            
+
         except Exception as e:
             logger_manager.error(f"高度集成预测失败: {e}")
-            return _emergency_fallback_prediction(count, periods)
+            return self._emergency_fallback_prediction(count, periods)
         finally:
             timeout_timer.cancel()
+
+    def _evaluate_layer_quality(self, front_balls, back_balls, layer_idx, integration_level):
+        """评估分层预测质量"""
+        try:
+            # 基础质量评估
+            base_quality = self._assess_gpu_prediction_quality(front_balls, back_balls)
+
+            # 分层调整因子
+            layer_factor = 1.0 - layer_idx * 0.05  # 前面的层质量权重更高
+
+            # 集成级别调整
+            if integration_level == "ultimate":
+                level_factor = 1.1  # 终极级别质量要求更高
+            else:
+                level_factor = 1.0
+
+            return base_quality * layer_factor * level_factor
+
+        except Exception:
+            return 0.6
+
+    def _highly_integrated_selection(self, candidates, count, zone, integration_level, layer_results):
+        """高度集成智能选号策略"""
+        selected = []
+        used_numbers = set()
+
+        # 根据集成级别调整选择策略
+        if integration_level == "ultimate":
+            selection_threshold = 0.85  # 终极级别要求更高
+            diversity_factor = 0.3
+        else:
+            selection_threshold = 0.75
+            diversity_factor = 0.4
+
+        for number, score in candidates:
+            if len(selected) >= count:
+                break
+
+            if number not in used_numbers:
+                # 计算相对得分
+                score_factor = score / max(1, candidates[0][1])
+
+                # 分层一致性检查
+                layer_consistency = self._check_layer_consistency(number, zone, layer_results)
+
+                # 综合评分
+                final_score = score_factor * (1 - diversity_factor) + layer_consistency * diversity_factor
+
+                if final_score >= selection_threshold or len(selected) < count // 2:
+                    # 检查高度集成分布合理性
+                    if self._is_highly_integrated_distribution_reasonable(selected, number, zone, integration_level):
+                        selected.append(number)
+                        used_numbers.add(number)
+
+        # 如果数量不足，从剩余候选中选择
+        if len(selected) < count:
+            remaining_candidates = [num for num, _ in candidates if num not in used_numbers]
+            need_count = count - len(selected)
+            selected.extend(remaining_candidates[:need_count])
+
+        return selected[:count]
+
+    def _check_layer_consistency(self, number, zone, layer_results):
+        """检查号码在不同层间的一致性"""
+        if not layer_results:
+            return 0.5
+
+        appearances = 0
+        total_layers = len(layer_results)
+
+        for layer_info in layer_results.values():
+            front, back = layer_info['predictions']
+            target_numbers = front if zone == 'front' else back
+
+            if number in target_numbers:
+                appearances += 1
+
+        # 返回一致性得分 (出现在多个层中的号码得分更高)
+        return appearances / total_layers
+
+    def _is_highly_integrated_distribution_reasonable(self, selected, new_number, zone, integration_level):
+        """检查高度集成号码分布的合理性"""
+        if not selected:
+            return True
+
+        # 更严格的连号控制
+        consecutive_count = 0
+        for existing in selected:
+            if abs(new_number - existing) == 1:
+                consecutive_count += 1
+
+        # 根据集成级别调整连号限制
+        if integration_level == "ultimate":
+            max_consecutive = 1 if zone == 'front' else 0  # 终极级别几乎不允许连号
+        else:
+            max_consecutive = 2 if zone == 'front' else 1
+
+        if consecutive_count >= max_consecutive:
+            return False
+
+        # 高度集成区间分布检查
+        return self._check_integrated_interval_distribution(selected, new_number, zone, integration_level)
+
+    def _check_integrated_interval_distribution(self, selected, new_number, zone, integration_level):
+        """检查高度集成区间分布"""
+        if zone == 'front':
+            # 前区分为5个区间以提高分布精度
+            intervals = [(1, 7), (8, 14), (15, 21), (22, 28), (29, 35)]
+        else:
+            # 后区分为3个区间
+            intervals = [(1, 4), (5, 8), (9, 12)]
+
+        # 计算每个区间的号码数量
+        interval_counts = [0] * len(intervals)
+        all_numbers = selected + [new_number]
+
+        for num in all_numbers:
+            for i, (start, end) in enumerate(intervals):
+                if start <= num <= end:
+                    interval_counts[i] += 1
+                    break
+
+        # 根据集成级别调整区间限制
+        if integration_level == "ultimate":
+            max_per_interval = max(1, len(all_numbers) // len(intervals))  # 更均匀分布
+        else:
+            max_per_interval = len(all_numbers) // len(intervals) + 1
+
+        return all(count <= max_per_interval for count in interval_counts)
+
+    def _quick_fallback_prediction(self, count, periods):
+        """快速回退预测 (用于超时情况)"""
+        try:
+            logger_manager.info("执行快速回退预测")
+            return self.ensemble_predict(count, periods)
+        except Exception:
+            # 最终回退
+            return self._emergency_fallback_prediction(count, periods)
+
+    def _emergency_fallback_prediction(self, count, periods):
+        """紧急回退预测"""
+        try:
+            return self.traditional_predictor.frequency_predict(count, periods)
+        except Exception:
+            # 完全兜底
+            results = []
+            for i in range(count):
+                front = sorted(np.random.choice(range(1, 36), 5, replace=False))
+                back = sorted(np.random.choice(range(1, 13), 2, replace=False))
+                results.append((front, back))
+            return results
 
     def stacking_predict(self, count=1, periods=500) -> List[Tuple[List[int], List[int]]]:
         """真正的Stacking集成学习算法
@@ -3080,7 +3475,7 @@ class AdvancedPredictor:
             'missing': lambda c, p: self.traditional_predictor.missing_predict(c, p),
             'markov': lambda c, p: self.markov_predict(c, p),
             'markov_2nd': lambda c, p: self.markov_2nd_predict(c, p),
-            'bayesian': lambda c, p: self.bayesian_predict(c, p, n_jobs=1),
+            'bayesian': lambda c, p: self.traditional_predictor.bayesian_predict(c, p, n_jobs=1),
         }
         
         # 根据数据量添加适合的预测器
@@ -3269,9 +3664,10 @@ class AdvancedPredictor:
             # 加入多样性机制，避免过度集中
             front_balls = self._smart_ball_selection(front_candidates, 5, i, 'front')
             back_balls = self._smart_ball_selection(back_candidates, 2, i, 'back')
-            
-            final_predictions.append((sorted(front_balls), sorted(back_balls)))
-        
+
+            final_predictions.append((ensure_python_int_list(sorted(front_balls)),
+                                     ensure_python_int_list(sorted(back_balls))))
+
         return final_predictions
     
     def _smart_ball_selection(self, candidates, count, seed, ball_type) -> List[int]:
@@ -3332,7 +3728,7 @@ class AdvancedPredictor:
                 pass
             
             try:
-                bayesian_pred = self.bayesian_predict(count=1, periods=periods, n_jobs=1)
+                bayesian_pred = self.traditional_predictor.bayesian_predict(count=1, periods=periods, n_jobs=1)
                 if bayesian_pred:
                     base_predictions.extend(bayesian_pred)
             except:
@@ -3366,51 +3762,136 @@ class AdvancedPredictor:
             return self.ensemble_predict(count, periods)
 
     def adaptive_ensemble_predict(self, count=1, periods=500) -> List[Tuple[List[int], List[int]]]:
-        """真正的自适应集成预测
-        
+        """真正的自适应集成预测 - 使用GPU加速的深度学习集成预测
+
         实现真正的自适应集成学习，包含：
+        - GPU加速的深度学习预测 (LSTM, 相关性分析, 模式匹配)
         - 动态权重更新 (基于实时表现)
         - 智能早停机制 (连续20次相同结果停止)
         - 性能跟踪 (历史表现记录)
         - 自适应策略调整 (动态策略优化)
-        
+
         Args:
             count: 预测注数
             periods: 分析期数
-            
+
         Returns:
             List[Tuple[List[int], List[int]]]: 预测结果列表
         """
+        logger_manager.info(f"自适应集成预测开始: 注数={count}, 分析期数={periods}")
+
         try:
-            logger_manager.info(f"开始自适应集成预测: 注数={count}, 分析期数={periods}")
-            
-            # 1. 初始化适应系统
+            results = []
+
+            # 1. 首先尝试GPU加速的深度学习预测
+            try:
+                from gpu_accelerated_predictor import get_gpu_accelerator
+                gpu_accelerator = get_gpu_accelerator()
+
+                if gpu_accelerator.gpu_available:
+                    logger_manager.info("使用GPU加速进行自适应集成预测")
+
+                    # 准备历史数据
+                    historical_data = data_manager.get_data()
+                    if historical_data is not None and len(historical_data) >= periods:
+                        # 使用最新的periods期数据
+                        recent_data = historical_data.tail(periods)
+
+                        # GPU加速的多方法集成预测
+                        gpu_methods = ['lstm', 'correlation_analysis', 'pattern_matching']
+                        gpu_predictions = []
+
+                        for method in gpu_methods:
+                            try:
+                                predictions, metrics = gpu_accelerator.accelerated_prediction(
+                                    convert_dataframe_to_numeric_array(recent_data, periods), method=method
+                                )
+
+                                if predictions is not None and len(predictions) >= 7:
+                                    # 转换GPU预测结果为标准格式
+                                    front_balls = sorted([int(x) for x in predictions[:5] if 1 <= int(x) <= 35])
+                                    back_balls = sorted([int(x) for x in predictions[5:7] if 1 <= int(x) <= 12])
+
+                                    # 确保号码数量正确
+                                    if len(front_balls) >= 5 and len(back_balls) >= 2:
+                                        gpu_predictions.append((front_balls[:5], back_balls[:2]))
+                                        logger_manager.info(f"GPU {method} 预测完成: 计算时间={metrics.get('computation_time', 0):.3f}s")
+
+                            except Exception as e:
+                                logger_manager.warning(f"GPU {method} 预测失败: {e}")
+
+                        # 如果GPU预测成功，使用GPU结果
+                        if gpu_predictions:
+                            # 自适应权重分配
+                            gpu_weights = {'lstm': 0.4, 'correlation_analysis': 0.3, 'pattern_matching': 0.3}
+
+                            for i in range(count):
+                                front_scores = defaultdict(float)
+                                back_scores = defaultdict(float)
+
+                                # 按权重累积GPU预测得分
+                                for j, (method, weight) in enumerate(zip(gpu_methods, gpu_weights.values())):
+                                    if j < len(gpu_predictions):
+                                        front, back = gpu_predictions[j]
+                                        for ball in front:
+                                            front_scores[ball] += weight
+                                        for ball in back:
+                                            back_scores[ball] += weight
+
+                                # 选择得分最高的号码
+                                front_candidates = sorted(front_scores.items(), key=lambda x: x[1], reverse=True)
+                                back_candidates = sorted(back_scores.items(), key=lambda x: x[1], reverse=True)
+
+                                final_front = [ball for ball, _ in front_candidates[:5]]
+                                final_back = [ball for ball, _ in back_candidates[:2]]
+
+                                # 确保号码数量和范围正确
+                                if len(final_front) < 5:
+                                    remaining = [b for b in range(1, 36) if b not in final_front]
+                                    final_front.extend(np.random.choice(remaining, 5 - len(final_front), replace=False))
+
+                                if len(final_back) < 2:
+                                    remaining = [b for b in range(1, 13) if b not in final_back]
+                                    final_back.extend(np.random.choice(remaining, 2 - len(final_back), replace=False))
+
+                                results.append((sorted(final_front[:5]), sorted(final_back[:2])))
+
+                            logger_manager.info(f"GPU自适应集成预测完成，生成{len(results)}注")
+                            return results
+
+            except Exception as e:
+                logger_manager.warning(f"GPU自适应集成预测失败: {e}")
+
+            # 2. GPU不可用时，回退到传统自适应集成预测
+            logger_manager.info("GPU不可用，使用传统自适应集成预测")
+
+            # 初始化适应系统
             performance_tracker = self._initialize_performance_tracker()
             early_stopping = self._initialize_early_stopping()
-            
-            # 2. 动态权重计算
+
+            # 动态权重计算
             adaptive_weights = self._calculate_dynamic_weights(periods, performance_tracker)
-            
-            # 3. 获取基础预测器结果
+
+            # 获取基础预测器结果
             base_predictions = self._collect_base_predictions(count, periods, adaptive_weights)
-            
-            # 4. 智能早停检测
+
+            # 智能早停检测
             if self._should_early_stop(base_predictions, early_stopping):
                 logger_manager.info("检测到连续相同结果，启动智能早停")
                 return self._generate_diverse_predictions(count, periods)
-            
-            # 5. 自适应策略调整
+
+            # 自适应策略调整
             optimized_weights = self._adaptive_strategy_adjustment(adaptive_weights, base_predictions, performance_tracker)
-            
-            # 6. 生成最终预测
+
+            # 生成最终预测
             final_predictions = self._generate_adaptive_predictions(base_predictions, optimized_weights, count)
-            
-            # 7. 更新性能跟踪
+
+            # 更新性能跟踪
             self._update_performance_tracking(performance_tracker, final_predictions, optimized_weights)
-            
-            logger_manager.info(f"自适应集成预测完成，优化权重: {optimized_weights}")
+
+            logger_manager.info(f"传统自适应集成预测完成，优化权重: {optimized_weights}")
             return final_predictions
-            
+
         except Exception as e:
             logger_manager.error(f"自适应集成预测失败: {e}")
             return self.ensemble_predict(count, periods)
@@ -3495,7 +3976,7 @@ class AdvancedPredictor:
                 elif predictor_name == 'adaptive_markov':
                     predictions = self.adaptive_markov_predict(count, periods)
                 elif predictor_name == 'bayesian':
-                    predictions = self.bayesian_predict(count, periods, n_jobs=1)
+                    predictions = self.traditional_predictor.bayesian_predict(count, periods, n_jobs=1)
                 elif predictor_name == 'ensemble':
                     predictions = self.ensemble_predict(count, periods)
                 else:
@@ -3573,14 +4054,7 @@ class AdvancedPredictor:
         })
 
     def enhanced_predict(self, count=1, periods=500) -> List[Tuple[List[int], List[int]]]:
-        """真正的增强预测 - 全算法集成、智能优化、超参数自动调优、性能监控和智能早停
-
-        核心特性：
-        - 全算法集成：深度学习+传统算法+集成学习
-        - 智能优化：实时性能调整和策略优化
-        - 超参数自动调优：基于遗传算法的参数寻优
-        - 性能监控：实时监控算法性能和资源使用
-        - 智能早停：避免过度计算和性能下降
+        """增强预测 - 使用GPU加速的深度学习集成预测
 
         Args:
             count: 生成注数
@@ -3589,73 +4063,148 @@ class AdvancedPredictor:
         Returns:
             预测结果列表
         """
-        import time
-        from threading import Timer
-        
         logger_manager.info(f"增强预测开始: 注数={count}, 分析期数={periods}")
-        
-        start_time = time.time()
-        enhancement_timeout = [False]  # 增强系统超时标志
-        
-        def enhancement_timeout_handler():
-            enhancement_timeout[0] = True
-            logger_manager.warning("增强预测超时，切换到高效模式")
-        
-        # 设置60秒超时保护
-        timeout_timer = Timer(60.0, enhancement_timeout_handler)
-        timeout_timer.start()
-        
+
         try:
-            # 1. 初始化增强系统
-            enhancement_system = _initialize_enhancement_system(self, periods, count)
-            
-            # 2. 全算法集成初始化
-            integrated_algorithms = _initialize_full_algorithm_integration(enhancement_system, enhancement_timeout)
-            
-            if enhancement_timeout[0]:
-                return _fast_enhanced_prediction(count, periods)
-            
-            # 3. 超参数自动调优
-            optimized_parameters = _hyperparameter_auto_tuning(integrated_algorithms, periods, enhancement_timeout)
-            
-            if enhancement_timeout[0]:
-                return _fast_enhanced_prediction(count, periods)
-            
-            # 4. 性能监控系统启动
-            performance_monitor = _start_performance_monitoring(optimized_parameters)
-            
-            # 5. 智能早停系统初始化
-            early_stopping_system = _initialize_intelligent_early_stopping(performance_monitor)
-            
-            # 6. 执行增强预测
-            enhanced_predictions = _execute_enhanced_prediction(
-                integrated_algorithms, optimized_parameters, performance_monitor, 
-                early_stopping_system, count, periods, enhancement_timeout
-            )
-            
-            if enhancement_timeout[0]:
-                return _fast_enhanced_prediction(count, periods)
-            
-            # 7. 智能优化后处理
-            final_predictions = _intelligent_optimization_post_processing(
-                enhanced_predictions, performance_monitor, early_stopping_system, count
-            )
-            
-            # 8. 性能报告和质量验证
-            validated_predictions = _validate_enhanced_predictions_with_performance_report(
-                final_predictions, performance_monitor, count, time.time() - start_time
-            )
-            
-            elapsed_time = time.time() - start_time
-            logger_manager.info(f"增强预测完成: 耗时{elapsed_time:.2f}秒, 算法数: {len(integrated_algorithms)}")
-            
-            return validated_predictions
-            
+            results = []
+
+            # 1. 首先尝试GPU加速的深度学习预测
+            try:
+                from gpu_accelerated_predictor import get_gpu_accelerator
+                gpu_accelerator = get_gpu_accelerator()
+
+                if gpu_accelerator.gpu_available:
+                    logger_manager.info("使用GPU加速进行增强预测")
+
+                    # 准备历史数据
+                    df = data_manager.get_data()
+                    if df is not None and len(df) >= periods:
+                        historical_data = df.tail(periods)
+
+                        # 使用GPU加速的深度学习模型组合
+                        dl_results = []
+                        try:
+                            # LSTM预测
+                            lstm_predictions, lstm_metrics = gpu_accelerator.accelerated_prediction(
+                                convert_dataframe_to_numeric_array(historical_data, periods), method="lstm"
+                            )
+                            if lstm_predictions is not None:
+                                dl_results.append(('lstm', lstm_predictions, lstm_metrics))
+
+                            # 模式匹配预测（类似Transformer）
+                            pattern_predictions, pattern_metrics = gpu_accelerator.accelerated_prediction(
+                                convert_dataframe_to_numeric_array(historical_data, periods), method="pattern_matching"
+                            )
+                            if pattern_predictions is not None:
+                                dl_results.append(('pattern', pattern_predictions, pattern_metrics))
+
+                            # 相关性分析预测
+                            corr_predictions, corr_metrics = gpu_accelerator.accelerated_prediction(
+                                convert_dataframe_to_numeric_array(historical_data, periods), method="correlation_analysis"
+                            )
+                            if corr_predictions is not None:
+                                dl_results.append(('correlation', corr_predictions, corr_metrics))
+
+                        except Exception as e:
+                            logger_manager.warning(f"GPU深度学习预测部分失败: {e}")
+
+                        # 如果有GPU预测结果，进行智能融合
+                        if dl_results:
+                            for i in range(count):
+                                # 集成多个GPU预测结果
+                                front_candidates = []
+                                back_candidates = []
+
+                                for method_name, predictions, metrics in dl_results:
+                                    if isinstance(predictions, (list, tuple)) and len(predictions) >= 7:
+                                        front_candidates.extend(predictions[:5])
+                                        back_candidates.extend(predictions[5:7])
+
+                                if front_candidates and back_candidates:
+                                    # 智能选择最优组合
+                                    from collections import Counter
+                                    front_counter = Counter(front_candidates)
+                                    back_counter = Counter(back_candidates)
+
+                                    # 选择前5个最频繁的前区号码
+                                    front_balls = [num for num, _ in front_counter.most_common(5)]
+                                    back_balls = [num for num, _ in back_counter.most_common(2)]
+
+                                    # 确保号码在有效范围内
+                                    front_balls = [max(1, min(35, num)) for num in front_balls]
+                                    back_balls = [max(1, min(12, num)) for num in back_balls]
+
+                                    # 去重并补充
+                                    front_balls = list(set(front_balls))
+                                    back_balls = list(set(back_balls))
+
+                                    while len(front_balls) < 5:
+                                        import numpy as np
+                                        candidate = np.random.randint(1, 36)
+                                        if candidate not in front_balls:
+                                            front_balls.append(candidate)
+
+                                    while len(back_balls) < 2:
+                                        import numpy as np
+                                        candidate = np.random.randint(1, 13)
+                                        if candidate not in back_balls:
+                                            back_balls.append(candidate)
+
+                                    results.append((sorted(front_balls[:5]), sorted(back_balls[:2])))
+
+                            if len(results) >= count:
+                                logger_manager.info(f"GPU增强预测完成，生成{len(results)}注")
+                                return results[:count]
+
+            except Exception as e:
+                logger_manager.warning(f"GPU加速预测失败: {e}")
+
+            # 2. 尝试增强预测系统
+            try:
+                from enhanced_integration import enhanced_dlt_system
+                enhancement_config = self._initialize_enhancement_system()
+
+                if enhancement_config.get('enhancement_available'):
+                    enhanced_results = enhanced_dlt_system.enhanced_predict(
+                        data=f"predict_{count}_numbers_periods_{periods}",
+                        method="auto",
+                        periods=periods,
+                        count=count
+                    )
+
+                    if enhanced_results.get('success'):
+                        enhanced_data = enhanced_results['result']
+                        if isinstance(enhanced_data, list):
+                            for item in enhanced_data:
+                                if isinstance(item, dict) and 'front_balls' in item:
+                                    results.append((item['front_balls'], item['back_balls']))
+                                elif isinstance(item, (list, tuple)) and len(item) == 2:
+                                    results.append(item)
+
+                        if len(results) >= count:
+                            return results[:count]
+
+            except Exception as e:
+                logger_manager.warning(f"增强预测系统失败: {e}")
+
+            # 3. 备用方法：高级集成预测
+            if len(results) < count:
+                remaining = count - len(results)
+                try:
+                    ensemble_results = self.ensemble_predict(remaining, periods)
+                    results.extend(ensemble_results)
+                except:
+                    predictor = self._get_traditional_predictor()
+                    backup_results = predictor.frequency_predict(remaining, periods)
+                    results.extend(backup_results)
+
+            return results[:count]
+
         except Exception as e:
-            logger_manager.error(f"增强预测失败: {e}")
-            return _emergency_enhanced_fallback(count, periods)
-        finally:
-            timeout_timer.cancel()
+            logger_manager.error(f"增强预测完全失败: {e}")
+            # 最终备用：基础频率预测
+            predictor = self._get_traditional_predictor()
+            return predictor.frequency_predict(count, periods)
 
     def stacking_predict(self, count=1, periods=500) -> List[Tuple[List[int], List[int]]]:
         """堆叠集成预测
@@ -3678,7 +4227,7 @@ class AdvancedPredictor:
             if markov_pred:
                 base_predictions.extend(markov_pred)
 
-            bayesian_pred = self.bayesian_predict(count=1, periods=periods)
+            bayesian_pred = self.traditional_predictor.bayesian_predict(count=1, periods=periods)
             if bayesian_pred:
                 base_predictions.extend(bayesian_pred)
 
@@ -3701,12 +4250,23 @@ class AdvancedPredictor:
                         predictions.extend(ensemble_pred)
 
             logger_manager.info(f"堆叠集成预测完成，生成{len(predictions)}注")
-            return predictions[:count]
+            # 确保输出为Python标准整数类型
+            cleaned_predictions = []
+            for front, back in predictions[:count]:
+                cleaned_predictions.append((ensure_python_int_list(front), ensure_python_int_list(back)))
+            return cleaned_predictions
 
         except Exception as e:
             logger_manager.error(f"堆叠集成预测失败: {e}")
             # 回退到集成预测
-            return self.ensemble_predict(count=count, periods=periods)
+            fallback_results = self.ensemble_predict(count=count, periods=periods)
+            # 确保输出为Python标准整数类型
+            if fallback_results:
+                cleaned_fallback = []
+                for front, back in fallback_results:
+                    cleaned_fallback.append((ensure_python_int_list(front), ensure_python_int_list(back)))
+                return cleaned_fallback
+            return []
 
     def nine_models_compound_predict(self, front_count=8, back_count=4, analysis_periods=500) -> Dict:
         """基于九种数学模型的复式预测
@@ -3822,7 +4382,7 @@ class AdvancedPredictor:
                         import random
                         selected.extend(random.sample(remaining, min(needed, len(remaining))))
 
-            return sorted(selected[:target_count])
+            return ensure_python_int_list(sorted(selected[:target_count]))
 
         except Exception as e:
             logger_manager.error(f"九模型复式号码选择失败: {e}")
@@ -5197,7 +5757,7 @@ class AdvancedPredictor:
                 if candidate not in selected:
                     selected.append(candidate)
             
-            return sorted(selected[:target_count])
+            return ensure_python_int_list(sorted(selected[:target_count]))
             
         except Exception as e:
             logger_manager.error(f"智能融合选择失败: {e}")
@@ -5304,7 +5864,7 @@ class AdvancedPredictor:
                 if ball not in selected:
                     selected.append(ball)
 
-        return sorted(selected[:target_count])
+        return ensure_python_int_list(sorted(selected[:target_count]))
 
     def _calculate_nine_models_confidence(self, nine_models_result):
         """计算9种数学模型的综合置信度"""
@@ -5357,22 +5917,22 @@ class AdvancedPredictor:
 
         return predictions
 
-    def nine_models_compound_predict(self, front_count=8, back_count=4, periods=500) -> Dict:
+    def nine_models_compound_predict(self, front_count=8, back_count=4, analysis_periods=500) -> Dict:
         """基于9种数学模型的复式预测
 
         Args:
             front_count: 前区号码数量 (6-15)
             back_count: 后区号码数量 (3-12)
-            periods: 分析期数
+            analysis_periods: 分析期数
 
         Returns:
             复式预测结果
         """
-        logger_manager.info(f"9种数学模型复式预测: {front_count}+{back_count}, 分析期数: {periods}")
+        logger_manager.info(f"9种数学模型复式预测: {front_count}+{back_count}, 分析期数: {analysis_periods}")
 
         try:
             # 获取9种数学模型分析结果
-            nine_models_result = advanced_analyzer.nine_mathematical_models_analysis(periods)
+            nine_models_result = advanced_analyzer.nine_mathematical_models_analysis(analysis_periods)
 
             if not nine_models_result or 'comprehensive_scores' not in nine_models_result:
                 logger_manager.warning("9种数学模型分析结果为空，使用备选方案")
@@ -5488,7 +6048,7 @@ class AdvancedPredictor:
                 if ball not in selected:
                     selected.append(ball)
 
-        return sorted(selected[:target_count])
+        return ensure_python_int_list(sorted(selected[:target_count]))
 
     def _calculate_nine_models_compound_confidence(self, nine_models_result, front_count, back_count):
         """计算9种数学模型复式预测的置信度"""
@@ -5578,52 +6138,319 @@ class AdvancedPredictor:
             return 0.6
 
     def super_predict(self, count=1, periods=500) -> List[Tuple[List[int], List[int]]]:
-        """超级预测方法
-        
+        """超级预测方法 - 使用GPU加速的深度学习超级预测
+
         真正的超级预测系统，包含：
+        - GPU加速的深度学习预测 (LSTM, Transformer, 多种分析方法)
         - 智能算法选择 (基于数据特征)
         - 动态权重分配 (实时优化)
         - 置信度评估 (预测可信度)
         - 多样性保证 (避免过度集中)
-        
+
         Args:
             count: 预测注数
             periods: 分析期数
-            
+
         Returns:
             List[Tuple[List[int], List[int]]]: 预测结果列表
         """
+        logger_manager.info(f"超级预测开始: 注数={count}, 分析期数={periods}")
+
         try:
-            logger_manager.info(f"开始超级预测: 注数={count}, 分析期数={periods}")
-            
-            # 1. 智能算法选择 - 基于数据特征选择最优算法组合
+            results = []
+
+            # 1. 首先尝试GPU加速的深度学习超级预测
+            try:
+                from gpu_accelerated_predictor import get_gpu_accelerator
+                gpu_accelerator = get_gpu_accelerator()
+
+                if gpu_accelerator.gpu_available:
+                    logger_manager.info("使用GPU加速进行超级预测")
+
+                    # 准备历史数据
+                    historical_data = data_manager.get_data()
+                    if historical_data is not None and len(historical_data) >= periods:
+                        # 使用最新的periods期数据
+                        recent_data = historical_data.tail(periods)
+
+                        # 分析数据特征来选择最优GPU方法组合
+                        data_characteristics = self._analyze_data_characteristics(periods)
+
+                        # GPU加速的超级预测方法组合
+                        gpu_methods = ['lstm', 'correlation_analysis', 'pattern_matching']
+
+                        # 根据数据特征动态调整方法权重
+                        if data_characteristics.get('strong_pattern', False):
+                            method_weights = {'lstm': 0.4, 'correlation_analysis': 0.35, 'pattern_matching': 0.25}
+                        elif data_characteristics.get('high_variance', False):
+                            method_weights = {'lstm': 0.35, 'correlation_analysis': 0.25, 'pattern_matching': 0.4}
+                        else:
+                            method_weights = {'lstm': 0.35, 'correlation_analysis': 0.35, 'pattern_matching': 0.3}
+
+                        gpu_predictions = []
+                        prediction_stats = []
+
+                        # 执行GPU加速的多方法超级预测
+                        for method in gpu_methods:
+                            try:
+                                start_time = time.time()
+                                predictions, metrics = gpu_accelerator.accelerated_prediction(
+                                    convert_dataframe_to_numeric_array(recent_data, periods), method=method
+                                )
+                                prediction_time = time.time() - start_time
+
+                                if predictions is not None and len(predictions) >= 7:
+                                    # 转换GPU预测结果为标准格式
+                                    front_balls = sorted([int(x) for x in predictions[:5] if 1 <= int(x) <= 35])
+                                    back_balls = sorted([int(x) for x in predictions[5:7] if 1 <= int(x) <= 12])
+
+                                    # 确保号码数量正确
+                                    if len(front_balls) >= 5 and len(back_balls) >= 2:
+                                        # 评估预测质量
+                                        quality_score = self._assess_gpu_prediction_quality(front_balls[:5], back_balls[:2])
+
+                                        gpu_predictions.append({
+                                            'method': method,
+                                            'predictions': (front_balls[:5], back_balls[:2]),
+                                            'base_weight': method_weights.get(method, 0.1),
+                                            'quality_score': quality_score,
+                                            'computation_time': metrics.get('computation_time', prediction_time),
+                                            'device': metrics.get('device', 'unknown'),
+                                            'acceleration_method': metrics.get('acceleration_method', 'unknown')
+                                        })
+
+                                        prediction_stats.append({
+                                            'method': method,
+                                            'time': prediction_time,
+                                            'device': metrics.get('device', 'unknown'),
+                                            'quality': quality_score
+                                        })
+
+                                        logger_manager.info(f"GPU {method} 预测完成: 时间={prediction_time:.3f}s, 质量={quality_score:.3f}, 设备={metrics.get('device', 'unknown')}")
+
+                            except Exception as e:
+                                logger_manager.warning(f"GPU {method} 预测失败: {e}")
+
+                        # 如果GPU预测成功，使用GPU超级集成结果
+                        if gpu_predictions:
+                            for i in range(count):
+                                front_scores = defaultdict(float)
+                                back_scores = defaultdict(float)
+
+                                # 动态权重分配和智能融合
+                                for pred_info in gpu_predictions:
+                                    method = pred_info['method']
+                                    base_weight = pred_info['base_weight']
+                                    quality_score = pred_info['quality_score']
+                                    computation_time = pred_info['computation_time']
+                                    front, back = pred_info['predictions']
+
+                                    # 智能权重计算 (基于质量、性能和数据特征)
+                                    quality_factor = min(1.5, max(0.5, quality_score / 0.6))
+                                    performance_factor = max(0.5, 1.0 - computation_time / 5.0)  # 计算时间越短权重越高
+
+                                    # 综合权重
+                                    final_weight = base_weight * quality_factor * performance_factor
+
+                                    # 多重投票机制
+                                    vote_multiplier = max(1, int(final_weight * 150))
+
+                                    for _ in range(vote_multiplier):
+                                        for ball in front:
+                                            front_scores[ball] += final_weight
+                                        for ball in back:
+                                            back_scores[ball] += final_weight
+
+                                # 智能选号策略 - 超级多样性保证
+                                front_candidates = sorted(front_scores.items(), key=lambda x: x[1], reverse=True)
+                                back_candidates = sorted(back_scores.items(), key=lambda x: x[1], reverse=True)
+
+                                # 超级智能选号 (考虑分布、平衡性、连号等因素)
+                                final_front = self._super_intelligent_selection(front_candidates, 5, 'front', data_characteristics)
+                                final_back = self._super_intelligent_selection(back_candidates, 2, 'back', data_characteristics)
+
+                                # 确保号码数量和范围正确
+                                if len(final_front) < 5:
+                                    remaining = [b for b in range(1, 36) if b not in final_front]
+                                    final_front.extend(np.random.choice(remaining, 5 - len(final_front), replace=False))
+
+                                if len(final_back) < 2:
+                                    remaining = [b for b in range(1, 13) if b not in final_back]
+                                    final_back.extend(np.random.choice(remaining, 2 - len(final_back), replace=False))
+
+                                results.append((sorted(final_front[:5]), sorted(final_back[:2])))
+
+                            # 输出GPU超级预测统计信息
+                            total_time = sum(s['time'] for s in prediction_stats)
+                            avg_quality = np.mean([s['quality'] for s in prediction_stats])
+                            devices_used = set(s['device'] for s in prediction_stats)
+
+                            logger_manager.info(f"GPU超级预测完成:")
+                            logger_manager.info(f"  - 数据特征: 高方差={data_characteristics.get('high_variance', False)}, 强模式={data_characteristics.get('strong_pattern', False)}")
+                            logger_manager.info(f"  - 使用方法: {len(gpu_predictions)}种GPU加速方法")
+                            logger_manager.info(f"  - 总计算时间: {total_time:.3f}s")
+                            logger_manager.info(f"  - 平均质量得分: {avg_quality:.3f}")
+                            logger_manager.info(f"  - 使用设备: {', '.join(devices_used)}")
+                            logger_manager.info(f"  - 生成结果: {len(results)}注")
+
+                            return results
+
+            except Exception as e:
+                logger_manager.warning(f"GPU超级预测失败: {e}")
+
+            # 2. GPU不可用时，回退到传统超级预测
+            logger_manager.info("GPU不可用，使用传统超级预测")
+
+            # 智能算法选择 - 基于数据特征选择最优算法组合
             selected_algorithms = self._intelligent_algorithm_selection(periods)
-            
-            # 2. 收集选中算法的预测结果
+
+            # 收集选中算法的预测结果
             algorithm_predictions = self._collect_selected_predictions(selected_algorithms, count, periods)
-            
-            # 3. 动态权重分配 - 基于实时表现优化权重
+
+            # 动态权重分配 - 基于实时表现优化权重
             dynamic_weights = self._dynamic_weight_distribution(algorithm_predictions, periods)
-            
-            # 4. 置信度评估 - 计算每个预测的可信度水平
+
+            # 置信度评估 - 计算每个预测的可信度水平
             prediction_confidences = self._evaluate_prediction_confidence(algorithm_predictions, dynamic_weights)
-            
-            # 5. 多样性保证 - 确保预测结果的多样性
+
+            # 多样性保证 - 确保预测结果的多样性
             diverse_results = self._ensure_diversity_guarantee(algorithm_predictions, dynamic_weights, count)
-            
-            # 6. 智能融合 - 基于权重和置信度的智能融合
+
+            # 智能融合 - 基于权重和置信度的智能融合
             final_predictions = self._intelligent_super_fusion(diverse_results, dynamic_weights, prediction_confidences, count)
-            
-            # 7. 质量保证 - 最终质量检验和优化
+
+            # 质量保证 - 最终质量检验和优化
             quality_assured_predictions = self._quality_assurance_optimization(final_predictions, count)
-            
-            logger_manager.info(f"超级预测完成，选中算法: {list(selected_algorithms.keys())}, 动态权重: {dynamic_weights}")
+
+            logger_manager.info(f"传统超级预测完成，选中算法: {list(selected_algorithms.keys())}, 动态权重: {dynamic_weights}")
             return quality_assured_predictions
-            
+
         except Exception as e:
             logger_manager.error(f"超级预测失败: {e}")
             # 回退到终极集成预测
             return self.ultimate_ensemble_predict(count, periods)
+
+    def _assess_gpu_prediction_quality(self, front_balls, back_balls):
+        """评估GPU预测结果的质量"""
+        try:
+            # 号码分布合理性
+            front_spread = max(front_balls) - min(front_balls) if len(front_balls) >= 2 else 10
+            back_spread = max(back_balls) - min(back_balls) if len(back_balls) >= 2 else 5
+
+            # 跨度评分 (理想跨度: 前区15-25, 后区3-8)
+            front_spread_score = 1.0 - abs(front_spread - 20) / 20.0
+            back_spread_score = 1.0 - abs(back_spread - 5.5) / 5.5
+
+            front_spread_score = max(0.1, min(1.0, front_spread_score))
+            back_spread_score = max(0.1, min(1.0, back_spread_score))
+
+            # 号码分布平衡性
+            front_balance = self._calculate_balance_score(front_balls, 1, 35)
+            back_balance = self._calculate_balance_score(back_balls, 1, 12)
+
+            # 连号检查 (避免过多连号)
+            front_consecutive = self._count_consecutive_numbers(front_balls)
+            back_consecutive = self._count_consecutive_numbers(back_balls)
+
+            consecutive_penalty = max(0, (front_consecutive - 2) * 0.1) + max(0, (back_consecutive - 1) * 0.2)
+
+            # 综合质量得分
+            quality_score = (front_spread_score + back_spread_score + front_balance + back_balance) / 4.0 - consecutive_penalty
+
+            return max(0.1, min(1.0, quality_score))
+
+        except Exception:
+            return 0.6
+
+    def _count_consecutive_numbers(self, numbers):
+        """计算连续号码的数量"""
+        if len(numbers) < 2:
+            return 0
+
+        sorted_numbers = sorted(numbers)
+        consecutive_count = 0
+
+        for i in range(1, len(sorted_numbers)):
+            if sorted_numbers[i] - sorted_numbers[i-1] == 1:
+                consecutive_count += 1
+
+        return consecutive_count
+
+    def _super_intelligent_selection(self, candidates, count, zone, data_characteristics):
+        """超级智能选号策略"""
+        selected = []
+        used_numbers = set()
+
+        # 根据数据特征调整选择策略
+        if data_characteristics.get('strong_pattern', False):
+            # 有强模式时，优先选择高得分号码
+            selection_threshold = 0.8
+        elif data_characteristics.get('high_variance', False):
+            # 高方差时，增加多样性
+            selection_threshold = 0.6
+        else:
+            # 平衡策略
+            selection_threshold = 0.7
+
+        for number, score in candidates:
+            if len(selected) >= count:
+                break
+
+            if number not in used_numbers:
+                # 根据得分和阈值决定是否选择
+                score_factor = score / max(1, candidates[0][1])  # 相对得分
+
+                if score_factor >= selection_threshold or len(selected) < count // 2:
+                    # 检查与已选号码的分布合理性
+                    if self._is_distribution_reasonable(selected, number, zone):
+                        selected.append(number)
+                        used_numbers.add(number)
+
+        # 如果数量不足，从剩余候选中选择
+        if len(selected) < count:
+            remaining_candidates = [num for num, _ in candidates if num not in used_numbers]
+            need_count = count - len(selected)
+            selected.extend(remaining_candidates[:need_count])
+
+        return selected[:count]
+
+    def _is_distribution_reasonable(self, selected, new_number, zone):
+        """检查号码分布的合理性"""
+        if not selected:
+            return True
+
+        # 检查连号情况
+        consecutive_count = 0
+        for existing in selected:
+            if abs(new_number - existing) == 1:
+                consecutive_count += 1
+
+        # 前区最多2个连号，后区最多1个连号
+        max_consecutive = 2 if zone == 'front' else 1
+        if consecutive_count >= max_consecutive:
+            return False
+
+        # 检查区间分布 (避免过度集中)
+        if zone == 'front':
+            # 前区分为3个区间: 1-12, 13-24, 25-35
+            intervals = [(1, 12), (13, 24), (25, 35)]
+        else:
+            # 后区分为2个区间: 1-6, 7-12
+            intervals = [(1, 6), (7, 12)]
+
+        # 计算每个区间的号码数量
+        interval_counts = [0] * len(intervals)
+        all_numbers = selected + [new_number]
+
+        for num in all_numbers:
+            for i, (start, end) in enumerate(intervals):
+                if start <= num <= end:
+                    interval_counts[i] += 1
+                    break
+
+        # 检查是否有区间过度集中
+        max_per_interval = len(all_numbers) // len(intervals) + 2
+        return all(count <= max_per_interval for count in interval_counts)
     
     def _intelligent_algorithm_selection(self, periods) -> Dict[str, Callable]:
         """智能算法选择 - 基于数据特征选择最优算法组合"""
@@ -5635,7 +6462,7 @@ class AdvancedPredictor:
             'adaptive_markov': lambda c, p: self.adaptive_markov_predict(c, p),
             'markov_3rd': lambda c, p: self.markov_3rd_predict(c, p),
             'markov_2nd': lambda c, p: self.markov_2nd_predict(c, p),
-            'bayesian': lambda c, p: self.bayesian_predict(c, p, n_jobs=1),
+            'bayesian': lambda c, p: self.traditional_predictor.bayesian_predict(c, p, n_jobs=1),
             'nine_models': lambda c, p: self.nine_models_predict(c, p),
             'clustering': lambda c, p: self.clustering_predict(c, p),
             'ensemble': lambda c, p: self.ensemble_predict(c, p),
@@ -6168,7 +6995,7 @@ class AdvancedPredictor:
             'markov_2nd_predict': lambda c, p: self.markov_2nd_predict(c, p),
             'markov_3rd_predict': lambda c, p: self.markov_3rd_predict(c, p),
             'adaptive_markov_predict': lambda c, p: self.adaptive_markov_predict(c, p),
-            'bayesian_predict': lambda c, p: self.bayesian_predict(c, p, n_jobs=1),
+            'bayesian_predict': lambda c, p: self.traditional_predictor.bayesian_predict(c, p, n_jobs=1),
             'ensemble_predict': lambda c, p: self.ensemble_predict(c, p),
             'nine_models_predict': lambda c, p: self.nine_models_predict(c, p),
             'clustering_predict': lambda c, p: self.clustering_predict(c, p),
@@ -6379,49 +7206,202 @@ class AdvancedPredictor:
         return base_reward
 
     def ultimate_ensemble_predict(self, count=1, periods=500) -> List[Tuple[List[int], List[int]]]:
-        """终极集成预测
-        
+        """终极集成预测 - 使用GPU加速的深度学习集成预测
+
         真正融合25+算法的终极预测系统，包含：
+        - GPU加速的深度学习预测 (LSTM, Transformer, GAN, 多种分析方法)
         - 全算法融合 (25+种算法并行)
         - 智能权重优化 (多维度评估)
         - 置信度评估 (预测可信度计算)
         - 多样性保证 (避免预测趋同)
-        
+
         Args:
             count: 预测注数
             periods: 分析期数
-            
+
         Returns:
             List[Tuple[List[int], List[int]]]: 预测结果列表
         """
+        logger_manager.info(f"终极集成预测开始: 注数={count}, 分析期数={periods}")
+
         try:
-            logger_manager.info(f"开始终极集成预测: 注数={count}, 分析期数={periods}")
-            
-            # 1. 收集所有可用算法的预测结果
+            results = []
+
+            # 1. 首先尝试GPU加速的深度学习终极集成
+            try:
+                from gpu_accelerated_predictor import get_gpu_accelerator
+                gpu_accelerator = get_gpu_accelerator()
+
+                if gpu_accelerator.gpu_available:
+                    logger_manager.info("使用GPU加速进行终极集成预测")
+
+                    # 准备历史数据
+                    historical_data = data_manager.get_data()
+                    if historical_data is not None and len(historical_data) >= periods:
+                        # 使用最新的periods期数据
+                        recent_data = historical_data.tail(periods)
+
+                        # GPU加速的终极集成预测 - 使用多种深度学习方法
+                        gpu_methods = [
+                            'lstm',                    # LSTM时序预测
+                            'correlation_analysis',    # 相关性分析
+                            'pattern_matching',        # 模式匹配
+                            'frequency',              # 频率分析 (GPU加速版)
+                            'moving_average'          # 移动平均 (GPU加速版)
+                        ]
+
+                        gpu_predictions = []
+                        method_weights = {
+                            'lstm': 0.3,
+                            'correlation_analysis': 0.25,
+                            'pattern_matching': 0.25,
+                            'frequency': 0.1,
+                            'moving_average': 0.1
+                        }
+
+                        # 执行GPU加速的多方法预测
+                        for method in gpu_methods:
+                            try:
+                                predictions, metrics = gpu_accelerator.accelerated_prediction(
+                                    convert_dataframe_to_numeric_array(recent_data, periods), method=method
+                                )
+
+                                if predictions is not None and len(predictions) >= 7:
+                                    # 转换GPU预测结果为标准格式
+                                    front_balls = sorted([int(x) for x in predictions[:5] if 1 <= int(x) <= 35])
+                                    back_balls = sorted([int(x) for x in predictions[5:7] if 1 <= int(x) <= 12])
+
+                                    # 确保号码数量正确
+                                    if len(front_balls) >= 5 and len(back_balls) >= 2:
+                                        gpu_predictions.append({
+                                            'method': method,
+                                            'predictions': (front_balls[:5], back_balls[:2]),
+                                            'weight': method_weights.get(method, 0.1),
+                                            'computation_time': metrics.get('computation_time', 0),
+                                            'device': metrics.get('device', 'unknown')
+                                        })
+                                        logger_manager.info(f"GPU {method} 预测完成: 计算时间={metrics.get('computation_time', 0):.3f}s, 设备={metrics.get('device', 'unknown')}")
+
+                            except Exception as e:
+                                logger_manager.warning(f"GPU {method} 预测失败: {e}")
+
+                        # 如果GPU预测成功，使用GPU终极集成结果
+                        if gpu_predictions:
+                            for i in range(count):
+                                front_scores = defaultdict(float)
+                                back_scores = defaultdict(float)
+
+                                # 多重加权投票机制
+                                for pred_info in gpu_predictions:
+                                    method = pred_info['method']
+                                    weight = pred_info['weight']
+                                    front, back = pred_info['predictions']
+
+                                    # 动态权重调整 (基于计算时间和设备性能)
+                                    time_factor = max(0.5, 1.0 - pred_info['computation_time'] / 10.0)
+                                    adjusted_weight = weight * time_factor
+
+                                    # 投票权重计算
+                                    vote_multiplier = max(1, int(adjusted_weight * 100))
+
+                                    for _ in range(vote_multiplier):
+                                        for ball in front:
+                                            front_scores[ball] += adjusted_weight
+                                        for ball in back:
+                                            back_scores[ball] += adjusted_weight
+
+                                # 智能选号策略 - 基于得分选择最优号码
+                                front_candidates = sorted(front_scores.items(), key=lambda x: x[1], reverse=True)
+                                back_candidates = sorted(back_scores.items(), key=lambda x: x[1], reverse=True)
+
+                                # 多样性保证 - 避免连号过多
+                                final_front = self._select_diverse_numbers(front_candidates, 5, 'front')
+                                final_back = self._select_diverse_numbers(back_candidates, 2, 'back')
+
+                                # 确保号码数量和范围正确
+                                if len(final_front) < 5:
+                                    remaining = [b for b in range(1, 36) if b not in final_front]
+                                    final_front.extend(np.random.choice(remaining, 5 - len(final_front), replace=False))
+
+                                if len(final_back) < 2:
+                                    remaining = [b for b in range(1, 13) if b not in final_back]
+                                    final_back.extend(np.random.choice(remaining, 2 - len(final_back), replace=False))
+
+                                results.append((sorted(final_front[:5]), sorted(final_back[:2])))
+
+                            # 输出GPU预测统计信息
+                            total_time = sum(p['computation_time'] for p in gpu_predictions)
+                            devices_used = set(p['device'] for p in gpu_predictions)
+
+                            logger_manager.info(f"GPU终极集成预测完成:")
+                            logger_manager.info(f"  - 使用方法: {len(gpu_predictions)}种")
+                            logger_manager.info(f"  - 总计算时间: {total_time:.3f}s")
+                            logger_manager.info(f"  - 使用设备: {', '.join(devices_used)}")
+                            logger_manager.info(f"  - 生成结果: {len(results)}注")
+
+                            return results
+
+            except Exception as e:
+                logger_manager.warning(f"GPU终极集成预测失败: {e}")
+
+            # 2. GPU不可用时，回退到传统终极集成预测
+            logger_manager.info("GPU不可用，使用传统终极集成预测")
+
+            # 收集所有可用算法的预测结果
             all_algorithm_predictions = self._collect_all_algorithm_predictions(count, periods)
-            
-            # 2. 智能权重优化 - 多维度评估算法性能
+
+            # 智能权重优化 - 多维度评估算法性能
             optimized_weights = self._intelligent_weight_optimization(all_algorithm_predictions, periods)
-            
-            # 3. 置信度评估 - 计算每个预测的可信度
+
+            # 置信度评估 - 计算每个预测的可信度
             prediction_confidences = self._calculate_prediction_confidences(all_algorithm_predictions, optimized_weights)
-            
-            # 4. 多样性保证 - 避免预测趋同的机制
+
+            # 多样性保证 - 避免预测趋同的机制
             diverse_predictions = self._ensure_prediction_diversity(all_algorithm_predictions, optimized_weights, count)
-            
-            # 5. 终极融合 - 基于权重和置信度的最终集成
+
+            # 终极融合 - 基于权重和置信度的最终集成
             final_predictions = self._ultimate_fusion_strategy(diverse_predictions, optimized_weights, prediction_confidences, count)
-            
-            # 6. 质量检验和优化
+
+            # 质量检验和优化
             validated_predictions = self._validate_and_optimize_predictions(final_predictions, count)
-            
-            logger_manager.info(f"终极集成预测完成，算法权重: {optimized_weights}")
+
+            logger_manager.info(f"传统终极集成预测完成，算法权重: {optimized_weights}")
             return validated_predictions
-            
+
         except Exception as e:
             logger_manager.error(f"终极集成预测失败: {e}")
             # 回退到自适应集成预测
             return self.adaptive_ensemble_predict(count, periods)
+
+    def _select_diverse_numbers(self, candidates, count, zone):
+        """选择多样化的号码，避免连号过多"""
+        selected = []
+        used_numbers = set()
+
+        for number, score in candidates:
+            if len(selected) >= count:
+                break
+
+            if number not in used_numbers:
+                # 检查连号情况
+                consecutive_count = 0
+                for existing in selected:
+                    if abs(number - existing) == 1:
+                        consecutive_count += 1
+
+                # 控制连号数量 (前区最多2个连号，后区最多1个连号)
+                max_consecutive = 2 if zone == 'front' else 1
+                if consecutive_count < max_consecutive:
+                    selected.append(number)
+                    used_numbers.add(number)
+
+        # 如果数量不足，从剩余候选中选择
+        if len(selected) < count:
+            remaining_candidates = [num for num, _ in candidates if num not in used_numbers]
+            need_count = count - len(selected)
+            selected.extend(remaining_candidates[:need_count])
+
+        return selected[:count]
     
     def _collect_all_algorithm_predictions(self, count, periods) -> Dict[str, List[Tuple[List[int], List[int]]]]:
         """收集所有可用算法的预测结果（25+种算法）"""
@@ -6449,9 +7429,9 @@ class AdvancedPredictor:
         
         # 贝叶斯算法组 (3种)
         bayesian_algorithms = {
-            'bayesian_basic': lambda: self.bayesian_predict(count, periods, n_jobs=1),
-            'bayesian_hierarchical': lambda: self.bayesian_predict(count, periods, n_jobs=1),
-            'bayesian_dynamic': lambda: self.bayesian_predict(count, periods, n_jobs=1)
+            'bayesian_basic': lambda: self.traditional_predictor.bayesian_predict(count, periods, n_jobs=1),
+            'bayesian_hierarchical': lambda: self.traditional_predictor.bayesian_predict(count, periods, n_jobs=1),
+            'bayesian_dynamic': lambda: self.traditional_predictor.bayesian_predict(count, periods, n_jobs=1)
         }
         
         # 机器学习算法组 (6种)
@@ -7160,7 +8140,7 @@ class CompoundPredictor:
             elif method == "markov":
                 base_predictions = self.advanced_predictor.markov_predict(count=3, periods=periods)
             elif method == "bayesian":
-                base_predictions = self.advanced_predictor.bayesian_predict(count=3, periods=periods)
+                base_predictions = self.traditional_predictor.bayesian_predict(count=3, periods=periods)
             else:
                 base_predictions = self.advanced_predictor.ensemble_predict(count=3, periods=periods)
 
@@ -7250,7 +8230,7 @@ class CompoundPredictor:
             elif method == "markov":
                 base_predictions = self.advanced_predictor.markov_predict(count=5, periods=periods)
             elif method == "bayesian":
-                base_predictions = self.advanced_predictor.bayesian_predict(count=5, periods=periods)
+                base_predictions = self.traditional_predictor.bayesian_predict(count=5, periods=periods)
             else:
                 base_predictions = self.advanced_predictor.ensemble_predict(count=5, periods=periods)
 
@@ -7338,7 +8318,7 @@ class CompoundPredictor:
 
             # 2. 高级算法预测
             all_predictions['markov'] = self.advanced_predictor.markov_predict(5, periods)
-            all_predictions['bayesian'] = self.advanced_predictor.bayesian_predict(5, periods)
+            all_predictions['bayesian'] = self.traditional_predictor.bayesian_predict(5, periods)
             all_predictions['ensemble'] = self.advanced_predictor.ensemble_predict(5, periods)
 
             # 3. 超级算法预测
@@ -7519,7 +8499,7 @@ class CompoundPredictor:
                     if ball not in selected:
                         selected.append(ball)
 
-            return sorted(selected[:target_count])
+            return ensure_python_int_list(sorted(selected[:target_count]))
         else:
             # 候选号码不足，全部选择并补充
             selected = [int(item[0]) for item in sorted_candidates]
@@ -8539,7 +9519,7 @@ def _execute_single_algorithm(algo_name, periods, weight) -> Dict:
             return {'front_balls': result[0], 'back_balls': result[1], 'confidence': 0.6}
         elif algo_name == 'bayesian':
             predictor = get_advanced_predictor()
-            result = predictor.bayesian_predict(1, periods)[0]
+            result = predictor.traditional_predictor.bayesian_predict(1, periods)[0]
             return {'front_balls': result[0], 'back_balls': result[1], 'confidence': 0.65}
         else:
             import random

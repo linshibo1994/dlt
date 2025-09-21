@@ -1039,7 +1039,7 @@ def show_prediction_page():
             if st.button("📊 贝叶斯推理", use_container_width=True, key="adv_bayesian"):
                 with st.spinner("正在进行贝叶斯推理预测..."):
                     try:
-                        predictor = AdvancedPredictor()
+                        predictor = TraditionalPredictor()
                         n_jobs = threads if acceleration == "cpu_multi" else 1
                         result = predictor.bayesian_predict(count=count, periods=periods, n_jobs=n_jobs)
                         display_prediction_result(result, "贝叶斯推理")
@@ -1594,7 +1594,8 @@ def show_prediction_page():
 
                             elif method == "bayesian":
                                 # 贝叶斯方法的复式预测
-                                base_result = predictor.bayesian_predict(count=1, periods=periods)
+                                traditional_predictor = TraditionalPredictor()
+                                base_result = traditional_predictor.bayesian_predict(count=1, periods=periods)
                                 if base_result:
                                     # 扩展为复式
                                     compound_result = {
@@ -2334,7 +2335,7 @@ def show_traditional_prediction_page():
         if st.button("📊 贝叶斯推理", use_container_width=True, key="trad_bayesian_new"):
             with st.spinner("正在进行贝叶斯推理预测..."):
                 try:
-                    predictor = AdvancedPredictor()
+                    predictor = TraditionalPredictor()
                     result = predictor.bayesian_predict(count=count, periods=periods)
                     display_prediction_result(result, "贝叶斯推理")
                 except Exception as e:
@@ -2437,7 +2438,7 @@ def show_advanced_prediction_page():
         if st.button("📊 贝叶斯推理", use_container_width=True, key="adv_bayesian_new"):
             with st.spinner("正在进行贝叶斯推理预测..."):
                 try:
-                    predictor = AdvancedPredictor()
+                    predictor = TraditionalPredictor()
                     n_jobs = threads if acceleration == "cpu_multi" else 1
                     result = predictor.bayesian_predict(count=count, periods=periods, n_jobs=n_jobs)
                     display_prediction_result(result, "贝叶斯推理")
@@ -3111,7 +3112,8 @@ def show_compound_prediction_page():
                         display_prediction_result([result], "贝叶斯复式预测")
                     else:
                         # 回退实现
-                        base_result = predictor.bayesian_predict(count=1, periods=periods)
+                        traditional_predictor = TraditionalPredictor()
+                        base_result = traditional_predictor.bayesian_predict(count=1, periods=periods)
                         if base_result:
                             compound_result = {
                                 'front_balls': list(range(7, front_count + 7)),

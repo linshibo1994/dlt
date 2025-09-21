@@ -5,7 +5,11 @@
       "Bash(nvidia-smi:*)",
       "Bash(git fetch:*)",
       "Bash(git add:*)",
-      "Bash(git push:*)"
+      "Bash(git push:*)",
+      "mcp__fs__directory_tree",
+      "mcp__fs__read_multiple_files",
+      "Bash(del:*)",
+      "Bash(timeout:*)"
     ],
     "deny": [],
     "ask": []

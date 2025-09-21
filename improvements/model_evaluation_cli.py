@@ -166,10 +166,10 @@ def register_default_predictors(benchmark):
         )
         
         benchmark.register_model(
-            "贝叶斯预测", 
-            lambda data: advanced.bayesian_predict(3), 
-            "基于贝叶斯分析的预测方法", 
-            "advanced"
+            "贝叶斯预测",
+            lambda data: traditional.bayesian_predict(3),
+            "基于贝叶斯分析的预测方法",
+            "traditional"  # 修改为traditional分类
         )
         
         benchmark.register_model(

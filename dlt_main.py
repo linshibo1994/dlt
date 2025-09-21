@@ -39,15 +39,15 @@ except ImportError:
 try:
     from enhanced_integration import enhanced_dlt_system, is_enhanced_available
     ENHANCED_INTEGRATION_AVAILABLE = True
-    print("✅ 增强功能模块已启用")
+    print("OK - 增强功能模块已启用")
 except ImportError as e:
     ENHANCED_INTEGRATION_AVAILABLE = False
     enhanced_dlt_system = None
-    print(f"ℹ️ 增强功能模块未找到: {e}")
+    print(f"INFO - 增强功能模块未找到: {e}")
 except Exception as e:
     ENHANCED_INTEGRATION_AVAILABLE = False
     enhanced_dlt_system = None
-    print(f"⚠️ 增强功能模块加载失败: {e}")
+    print(f"WARNING - 增强功能模块加载失败: {e}")
 
 def is_enhanced_available():
     """检查增强功能是否可用"""
@@ -71,15 +71,15 @@ class DLTPredictorSystem:
         self.enhanced_available = ENHANCED_INTEGRATION_AVAILABLE and is_enhanced_available()
         if self.enhanced_available:
             self.enhanced_system = enhanced_dlt_system
-            logger_manager.info("✅ 增强功能已集成到主系统")
+            logger_manager.info("OK - 增强功能已集成到主系统")
         else:
             self.enhanced_system = None
-            logger_manager.info("⚠️ 使用基础功能模式")
+            logger_manager.info("INFO - 使用基础功能模式")
     
     def _load_analyzers(self):
         """延迟加载分析器"""
         if not self._analyzers_loaded:
-            print("📊 加载分析器模块...")
+            print(" 加载分析器模块...")
             from analyzer_modules import basic_analyzer, advanced_analyzer, comprehensive_analyzer, visualization_analyzer
             self.analyzers = {
                 'basic': basic_analyzer,
@@ -92,7 +92,7 @@ class DLTPredictorSystem:
     def _load_predictors(self):
         """延迟加载预测器"""
         if not self._predictors_loaded:
-            print("🎯 加载预测器模块...")
+            print(" 加载预测器模块...")
             from predictor_modules import get_traditional_predictor, get_advanced_predictor, get_super_predictor, CompoundPredictor
             self.predictors = {
                 'traditional': get_traditional_predictor(),
@@ -105,7 +105,7 @@ class DLTPredictorSystem:
     def _load_adaptive_predictor(self):
         """延迟加载自适应预测器"""
         if not self._adaptive_loaded:
-            print("🚀 加载自适应学习模块...")
+            print(" 加载自适应学习模块...")
             from adaptive_learning_modules import enhanced_adaptive_predictor
             self.adaptive_predictor = enhanced_adaptive_predictor
             self._adaptive_loaded = True
@@ -113,7 +113,7 @@ class DLTPredictorSystem:
     def run_data_command(self, args):
         """处理数据管理命令"""
         if args.data_action == 'status':
-            print("📊 数据状态:")
+            print(" 数据状态:")
             stats = data_manager.get_stats()
             print(f"  总期数: {stats.get('total_periods', 0)}")
             print(f"  数据范围: {stats.get('date_range', {}).get('start', 'N/A')} 到 {stats.get('date_range', {}).get('end', 'N/A')}")
@@ -121,12 +121,12 @@ class DLTPredictorSystem:
 
             # 缓存信息
             cache_info = cache_manager.get_cache_info()
-            print(f"\n💾 缓存状态:")
+            print(f"\n 缓存状态:")
             print(f"  总文件数: {cache_info['total']['files']}")
             print(f"  总大小: {cache_info['total']['size_mb']:.2f} MB")
 
         elif args.data_action == 'latest':
-            print("🔍 获取最新开奖结果...")
+            print(" 获取最新开奖结果...")
             try:
                 # 获取本地最新数据
                 df = data_manager.get_data()
@@ -134,7 +134,7 @@ class DLTPredictorSystem:
                     latest_row = df.iloc[0]  # 第一行是最新数据
                     front_balls, back_balls = data_manager.parse_balls(latest_row)
 
-                    print("✅ 最新开奖结果:")
+                    print("OK 最新开奖结果:")
                     print(f"  期号: {latest_row['issue']}")
                     print(f"  日期: {latest_row['date']}")
                     print(f"  开奖号码: {' '.join([str(b).zfill(2) for b in front_balls])} + {' '.join([str(b).zfill(2) for b in back_balls])}")
@@ -143,9 +143,9 @@ class DLTPredictorSystem:
                     if hasattr(args, 'compare') and args.compare:
                         self._compare_with_latest(front_balls, back_balls)
                 else:
-                    print("❌ 没有找到开奖数据")
+                    print("ERROR 没有找到开奖数据")
             except Exception as e:
-                print(f"❌ 获取最新开奖结果失败: {e}")
+                print(f"ERROR 获取最新开奖结果失败: {e}")
 
         elif args.data_action == 'update':
             # 处理更新参数
@@ -153,7 +153,7 @@ class DLTPredictorSystem:
             incremental = getattr(args, 'incremental', False)
 
             update_type = "增量更新" if incremental else "完整更新"
-            print(f"🔄 {update_type} (数据源: {args.source}" + (f", 期数: {periods}" if periods else "") + ")...")
+            print(f" {update_type} (数据源: {args.source}" + (f", 期数: {periods}" if periods else "") + ")...")
 
             try:
                 from crawlers import ZhcwCrawler
@@ -161,15 +161,15 @@ class DLTPredictorSystem:
 
                 if incremental:
                     # 增量更新：只获取最新的几页数据
-                    print("📡 正在检查网络连接和数据源...")
+                    print(" 正在检查网络连接和数据源...")
                     count = crawler.crawl_recent_data(3)
                 elif periods:
                     # 更新指定期数
-                    print(f"📡 正在获取最近 {periods} 期数据...")
+                    print(f" 正在获取最近 {periods} 期数据...")
                     count = crawler.crawl_recent_data(periods)
                 else:
                     # 更新所有数据
-                    print("📡 正在获取所有历史数据...")
+                    print(" 正在获取所有历史数据...")
                     count = crawler.crawl_all_data()
 
                 # 清理缓存并重新加载数据
@@ -177,27 +177,27 @@ class DLTPredictorSystem:
                 data_manager._load_data()
 
                 if count > 0:
-                    print(f"✅ 数据更新完成，新增 {count} 期数据")
+                    print(f"OK 数据更新完成，新增 {count} 期数据")
                 else:
-                    print("ℹ️ 没有新数据需要更新，当前数据已是最新")
+                    print("INFO 没有新数据需要更新，当前数据已是最新")
 
             except ImportError:
-                print("❌ 爬虫模块未找到，请检查crawlers.py文件")
+                print("ERROR 爬虫模块未找到，请检查crawlers.py文件")
             except requests.exceptions.ConnectionError:
-                print("❌ 网络连接失败，请检查网络连接")
-                print("💡 提示：可以尝试使用离线模式或稍后重试")
+                print("ERROR 网络连接失败，请检查网络连接")
+                print(" 提示：可以尝试使用离线模式或稍后重试")
             except requests.exceptions.Timeout:
-                print("❌ 网络请求超时，请稍后重试")
+                print("ERROR 网络请求超时，请稍后重试")
             except requests.exceptions.HTTPError as e:
-                print(f"❌ 服务器响应错误: {e}")
-                print("💡 提示：数据源服务器可能暂时不可用，请稍后重试")
+                print(f"ERROR 服务器响应错误: {e}")
+                print(" 提示：数据源服务器可能暂时不可用，请稍后重试")
             except Exception as e:
-                print(f"❌ 数据更新失败: {e}")
-                print("💡 提示：系统严格要求使用真实开奖数据，不允许使用模拟数据")
-                print("💡 建议：检查网络连接，或稍后重试多个真实数据源")
+                print(f"ERROR 数据更新失败: {e}")
+                print(" 提示：系统严格要求使用真实开奖数据，不允许使用模拟数据")
+                print(" 建议：检查网络连接，或稍后重试多个真实数据源")
 
         elif args.data_action == 'check':
-            print("🔍 开始数据完整性检查...")
+            print(" 开始数据完整性检查...")
             self._check_data_integrity(args)
 
     def _check_data_integrity(self, args):
@@ -213,21 +213,21 @@ class DLTPredictorSystem:
             df = data_manager.get_data()
             if df is None or len(df) == 0:
                 issues.append("数据文件不存在或为空")
-                print("❌ 数据文件不存在或为空")
+                print("ERROR 数据文件不存在或为空")
             else:
-                print(f"✅ 数据文件正常，共 {len(df)} 期数据")
+                print(f"OK 数据文件正常，共 {len(df)} 期数据")
 
             # 2. 检查数据格式
             if df is not None and len(df) > 0:
-                print("📊 检查数据格式...")
+                print(" 检查数据格式...")
                 required_columns = ['issue', 'front_1', 'front_2', 'front_3', 'front_4', 'front_5', 'back_1', 'back_2', 'date']
                 missing_columns = [col for col in required_columns if col not in df.columns]
 
                 if missing_columns:
                     issues.append(f"缺少必要列: {missing_columns}")
-                    print(f"❌ 缺少必要列: {missing_columns}")
+                    print(f"ERROR 缺少必要列: {missing_columns}")
                 else:
-                    print("✅ 数据格式正常")
+                    print("OK 数据格式正常")
 
                 # 3. 检查数据范围
                 print("🔢 检查数据范围...")
@@ -241,7 +241,7 @@ class DLTPredictorSystem:
                         if len(invalid_front) > 0:
                             issues.append(f"前区号码 {col} 超出范围 (1-35): {len(invalid_front)} 期")
                             if detailed:
-                                print(f"❌ 前区号码 {col} 超出范围: {len(invalid_front)} 期")
+                                print(f"ERROR 前区号码 {col} 超出范围: {len(invalid_front)} 期")
 
                 # 检查后区号码范围 (1-12)
                 for col in back_cols:
@@ -250,48 +250,48 @@ class DLTPredictorSystem:
                         if len(invalid_back) > 0:
                             issues.append(f"后区号码 {col} 超出范围 (1-12): {len(invalid_back)} 期")
                             if detailed:
-                                print(f"❌ 后区号码 {col} 超出范围: {len(invalid_back)} 期")
+                                print(f"ERROR 后区号码 {col} 超出范围: {len(invalid_back)} 期")
 
                 if not any("超出范围" in issue for issue in issues):
-                    print("✅ 数据范围正常")
+                    print("OK 数据范围正常")
 
                 # 4. 检查重复期号
-                print("🔄 检查重复期号...")
+                print(" 检查重复期号...")
                 if 'issue' in df.columns:
                     duplicates = df[df.duplicated(subset=['issue'], keep=False)]
                     if len(duplicates) > 0:
                         issues.append(f"发现重复期号: {len(duplicates)} 期")
                         if detailed:
-                            print(f"❌ 发现重复期号: {duplicates['issue'].unique()}")
+                            print(f"ERROR 发现重复期号: {duplicates['issue'].unique()}")
                     else:
-                        print("✅ 无重复期号")
+                        print("OK 无重复期号")
 
             # 5. 检查缓存状态
-            print("💾 检查缓存状态...")
+            print(" 检查缓存状态...")
             cache_info = cache_manager.get_cache_info()
             if cache_info['total']['files'] == 0:
                 issues.append("缓存为空")
-                print("⚠️ 缓存为空")
+                print("WARNING 缓存为空")
             else:
-                print(f"✅ 缓存正常，{cache_info['total']['files']} 个文件")
+                print(f"OK 缓存正常，{cache_info['total']['files']} 个文件")
 
             # 输出检查结果
             print("\n" + "="*50)
             if len(issues) == 0:
-                print("🎉 数据完整性检查通过，未发现问题")
+                print("SUCCESS 数据完整性检查通过，未发现问题")
             else:
-                print(f"⚠️ 发现 {len(issues)} 个问题:")
+                print(f"WARNING 发现 {len(issues)} 个问题:")
                 for i, issue in enumerate(issues, 1):
                     print(f"  {i}. {issue}")
 
                 if auto_fix:
-                    print("\n🔧 尝试自动修复...")
+                    print("\n 尝试自动修复...")
                     self._auto_fix_data_issues(issues)
                 else:
-                    print("\n💡 建议使用 --fix 参数自动修复问题")
+                    print("\n 建议使用 --fix 参数自动修复问题")
 
         except Exception as e:
-            print(f"❌ 数据检查过程中出错: {e}")
+            print(f"ERROR 数据检查过程中出错: {e}")
 
     def _auto_fix_data_issues(self, issues):
         """自动修复数据问题"""
@@ -300,29 +300,29 @@ class DLTPredictorSystem:
         for issue in issues:
             try:
                 if "缓存为空" in issue:
-                    print("🔧 清理并重建缓存...")
+                    print(" 清理并重建缓存...")
                     cache_manager.clear_cache()
                     data_manager._load_data()
                     fixed_count += 1
-                    print("✅ 缓存已重建")
+                    print("OK 缓存已重建")
                 elif "数据文件不存在" in issue:
-                    print("🔧 尝试重新加载数据...")
+                    print(" 尝试重新加载数据...")
                     data_manager._load_data()
                     fixed_count += 1
-                    print("✅ 数据已重新加载")
+                    print("OK 数据已重新加载")
                 else:
-                    print(f"⚠️ 无法自动修复: {issue}")
+                    print(f"WARNING 无法自动修复: {issue}")
             except Exception as e:
-                print(f"❌ 修复失败: {e}")
+                print(f"ERROR 修复失败: {e}")
 
         if fixed_count > 0:
-            print(f"\n🎉 成功修复 {fixed_count} 个问题")
+            print(f"\nSUCCESS 成功修复 {fixed_count} 个问题")
         else:
-            print("\n⚠️ 未能自动修复任何问题，请手动处理")
+            print("\nWARNING 未能自动修复任何问题，请手动处理")
 
     def _compare_with_latest(self, actual_front: List[int], actual_back: List[int]):
         """与最新开奖结果比较"""
-        print("\n🎯 号码比较功能:")
+        print("\n 号码比较功能:")
         print("请输入您的号码进行比较")
 
         try:
@@ -331,7 +331,7 @@ class DLTPredictorSystem:
             front_numbers = [int(x) for x in front_input.split()]
 
             if len(front_numbers) != 5:
-                print("❌ 前区号码必须是5个")
+                print("ERROR 前区号码必须是5个")
                 return
 
             # 输入后区号码
@@ -339,7 +339,7 @@ class DLTPredictorSystem:
             back_numbers = [int(x) for x in back_input.split()]
 
             if len(back_numbers) != 2:
-                print("❌ 后区号码必须是2个")
+                print("ERROR 后区号码必须是2个")
                 return
 
             # 计算中奖情况
@@ -349,7 +349,7 @@ class DLTPredictorSystem:
                 front_numbers, back_numbers, actual_front, actual_back
             )
 
-            print(f"\n🏆 比较结果:")
+            print(f"\n 比较结果:")
             print(f"  您的号码: {' '.join([str(b).zfill(2) for b in front_numbers])} + {' '.join([str(b).zfill(2) for b in back_numbers])}")
             print(f"  开奖号码: {' '.join([str(b).zfill(2) for b in actual_front])} + {' '.join([str(b).zfill(2) for b in actual_back])}")
             print(f"  前区命中: {front_hits} 个")
@@ -357,17 +357,17 @@ class DLTPredictorSystem:
             print(f"  中奖等级: {prize_level}")
 
         except ValueError:
-            print("❌ 请输入有效的数字")
+            print("ERROR 请输入有效的数字")
         except KeyboardInterrupt:
-            print("\n⚠️  操作被取消")
+            print("\nWARNING  操作被取消")
         except Exception as e:
-            print(f"❌ 比较失败: {e}")
+            print(f"ERROR 比较失败: {e}")
     
     def run_analyze_command(self, args):
         """处理分析命令"""
         self._load_analyzers()
         
-        print(f"📊 开始{args.type}分析 (期数: {args.periods})...")
+        print(f" 开始{args.type}分析 (期数: {args.periods})...")
         
         try:
             if args.type == 'basic':
@@ -375,7 +375,7 @@ class DLTPredictorSystem:
                 freq_result = self.analyzers['basic'].frequency_analysis(args.periods)
                 hot_cold_result = self.analyzers['basic'].hot_cold_analysis(args.periods)
                 
-                print("✅ 基础分析完成")
+                print("OK 基础分析完成")
                 print(f"  频率分析: {len(freq_result.get('front_frequency', {}))} 个前区号码")
                 print(f"  冷热分析: 热号 {len(hot_cold_result.get('front_hot', []))} 个，冷号 {len(hot_cold_result.get('front_cold', []))} 个")
             
@@ -384,7 +384,7 @@ class DLTPredictorSystem:
                 markov_result = self.analyzers['advanced'].markov_analysis(args.periods)
                 bayesian_result = self.analyzers['advanced'].bayesian_analysis(args.periods)
                 
-                print("✅ 高级分析完成")
+                print("OK 高级分析完成")
                 print(f"  马尔可夫分析: {len(markov_result.get('front_transition_probs', {}))} 个转移概率")
                 print(f"  贝叶斯分析: 后验概率计算完成")
             
@@ -392,7 +392,7 @@ class DLTPredictorSystem:
                 # 综合分析
                 comp_result = self.analyzers['comprehensive'].comprehensive_analysis(args.periods)
                 
-                print("✅ 综合分析完成")
+                print("OK 综合分析完成")
                 
                 if args.report:
                     # 生成报告
@@ -412,20 +412,20 @@ class DLTPredictorSystem:
 
                         with open(filename, 'w', encoding='utf-8') as f:
                             f.write(report)
-                        print(f"📄 报告已保存: {filename}")
+                        print(f" 报告已保存: {filename}")
 
             # 生成可视化图表
             if hasattr(args, 'visualize') and args.visualize:
-                print("🎨 生成可视化图表...")
+                print(" 生成可视化图表...")
                 viz_success = self.analyzers['visualization'].generate_all_charts("output", args.periods)
                 if viz_success:
-                    print("✅ 可视化图表生成完成，保存在 output/ 目录")
+                    print("OK 可视化图表生成完成，保存在 output/ 目录")
                 else:
-                    print("❌ 可视化图表生成失败")
+                    print("ERROR 可视化图表生成失败")
 
         except Exception as e:
             logger_manager.error("分析失败", e)
-            print(f"❌ 分析失败: {e}")
+            print(f"ERROR 分析失败: {e}")
     
     def run_predict_command(self, args):
         """处理预测命令"""
@@ -433,32 +433,32 @@ class DLTPredictorSystem:
 
         # 参数验证
         if args.count < 1 or args.count > 100:
-            print("❌ 注数必须在1-100之间")
+            print("ERROR 注数必须在1-100之间")
             return
 
         if args.periods < 50 or args.periods > 2748:
-            print("❌ 分析期数必须在50-2748之间")
+            print("ERROR 分析期数必须在50-2748之间")
             return
 
         # 处理加速参数
         acceleration_config = self._process_acceleration_args(args)
         if acceleration_config:
-            print(f"⚡ 加速配置: {acceleration_config['mode']}")
+            print(f"ACCELERATE 加速配置: {acceleration_config['mode']}")
             if acceleration_config['mode'] == 'cpu_multi':
-                print(f"🖥️ CPU多线程: {acceleration_config['cpu_threads']} 线程")
+                print(f"CPU CPU多线程: {acceleration_config['cpu_threads']} 线程")
             elif acceleration_config['mode'] in ['gpu', 'gpu_cuda']:
-                print(f"🚀 GPU加速: 设备 {acceleration_config['gpu_device']}")
+                print(f" GPU加速: 设备 {acceleration_config['gpu_device']}")
                 if acceleration_config.get('gpu_memory_limit'):
-                    print(f"💾 GPU内存限制: {acceleration_config['gpu_memory_limit']} GB")
+                    print(f" GPU内存限制: {acceleration_config['gpu_memory_limit']} GB")
 
-        print(f"🎯 开始{args.method}预测 (分析期数: {args.periods}, 生成注数: {args.count})...")
+        print(f" 开始{args.method}预测 (分析期数: {args.periods}, 生成注数: {args.count})...")
 
         # 检查是否可以使用增强功能或深度学习方法
         use_enhanced = self.enhanced_available and args.method == 'enhanced' and not (hasattr(args, 'compound') and args.compound)
         use_deep_learning = args.method in ['lstm', 'transformer', 'gan', 'ensemble', 'stacking', 'adaptive_ensemble', 'ultimate_ensemble']
 
         if use_enhanced:
-            print("🚀 使用增强预测引擎...")
+            print(" 使用增强预测引擎...")
             try:
                 # 使用增强预测功能
                 if args.method == 'enhanced':
@@ -470,18 +470,18 @@ class DLTPredictorSystem:
                         count=args.count
                     )
                     if result.get('success'):
-                        print("✅ 增强预测完成")
+                        print("OK 增强预测完成")
                         print(f"预测结果: {result['result']}")
                         print(f"使用方法: {result['method']}")
                         print(f"已缓存: {result['cached']}")
                         return
                     else:
-                        print(f"❌ 增强预测失败: {result.get('error')}")
-                        print("🔄 回退到传统预测方法...")
+                        print(f"ERROR 增强预测失败: {result.get('error')}")
+                        print(" 回退到传统预测方法...")
 
                 elif args.method in ['lstm', 'transformer', 'gan', 'ensemble', 'stacking', 'adaptive_ensemble', 'ultimate_ensemble']:
                     # 使用增强深度学习模型或集成方法
-                    print(f"🔍 检测到深度学习方法: {args.method}")
+                    print(f" 检测到深度学习方法: {args.method}")
                     try:
                         if args.method in ['lstm', 'transformer', 'gan', 'ensemble']:
                             # 深度学习模型
@@ -489,19 +489,19 @@ class DLTPredictorSystem:
                             from enhanced_deep_learning.models import get_model_registry
                             model_registry = get_model_registry()
                             model = model_registry.get_model(args.method)
-                            print(f"🔍 获取模型: {model}")
+                            print(f" 获取模型: {model}")
 
                             if model:
-                                print(f"🚀 使用{args.method.upper()}深度学习模型...")
+                                print(f" 使用{args.method.upper()}深度学习模型...")
                                 historical_data = data_manager.get_data()
-                                print(f"📊 获取历史数据: {len(historical_data) if historical_data is not None else 0}期")
+                                print(f" 获取历史数据: {len(historical_data) if historical_data is not None else 0}期")
 
                                 if historical_data is not None and len(historical_data) > args.periods:
                                     # 使用最新的periods期数据，而不是最旧的
                                     historical_data = historical_data.tail(args.periods)
-                                    print(f"📊 使用最新{args.periods}期数据进行{args.method.upper()}模型训练...")
+                                    print(f" 使用最新{args.periods}期数据进行{args.method.upper()}模型训练...")
 
-                                print(f"🔄 开始{args.method.upper()}预测...")
+                                print(f" 开始{args.method.upper()}预测...")
                                 # 修复方法调用一致性：使用与GUI相同的predict方法
                                 predictions = []
                                 for _ in range(args.count):
@@ -521,23 +521,23 @@ class DLTPredictorSystem:
                                         })
                                     predictions = formatted_predictions
 
-                                print(f"🔍 预测结果: {len(predictions)}注")
+                                print(f" 预测结果: {len(predictions)}注")
 
                                 if predictions:
-                                    print(f"✅ {args.method.upper()}预测完成")
+                                    print(f"OK {args.method.upper()}预测完成")
                                     self._display_enhanced_predictions(predictions, args.method)
                                     return
                                 else:
-                                    print(f"❌ {args.method}深度学习模型预测失败，尝试集成方法...")
+                                    print(f"ERROR {args.method}深度学习模型预测失败，尝试集成方法...")
                             else:
-                                print(f"❌ {args.method}深度学习模型未找到，尝试集成方法...")
+                                print(f"ERROR {args.method}深度学习模型未找到，尝试集成方法...")
 
                         # 如果深度学习模型失败或者是集成方法，使用improvements模块
                         from improvements.integration import get_integrator
                         integrator = get_integrator()
 
                         if args.method == 'lstm':
-                            print("🧠 LSTM集成预测...")
+                            print(" LSTM集成预测...")
                             # 尝试使用advanced_lstm_predictor作为回退
                             try:
                                 from advanced_lstm_predictor import AdvancedLSTMPredictor
@@ -545,7 +545,7 @@ class DLTPredictorSystem:
                                 results = lstm_predictor.lstm_predict(count=args.count, periods=args.periods)
                                 predictions = [{'front_balls': r[0], 'back_balls': r[1], 'method': 'lstm', 'confidence': 0.85} for r in results]
                             except Exception as e:
-                                print(f"❌ LSTM预测失败: {e}")
+                                print(f"ERROR LSTM预测失败: {e}")
                                 predictions = []
                         elif args.method == 'transformer':
                             print("🧮 Transformer深度学习预测...")
@@ -554,32 +554,32 @@ class DLTPredictorSystem:
                             print("🎮 GAN生成预测...")
                             predictions = integrator.gan_predict(args.count, args.periods)
                         elif args.method == 'stacking':
-                            print("🔄 Stacking集成预测...")
+                            print(" Stacking集成预测...")
                             predictions = integrator.stacking_predict(args.count)
                         elif args.method == 'adaptive_ensemble':
-                            print("🧠 自适应集成预测...")
+                            print(" 自适应集成预测...")
                             predictions = integrator.adaptive_ensemble_predict(args.count)
                         elif args.method == 'ultimate_ensemble':
-                            print("🌟 终极集成预测...")
+                            print(" 终极集成预测...")
                             predictions = integrator.ultimate_ensemble_predict(args.count)
                         else:
                             predictions = []
 
                         if predictions:
-                            print(f"✅ {args.method.upper()}预测完成")
+                            print(f"OK {args.method.upper()}预测完成")
                             self._display_enhanced_predictions(predictions, args.method)
                             return
                         else:
-                            print(f"❌ {args.method}预测失败，回退到传统方法...")
+                            print(f"ERROR {args.method}预测失败，回退到传统方法...")
 
                     except Exception as e:
-                        print(f"❌ 增强预测失败: {e}")
-                        print("🔄 回退到传统预测方法...")
+                        print(f"ERROR 增强预测失败: {e}")
+                        print(" 回退到传统预测方法...")
 
             except Exception as e:
                 logger_manager.error(f"增强预测失败: {e}")
-                print(f"❌ 增强预测失败: {e}")
-                print("🔄 回退到传统预测方法...")
+                print(f"ERROR 增强预测失败: {e}")
+                print(" 回退到传统预测方法...")
 
         # 处理深度学习方法（独立于增强功能，但不在复式预测模式下）
         elif use_deep_learning and not (hasattr(args, 'compound') and args.compound):
@@ -620,16 +620,16 @@ class DLTPredictorSystem:
                             self._display_enhanced_predictions(predictions, args.method)
                             return
                         else:
-                            print(f"❌ {args.method}深度学习模型预测失败，尝试传统方法...")
+                            print(f"ERROR {args.method}深度学习模型预测失败，尝试传统方法...")
                     else:
-                        print(f"❌ {args.method}深度学习模型未找到，尝试传统方法...")
+                        print(f"ERROR {args.method}深度学习模型未找到，尝试传统方法...")
 
                 elif args.method in ['stacking', 'adaptive_ensemble', 'ultimate_ensemble']:
                     # 集成学习方法
-                    print(f"🔄 使用{args.method}集成学习方法...")
+                    print(f" 使用{args.method}集成学习方法...")
                     if args.method == 'stacking':
                         # 使用简化的堆叠集成实现，避免深度学习模型初始化超时
-                        print("🔄 使用堆叠集成预测...")
+                        print(" 使用堆叠集成预测...")
                         predictions = self.predictors['advanced'].stacking_predict(count=args.count, periods=args.periods)
                     elif args.method == 'adaptive_ensemble':
                         from adaptive_learning_modules import EnhancedAdaptiveLearningPredictor
@@ -637,7 +637,7 @@ class DLTPredictorSystem:
                         predictions = learner.generate_enhanced_prediction(count=args.count, periods=args.periods)
                     elif args.method == 'ultimate_ensemble':
                         # 使用真正的终极集成实现
-                        print("🔄 使用终极集成预测...")
+                        print(" 使用终极集成预测...")
                         try:
                             from improvements.integration import IntegratedPredictor
                             integrator = IntegratedPredictor()
@@ -654,28 +654,28 @@ class DLTPredictorSystem:
                                 # 转换格式并添加置信度
                                 predictions = [{'front_balls': r[0], 'back_balls': r[1], 'method': 'ultimate_ensemble', 'confidence': 0.85} for r in predictions]
                         except Exception as e:
-                            print(f"❌ 终极集成预测失败: {e}")
+                            print(f"ERROR 终极集成预测失败: {e}")
                             # 回退到基础集成方法
                             predictions = self.predictors['advanced'].ensemble_predict(count=args.count, periods=args.periods)
                             predictions = [{'front_balls': r[0], 'back_balls': r[1], 'method': 'ultimate_ensemble', 'confidence': 0.75} for r in predictions]
 
                     if predictions:
-                        print(f"✅ {args.method}预测完成")
+                        print(f"OK {args.method}预测完成")
                         self._display_enhanced_predictions(predictions, args.method)
                         return
                     else:
-                        print(f"❌ {args.method}预测失败，尝试传统方法...")
+                        print(f"ERROR {args.method}预测失败，尝试传统方法...")
 
             except Exception as e:
-                print(f"❌ 深度学习预测失败: {e}")
-                print("🔄 回退到传统预测方法...")
+                print(f"ERROR 深度学习预测失败: {e}")
+                print(" 回退到传统预测方法...")
 
         try:
             predictions = []
 
             # 检查是否启用复式预测
             if hasattr(args, 'compound') and args.compound:
-                print(f"🎲 启用复式预测模式: {args.front_count}+{args.back_count}")
+                print(f" 启用复式预测模式: {args.front_count}+{args.back_count}")
                 # 使用复式预测
                 try:
                     from compound_modules.compound_predictor import CompoundConfig
@@ -690,20 +690,20 @@ class DLTPredictorSystem:
                     compound_result = None
 
                     if args.method in ['frequency', 'hot_cold', 'missing']:
-                        print(f"📊 {args.method}复式预测 (分析{args.periods}期数据)...")
+                        print(f" {args.method}复式预测 (分析{args.periods}期数据)...")
                         from analyzer_modules import BasicAnalyzer
                         analyzer = BasicAnalyzer()
                         compound_result = analyzer.predict_compound(compound_config)
 
                     elif args.method in ['markov', 'markov_2nd', 'markov_3rd', 'adaptive_markov', 'bayesian', 'ensemble']:
-                        print(f"🎯 {args.method}复式预测 (分析{args.periods}期数据)...")
+                        print(f" {args.method}复式预测 (分析{args.periods}期数据)...")
                         # 直接使用基础分析器进行复式预测
                         from analyzer_modules import BasicAnalyzer
                         analyzer = BasicAnalyzer()
                         compound_result = analyzer.predict_compound(compound_config)
 
                     elif args.method in ['lstm', 'transformer', 'gan']:
-                        print(f"🧠 {args.method}深度学习复式预测 (分析{args.periods}期数据)...")
+                        print(f" {args.method}深度学习复式预测 (分析{args.periods}期数据)...")
                         # 使用深度学习模型的复式预测功能
                         try:
                             if args.method == 'lstm':
@@ -719,14 +719,14 @@ class DLTPredictorSystem:
                                 predictor = GANPredictor()
                                 compound_result = predictor.predict_compound(compound_config)
                         except Exception as e:
-                            print(f"⚠️ 深度学习复式预测失败: {e}")
+                            print(f"WARNING 深度学习复式预测失败: {e}")
                             # 回退到基础分析器
                             from analyzer_modules import BasicAnalyzer
                             analyzer = BasicAnalyzer()
                             compound_result = analyzer.predict_compound(compound_config)
 
                     elif args.method in ['super', 'adaptive', 'enhanced', 'mixed_strategy', 'highly_integrated', 'advanced_integration', 'nine_models']:
-                        print(f"🚀 {args.method}智能复式预测 (分析{args.periods}期数据)...")
+                        print(f" {args.method}智能复式预测 (分析{args.periods}期数据)...")
                         # 使用超级预测器的复式预测功能
                         if hasattr(self.predictors['super'], 'predict_compound'):
                             compound_result = self.predictors['super'].predict_compound(compound_config)
@@ -737,7 +737,7 @@ class DLTPredictorSystem:
                             compound_result = analyzer.predict_compound(compound_config)
 
                     elif args.method in ['stacking', 'adaptive_ensemble', 'ultimate_ensemble']:
-                        print(f"🎭 {args.method}集成复式预测 (分析{args.periods}期数据)...")
+                        print(f" {args.method}集成复式预测 (分析{args.periods}期数据)...")
                         # 使用集成预测器的复式预测功能
                         if hasattr(self.predictors['advanced'], 'predict_compound'):
                             compound_result = self.predictors['advanced'].predict_compound(compound_config)
@@ -748,7 +748,7 @@ class DLTPredictorSystem:
                             compound_result = analyzer.predict_compound(compound_config)
 
                     else:
-                        print(f"🔄 {args.method}方法使用通用复式预测...")
+                        print(f" {args.method}方法使用通用复式预测...")
                         # 通用复式预测回退
                         from analyzer_modules import BasicAnalyzer
                         analyzer = BasicAnalyzer()
@@ -756,8 +756,8 @@ class DLTPredictorSystem:
 
                     # 显示复式预测结果
                     if compound_result:
-                        print(f"✅ 复式预测完成!")
-                        print(f"📋 复式预测结果:")
+                        print(f"OK 复式预测完成!")
+                        print(f" 复式预测结果:")
                         print(f"  前区号码 ({compound_result.front_count}个): {' '.join([str(x).zfill(2) for x in compound_result.front_balls])}")
                         print(f"  后区号码 ({compound_result.back_count}个): {' '.join([str(x).zfill(2) for x in compound_result.back_balls])}")
                         print(f"  总组合数: {compound_result.total_combinations:,}")
@@ -766,20 +766,20 @@ class DLTPredictorSystem:
                         print(f"  预测方法: {compound_result.method}")
                         return
                     else:
-                        print(f"❌ {args.method}复式预测失败，回退到单式预测")
+                        print(f"ERROR {args.method}复式预测失败，回退到单式预测")
 
                 except Exception as e:
-                    print(f"❌ 复式预测失败: {e}")
-                    print("🔄 回退到单式预测...")
+                    print(f"ERROR 复式预测失败: {e}")
+                    print(" 回退到单式预测...")
 
             if args.method in ['frequency', 'hot_cold', 'missing']:
                 # 传统预测方法
                 if args.method == 'frequency':
-                    print(f"📊 频率分析预测 (分析{args.periods}期数据)...")
+                    print(f" 频率分析预测 (分析{args.periods}期数据)...")
                     results = self.predictors['traditional'].frequency_predict(count=args.count, periods=args.periods)
                 elif args.method == 'hot_cold':
                     print(f"🌡️ 冷热号分析预测 (分析{args.periods}期数据)...")
-                    print("📊 分析冷热号分布...")
+                    print(" 分析冷热号分布...")
 
                     # 获取冷热号分析结果
                     from analyzer_modules import basic_analyzer
@@ -790,16 +790,16 @@ class DLTPredictorSystem:
                     back_hot = hot_cold_analysis.get('back_hot', [])
                     back_cold = hot_cold_analysis.get('back_cold', [])
 
-                    print(f"✅ 冷热号识别完成:")
+                    print(f"OK 冷热号识别完成:")
                     print(f"  前区热号 ({len(front_hot)}个): {sorted(front_hot)[:10]}{'...' if len(front_hot) > 10 else ''}")
                     print(f"  前区冷号 ({len(front_cold)}个): {sorted(front_cold)[:10]}{'...' if len(front_cold) > 10 else ''}")
                     print(f"  后区热号 ({len(back_hot)}个): {sorted(back_hot)}")
                     print(f"  后区冷号 ({len(back_cold)}个): {sorted(back_cold)}")
-                    print("🎯 基于冷热号分布进行智能预测...")
+                    print(" 基于冷热号分布进行智能预测...")
 
                     results = self.predictors['traditional'].hot_cold_predict(count=args.count, periods=args.periods)
                 elif args.method == 'missing':
-                    print(f"⏰ 遗漏值分析预测 (分析{args.periods}期数据)...")
+                    print(f" 遗漏值分析预测 (分析{args.periods}期数据)...")
                     results = self.predictors['traditional'].missing_predict(count=args.count, periods=args.periods)
                 
                 predictions = [{'front_balls': r[0], 'back_balls': r[1], 'method': args.method} for r in results]
@@ -809,8 +809,8 @@ class DLTPredictorSystem:
                 if args.method == 'markov':
                     results = self.predictors['advanced'].markov_predict(args.count, args.periods)
                 elif args.method == 'bayesian':
-                    print(f"🎲 贝叶斯分析预测 (分析{args.periods}期数据)...")
-                    print("📊 计算先验概率和似然函数...")
+                    print(f" 贝叶斯分析预测 (分析{args.periods}期数据)...")
+                    print(" 计算先验概率和似然函数...")
 
                     # 应用加速配置
                     accel_config = self._apply_acceleration_config('bayesian', acceleration_config)
@@ -818,7 +818,7 @@ class DLTPredictorSystem:
                     # 获取贝叶斯分析结果
                     from analyzer_modules import advanced_analyzer
                     if accel_config and 'n_jobs' in accel_config:
-                        print(f"⚡ 使用 {accel_config['n_jobs']} 个CPU线程并行计算")
+                        print(f"PARALLEL 使用 {accel_config['n_jobs']} 个CPU线程并行计算")
                         bayesian_analysis = advanced_analyzer.bayesian_analysis(args.periods, n_jobs=accel_config['n_jobs'])
                     else:
                         bayesian_analysis = advanced_analyzer.bayesian_analysis(args.periods)
@@ -828,7 +828,7 @@ class DLTPredictorSystem:
                     front_posterior = bayesian_analysis.get('front_posterior', {})
                     back_posterior = bayesian_analysis.get('back_posterior', {})
 
-                    print(f"✅ 贝叶斯推理完成:")
+                    print(f"OK 贝叶斯推理完成:")
                     print(f"  前区先验概率计算: {len(front_prior)} 个号码")
                     print(f"  前区后验概率计算: {len(front_posterior)} 个号码")
                     print(f"  后区先验概率计算: {len(back_prior)} 个号码")
@@ -842,13 +842,13 @@ class DLTPredictorSystem:
                         top_back = sorted(back_posterior.items(), key=lambda x: x[1], reverse=True)[:2]
                         print(f"  后区最高后验概率: {[f'{k}({v:.3f})' for k, v in top_back]}")
 
-                    print("🎯 基于贝叶斯推理进行概率预测...")
+                    print(" 基于贝叶斯推理进行概率预测...")
 
                     # 应用加速配置到预测
                     if accel_config and 'n_jobs' in accel_config:
-                        results = self.predictors['advanced'].bayesian_predict(count=args.count, periods=args.periods, n_jobs=accel_config['n_jobs'])
+                        results = self.predictors['traditional'].bayesian_predict(count=args.count, periods=args.periods, n_jobs=accel_config['n_jobs'])
                     else:
-                        results = self.predictors['advanced'].bayesian_predict(count=args.count, periods=args.periods)
+                        results = self.predictors['traditional'].bayesian_predict(count=args.count, periods=args.periods)
                 elif args.method == 'ensemble':
                     results = self.predictors['advanced'].ensemble_predict(args.count, args.periods)
                 
@@ -860,8 +860,8 @@ class DLTPredictorSystem:
                     results = self.predictors['super'].predict_super(count=args.count, periods=args.periods)
                     predictions = results
                 except Exception as e:
-                    print(f"⚠️ 超级预测失败: {e}")
-                    print("🔄 回退到集成预测...")
+                    print(f"WARNING 超级预测失败: {e}")
+                    print(" 回退到集成预测...")
                     results = self.predictors['advanced'].ensemble_predict(args.count, args.periods)
                     predictions = [{'front_balls': r[0], 'back_balls': r[1], 'method': 'super_fallback'} for r in results]
             
@@ -913,9 +913,9 @@ class DLTPredictorSystem:
                     
                     predictions = results
                 except ImportError:
-                    print("❌ 增强预测模块未找到，请确保improvements目录存在且包含所需文件")
+                    print("ERROR 增强预测模块未找到，请确保improvements目录存在且包含所需文件")
                 except Exception as e:
-                    print(f"❌ 增强预测失败: {e}")
+                    print(f"ERROR 增强预测失败: {e}")
 
             elif args.method == 'markov_custom':
                 # 马尔可夫自定义期数预测
@@ -963,8 +963,8 @@ class DLTPredictorSystem:
                     signal.alarm(0)  # 取消超时
                 except (TimeoutError, Exception) as e:
                     signal.alarm(0)  # 确保取消超时
-                    print(f"⚠️ 高度集成预测超时或失败: {e}")
-                    print("🔄 回退到复式预测...")
+                    print(f"WARNING 高度集成预测超时或失败: {e}")
+                    print(" 回退到复式预测...")
                     result = self.predictors['compound'].predict_compound(
                         front_count=8,
                         back_count=4,
@@ -998,7 +998,7 @@ class DLTPredictorSystem:
                 result = self.predictors['advanced'].nine_models_compound_predict(
                     front_count=front_count,
                     back_count=back_count,
-                    periods=args.periods
+                    analysis_periods=args.periods
                 )
                 if result:
                     predictions = [result]
@@ -1028,10 +1028,10 @@ class DLTPredictorSystem:
                     markov_periods = args.periods  # 使用新的periods参数
                     
                     if args.method == 'markov_2nd':
-                        print(f"🔄 二阶马尔可夫链预测 (分析{markov_periods}期数据)...")
-                        print("📊 构建二阶状态转移矩阵...")
+                        print(f" 二阶马尔可夫链预测 (分析{markov_periods}期数据)...")
+                        print(" 构建二阶状态转移矩阵...")
                         print("🔢 概率计算: 基于历史数据计算转移概率")
-                        print("📈 矩阵计算: 构建复合状态转移矩阵")
+                        print(" 矩阵计算: 构建复合状态转移矩阵")
 
                         markov_predictor = get_markov_predictor()
 
@@ -1044,12 +1044,12 @@ class DLTPredictorSystem:
                             front_stats = order_2_result.get('front_stats', {})
                             back_stats = order_2_result.get('back_stats', {})
 
-                            print(f"✅ 二阶状态转移矩阵构建完成:")
-                            print(f"  📊 概率计算: 前区转移概率数 {front_stats.get('total_transitions', 0)}")
-                            print(f"  📈 矩阵计算: 前区状态数 {front_stats.get('unique_states', 0)}")
+                            print(f"OK 二阶状态转移矩阵构建完成:")
+                            print(f"   概率计算: 前区转移概率数 {front_stats.get('total_transitions', 0)}")
+                            print(f"   矩阵计算: 前区状态数 {front_stats.get('unique_states', 0)}")
                             print(f"  🔢 概率计算: 后区转移概率数 {back_stats.get('total_transitions', 0)}")
-                            print(f"  📈 矩阵计算: 后区状态数 {back_stats.get('unique_states', 0)}")
-                            print(f"  🎯 最大转移概率: 前区 {front_stats.get('max_probability', 0):.4f}, 后区 {back_stats.get('max_probability', 0):.4f}")
+                            print(f"   矩阵计算: 后区状态数 {back_stats.get('unique_states', 0)}")
+                            print(f"   最大转移概率: 前区 {front_stats.get('max_probability', 0):.4f}, 后区 {back_stats.get('max_probability', 0):.4f}")
 
                         results = markov_predictor.multi_order_markov_predict(
                             count=args.count,
@@ -1059,10 +1059,10 @@ class DLTPredictorSystem:
                         predictions = [{'front_balls': r[0], 'back_balls': r[1], 'method': 'markov_2nd', 'confidence': 0.85, 'order': 2} for r in results]
                     
                     elif args.method == 'markov_3rd':
-                        print(f"🔄 三阶马尔可夫链预测 (分析{markov_periods}期数据)...")
-                        print("📊 构建三阶状态转移矩阵...")
+                        print(f" 三阶马尔可夫链预测 (分析{markov_periods}期数据)...")
+                        print(" 构建三阶状态转移矩阵...")
                         print("🔢 状态转移显示: 完整的状态转移矩阵构建和统计信息")
-                        print("📈 超高阶建模: 考虑前三期状态的复杂依赖关系")
+                        print(" 超高阶建模: 考虑前三期状态的复杂依赖关系")
 
                         markov_predictor = get_markov_predictor()
 
@@ -1075,7 +1075,7 @@ class DLTPredictorSystem:
                             front_stats = order_3_result.get('front_stats', {})
                             back_stats = order_3_result.get('back_stats', {})
 
-                            print(f"✅ 三阶状态转移矩阵构建完成:")
+                            print(f"OK 三阶状态转移矩阵构建完成:")
                             print(f"  前区状态数: {front_stats.get('unique_states', 0)}")
                             print(f"  前区转移概率数: {front_stats.get('total_transitions', 0)}")
                             print(f"  前区最大转移概率: {front_stats.get('max_probability', 0):.4f}")
@@ -1091,7 +1091,7 @@ class DLTPredictorSystem:
                         predictions = [{'front_balls': r[0], 'back_balls': r[1], 'method': 'markov_3rd', 'confidence': 0.9, 'order': 3} for r in results]
                     
                     elif args.method == 'adaptive_markov':
-                        print("🔄 自适应马尔可夫链预测...")
+                        print(" 自适应马尔可夫链预测...")
                         markov_predictor = get_markov_predictor()
                         predictions = markov_predictor.adaptive_order_markov_predict(
                             count=args.count, 
@@ -1099,10 +1099,10 @@ class DLTPredictorSystem:
                         )
                 
                 except ImportError:
-                    print("❌ 增强版马尔可夫链模块未找到，请确保improvements目录存在且包含所需文件")
+                    print("ERROR 增强版马尔可夫链模块未找到，请确保improvements目录存在且包含所需文件")
                     predictions = []
                 except Exception as e:
-                    print(f"❌ 增强版马尔可夫链预测失败: {e}")
+                    print(f"ERROR 增强版马尔可夫链预测失败: {e}")
                     predictions = []
             
 
@@ -1112,8 +1112,8 @@ class DLTPredictorSystem:
 
 
             # 显示预测结果
-            print("✅ 预测完成!")
-            print("\n📋 预测结果:")
+            print("OK 预测完成!")
+            print("\n 预测结果:")
 
             for i, pred in enumerate(predictions):
                 # 处理不同格式的预测结果
@@ -1320,19 +1320,19 @@ class DLTPredictorSystem:
                 with open(filename, 'w', encoding='utf-8') as f:
                     json.dump(predictions, f, ensure_ascii=False, indent=2, default=str)
 
-                print(f"💾 预测结果已保存: {filename}")
+                print(f" 预测结果已保存: {filename}")
         
         except Exception as e:
             logger_manager.error("预测失败", e)
-            print(f"❌ 预测失败: {e}")
+            print(f"ERROR 预测失败: {e}")
 
     def _display_predictions(self, predictions, method):
         """显示预测结果"""
         if not predictions:
-            print("❌ 没有生成预测结果")
+            print("ERROR 没有生成预测结果")
             return
 
-        print(f"✅ {method.upper()}预测完成")
+        print(f"OK {method.upper()}预测完成")
         print("=" * 50)
 
         if isinstance(predictions, list):
@@ -1355,10 +1355,10 @@ class DLTPredictorSystem:
     def _display_enhanced_predictions(self, predictions, method):
         """显示增强预测结果"""
         if not predictions:
-            print("❌ 没有生成预测结果")
+            print("ERROR 没有生成预测结果")
             return
 
-        print(f"✅ {method.upper()}深度学习预测完成")
+        print(f"OK {method.upper()}深度学习预测完成")
         print("=" * 60)
 
         for i, pred in enumerate(predictions, 1):
@@ -1388,15 +1388,15 @@ class DLTPredictorSystem:
                 print(f"第{i}注: {pred}")
 
         print("=" * 60)
-        print(f"🎯 使用{method.upper()}深度学习算法生成 {len(predictions)} 注预测")
-        print("💡 深度学习模型已自动训练并优化参数")
+        print(f" 使用{method.upper()}深度学习算法生成 {len(predictions)} 注预测")
+        print(" 深度学习模型已自动训练并优化参数")
 
     def run_learn_command(self, args):
         """处理学习命令"""
         self._load_adaptive_predictor()
         
-        print(f"🚀 开始自适应学习 (算法: {args.algorithm})...")
-        print(f"📊 起始期数: {args.start}, 测试期数: {args.test}")
+        print(f" 开始自适应学习 (算法: {args.algorithm})...")
+        print(f" 起始期数: {args.start}, 测试期数: {args.test}")
         
         try:
             # 设置多臂老虎机算法
@@ -1409,13 +1409,13 @@ class DLTPredictorSystem:
             )
             
             if results:
-                print("✅ 自适应学习完成!")
-                print(f"📊 中奖率: {results['win_rate']:.3f}")
-                print(f"📈 平均得分: {results['average_score']:.2f}")
-                print(f"🎯 总测试期数: {results['total_periods']}")
+                print("OK 自适应学习完成!")
+                print(f" 中奖率: {results['win_rate']:.3f}")
+                print(f" 平均得分: {results['average_score']:.2f}")
+                print(f" 总测试期数: {results['total_periods']}")
                 
                 # 显示预测器性能
-                print("\n🏆 预测器性能排名:")
+                print("\n 预测器性能排名:")
                 bandit_values = results['bandit_final_values']
                 predictor_names = self.adaptive_predictor.predictor_names
                 
@@ -1443,13 +1443,13 @@ class DLTPredictorSystem:
 
                 saved_file = self.adaptive_predictor.save_enhanced_results(filename)
                 if saved_file:
-                    print(f"💾 学习结果已保存: {saved_file}")
+                    print(f" 学习结果已保存: {saved_file}")
             else:
-                print("❌ 自适应学习失败")
+                print("ERROR 自适应学习失败")
         
         except Exception as e:
             logger_manager.error("学习失败", e)
-            print(f"❌ 学习失败: {e}")
+            print(f"ERROR 学习失败: {e}")
     
     def run_smart_command(self, args):
         """处理智能预测命令"""
@@ -1457,22 +1457,22 @@ class DLTPredictorSystem:
 
         # 确定预测类型
         if args.compound:
-            print(f"🧠 智能复式预测 ({args.front_count}+{args.back_count})...")
+            print(f" 智能复式预测 ({args.front_count}+{args.back_count})...")
         elif args.duplex:
-            print(f"🧠 智能胆拖预测 (前区{args.front_dan}胆{args.front_tuo}拖, 后区{args.back_dan}胆{args.back_tuo}拖)...")
+            print(f" 智能胆拖预测 (前区{args.front_dan}胆{args.front_tuo}拖, 后区{args.back_dan}胆{args.back_tuo}拖)...")
         else:
-            print(f"🧠 智能预测 (注数: {args.count})...")
+            print(f" 智能预测 (注数: {args.count})...")
 
         try:
             # 加载学习结果
             if args.load:
                 if self.adaptive_predictor.load_enhanced_results(args.load):
-                    print(f"✅ 已加载学习结果: {args.load}")
+                    print(f"OK 已加载学习结果: {args.load}")
                 else:
-                    print(f"❌ 加载学习结果失败: {args.load}")
+                    print(f"ERROR 加载学习结果失败: {args.load}")
                     return
             else:
-                print("⚠️  未加载学习结果，使用默认配置")
+                print("WARNING  未加载学习结果，使用默认配置")
 
             # 根据类型生成预测
             if args.compound:
@@ -1484,8 +1484,8 @@ class DLTPredictorSystem:
                 )
 
                 if result:
-                    print("✅ 智能复式预测完成!")
-                    print("\n🧠 智能复式预测结果:")
+                    print("OK 智能复式预测完成!")
+                    print("\n 智能复式预测结果:")
 
                     front_str = ' '.join([str(b).zfill(2) for b in result['front_balls']])
                     back_str = ' '.join([str(b).zfill(2) for b in result['back_balls']])
@@ -1498,7 +1498,7 @@ class DLTPredictorSystem:
                     print(f"  置信度: {result['confidence']:.3f}")
                     print(f"  使用预测器: {result['top_predictors']}")
                 else:
-                    print("❌ 智能复式预测失败")
+                    print("ERROR 智能复式预测失败")
 
             elif args.duplex:
                 # 胆拖投注预测
@@ -1511,8 +1511,8 @@ class DLTPredictorSystem:
                 )
 
                 if result:
-                    print("✅ 智能胆拖预测完成!")
-                    print("\n🧠 智能胆拖预测结果:")
+                    print("OK 智能胆拖预测完成!")
+                    print("\n 智能胆拖预测结果:")
 
                     front_dan_str = ' '.join([str(b).zfill(2) for b in result['front_dan']])
                     front_tuo_str = ' '.join([str(b).zfill(2) for b in result['front_tuo']])
@@ -1528,15 +1528,15 @@ class DLTPredictorSystem:
                     print(f"  置信度: {result['confidence']:.3f}")
                     print(f"  最优预测器: {result['best_predictor']}")
                 else:
-                    print("❌ 智能胆拖预测失败")
+                    print("ERROR 智能胆拖预测失败")
 
             else:
                 # 单式投注预测
                 predictions = self.adaptive_predictor.generate_enhanced_prediction(args.count)
 
                 if predictions:
-                    print("✅ 智能预测完成!")
-                    print("\n🧠 智能预测结果:")
+                    print("OK 智能预测完成!")
+                    print("\n 智能预测结果:")
 
                     for pred in predictions:
                         front_str = ' '.join([str(b).zfill(2) for b in pred['front_balls']])
@@ -1550,17 +1550,17 @@ class DLTPredictorSystem:
                         print(f"    置信度: {confidence:.3f}")
                         print(f"    期望奖励: {expected_reward:.3f}")
                 else:
-                    print("❌ 智能预测失败")
+                    print("ERROR 智能预测失败")
 
         except Exception as e:
             logger_manager.error("智能预测失败", e)
-            print(f"❌ 智能预测失败: {e}")
+            print(f"ERROR 智能预测失败: {e}")
 
     def run_optimize_command(self, args):
         """处理参数优化命令"""
         self._load_adaptive_predictor()
 
-        print(f"⚙️ 参数优化 (测试期数: {args.test_periods}, 优化轮数: {args.rounds})...")
+        print(f" 参数优化 (测试期数: {args.test_periods}, 优化轮数: {args.rounds})...")
 
         try:
             # 进行参数优化
@@ -1570,14 +1570,14 @@ class DLTPredictorSystem:
             )
 
             if results:
-                print("✅ 参数优化完成!")
-                print(f"\n🏆 最佳参数:")
+                print("OK 参数优化完成!")
+                print(f"\n 最佳参数:")
                 for param, value in results['best_params'].items():
                     print(f"  {param}: {value}")
 
-                print(f"\n📊 最佳得分: {results['best_score']:.3f}")
+                print(f"\n 最佳得分: {results['best_score']:.3f}")
 
-                print(f"\n📈 优化历史:")
+                print(f"\n 优化历史:")
                 for history in results['optimization_history'][-5:]:  # 显示最后5轮
                     print(f"  轮次 {history['round']}: 得分 {history['score']:.3f}, 中奖率 {history['win_rate']:.3f}")
 
@@ -1597,20 +1597,20 @@ class DLTPredictorSystem:
                     with open(filename, 'w', encoding='utf-8') as f:
                         json.dump(results, f, ensure_ascii=False, indent=2, default=str)
 
-                    print(f"💾 优化结果已保存: {filename}")
+                    print(f" 优化结果已保存: {filename}")
             else:
-                print("❌ 参数优化失败")
+                print("ERROR 参数优化失败")
 
         except Exception as e:
             logger_manager.error("参数优化失败", e)
-            print(f"❌ 参数优化失败: {e}")
+            print(f"ERROR 参数优化失败: {e}")
 
     def run_backtest_command(self, args):
         """处理回测命令"""
         self._load_predictors()
 
-        print(f"📈 开始历史回测 (方法: {args.method})...")
-        print(f"📊 起始期数: {args.start}, 测试期数: {args.test}")
+        print(f" 开始历史回测 (方法: {args.method})...")
+        print(f" 起始期数: {args.start}, 测试期数: {args.test}")
 
         try:
             from adaptive_learning_modules import AccuracyTracker
@@ -1621,14 +1621,14 @@ class DLTPredictorSystem:
             # 获取数据
             df = data_manager.get_data()
             if df is None or len(df) < args.start + args.test:
-                print("❌ 数据不足")
+                print("ERROR 数据不足")
                 return
 
             total_predictions = 0
             total_wins = 0
             prize_stats = {}
 
-            print(f"🔄 开始回测...")
+            print(f" 开始回测...")
 
             for i in range(args.test):
                 period_idx = args.start + i
@@ -1656,14 +1656,14 @@ class DLTPredictorSystem:
                         if args.method == 'markov':
                             result = self.predictors['advanced'].markov_predict(1)
                         elif args.method == 'bayesian':
-                            result = self.predictors['advanced'].bayesian_predict(1)
+                            result = self.predictors['traditional'].bayesian_predict(1)
                         elif args.method == 'ensemble':
                             result = self.predictors['advanced'].ensemble_predict(1)
 
                         predicted_front, predicted_back = result[0]
 
                     else:
-                        print(f"❌ 不支持的回测方法: {args.method}")
+                        print(f"ERROR 不支持的回测方法: {args.method}")
                         return
 
                     # 计算中奖情况
@@ -1688,26 +1688,26 @@ class DLTPredictorSystem:
                     continue
 
             # 显示回测结果
-            print("✅ 回测完成!")
-            print(f"\n📊 回测结果统计:")
+            print("OK 回测完成!")
+            print(f"\n 回测结果统计:")
             print(f"  总预测期数: {total_predictions}")
             print(f"  中奖期数: {total_wins}")
             print(f"  中奖率: {total_wins/total_predictions:.3f}" if total_predictions > 0 else "  中奖率: 0.000")
 
-            print(f"\n🏆 中奖等级分布:")
+            print(f"\n 中奖等级分布:")
             for prize, count in sorted(prize_stats.items()):
                 rate = count / total_predictions if total_predictions > 0 else 0
                 print(f"  {prize}: {count} 次 ({rate:.3f})")
 
         except Exception as e:
             logger_manager.error("回测失败", e)
-            print(f"❌ 回测失败: {e}")
+            print(f"ERROR 回测失败: {e}")
 
     def run_system_command(self, args):
         """处理系统管理命令"""
         if args.system_action == 'cache':
             if args.action == 'info':
-                print("💾 缓存系统信息:")
+                print(" 缓存系统信息:")
                 print("=" * 50)
 
                 # 获取智能缓存状态
@@ -1715,7 +1715,7 @@ class DLTPredictorSystem:
                     from analyzer_modules import get_analysis_cache_status
                     cache_status = get_analysis_cache_status()
 
-                    print("📊 智能缓存系统:")
+                    print(" 智能缓存系统:")
                     smart_stats = cache_status.get('smart_cache', {})
                     memory_cache = smart_stats.get('memory_cache', {})
                     file_cache = smart_stats.get('file_cache', {})
@@ -1724,7 +1724,7 @@ class DLTPredictorSystem:
                     print(f"  文件缓存: {file_cache.get('analysis_files', 0)} 个文件, {file_cache.get('total_size_mb', 0):.2f} MB")
                     print(f"  数据签名: {cache_status.get('data_signature', 'unknown')}")
 
-                    print("\n📊 传统缓存系统:")
+                    print("\n 传统缓存系统:")
                     old_stats = cache_status.get('old_cache', {})
                     for cache_type in ['models', 'analysis', 'data']:
                         if cache_type in old_stats:
@@ -1732,7 +1732,7 @@ class DLTPredictorSystem:
                             print(f"  {cache_type}: {info.get('files', 0)} 个文件, {info.get('size_mb', 0):.2f} MB")
 
                 except Exception as e:
-                    print(f"❌ 获取智能缓存状态失败: {e}")
+                    print(f"ERROR 获取智能缓存状态失败: {e}")
                     # 回退到传统缓存信息
                     cache_info = cache_manager.get_cache_info()
                     for cache_type in ['models', 'analysis', 'data']:
@@ -1741,7 +1741,7 @@ class DLTPredictorSystem:
 
             elif args.action == 'clear':
                 cache_type = getattr(args, 'type', 'all')
-                print(f"🗑️  清理{cache_type}缓存...")
+                print(f"  清理{cache_type}缓存...")
 
                 try:
                     from analyzer_modules import clear_all_analysis_cache, force_refresh_cache
@@ -1749,34 +1749,34 @@ class DLTPredictorSystem:
                     if cache_type == 'analysis' or cache_type == 'all':
                         # 使用智能缓存清理
                         cleared_count = clear_all_analysis_cache()
-                        print(f"✅ 已清理分析缓存 {cleared_count} 个文件")
+                        print(f"OK 已清理分析缓存 {cleared_count} 个文件")
 
                     if cache_type == 'all':
                         # 清理其他类型缓存
                         other_cleared = cache_manager.clear_cache('models') + cache_manager.clear_cache('data')
-                        print(f"✅ 已清理其他缓存 {other_cleared} 个文件")
+                        print(f"OK 已清理其他缓存 {other_cleared} 个文件")
 
                 except Exception as e:
-                    print(f"❌ 智能缓存清理失败: {e}")
+                    print(f"ERROR 智能缓存清理失败: {e}")
                     # 回退到传统缓存清理
                     cleared_count = cache_manager.clear_cache(cache_type)
-                    print(f"✅ 已清理 {cleared_count} 个缓存文件")
+                    print(f"OK 已清理 {cleared_count} 个缓存文件")
 
             elif args.action == 'refresh':
-                print("🔄 强制刷新缓存...")
+                print(" 强制刷新缓存...")
                 try:
                     from analyzer_modules import force_refresh_cache
                     method_name = getattr(args, 'method', None)
                     cleared_count = force_refresh_cache(method_name)
                     if method_name:
-                        print(f"✅ 已强制刷新 {method_name} 缓存，删除 {cleared_count} 个缓存项")
+                        print(f"OK 已强制刷新 {method_name} 缓存，删除 {cleared_count} 个缓存项")
                     else:
-                        print(f"✅ 已强制刷新所有缓存，删除 {cleared_count} 个缓存项")
+                        print(f"OK 已强制刷新所有缓存，删除 {cleared_count} 个缓存项")
                 except Exception as e:
-                    print(f"❌ 强制刷新缓存失败: {e}")
+                    print(f"ERROR 强制刷新缓存失败: {e}")
 
             elif args.action == 'status':
-                print("📈 缓存系统状态:")
+                print(" 缓存系统状态:")
                 print("=" * 50)
                 try:
                     from analyzer_modules import get_analysis_cache_status
@@ -1785,25 +1785,25 @@ class DLTPredictorSystem:
                     cache_status = get_analysis_cache_status()
                     smart_stats = cache_status.get('smart_cache', {})
 
-                    print(f"智能缓存系统: {'✅ 已启用' if smart_stats else '❌ 未启用'}")
-                    print(f"数据版本控制: {'✅ 已启用' if cache_status.get('data_signature') else '❌ 未启用'}")
-                    print(f"内存缓存: {'✅ 正常' if smart_stats.get('memory_cache') else '❌ 异常'}")
-                    print(f"文件缓存: {'✅ 正常' if smart_stats.get('file_cache') else '❌ 异常'}")
+                    print(f"智能缓存系统: {'OK 已启用' if smart_stats else 'ERROR 未启用'}")
+                    print(f"数据版本控制: {'OK 已启用' if cache_status.get('data_signature') else 'ERROR 未启用'}")
+                    print(f"内存缓存: {'OK 正常' if smart_stats.get('memory_cache') else 'ERROR 异常'}")
+                    print(f"文件缓存: {'OK 正常' if smart_stats.get('file_cache') else 'ERROR 异常'}")
 
                 except Exception as e:
-                    print(f"❌ 获取缓存状态失败: {e}")
-                    print("缓存系统状态: ❌ 异常")
+                    print(f"ERROR 获取缓存状态失败: {e}")
+                    print("缓存系统状态: ERROR 异常")
     
     def run_compare_command(self, args):
         """处理批量预测对比命令"""
-        print("🎯 批量预测对比功能")
+        print(" 批量预测对比功能")
         print("="*60)
         
         # 导入批量对比模块
         try:
             from batch_comparison_module import BatchComparison, BatchComparisonConfig
         except ImportError as e:
-            print(f"❌ 批量对比模块导入失败: {e}")
+            print(f"ERROR 批量对比模块导入失败: {e}")
             return
         
         # 创建配置
@@ -1822,11 +1822,11 @@ class DLTPredictorSystem:
         # 验证配置
         is_valid, error_msg = config.validate()
         if not is_valid:
-            print(f"❌ 配置验证失败: {error_msg}")
+            print(f"ERROR 配置验证失败: {error_msg}")
             return
         
         # 显示配置信息
-        print(f"📋 配置信息:")
+        print(f" 配置信息:")
         print(f"  目标期号: {config.target_issue}")
         print(f"  预测方法: {config.method}")
         if config.random_periods:
@@ -1846,7 +1846,7 @@ class DLTPredictorSystem:
                     progress = current / total * 100
                     print(f"\r⏳ {message} - {progress:.1f}%", end="", flush=True)
             
-            print(f"\n🚀 开始执行批量预测对比...")
+            print(f"\n 开始执行批量预测对比...")
             result = batch_comparison.execute(config, progress_callback)
             
             if not args.no_progress:
@@ -1859,18 +1859,18 @@ class DLTPredictorSystem:
             if args.export:
                 try:
                     filename = result.export_to_excel()
-                    print(f"\n📊 Excel文件已导出: {filename}")
+                    print(f"\n Excel文件已导出: {filename}")
                 except Exception as e:
-                    print(f"\n❌ Excel导出失败: {e}")
+                    print(f"\nERROR Excel导出失败: {e}")
                     
         except Exception as e:
-            print(f"\n❌ 批量对比执行失败: {e}")
+            print(f"\nERROR 批量对比执行失败: {e}")
             logger_manager.error(f"批量对比执行失败: {e}")
     
     def run_enhanced_command(self, args):
         """运行增强功能命令"""
         if not self.enhanced_available:
-            print("❌ 增强功能不可用")
+            print("ERROR 增强功能不可用")
             print("请确保已正确安装enhanced_deep_learning模块")
             return
 
@@ -1883,7 +1883,7 @@ class DLTPredictorSystem:
 
             # 如果没有指定任何参数，显示基本信息
             if not any([getattr(args, 'gpu', False), getattr(args, 'models', False), getattr(args, 'performance', False)]):
-                print("🔍 增强系统信息")
+                print(" 增强系统信息")
                 print("=" * 50)
 
                 info = self.enhanced_system.get_system_info()
@@ -1901,7 +1901,7 @@ class DLTPredictorSystem:
                     print(f"GPU数量: {hardware['gpu_count']}")
 
                 print("=" * 50)
-                print("💡 使用 --gpu, --models, --performance 或 --all 查看详细信息")
+                print(" 使用 --gpu, --models, --performance 或 --all 查看详细信息")
                 return
 
             # 显示GPU信息
@@ -1911,11 +1911,11 @@ class DLTPredictorSystem:
                     dl_commands = CommandDefinition()
                     dl_commands.info_command(args)
                 except Exception as e:
-                    print(f"❌ 获取GPU信息失败: {e}")
+                    print(f"ERROR 获取GPU信息失败: {e}")
 
             # 显示模型信息
             if getattr(args, 'models', False):
-                print("\n📊 模型信息")
+                print("\n 模型信息")
                 print("=" * 50)
                 info = self.enhanced_system.get_system_info()
                 if 'models' in info:
@@ -1929,7 +1929,7 @@ class DLTPredictorSystem:
 
             # 显示性能信息
             if getattr(args, 'performance', False):
-                print("\n⚡ 性能信息")
+                print("\nPERFORMANCE 性能信息")
                 print("=" * 50)
                 info = self.enhanced_system.get_system_info()
                 if 'performance' in info:
@@ -1942,83 +1942,83 @@ class DLTPredictorSystem:
                 print("=" * 50)
 
         elif args.enhanced_action == 'test':
-            print("🧪 运行兼容性测试")
+            print(" 运行兼容性测试")
             print("=" * 50)
 
             result = self.enhanced_system.run_compatibility_test()
             if result.get('success'):
                 for test in result['test_results']:
-                    status_icon = '✅' if test['status'] == 'passed' else '❌'
+                    status_icon = 'OK' if test['status'] == 'passed' else 'ERROR'
                     print(f"{status_icon} {test['name']}: {test['message']} ({test['duration']:.2f}s)")
             else:
-                print(f"❌ 测试失败: {result.get('error', '未知错误')}")
+                print(f"ERROR 测试失败: {result.get('error', '未知错误')}")
 
         elif args.enhanced_action == 'predict':
-            print("🔮 增强预测")
+            print(" 增强预测")
             print("=" * 50)
 
             if not args.data:
-                print("❌ 请提供预测数据 (-d 参数)")
+                print("ERROR 请提供预测数据 (-d 参数)")
                 return
 
             result = self.enhanced_system.enhanced_predict(args.data, method=args.method)
             if result.get('success'):
-                print(f"✅ 预测成功")
+                print(f"OK 预测成功")
                 print(f"方法: {result['method']}")
                 print(f"结果: {result['result']}")
                 print(f"已缓存: {result['cached']}")
             else:
-                print(f"❌ 预测失败: {result.get('error', '未知错误')}")
+                print(f"ERROR 预测失败: {result.get('error', '未知错误')}")
 
         elif args.enhanced_action == 'visualize':
-            print("📊 增强可视化")
+            print(" 增强可视化")
             print("=" * 50)
 
             if not args.data:
-                print("❌ 请提供可视化数据 (-d 参数)")
+                print("ERROR 请提供可视化数据 (-d 参数)")
                 return
 
             result = self.enhanced_system.enhanced_visualize(args.data, chart_type=args.type)
             if result.get('success'):
-                print(f"✅ 可视化成功")
+                print(f"OK 可视化成功")
                 print(f"图表类型: {result['chart_type']}")
                 print(f"结果: {result['result']}")
             else:
-                print(f"❌ 可视化失败: {result.get('error', '未知错误')}")
+                print(f"ERROR 可视化失败: {result.get('error', '未知错误')}")
 
         else:
-            print("❌ 未知的增强功能操作")
+            print("ERROR 未知的增强功能操作")
             print("可用操作: info, test, predict, visualize")
 
     def show_version(self):
         """显示版本信息"""
-        print("🎯 大乐透预测系统")
+        print(" 大乐透预测系统")
         print("版本: 2.0.0 Enhanced")
         print("作者: AI Assistant")
         print("更新时间: 2024-12-19")
         print("\n📦 功能模块:")
-        print("  ✅ 数据爬取与管理")
-        print("  ✅ 基础与高级分析")
-        print("  ✅ 多种预测算法")
-        print("  ✅ 自适应学习系统")
-        print("  ✅ 智能预测与回测")
-        print("  ✅ 缓存与日志管理")
+        print("  OK 数据爬取与管理")
+        print("  OK 基础与高级分析")
+        print("  OK 多种预测算法")
+        print("  OK 自适应学习系统")
+        print("  OK 智能预测与回测")
+        print("  OK 缓存与日志管理")
 
         # 显示增强功能状态
         if self.enhanced_available:
-            print("\n🚀 增强功能模块:")
-            print("  ✅ 企业级核心架构")
-            print("  ✅ 高级数据处理")
-            print("  ✅ 智能模型注册表")
-            print("  ✅ 增强预测引擎")
-            print("  ✅ 交互式可视化")
-            print("  ✅ 工作流管理")
-            print("  ✅ 跨平台兼容性")
-            print("  ✅ 分布式计算")
-            print("  ✅ 性能优化")
-            print("  ✅ 智能缓存系统")
+            print("\n 增强功能模块:")
+            print("  OK 企业级核心架构")
+            print("  OK 高级数据处理")
+            print("  OK 智能模型注册表")
+            print("  OK 增强预测引擎")
+            print("  OK 交互式可视化")
+            print("  OK 工作流管理")
+            print("  OK 跨平台兼容性")
+            print("  OK 分布式计算")
+            print("  OK 性能优化")
+            print("  OK 智能缓存系统")
         else:
-            print("\n⚠️ 增强功能: 未启用")
+            print("\nWARNING 增强功能: 未启用")
             print("  提示: 运行 'python dlt_main.py enhanced info' 查看详情")
 
     def _process_acceleration_args(self, args):
@@ -2324,11 +2324,11 @@ def main():
         elif args.command == 'version':
             system.show_version()
     except KeyboardInterrupt:
-        print("\n⚠️  操作被用户中断")
+        print("\nWARNING  操作被用户中断")
         task_manager.interrupt_current_task()
     except Exception as e:
         logger_manager.error("命令执行失败", e)
-        print(f"❌ 命令执行失败: {e}")
+        print(f"ERROR 命令执行失败: {e}")
 
 
 if __name__ == "__main__":

@@ -85,7 +85,7 @@ class IntegratedPredictor:
                     'hot_cold': lambda data, count=3: traditional.hot_cold_predict(count),
                     'missing': lambda data, count=3: traditional.missing_predict(count),
                     'markov': lambda data, count=3: advanced.markov_predict(count),
-                    'bayesian': lambda data, count=3: advanced.bayesian_predict(count),
+                    'bayesian': lambda data, count=3: traditional.bayesian_predict(count),  # 使用传统预测器
                     'ensemble': lambda data, count=3: advanced.ensemble_predict(count),
                     'super': lambda data, count=3: super_predictor.predict_super(count)
                 })

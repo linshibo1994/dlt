@@ -3689,9 +3689,9 @@ visualization_analyzer = VisualizationAnalyzer()
 # 在模块加载时自动迁移缓存系统
 try:
     if migrate_to_smart_cache():
-        logger_manager.info("✅ 智能缓存系统已启用")
+        logger_manager.info("智能缓存系统已启用")
     else:
-        logger_manager.warning("⚠️ 智能缓存系统启用失败，使用传统缓存")
+        logger_manager.warning("智能缓存系统启用失败，使用传统缓存")
 except Exception as e:
     logger_manager.error(f"缓存系统初始化失败: {e}")
 

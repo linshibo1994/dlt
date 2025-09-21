@@ -477,7 +477,7 @@ class DataManager:
             back_balls = [int(x.strip()) for x in str(row['back_balls']).split(',')]
             return front_balls, back_balls
         except Exception as e:
-            print(f"❌ 解析号码失败: {e}")
+            print(f"解析号码失败: {e}")
             return [], []
 
 

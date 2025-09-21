@@ -340,7 +340,7 @@ class BatchComparison:
                 elif method == 'missing':
                     result = predictor.missing_predict(count=1, periods=periods)
             
-            elif method in ['markov', 'markov_2nd', 'markov_3rd', 'adaptive_markov', 'bayesian', 'ensemble', 'clustering']:
+            elif method in ['markov', 'markov_2nd', 'markov_3rd', 'adaptive_markov', 'ensemble', 'clustering']:
                 predictor = self.predictors['advanced']
                 if method == 'markov':
                     result = predictor.markov_predict(count=1, periods=periods)
@@ -350,12 +350,15 @@ class BatchComparison:
                     result = predictor.markov_3rd_predict(count=1, periods=periods)
                 elif method == 'adaptive_markov':
                     result = predictor.adaptive_markov_predict(count=1, periods=periods)
-                elif method == 'bayesian':
-                    result = predictor.bayesian_predict(count=1, periods=periods)
                 elif method == 'ensemble':
                     result = predictor.ensemble_predict(count=1, periods=periods)
                 elif method == 'clustering':
                     result = predictor.clustering_predict(count=1, periods=periods)
+
+            elif method == 'bayesian':
+                # bayesian_predict现在在TraditionalPredictor中
+                predictor = self.predictors['traditional']
+                result = predictor.bayesian_predict(count=1, periods=periods)
             
             elif method in ['super', 'adaptive', 'nine_models', 'advanced_integration', 'mixed_strategy', 'highly_integrated']:
                 predictor = self.predictors['super']

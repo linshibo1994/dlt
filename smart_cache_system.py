@@ -439,8 +439,8 @@ def migrate_cache_system():
     if migration_tool.migrate_from_old_system():
         # 创建兼容层
         if migration_tool.create_cache_compatibility_layer():
-            logger_manager.info("✅ 缓存系统迁移完成")
+            logger_manager.info("缓存系统迁移完成")
             return True
 
-    logger_manager.error("❌ 缓存系统迁移失败")
+    logger_manager.error("缓存系统迁移失败")
     return False
