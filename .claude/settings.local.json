@@ -9,7 +9,11 @@
       "mcp__fs__directory_tree",
       "mcp__fs__read_multiple_files",
       "Bash(del:*)",
-      "Bash(timeout:*)"
+      "Bash(timeout:*)",
+      "mcp__serena__list_dir",
+      "mcp__serena__get_symbols_overview",
+      "mcp__serena__find_symbol",
+      "mcp__serena__search_for_pattern"
     ],
     "deny": [],
     "ask": []
