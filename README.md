@@ -38,6 +38,12 @@
 - **gan** - GAN生成对抗：生成器判别器对抗训练
 - **ensemble** - 集成深度学习：多模型智能融合
 
+### 📊 聚类算法
+- **clustering** - 聚类预测：基于K-means聚类的智能预测
+
+### ⚡ 增强算法
+- **enhanced** - 增强预测：集成多种增强算法的高级预测系统
+
 ### 🎯 智能预测算法
 - **super** - 超级预测：多算法智能融合系统
 - **adaptive** - 自适应预测：基于多臂老虎机的预测器选择
@@ -355,6 +361,38 @@ python3 dlt_main.py predict -m ensemble --compound --front-count 8 --back-count 
 python3 dlt_main.py predict -m ensemble --compound --front-count 15 --back-count 6 --acceleration auto -p 1000
 ```
 
+#### 聚类算法方法 (支持自动加速 + 复式预测)
+- **clustering** - 聚类预测：基于K-means聚类的智能预测
+```bash
+# 基础预测
+python3 dlt_main.py predict -m clustering -c 1
+python3 dlt_main.py predict -m clustering -p 800 -c 2
+
+# 自动加速
+python3 dlt_main.py predict -m clustering --acceleration auto -c 3
+python3 dlt_main.py predict -m clustering --acceleration cpu_multi -c 2
+
+# 复式预测
+python3 dlt_main.py predict -m clustering --compound --front-count 9 --back-count 4
+python3 dlt_main.py predict -m clustering --compound --front-count 12 --back-count 5 --acceleration auto -p 1000
+```
+
+#### 增强预测方法 (支持GPU加速 + 复式预测)  
+- **enhanced** - 增强预测：集成多种增强算法的高级预测系统
+```bash
+# 基础预测
+python3 dlt_main.py predict -m enhanced -c 1
+python3 dlt_main.py predict -m enhanced -p 1000 -c 2
+
+# GPU加速
+python3 dlt_main.py predict -m enhanced --acceleration gpu -c 3
+python3 dlt_main.py predict -m enhanced --acceleration auto -c 2
+
+# 复式预测
+python3 dlt_main.py predict -m enhanced --compound --front-count 10 --back-count 4
+python3 dlt_main.py predict -m enhanced --compound --front-count 13 --back-count 6 --acceleration gpu -p 1200
+```
+
 #### 智能预测方法 (支持自动加速 + 复式预测)
 - **super** - 超级预测：多算法智能融合系统
 ```bash
@@ -546,14 +584,40 @@ python3 dlt_main.py predict -m ultimate_ensemble --compound --front-count 15 --b
 ```
 
 ### 🔧 常用参数说明
+
+#### 基础参数
 - `-m, --method` - 预测方法（必需）
 - `-p, --periods` - 分析期数 (50-2756，默认500)
 - `-c, --count` - 预测注数 (1-100，默认1)
-- `--acceleration` - 加速模式 (auto/gpu/cpu_multi/cpu)
+- `--save` - 保存结果到文件
+
+#### 硬件加速参数
+- `--acceleration` - 加速模式 (auto/gpu/cpu_multi/gpu_cuda)
+- `--cpu-threads` - CPU线程数 (-1表示所有核心)
+- `--gpu-device` - GPU设备ID (0-7)
+- `--gpu-memory-limit` - GPU内存限制 (GB)
+- `--mixed-precision` - 启用混合精度训练
+- `--batch-size-multiplier` - 批次大小倍数 (默认1.0)
+- `--benchmark-hardware` - 运行硬件基准测试
+- `--fallback-enabled` - 启用优雅降级 (默认true)
+
+#### 训练优化参数
+- `--auto-epochs` - 启用智能训练轮数
+- `--min-epochs` - 最小训练轮数 (默认10)
+- `--max-epochs` - 最大训练轮数 (默认1000)
+- `--performance-mode` - 性能模式 (low/medium/high)
+- `--training-intensity` - 训练强度倍数 (默认1.0)
+
+#### 复式预测参数
 - `--compound` - 启用复式预测
 - `--front-count` - 前区号码数量 (6-15，默认8)
 - `--back-count` - 后区号码数量 (3-12，默认4)
-- `--save` - 保存结果到文件
+- `--front-dan` - 前区胆码数量 (1-5，默认2)
+- `--back-dan` - 后区胆码数量 (1-2，默认1)  
+- `--front-tuo` - 前区拖码数量 (默认6)
+- `--back-tuo` - 后区拖码数量 (默认4)
+- `--max-cost` - 最大投注成本 (默认10000元)
+- `--min-confidence` - 最小置信度阈值 (默认0.5)
 
 ## 🎯 批量预测对比功能
 
