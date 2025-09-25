@@ -1,0 +1,25 @@
+{
+  "strategy": "custom",
+  "execution_time": 273.07120418548584,
+  "total_tests": 40,
+  "total_predictions": 0,
+  "winning_tests": 0,
+  "winning_predictions": 0,
+  "major_prizes": 0,
+  "test_winning_rate": 0.0,
+  "prediction_winning_rate": 0,
+  "prize_statistics": {},
+  "method_statistics": {
+    "markov": {
+      "total_tests": 40,
+      "winning_tests": 0,
+      "total_predictions": 0,
+      "winning_predictions": 0,
+      "best_prize_level": 0,
+      "test_winning_rate": 0.0,
+      "prediction_winning_rate": 0
+    }
+  },
+  "completed_at": "2025-09-24T16:21:12.809510",
+  "stopped_by_major_prize": false
+}

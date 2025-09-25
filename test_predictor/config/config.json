@@ -1,0 +1,65 @@
+{
+  "test_settings": {
+    "timeout_seconds": 60,
+    "max_retries": 2,
+    "parallel_workers": 4,
+    "stop_on_major_prize": true,
+    "major_prize_levels": [1, 2]
+  },
+  "prediction_methods": {
+    "basic": ["frequency", "hot_cold", "missing"],
+    "advanced": ["markov", "markov_2nd", "markov_3rd", "adaptive_markov", "bayesian", "ensemble"],
+    "deep_learning": ["lstm", "transformer", "gan"],
+    "compound": ["compound", "duplex", "markov_compound", "nine_models"]
+  },
+  "parameter_ranges": {
+    "periods": {
+      "min": 10,
+      "max": 2000,
+      "basic_test": [50, 100, 200, 500, 1000],
+      "progressive_step": 50
+    },
+    "count": {
+      "min": 1,
+      "max": 10,
+      "basic_test": [1, 2, 3, 5],
+      "optimization_test": [1, 2, 3, 4, 5, 8, 10]
+    }
+  },
+  "test_strategies": {
+    "quick": {
+      "description": "快速测试模式",
+      "methods": ["frequency", "markov", "bayesian"],
+      "periods_list": [100, 500],
+      "count_list": [1, 2],
+      "max_tests_per_method": 5
+    },
+    "comprehensive": {
+      "description": "全面测试模式",
+      "methods": "all",
+      "periods_range": [50, 1000],
+      "count_range": [1, 5],
+      "progressive_testing": true
+    },
+    "optimization": {
+      "description": "优化测试模式",
+      "methods": ["markov", "markov_2nd", "markov_3rd", "bayesian", "ensemble"],
+      "periods_range": [10, 2000],
+      "count_range": [1, 10],
+      "random_testing": true,
+      "max_tests": 1000
+    }
+  },
+  "output_settings": {
+    "log_level": "INFO",
+    "save_all_results": true,
+    "result_formats": ["json", "csv"],
+    "real_time_display": true,
+    "progress_update_interval": 5
+  },
+  "performance_settings": {
+    "memory_limit_mb": 1024,
+    "disk_space_limit_mb": 2048,
+    "max_execution_time_hours": 24
+  }
+}
