@@ -802,7 +802,7 @@ class ModelBenchmark:
             return False
     
     def _calculate_prize_level(self, front_hits: int, back_hits: int) -> Tuple[str, float]:
-        """计算中奖等级和奖金
+        """计算中奖等级和奖金（按照大乐透2019年新规则）
         
         Args:
             front_hits: 前区命中数
@@ -821,16 +821,14 @@ class ModelBenchmark:
             return "四等奖", self.prize_levels["四等奖"]
         elif front_hits == 4 and back_hits == 1:
             return "五等奖", self.prize_levels["五等奖"]
-        elif front_hits == 3 and back_hits == 2:
-            return "五等奖", self.prize_levels["五等奖"]
-        elif front_hits == 4 and back_hits == 0:
+        elif (front_hits == 4 and back_hits == 0) or (front_hits == 3 and back_hits == 2):
             return "六等奖", self.prize_levels["六等奖"]
         elif front_hits == 3 and back_hits == 1:
-            return "六等奖", self.prize_levels["六等奖"]
-        elif front_hits == 2 and back_hits == 2:
-            return "六等奖", self.prize_levels["六等奖"]
-        elif front_hits == 0 and back_hits == 2:
-            return "六等奖", self.prize_levels["六等奖"]
+            return "七等奖", self.prize_levels["七等奖"]
+        elif (front_hits == 3 and back_hits == 0) or (front_hits == 2 and back_hits == 2):
+            return "八等奖", self.prize_levels["八等奖"]
+        elif (front_hits == 2 and back_hits == 1) or (front_hits == 1 and back_hits == 2) or (front_hits == 0 and back_hits == 2):
+            return "九等奖", self.prize_levels["九等奖"]
         else:
             return "未中奖", self.prize_levels["未中奖"]
     

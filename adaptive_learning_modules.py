@@ -143,11 +143,11 @@ class AccuracyTracker:
     
     def _calculate_prize_level(self, predicted_front: List[int], predicted_back: List[int],
                               actual_front: List[int], actual_back: List[int]) -> Tuple[str, int, int]:
-        """计算中奖等级"""
+        """计算中奖等级（按照大乐透2019年新规则）"""
         front_hits = len(set(predicted_front) & set(actual_front))
         back_hits = len(set(predicted_back) & set(actual_back))
         
-        # 判断中奖等级
+        # 大乐透2019年新规则（9个奖级）
         if front_hits == 5 and back_hits == 2:
             return "一等奖", front_hits, back_hits
         elif front_hits == 5 and back_hits == 1:
@@ -158,21 +158,13 @@ class AccuracyTracker:
             return "四等奖", front_hits, back_hits
         elif front_hits == 4 and back_hits == 1:
             return "五等奖", front_hits, back_hits
-        elif front_hits == 3 and back_hits == 2:
+        elif (front_hits == 4 and back_hits == 0) or (front_hits == 3 and back_hits == 2):
             return "六等奖", front_hits, back_hits
-        elif front_hits == 4 and back_hits == 0:
-            return "七等奖", front_hits, back_hits
         elif front_hits == 3 and back_hits == 1:
+            return "七等奖", front_hits, back_hits
+        elif (front_hits == 3 and back_hits == 0) or (front_hits == 2 and back_hits == 2):
             return "八等奖", front_hits, back_hits
-        elif front_hits == 2 and back_hits == 2:
-            return "八等奖", front_hits, back_hits
-        elif front_hits == 3 and back_hits == 0:
-            return "九等奖", front_hits, back_hits
-        elif front_hits == 1 and back_hits == 2:
-            return "九等奖", front_hits, back_hits
-        elif front_hits == 2 and back_hits == 1:
-            return "九等奖", front_hits, back_hits
-        elif front_hits == 0 and back_hits == 2:
+        elif (front_hits == 2 and back_hits == 1) or (front_hits == 1 and back_hits == 2) or (front_hits == 0 and back_hits == 2):
             return "九等奖", front_hits, back_hits
         else:
             return "未中奖", front_hits, back_hits

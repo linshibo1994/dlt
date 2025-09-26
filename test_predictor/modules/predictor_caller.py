@@ -92,16 +92,20 @@ class PredictorCaller:
         """解析预测输出，提取预测号码"""
         predictions = []
         
-        # 常见的预测结果模式
+        # 实际的预测结果格式: "第 1 注: 24 29 32 34 35 + 09 10 (方法: frequency, 置信度: 0.500)"
         patterns = [
-            # 标准格式: 前区: 01,02,03,04,05 后区: 01,02
-            r'前区[：:]\s*([0-9,\s]+)\s*后区[：:]\s*([0-9,\s]+)',
+            # 主要格式：第 X 注: 前区号码 + 后区号码 (其他信息...)
+            r'第\s*(\d+)\s*注[：:]\s*(\d{1,2}(?:\s+\d{1,2}){4})\s*[+\+]\s*(\d{1,2}(?:\s+\d{1,2}){1})',
+            # 备选格式: 前区: 01,02,03,04,05 后区: 01,02
+            r'前区[：:]\s*([0-9,\s]+)\s*后区[：:]?\s*([0-9,\s]+)',
             # 另一种格式: 01,02,03,04,05 + 01,02
             r'(\d{2}(?:,\d{2}){4})\s*[+\+]\s*(\d{2}(?:,\d{2}){1})',
             # JSON格式提取
             r'"front_balls":\s*\[([^\]]+)\].*?"back_balls":\s*\[([^\]]+)\]',
             # 其他可能的格式
-            r'(\d{1,2}(?:,\s*\d{1,2}){4})\s*[|丨]\s*(\d{1,2}(?:,\s*\d{1,2}){1})'
+            r'(\d{1,2}(?:,\s*\d{1,2}){4})\s*[|\丨]\s*(\d{1,2}(?:,\s*\d{1,2}){1})',
+            # 通用空格分隔格式: "数字 数字 数字 数字 数字 + 数字 数字"
+            r'(\d{1,2}(?:\s+\d{1,2}){4})\s*[+\+]\s*(\d{1,2}(?:\s+\d{1,2}){1})'
         ]
         
         lines = output.split('\n')
@@ -112,11 +116,14 @@ class PredictorCaller:
                 continue
             
             # 尝试匹配各种模式
-            for pattern in patterns:
+            for i, pattern in enumerate(patterns):
                 matches = re.findall(pattern, line, re.IGNORECASE)
                 for match in matches:
                     try:
-                        front_str, back_str = match
+                        if i == 0:  # 主要格式，需要跳过第一个匹配组（注号）
+                            _, front_str, back_str = match
+                        else:
+                            front_str, back_str = match
                         
                         # 清理和解析号码
                         front_numbers = self._parse_numbers(front_str)
@@ -129,11 +136,14 @@ class PredictorCaller:
                                 'back_balls': ','.join([f"{n:02d}" for n in sorted(back_numbers)]),
                                 'front_balls_list': sorted(front_numbers),
                                 'back_balls_list': sorted(back_numbers),
-                                'raw_line': line
+                                'raw_line': line,
+                                'pattern_used': i  # 调试信息：记录使用了哪个模式
                             }
                             predictions.append(prediction)
                             
                     except Exception as e:
+                        # 调试信息：记录解析失败的行
+                        print(f"解析失败 (模式{i}): {line[:100]}... 错误: {str(e)}")
                         continue
         
         # 去重
@@ -145,18 +155,31 @@ class PredictorCaller:
                 seen.add(key)
                 unique_predictions.append(pred)
         
+        # 调试信息
+        print(f"解析结果: 找到 {len(unique_predictions)} 个有效预测")
+        for i, pred in enumerate(unique_predictions):
+            print(f"  预测{i+1}: 前区{pred['front_balls']} 后区{pred['back_balls']} (使用模式{pred.get('pattern_used', 'unknown')})")
+        
         return unique_predictions
 
     def _parse_numbers(self, numbers_str: str) -> List[int]:
-        """解析号码字符串"""
-        # 移除各种符号和空格
-        clean_str = re.sub(r'[^\d,]', '', numbers_str)
+        """解析号码字符串，支持逗号和空格分隔"""
+        # 移除各种符号，保留数字、逗号和空格
+        clean_str = re.sub(r'[^\d,\s]', '', numbers_str.strip())
         
-        # 按逗号分割并转换为整数
+        # 分割号码：优先按逗号分割，如果没有逗号则按空格分割
+        if ',' in clean_str:
+            # 逗号分隔格式
+            number_strs = [s.strip() for s in clean_str.split(',') if s.strip()]
+        else:
+            # 空格分隔格式
+            number_strs = [s.strip() for s in clean_str.split() if s.strip()]
+        
+        # 转换为整数
         numbers = []
-        for num_str in clean_str.split(','):
-            if num_str.strip():
-                numbers.append(int(num_str.strip()))
+        for num_str in number_strs:
+            if num_str.isdigit():
+                numbers.append(int(num_str))
         
         return numbers
 
@@ -188,6 +211,7 @@ class PredictorCaller:
         try:
             # 构建命令
             cmd = self.build_command(method, periods, count, **kwargs)
+            print(f"执行预测命令: {' '.join(cmd)}")
             
             # 执行命令
             success, stdout, stderr = self.execute_command(cmd)
@@ -205,6 +229,7 @@ class PredictorCaller:
             }
             
             if success:
+                print(f"命令执行成功，开始解析输出...")
                 # 解析预测结果
                 predictions = self.parse_prediction_output(stdout)
                 result.update({
@@ -215,21 +240,33 @@ class PredictorCaller:
                 })
                 
                 if not predictions:
+                    print("警告: 无法解析出任何预测结果!")
+                    print(f"原始输出前1000字符:\n{stdout[:1000]}")
                     result.update({
                         'success': False,
                         'error': '无法解析预测结果',
-                        'debug_output': stdout[:500]  # 保存部分输出用于调试
+                        'debug_output': stdout,  # 保存完整输出用于调试
+                        'raw_stdout': stdout,
+                        'raw_stderr': stderr
                     })
+                else:
+                    print(f"成功解析出 {len(predictions)} 个预测结果")
             else:
+                print(f"命令执行失败: {stderr}")
+                print(f"标准输出: {stdout[:500] if stdout else '无'}")
                 result.update({
                     'error': f"命令执行失败: {stderr}",
                     'stdout': stdout,
-                    'stderr': stderr
+                    'stderr': stderr,
+                    'debug_info': f"返回码非0，可能的原因: 1)方法不存在 2)参数错误 3)数据文件问题"
                 })
             
             return result
             
         except Exception as e:
+            print(f"预测调用发生异常: {str(e)}")
+            import traceback
+            traceback.print_exc()
             return {
                 'success': False,
                 'method': method,
@@ -237,7 +274,8 @@ class PredictorCaller:
                 'count': count,
                 'execution_time': time.time() - start_time,
                 'error': f"预测调用异常: {str(e)}",
-                'timestamp': time.time()
+                'timestamp': time.time(),
+                'exception_traceback': traceback.format_exc()
             }
 
     def batch_predict(self, method_configs: List[Dict], max_retries: int = 2) -> List[Dict]:
@@ -280,36 +318,3 @@ class PredictorCaller:
     def get_available_methods(self) -> List[str]:
         """获取可用的预测方法列表"""
         return self.available_methods.copy()
-
-
-def test_predictor_caller():
-    """测试函数"""
-    caller = PredictorCaller()
-    
-    print("=== 预测器调用测试 ===")
-    
-    # 测试连接
-    print("\n1. 测试连接:")
-    if caller.test_connection():
-        print("✓ 连接成功")
-    else:
-        print("✗ 连接失败")
-        return
-    
-    # 测试单次预测
-    print("\n2. 测试单次预测:")
-    result = caller.predict('frequency', 100, 1)
-    
-    print(f"执行状态: {'成功' if result['success'] else '失败'}")
-    print(f"执行时间: {result['execution_time']:.2f}秒")
-    
-    if result['success']:
-        print(f"预测数量: {result['prediction_count']}")
-        for i, pred in enumerate(result['predictions'][:3]):  # 只显示前3个
-            print(f"  预测{i+1}: {pred['front_balls']} + {pred['back_balls']}")
-    else:
-        print(f"错误信息: {result.get('error', '未知错误')}")
-
-
-if __name__ == "__main__":
-    test_predictor_caller()

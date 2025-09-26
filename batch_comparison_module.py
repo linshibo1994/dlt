@@ -98,18 +98,17 @@ class PrizeStatistics:
 class PrizeChecker:
     """中奖等级判定器"""
     
-    # 中奖等级规则
+    # 大乐透正确的中奖等级规则（2019年新规则）
     PRIZE_RULES = {
         1: {'front': 5, 'back': 2},  # 一等奖: 5+2
         2: {'front': 5, 'back': 1},  # 二等奖: 5+1
         3: {'front': 5, 'back': 0},  # 三等奖: 5+0
         4: {'front': 4, 'back': 2},  # 四等奖: 4+2
         5: {'front': 4, 'back': 1},  # 五等奖: 4+1
-        6: {'front': 3, 'back': 2},  # 六等奖: 3+2
-        7: {'front': 4, 'back': 0},  # 七等奖: 4+0
-        8: [{'front': 3, 'back': 1}, {'front': 2, 'back': 2}],  # 八等奖: 3+1 或 2+2
-        9: [{'front': 3, 'back': 0}, {'front': 2, 'back': 1}, 
-            {'front': 1, 'back': 2}, {'front': 0, 'back': 2}]   # 九等奖: 3+0 或 2+1 或 1+2 或 0+2
+        6: [{'front': 4, 'back': 0}, {'front': 3, 'back': 2}],  # 六等奖: 4+0 或 3+2
+        7: {'front': 3, 'back': 1},  # 七等奖: 3+1
+        8: [{'front': 3, 'back': 0}, {'front': 2, 'back': 2}],  # 八等奖: 3+0 或 2+2
+        9: [{'front': 2, 'back': 1}, {'front': 1, 'back': 2}, {'front': 0, 'back': 2}]   # 九等奖: 2+1 或 1+2 或 0+2
     }
     
     # 固定奖金（元）

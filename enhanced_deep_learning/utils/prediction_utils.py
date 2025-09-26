@@ -223,35 +223,33 @@ class PredictionEvaluator:
     
     def _calculate_prize_level(self, front_matches: int, back_matches: int) -> int:
         """
-        计算奖级
+        计算奖级（按照大乐透2019年新规则）
         
         Args:
             front_matches: 前区匹配数
             back_matches: 后区匹配数
             
         Returns:
-            奖级（0表示未中奖）
+            奖级（0表示未中奖，1-9表示对应等级）
         """
-        # 大乐透奖级规则
+        # 大乐透2019年新规则（9个奖级）
         if front_matches == 5 and back_matches == 2:
-            return 1  # 一等奖
+            return 1  # 一等奖: 5+2
         elif front_matches == 5 and back_matches == 1:
-            return 2  # 二等奖
+            return 2  # 二等奖: 5+1
         elif front_matches == 5 and back_matches == 0:
-            return 3  # 三等奖
+            return 3  # 三等奖: 5+0
         elif front_matches == 4 and back_matches == 2:
-            return 4  # 四等奖
+            return 4  # 四等奖: 4+2
         elif front_matches == 4 and back_matches == 1:
-            return 5  # 五等奖
-        elif front_matches == 3 and back_matches == 2:
-            return 6  # 六等奖
-        elif front_matches == 4 and back_matches == 0:
-            return 7  # 七等奖
+            return 5  # 五等奖: 4+1
+        elif (front_matches == 4 and back_matches == 0) or (front_matches == 3 and back_matches == 2):
+            return 6  # 六等奖: 4+0 或 3+2
         elif front_matches == 3 and back_matches == 1:
-            return 8  # 八等奖
-        elif front_matches == 2 and back_matches == 2:
-            return 9  # 九等奖
-        elif (front_matches == 3 and back_matches == 0) or (front_matches == 2 and back_matches == 1) or (front_matches == 1 and back_matches == 2) or (front_matches == 0 and back_matches == 2):
-            return 10  # 十等奖
+            return 7  # 七等奖: 3+1
+        elif (front_matches == 3 and back_matches == 0) or (front_matches == 2 and back_matches == 2):
+            return 8  # 八等奖: 3+0 或 2+2
+        elif (front_matches == 2 and back_matches == 1) or (front_matches == 1 and back_matches == 2) or (front_matches == 0 and back_matches == 2):
+            return 9  # 九等奖: 2+1 或 1+2 或 0+2
         else:
             return 0  # 未中奖
