@@ -248,11 +248,59 @@ class EnhancedMarkovPredictor:
         if seed is not None:
             random.seed(seed)
             np.random.seed(seed % 2**32)
+        else:
+            # 如果没有提供种子，使用strategy_index生成唯一种子
+            unique_seed = (strategy_index * 999983 + hash(condition_str) % 100000) % (2**31)
+            random.seed(unique_seed)
+            np.random.seed(unique_seed % (2**32))
 
         balls = []
+        
+        # 先检查条件状态是否在转移矩阵中
+        use_global_probs = condition_str not in transitions
+        
+        if use_global_probs:
+            # 如果条件不在转移矩阵中，使用全局概率分布
+            all_probs = {}
+            for cond, trans_probs in transitions.items():
+                for ball, prob in trans_probs.items():
+                    ball_int = int(ball)
+                    all_probs[ball_int] = all_probs.get(ball_int, 0) + prob
+            
+            if all_probs:
+                ball_list = list(all_probs.keys())
+                prob_list = list(all_probs.values())
+                total_prob = sum(prob_list)
+                
+                if total_prob > 0:
+                    normalized_probs = [p/total_prob for p in prob_list]
+                    
+                    # 根据策略索引使用不同的选择方式
+                    if strategy_index % 3 == 0:
+                        # 高概率
+                        sorted_balls = sorted(zip(ball_list, normalized_probs), key=lambda x: x[1], reverse=True)
+                        high_prob_balls = [ball for ball, _ in sorted_balls[:num_balls*2]]
+                        if len(high_prob_balls) >= num_balls:
+                            balls = random.sample(high_prob_balls, num_balls)
+                    elif strategy_index % 3 == 1:
+                        # 中等概率
+                        sorted_balls = sorted(zip(ball_list, normalized_probs), key=lambda x: x[1], reverse=True)
+                        mid_start = len(sorted_balls) // 4
+                        mid_end = len(sorted_balls) * 3 // 4
+                        mid_prob_balls = [ball for ball, _ in sorted_balls[mid_start:mid_end]]
+                        if len(mid_prob_balls) >= num_balls:
+                            balls = random.sample(mid_prob_balls, num_balls)
+                    else:
+                        # 加权随机
+                        if len(ball_list) >= num_balls:
+                            balls = list(np.random.choice(ball_list, size=num_balls, replace=False, p=normalized_probs))
+        
+        # 如果已经有结果，直接返回
+        if len(balls) >= num_balls:
+            return balls[:num_balls]
 
         # 策略1: 最高概率策略 (第1注)
-        if strategy_index % 4 == 0 and strategy_index < 4:
+        if strategy_index % 5 == 0:
             # 如果条件状态存在于转移矩阵中
             if condition_str in transitions:
                 trans_probs = transitions[condition_str]
@@ -267,7 +315,7 @@ class EnhancedMarkovPredictor:
                     balls = high_prob_balls
 
         # 策略2: 中等概率策略 (第2注)
-        elif strategy_index % 4 == 1 and strategy_index < 4:
+        elif strategy_index % 5 == 1:
             if condition_str in transitions:
                 trans_probs = transitions[condition_str]
                 sorted_probs = sorted(trans_probs.items(), key=lambda x: x[1], reverse=True)
@@ -283,7 +331,7 @@ class EnhancedMarkovPredictor:
                     balls = mid_prob_balls
 
         # 策略3: 概率加权随机选择 (第3注)
-        elif strategy_index % 4 == 2 and strategy_index < 4:
+        elif strategy_index % 5 == 2:
             if condition_str in transitions:
                 trans_probs = transitions[condition_str]
 
@@ -301,12 +349,24 @@ class EnhancedMarkovPredictor:
                             balls = list(np.random.choice(ball_list, size=num_balls, replace=False, p=normalized_probs))
                         else:
                             balls = ball_list
-
-        # 策略4: 全局概率分布策略 (第4注及以后)
+        
+        # 策略4: 低概率号码策略 (第4注)
+        elif strategy_index % 5 == 3:
+            if condition_str in transitions:
+                trans_probs = transitions[condition_str]
+                sorted_probs = sorted(trans_probs.items(), key=lambda x: x[1], reverse=True)
+                
+                # 选择低概率号码
+                low_prob_start = len(sorted_probs) // 2
+                low_prob_balls = [int(ball) for ball, _ in sorted_probs[low_prob_start:]]
+                
+                if len(low_prob_balls) >= num_balls:
+                    balls = random.sample(low_prob_balls, num_balls)
+                elif low_prob_balls:
+                    balls = low_prob_balls
+        
+        # 策略5: 全局概率分布策略 (第5注及以后)
         else:
-            # 为第4注以后添加更多随机性
-            import time
-            random.seed(int(time.time() * 1000) + strategy_index)
             # 从所有转移概率中选择
             all_probs = {}
 

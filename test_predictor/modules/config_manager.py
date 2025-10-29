@@ -6,7 +6,35 @@
 
 import json
 import os
+from copy import deepcopy
 from typing import Dict, List, Any, Optional
+
+
+PREDICTION_METHOD_CATEGORIES = {
+    "basic": ["frequency", "hot_cold", "missing"],
+    "markov": [
+        "markov",
+        "markov_2nd",
+        "markov_3rd",
+        "adaptive_markov",
+        "markov_custom",
+        "markov_compound"
+    ],
+    "probabilistic": ["bayesian"],
+    "ensemble": ["ensemble", "stacking", "adaptive_ensemble", "ultimate_ensemble"],
+    "intelligent": [
+        "super",
+        "adaptive",
+        "mixed_strategy",
+        "highly_integrated",
+        "advanced_integration",
+        "enhanced"
+    ],
+    "compound": ["compound", "duplex", "nine_models", "nine_models_compound", "markov_compound"],
+    "deep_learning": ["lstm", "transformer", "gan"],
+}
+
+ALL_SUPPORTED_METHODS = sorted({method for methods in PREDICTION_METHOD_CATEGORIES.values() for method in methods})
 
 
 class ConfigManager:
@@ -25,33 +53,19 @@ class ConfigManager:
         
         self.default_config = self._get_default_config()
         self.config = self.load_config()
+        self._ensure_supported_methods()
 
     def _get_default_config(self) -> Dict:
         """获取包含所有预测方法的默认配置"""
         return {
             "test_settings": {
-                "timeout_seconds": 60,
+                "timeout_seconds": 0,
                 "max_retries": 2,
                 "parallel_workers": 4,
                 "stop_on_major_prize": True,
                 "major_prize_levels": [1, 2]
             },
-            "prediction_methods": {
-                "basic": ["frequency", "hot_cold", "missing"],
-                "advanced": [
-                    "markov", "markov_2nd", "markov_3rd", "adaptive_markov", 
-                    "bayesian", "ensemble"
-                ],
-                "deep_learning": ["lstm", "transformer", "gan"],
-                "compound": [
-                    "compound", "duplex", "markov_compound", "nine_models"
-                ],
-                # 添加更多CLAUDE.md中提到的方法
-                "comprehensive": [
-                    "super", "clustering", "time_series", "pattern_analysis",
-                    "smart", "auto", "hybrid", "enhanced"
-                ]
-            },
+            "prediction_methods": deepcopy(PREDICTION_METHOD_CATEGORIES),
             "parameter_ranges": {
                 "periods": {
                     "min": 10,
@@ -70,7 +84,7 @@ class ConfigManager:
             "test_strategies": {
                 "quick": {
                     "description": "快速测试模式",
-                    "methods": ["frequency", "markov", "bayesian", "lstm"],
+                    "methods": ["frequency", "markov", "markov_2nd", "bayesian", "ensemble", "lstm"],
                     "periods_list": [100, 500],
                     "count_list": [1, 2],
                     "max_tests_per_method": 4
@@ -83,15 +97,18 @@ class ConfigManager:
                     "progressive_testing": True,
                     "priority_methods": [
                         "frequency", "markov", "markov_2nd", "markov_3rd",
-                        "bayesian", "ensemble", "lstm", "transformer", 
-                        "compound", "nine_models", "super"
+                        "adaptive_markov", "markov_custom", "bayesian", "ensemble",
+                        "stacking", "adaptive_ensemble", "ultimate_ensemble",
+                        "lstm", "transformer", "gan", "compound", "markov_compound",
+                        "nine_models", "nine_models_compound", "super", "adaptive", "enhanced"
                     ]
                 },
                 "optimization": {
                     "description": "优化测试模式",
                     "methods": [
-                        "markov", "markov_2nd", "markov_3rd", "adaptive_markov",
-                        "bayesian", "ensemble", "lstm", "transformer", "super"
+                        "markov", "markov_2nd", "markov_3rd", "adaptive_markov", "markov_custom",
+                        "bayesian", "ensemble", "stacking", "adaptive_ensemble", "ultimate_ensemble",
+                        "lstm", "transformer", "gan", "super", "adaptive"
                     ],
                     "periods_range": [10, 2000],
                     "count_range": [1, 10],
@@ -160,6 +177,21 @@ class ConfigManager:
         
         return merged
 
+    def _ensure_supported_methods(self) -> None:
+        """确保配置中的预测方法与系统支持的方法一致"""
+        methods_section = self.config.setdefault('prediction_methods', {})
+
+        for category, default_methods in PREDICTION_METHOD_CATEGORIES.items():
+            existing = methods_section.get(category, [])
+            combined = {method for method in existing if method in ALL_SUPPORTED_METHODS}
+            combined.update(default_methods)
+            methods_section[category] = sorted(combined)
+
+        # 移除配置中可能存在的无效方法
+        for category, method_list in list(methods_section.items()):
+            filtered = [method for method in method_list if method in ALL_SUPPORTED_METHODS]
+            methods_section[category] = sorted(set(filtered))
+
     def get(self, key_path: str, default: Any = None) -> Any:
         """获取配置值"""
         keys = key_path.split('.')
@@ -186,16 +218,13 @@ class ConfigManager:
 
     def get_prediction_methods(self, category: str = None) -> List[str]:
         """获取预测方法列表"""
-        methods = self.get('prediction_methods', {})
-        
-        if category is None:
-            # 返回所有方法
-            all_methods = []
-            for method_list in methods.values():
-                all_methods.extend(method_list)
-            return all_methods
-        else:
-            return methods.get(category, [])
+        methods = self.config.get('prediction_methods', {})
+
+        if category in (None, 'all'):
+            aggregated = {method for method_list in methods.values() for method in method_list}
+            return sorted(method for method in aggregated if method in ALL_SUPPORTED_METHODS)
+
+        return methods.get(category, [])
 
     def get_test_strategy(self, strategy_name: str) -> Optional[Dict]:
         """获取测试策略配置"""
@@ -247,13 +276,27 @@ class ConfigManager:
         
         # 检查数值范围
         timeout = self.get('test_settings.timeout_seconds', 0)
-        if not isinstance(timeout, int) or timeout <= 0:
-            errors.append("timeout_seconds 必须是正整数")
+        if timeout is not None:
+            if not isinstance(timeout, int):
+                errors.append("timeout_seconds 必须是整数或留空")
+            elif timeout < 0:
+                errors.append("timeout_seconds 不能为负数")
         
         # 检查预测方法
         methods = self.get_prediction_methods()
         if not methods:
             errors.append("至少需要配置一个预测方法")
+
+        configured_methods = {
+            method
+            for method_list in self.config.get('prediction_methods', {}).values()
+            for method in method_list
+        }
+        unsupported_methods = sorted(set(configured_methods) - set(ALL_SUPPORTED_METHODS))
+        if unsupported_methods:
+            errors.append(
+                "检测到不受支持的预测方法: " + ", ".join(unsupported_methods)
+            )
         
         # 检查参数范围
         periods_range = self.get_parameter_range('periods')
@@ -268,12 +311,16 @@ class ConfigManager:
     def get_runtime_config(self, strategy: str = None) -> Dict:
         """获取运行时配置"""
         runtime_config = {
-            'timeout': self.get('test_settings.timeout_seconds', 60),
+            'timeout': None,
             'max_retries': self.get('test_settings.max_retries', 2),
             'parallel_workers': self.get('test_settings.parallel_workers', 4),
             'stop_on_major_prize': self.get('test_settings.stop_on_major_prize', True),
             'major_prize_levels': self.get('test_settings.major_prize_levels', [1, 2])
         }
+
+        timeout_config = self.get('test_settings.timeout_seconds', 0)
+        if isinstance(timeout_config, int) and timeout_config > 0:
+            runtime_config['timeout'] = timeout_config
         
         if strategy:
             strategy_config = self.get_test_strategy(strategy)

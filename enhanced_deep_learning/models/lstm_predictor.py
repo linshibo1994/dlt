@@ -590,8 +590,9 @@ class LSTMPredictor(BaseDeepLearningModel, CompoundPredictorMixin):
                 validation_split=0.2,
                 callbacks=callbacks,
                 verbose=0
+                # Keras 3.x 已移除 use_multiprocessing 和 workers 参数
             )
-            
+
             # 训练后区模型
             logger_manager.info("训练后区LSTM模型")
             back_history = self.back_model.fit(
@@ -601,6 +602,7 @@ class LSTMPredictor(BaseDeepLearningModel, CompoundPredictorMixin):
                 validation_split=0.2,
                 callbacks=callbacks,
                 verbose=0
+                # Keras 3.x 已移除 use_multiprocessing 和 workers 参数
             )
             
             # 保存模型
@@ -650,12 +652,15 @@ class LSTMPredictor(BaseDeepLearningModel, CompoundPredictorMixin):
 
             if self.front_model is None or self.back_model is None:
                 # 尝试加载模型
+                logger_manager.info("尝试从缓存加载模型...")
                 if not self.load_models():
-                    logger_manager.info("模型文件不存在，开始训练新模型...")
+                    logger_manager.info("模型缓存不存在，开始训练新模型...")
                     # 如果加载失败，尝试训练新模型
                     if not self.train(data):
                         raise ValueError("LSTM模型训练失败")
                     logger_manager.info("模型训练完成，开始预测...")
+                else:
+                    logger_manager.info("✅ 成功从缓存加载模型，跳过训练！")
 
             # 处理不同类型的输入数据
             front_numbers = []

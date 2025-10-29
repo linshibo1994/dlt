@@ -12,11 +12,13 @@ import time
 from typing import List, Dict, Optional, Tuple
 import json
 
+from config_manager import ConfigManager, ALL_SUPPORTED_METHODS
+
 
 class PredictorCaller:
     """预测器CLI调用器"""
     
-    def __init__(self, base_dir: str = None):
+    def __init__(self, base_dir: str = None, config_manager: ConfigManager = None):
         if base_dir is None:
             # 默认为项目根目录
             self.base_dir = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
@@ -24,15 +26,18 @@ class PredictorCaller:
             self.base_dir = base_dir
         
         self.main_script = os.path.join(self.base_dir, 'dlt_main.py')
-        self.timeout = 60  # 默认超时时间60秒
-        
-        # 支持的预测方法
-        self.available_methods = [
-            'frequency', 'hot_cold', 'missing',
-            'markov', 'markov_2nd', 'markov_3rd', 'adaptive_markov',
-            'bayesian', 'ensemble', 'compound', 'duplex',
-            'markov_compound', 'nine_models', 'lstm', 'transformer', 'gan'
-        ]
+
+        self.config_manager = config_manager or ConfigManager()
+
+        configured_timeout = self.config_manager.get('test_settings.timeout_seconds', 0)
+        if isinstance(configured_timeout, (int, float)) and configured_timeout > 0:
+            self.timeout = configured_timeout
+        else:
+            self.timeout = None  # None 表示不设置超时限制
+
+        self.available_methods = set(self.config_manager.get_prediction_methods())
+        if not self.available_methods:
+            self.available_methods = set(ALL_SUPPORTED_METHODS)
 
     def validate_method(self, method: str) -> bool:
         """验证预测方法是否支持"""
@@ -68,14 +73,17 @@ class PredictorCaller:
     def execute_command(self, cmd: List[str]) -> Tuple[bool, str, str]:
         """执行CLI命令"""
         try:
-            result = subprocess.run(
-                cmd,
-                cwd=self.base_dir,
-                capture_output=True,
-                text=True,
-                timeout=self.timeout,
-                encoding='utf-8'
-            )
+            run_kwargs = {
+                'cwd': self.base_dir,
+                'capture_output': True,
+                'text': True,
+                'encoding': 'utf-8'
+            }
+
+            if self.timeout is not None:
+                run_kwargs['timeout'] = self.timeout
+
+            result = subprocess.run(cmd, **run_kwargs)
             
             success = result.returncode == 0
             stdout = result.stdout

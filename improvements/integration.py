@@ -13,6 +13,8 @@ import pandas as pd
 from typing import List, Dict, Tuple, Any, Callable, Union
 from datetime import datetime
 from collections import defaultdict, Counter
+from concurrent.futures import ThreadPoolExecutor, as_completed
+import time
 
 # 尝试导入核心模块
 try:
@@ -140,34 +142,52 @@ class IntegratedPredictor:
                 logger_manager.error(f"加载LSTM预测器失败: {e}")
     
     def stacking_predict(self, count: int = 3) -> List[Dict]:
-        """Stacking集成预测
-        
+        """Stacking集成预测（并行优化版）
+
         Args:
             count: 预测注数
-            
+
         Returns:
             List[Dict]: 预测结果列表
         """
         if not self.predictors:
             logger_manager.error("没有可用的预测器")
             return []
-        
-        # 收集各预测器的预测结果
+
+        # 并行收集各预测器的预测结果
         all_predictions = {}
-        for name, predictor in self.predictors.items():
+
+        def predict_with_predictor(name, predictor):
+            """单个预测器执行函数"""
             try:
+                start_time = time.time()
                 predictions = predictor(self.df, count)
-                all_predictions[name] = predictions
+                elapsed = time.time() - start_time
+                logger_manager.info(f"预测器 {name} 完成，耗时 {elapsed:.2f}秒")
+                return name, predictions
             except Exception as e:
                 logger_manager.error(f"预测器 {name} 预测失败: {e}")
-        
+                return name, None
+
+        # 使用线程池并行执行所有预测器
+        with ThreadPoolExecutor(max_workers=min(len(self.predictors), 8)) as executor:
+            futures = {
+                executor.submit(predict_with_predictor, name, predictor): name
+                for name, predictor in self.predictors.items()
+            }
+
+            for future in as_completed(futures):
+                name, predictions = future.result()
+                if predictions is not None:
+                    all_predictions[name] = predictions
+
         # Stacking融合
         results = []
         for i in range(count):
             # 收集第i注的所有预测
             front_candidates = []
             back_candidates = []
-            
+
             for name, predictions in all_predictions.items():
                 if i < len(predictions):
                     if isinstance(predictions[i], tuple) and len(predictions[i]) == 2:
@@ -178,17 +198,17 @@ class IntegratedPredictor:
                     else:
                         logger_manager.warning(f"无法解析预测结果: {predictions[i]}")
                         continue
-                    
+
                     front_candidates.extend(front)
                     back_candidates.extend(back)
-            
+
             # 使用投票机制选择最终号码
             front_counter = Counter(front_candidates)
             back_counter = Counter(back_candidates)
-            
+
             front_balls = [ball for ball, _ in front_counter.most_common(5)]
             back_balls = [ball for ball, _ in back_counter.most_common(2)]
-            
+
             # 如果号码不足，使用频率分析补充
             if len(front_balls) < 5:
                 from analyzer_modules import basic_analyzer
@@ -215,7 +235,7 @@ class IntegratedPredictor:
                     ball_int = int(ball) if isinstance(ball, str) else ball
                     if ball_int not in back_balls:
                         back_balls.append(ball_int)
-            
+
             # 构建结果
             result = {
                 'front_balls': sorted(front_balls),
@@ -224,24 +244,24 @@ class IntegratedPredictor:
                 'confidence': 0.85,
                 'predictors_used': list(all_predictions.keys())
             }
-            
+
             results.append(result)
-        
+
         return results
     
     def weighted_ensemble_predict(self, count: int = 3) -> List[Dict]:
-        """加权集成预测
-        
+        """加权集成预测（并行优化版）
+
         Args:
             count: 预测注数
-            
+
         Returns:
             List[Dict]: 预测结果列表
         """
         if not self.predictors:
             logger_manager.error("没有可用的预测器")
             return []
-        
+
         # 预测器权重
         weights = {
             'frequency': 0.1,
@@ -258,28 +278,46 @@ class IntegratedPredictor:
             'cluster_based': 0.15,
             'lstm': 0.25
         }
-        
-        # 收集各预测器的预测结果
+
+        # 并行收集各预测器的预测结果
         all_predictions = {}
-        for name, predictor in self.predictors.items():
+
+        def predict_with_predictor(name, predictor):
+            """单个预测器执行函数"""
             try:
+                start_time = time.time()
                 predictions = predictor(self.df, count)
-                all_predictions[name] = predictions
+                elapsed = time.time() - start_time
+                logger_manager.info(f"预测器 {name} 完成，耗时 {elapsed:.2f}秒")
+                return name, predictions
             except Exception as e:
                 logger_manager.error(f"预测器 {name} 预测失败: {e}")
-        
+                return name, None
+
+        # 使用线程池并行执行所有预测器
+        with ThreadPoolExecutor(max_workers=min(len(self.predictors), 8)) as executor:
+            futures = {
+                executor.submit(predict_with_predictor, name, predictor): name
+                for name, predictor in self.predictors.items()
+            }
+
+            for future in as_completed(futures):
+                name, predictions = future.result()
+                if predictions is not None:
+                    all_predictions[name] = predictions
+
         # 加权融合
         results = []
         for i in range(count):
             # 前区和后区号码的加权得分
             front_scores = defaultdict(float)
             back_scores = defaultdict(float)
-            
+
             # 计算每个号码的加权得分
             for name, predictions in all_predictions.items():
                 if i < len(predictions):
                     weight = weights.get(name, 0.1)
-                    
+
                     if isinstance(predictions[i], tuple) and len(predictions[i]) == 2:
                         front, back = predictions[i]
                     elif isinstance(predictions[i], dict) and 'front_balls' in predictions[i] and 'back_balls' in predictions[i]:
@@ -288,28 +326,28 @@ class IntegratedPredictor:
                     else:
                         logger_manager.warning(f"无法解析预测结果: {predictions[i]}")
                         continue
-                    
+
                     for ball in front:
                         front_scores[ball] += weight
-                    
+
                     for ball in back:
                         back_scores[ball] += weight
-            
+
             # 选择得分最高的号码
             front_balls = [ball for ball, _ in sorted(front_scores.items(), key=lambda x: x[1], reverse=True)[:5]]
             back_balls = [ball for ball, _ in sorted(back_scores.items(), key=lambda x: x[1], reverse=True)[:2]]
-            
+
             # 如果号码不足，随机补充
             while len(front_balls) < 5:
                 ball = np.random.randint(1, 36)
                 if ball not in front_balls:
                     front_balls.append(ball)
-            
+
             while len(back_balls) < 2:
                 ball = np.random.randint(1, 13)
                 if ball not in back_balls:
                     back_balls.append(ball)
-            
+
             # 构建结果
             result = {
                 'front_balls': sorted(front_balls),
@@ -319,51 +357,69 @@ class IntegratedPredictor:
                 'predictors_used': list(all_predictions.keys()),
                 'weights': {name: weights.get(name, 0.1) for name in all_predictions.keys()}
             }
-            
+
             results.append(result)
-        
+
         return results
     
     def adaptive_ensemble_predict(self, count: int = 3) -> List[Dict]:
-        """自适应集成预测
-        
+        """自适应集成预测（并行优化版）
+
         Args:
             count: 预测注数
-            
+
         Returns:
             List[Dict]: 预测结果列表
         """
         if not self.predictors:
             logger_manager.error("没有可用的预测器")
             return []
-        
+
         # 加载历史性能数据
         performance_data = self._load_performance_data()
-        
+
         # 根据历史性能计算权重
         weights = self._calculate_adaptive_weights(performance_data)
-        
-        # 收集各预测器的预测结果
+
+        # 并行收集各预测器的预测结果
         all_predictions = {}
-        for name, predictor in self.predictors.items():
+
+        def predict_with_predictor(name, predictor):
+            """单个预测器执行函数"""
             try:
+                start_time = time.time()
                 predictions = predictor(self.df, count)
-                all_predictions[name] = predictions
+                elapsed = time.time() - start_time
+                logger_manager.info(f"预测器 {name} 完成，耗时 {elapsed:.2f}秒")
+                return name, predictions
             except Exception as e:
                 logger_manager.error(f"预测器 {name} 预测失败: {e}")
-        
+                return name, None
+
+        # 使用线程池并行执行所有预测器
+        with ThreadPoolExecutor(max_workers=min(len(self.predictors), 8)) as executor:
+            futures = {
+                executor.submit(predict_with_predictor, name, predictor): name
+                for name, predictor in self.predictors.items()
+            }
+
+            for future in as_completed(futures):
+                name, predictions = future.result()
+                if predictions is not None:
+                    all_predictions[name] = predictions
+
         # 自适应融合
         results = []
         for i in range(count):
             # 前区和后区号码的加权得分
             front_scores = defaultdict(float)
             back_scores = defaultdict(float)
-            
+
             # 计算每个号码的加权得分
             for name, predictions in all_predictions.items():
                 if i < len(predictions):
                     weight = weights.get(name, 0.1)
-                    
+
                     if isinstance(predictions[i], tuple) and len(predictions[i]) == 2:
                         front, back = predictions[i]
                     elif isinstance(predictions[i], dict) and 'front_balls' in predictions[i] and 'back_balls' in predictions[i]:
@@ -372,28 +428,28 @@ class IntegratedPredictor:
                     else:
                         logger_manager.warning(f"无法解析预测结果: {predictions[i]}")
                         continue
-                    
+
                     for ball in front:
                         front_scores[ball] += weight
-                    
+
                     for ball in back:
                         back_scores[ball] += weight
-            
+
             # 选择得分最高的号码
             front_balls = [ball for ball, _ in sorted(front_scores.items(), key=lambda x: x[1], reverse=True)[:5]]
             back_balls = [ball for ball, _ in sorted(back_scores.items(), key=lambda x: x[1], reverse=True)[:2]]
-            
+
             # 如果号码不足，随机补充
             while len(front_balls) < 5:
                 ball = np.random.randint(1, 36)
                 if ball not in front_balls:
                     front_balls.append(ball)
-            
+
             while len(back_balls) < 2:
                 ball = np.random.randint(1, 13)
                 if ball not in back_balls:
                     back_balls.append(ball)
-            
+
             # 构建结果
             result = {
                 'front_balls': sorted(front_balls),
@@ -403,9 +459,9 @@ class IntegratedPredictor:
                 'predictors_used': list(all_predictions.keys()),
                 'weights': weights
             }
-            
+
             results.append(result)
-        
+
         return results
     
     def _load_performance_data(self) -> Dict:
@@ -930,48 +986,95 @@ class IntegratedPredictor:
             return random.randint(min_num, max_num)
     
     def ultimate_ensemble_predict(self, count: int = 3) -> List[Dict]:
-        """终极集成预测
-        
-        结合所有预测方法的最佳结果
-        
+        """终极集成预测（完全并行优化版）
+
+        结合所有预测方法的最佳结果，三个集成方法并行执行
+
         Args:
             count: 预测注数
-            
+
         Returns:
             List[Dict]: 预测结果列表
         """
-        # 获取各种集成方法的预测结果
-        stacking_results = self.stacking_predict(count)
-        weighted_results = self.weighted_ensemble_predict(count)
-        adaptive_results = self.adaptive_ensemble_predict(count)
-        
+        logger_manager.info(f"开始终极集成预测，注数={count}")
+        start_time = time.time()
+
+        # 并行执行三个集成方法
+        stacking_results = None
+        weighted_results = None
+        adaptive_results = None
+
+        def execute_stacking():
+            """执行stacking预测"""
+            try:
+                logger_manager.info("开始Stacking集成预测")
+                result = self.stacking_predict(count)
+                logger_manager.info(f"Stacking预测完成，生成{len(result)}注")
+                return result
+            except Exception as e:
+                logger_manager.error(f"Stacking预测失败: {e}")
+                return []
+
+        def execute_weighted():
+            """执行weighted预测"""
+            try:
+                logger_manager.info("开始加权集成预测")
+                result = self.weighted_ensemble_predict(count)
+                logger_manager.info(f"加权预测完成，生成{len(result)}注")
+                return result
+            except Exception as e:
+                logger_manager.error(f"加权预测失败: {e}")
+                return []
+
+        def execute_adaptive():
+            """执行adaptive预测"""
+            try:
+                logger_manager.info("开始自适应集成预测")
+                result = self.adaptive_ensemble_predict(count)
+                logger_manager.info(f"自适应预测完成，生成{len(result)}注")
+                return result
+            except Exception as e:
+                logger_manager.error(f"自适应预测失败: {e}")
+                return []
+
+        # 使用线程池并行执行三个集成方法
+        with ThreadPoolExecutor(max_workers=3) as executor:
+            future_stacking = executor.submit(execute_stacking)
+            future_weighted = executor.submit(execute_weighted)
+            future_adaptive = executor.submit(execute_adaptive)
+
+            # 等待所有任务完成
+            stacking_results = future_stacking.result()
+            weighted_results = future_weighted.result()
+            adaptive_results = future_adaptive.result()
+
         # 融合结果
         results = []
         for i in range(count):
             # 收集所有预测结果
             all_front_balls = []
             all_back_balls = []
-            
+
             if i < len(stacking_results):
                 all_front_balls.extend(stacking_results[i]['front_balls'])
                 all_back_balls.extend(stacking_results[i]['back_balls'])
-            
+
             if i < len(weighted_results):
                 all_front_balls.extend(weighted_results[i]['front_balls'])
                 all_back_balls.extend(weighted_results[i]['back_balls'])
-            
+
             if i < len(adaptive_results):
                 all_front_balls.extend(adaptive_results[i]['front_balls'])
                 all_back_balls.extend(adaptive_results[i]['back_balls'])
-            
+
             # 统计号码出现频率
             front_counter = Counter(all_front_balls)
             back_counter = Counter(all_back_balls)
-            
+
             # 选择出现频率最高的号码
             front_balls = [ball for ball, _ in front_counter.most_common(5)]
             back_balls = [ball for ball, _ in back_counter.most_common(2)]
-            
+
             # 如果号码不足，使用频率分析补充
             if len(front_balls) < 5:
                 from analyzer_modules import basic_analyzer
@@ -998,7 +1101,7 @@ class IntegratedPredictor:
                     ball_int = int(ball) if isinstance(ball, str) else ball
                     if ball_int not in back_balls:
                         back_balls.append(ball_int)
-            
+
             # 构建结果
             result = {
                 'front_balls': sorted(front_balls),
@@ -1007,9 +1110,12 @@ class IntegratedPredictor:
                 'confidence': 0.98,
                 'ensemble_methods': ['stacking', 'weighted', 'adaptive']
             }
-            
+
             results.append(result)
-        
+
+        elapsed = time.time() - start_time
+        logger_manager.info(f"终极集成预测完成，总耗时 {elapsed:.2f}秒，生成{len(results)}注")
+
         return results
 
 

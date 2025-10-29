@@ -22,7 +22,7 @@ class TestController:
     
     def __init__(self, config_manager: ConfigManager = None):
         self.config_manager = config_manager or ConfigManager()
-        self.predictor_caller = PredictorCaller()
+        self.predictor_caller = PredictorCaller(config_manager=self.config_manager)
         self.lottery_data = LotteryData()
         self.lottery_judge = LotteryJudge()
         
@@ -88,6 +88,13 @@ class TestController:
         methods = strategy_config.get('methods', [])
         if methods == "all":
             methods = self.config_manager.get_prediction_methods()
+        else:
+            methods = [m for m in methods if self.predictor_caller.validate_method(m)]
+
+        methods = sorted(set(methods))
+
+        if not methods:
+            raise ValueError("未配置任何可用预测方法，请检查配置文件")
         
         # 记录实际将要测试的方法
         print(f"将要测试的预测方法({len(methods)}种): {', '.join(methods[:10])}{'...' if len(methods) > 10 else ''}")

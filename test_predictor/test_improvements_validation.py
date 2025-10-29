@@ -84,7 +84,15 @@ def test_config_improvements():
     print(f"   包括: {', '.join(all_methods[:10])}{'...' if len(all_methods) > 10 else ''}")
     
     # 验证各类别方法
-    categories = ["basic", "advanced", "deep_learning", "compound", "comprehensive"]
+    categories = [
+        "basic",
+        "markov",
+        "probabilistic",
+        "ensemble",
+        "intelligent",
+        "compound",
+        "deep_learning"
+    ]
     for category in categories:
         methods = config_manager.get_prediction_methods(category)
         if methods:

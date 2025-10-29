@@ -1,6 +1,6 @@
 {
   "test_settings": {
-    "timeout_seconds": 60,
+    "timeout_seconds": 0,
     "max_retries": 2,
     "parallel_workers": 4,
     "stop_on_major_prize": true,
@@ -8,9 +8,12 @@
   },
   "prediction_methods": {
     "basic": ["frequency", "hot_cold", "missing"],
-    "advanced": ["markov", "markov_2nd", "markov_3rd", "adaptive_markov", "bayesian", "ensemble"],
-    "deep_learning": ["lstm", "transformer", "gan"],
-    "compound": ["compound", "duplex", "markov_compound", "nine_models"]
+    "markov": ["markov", "markov_2nd", "markov_3rd", "adaptive_markov", "markov_custom", "markov_compound"],
+    "probabilistic": ["bayesian"],
+    "ensemble": ["ensemble", "stacking", "adaptive_ensemble", "ultimate_ensemble"],
+    "intelligent": ["super", "adaptive", "mixed_strategy", "highly_integrated", "advanced_integration", "enhanced"],
+    "compound": ["compound", "duplex", "nine_models", "nine_models_compound", "markov_compound"],
+    "deep_learning": ["lstm", "transformer", "gan"]
   },
   "parameter_ranges": {
     "periods": {
@@ -29,7 +32,7 @@
   "test_strategies": {
     "quick": {
       "description": "快速测试模式",
-      "methods": ["frequency", "markov", "bayesian"],
+      "methods": ["frequency", "markov", "markov_2nd", "bayesian", "ensemble", "lstm"],
       "periods_list": [100, 500],
       "count_list": [1, 2],
       "max_tests_per_method": 5
@@ -43,7 +46,7 @@
     },
     "optimization": {
       "description": "优化测试模式",
-      "methods": ["markov", "markov_2nd", "markov_3rd", "bayesian", "ensemble"],
+      "methods": ["markov", "markov_2nd", "markov_3rd", "adaptive_markov", "markov_custom", "bayesian", "ensemble", "stacking", "adaptive_ensemble", "ultimate_ensemble", "lstm", "transformer", "gan", "super", "adaptive"],
       "periods_range": [10, 2000],
       "count_range": [1, 10],
       "random_testing": true,

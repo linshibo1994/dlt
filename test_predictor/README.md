@@ -6,7 +6,7 @@
 
 ### 核心功能
 
-✅ **全方位测试** - 支持26+种预测算法（频率分析、马尔可夫链、贝叶斯、深度学习等）  
+✅ **全方位测试** - 支持27种项目内置预测算法（频率分析、马尔可夫链、贝叶斯、深度学习等）  
 ✅ **智能中奖判断** - 基于2019年新规则的9个奖级准确判断  
 ✅ **自动停止机制** - 中得一等奖或二等奖时自动停止测试  
 ✅ **参数优化** - 智能调整periods（分析期数）和count（生成注数）参数  
@@ -30,6 +30,9 @@ cd test_predictor
 # 系统检查
 python3 test_predictor.py check
 
+# 查看可用预测方法、并发配置等
+python3 test_predictor.py config
+
 # 快速测试（5-10分钟）
 python3 test_predictor.py quick
 
@@ -38,18 +41,35 @@ python3 test_predictor.py comprehensive
 
 # 自定义测试（示例：马尔可夫方法，从10期到2000期）
 python3 test_predictor.py custom markov 10 2000 50 1
+# 所有自定义测试都会验证方法名是否为项目真实实现
 ```
 
 ## 📊 测试策略
 
+### 支持的预测方法
+
+项目当前自动同步27种预测方法，按照配置分类如下：
+
+| 分类 | 方法 |
+| --- | --- |
+| 基础分析 | `frequency`, `hot_cold`, `missing` |
+| 马尔可夫系列 | `markov`, `markov_2nd`, `markov_3rd`, `adaptive_markov`, `markov_custom`, `markov_compound` |
+| 概率模型 | `bayesian` |
+| 集成算法 | `ensemble`, `stacking`, `adaptive_ensemble`, `ultimate_ensemble` |
+| 智能/增强 | `super`, `adaptive`, `mixed_strategy`, `highly_integrated`, `advanced_integration`, `enhanced` |
+| 复式/胆拖 | `compound`, `duplex`, `nine_models`, `nine_models_compound`, `markov_compound` |
+| 深度学习 | `lstm`, `transformer`, `gan` |
+
+> 任何自定义或策略测试都会基于上述真实方法执行，并在启动前自动校验非法方法名。
+
 ### 快速测试模式
 - **用途**: 快速验证系统功能
-- **方法**: frequency, markov, bayesian
+- **方法**: frequency, markov, markov_2nd, bayesian, ensemble, lstm
 - **时间**: 5-10分钟
 
 ### 全面测试模式  
 - **用途**: 评估所有预测方法
-- **方法**: 全部26+种算法
+- **方法**: 全部27种算法
 - **时间**: 2-8小时
 
 ### 优化测试模式
@@ -60,6 +80,10 @@ python3 test_predictor.py custom markov 10 2000 50 1
 ### 自定义测试模式
 - **用途**: 针对特定方法深度测试
 - **示例**: 测试马尔可夫链在不同期数下的表现
+- **参数说明**:
+  - `method`: 上表列出的任意真实方法名
+  - `periods_start/periods_end/periods_step`: 分析期数范围与步长
+  - `count`: 每个测试用例生成的注数
 
 ## 🏆 中奖等级
 
@@ -108,18 +132,42 @@ test_predictor/
 ```json
 {
   "test_settings": {
-    "timeout_seconds": 60,        // 单次预测超时
-    "max_retries": 2,             // 失败重试次数
-    "parallel_workers": 4,        // 并行线程数
-    "stop_on_major_prize": true   // 中重大奖项时停止
+    "timeout_seconds": 60,
+    "max_retries": 2,
+    "parallel_workers": 4,
+    "stop_on_major_prize": true,
+    "major_prize_levels": [1, 2]
   },
   "prediction_methods": {
     "basic": ["frequency", "hot_cold", "missing"],
-    "advanced": ["markov", "bayesian", "ensemble"],
+    "markov": ["markov", "markov_2nd", "markov_3rd", "adaptive_markov", "markov_custom", "markov_compound"],
+    "probabilistic": ["bayesian"],
+    "ensemble": ["ensemble", "stacking", "adaptive_ensemble", "ultimate_ensemble"],
+    "intelligent": ["super", "adaptive", "mixed_strategy", "highly_integrated", "advanced_integration", "enhanced"],
+    "compound": ["compound", "duplex", "nine_models", "nine_models_compound", "markov_compound"],
     "deep_learning": ["lstm", "transformer", "gan"]
+  },
+  "test_strategies": {
+    "quick": {
+      "methods": ["frequency", "markov", "markov_2nd", "bayesian", "ensemble", "lstm"],
+      "periods_list": [100, 500],
+      "count_list": [1, 2]
+    },
+    "comprehensive": {
+      "methods": "all",
+      "periods_range": [50, 1000],
+      "count_range": [1, 5]
+    },
+    "optimization": {
+      "methods": ["markov", "markov_2nd", "markov_3rd", "adaptive_markov", "markov_custom", "bayesian", "ensemble", "stacking", "adaptive_ensemble", "ultimate_ensemble", "lstm", "transformer", "gan", "super", "adaptive"],
+      "periods_range": [10, 2000],
+      "count_range": [1, 10]
+    }
   }
 }
 ```
+
+> 配置管理器会自动校验并补全上述列表中的真实方法，避免遗漏或误填无效方法。
 
 ## 📈 结果分析
 
@@ -149,9 +197,13 @@ test_predictor/
 
 ```bash
 # 测试不同阶数的马尔可夫方法
-./start_test.sh custom markov 100 1000 100 1
-./start_test.sh custom markov_2nd 100 1000 100 1
-./start_test.sh custom markov_3rd 100 1000 100 1
+python3 test_predictor.py custom markov 100 1000 100 1
+python3 test_predictor.py custom markov_2nd 100 1000 100 1
+python3 test_predictor.py custom markov_3rd 100 1000 100 1
+
+# 深度学习或集成方法
+python3 test_predictor.py custom transformer 200 1200 100 2
+python3 test_predictor.py custom ultimate_ensemble 100 800 100 3
 ```
 
 ### 寻找一等奖

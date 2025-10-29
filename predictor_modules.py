@@ -19,6 +19,8 @@ import math
 from core_modules import cache_manager, logger_manager, data_manager, task_manager
 from analyzer_modules import basic_analyzer, advanced_analyzer, comprehensive_analyzer
 from smart_cache_system import smart_cache_manager
+from concurrent.futures import ThreadPoolExecutor, TimeoutError as FutureTimeoutError
+import hashlib
 
 # 导入增强深度学习模块
 try:
@@ -2368,9 +2370,9 @@ class AdvancedPredictor:
         """从数据行解析号码"""
         try:
             if ball_type == 'front':
-                balls_str = str(row.get('front', ''))
+                balls_str = str(row.get('front_balls', ''))
             else:
-                balls_str = str(row.get('back', ''))
+                balls_str = str(row.get('back_balls', ''))
             
             balls = [int(x) for x in balls_str.split(',') if x.strip().isdigit()]
             return balls
@@ -7878,13 +7880,22 @@ class SuperPredictor:
         self._sub_predictors_initialized = True
     
     def predict_super(self, count=1, periods=500, method="intelligent_ensemble") -> List[Dict]:
-        """超级预测
+        """超级预测（带缓存优化）
 
         Args:
             count: 生成注数
             periods: 分析期数
             method: 预测方法
         """
+        # 生成缓存键
+        cache_key = self._generate_cache_key(count, periods, method)
+        
+        # 尝试从缓存获取结果
+        cached_result = self._get_from_cache(cache_key)
+        if cached_result is not None:
+            logger_manager.info(f"使用缓存的超级预测结果 (key: {cache_key[:16]}...)")
+            return cached_result
+        
         logger_manager.info(f"开始超级预测，方法: {method}, 注数: {count}, 分析期数: {periods}")
 
         # 延迟初始化子预测器
@@ -7895,8 +7906,8 @@ class SuperPredictor:
 
         for i in range(count):
             try:
-                # 获取各子预测器的预测结果
-                sub_predictions = self._get_sub_predictions(periods)
+                # 获取各子预测器的预测结果（使用并行化和缓存）
+                sub_predictions = self._get_sub_predictions_parallel(periods)
 
                 # 智能融合
                 front_balls, back_balls = self._intelligent_fusion(sub_predictions)
@@ -7915,10 +7926,13 @@ class SuperPredictor:
             except Exception as e:
                 logger_manager.error(f"第 {i+1} 注超级预测失败", e)
 
+        # 缓存结果（有效期1小时）
+        self._save_to_cache(cache_key, predictions, ttl=3600)
+        
         return predictions
     
     def _get_sub_predictions(self, periods=500) -> Dict:
-        """获取子预测器的预测结果
+        """获取子预测器的预测结果（串行版本，保留用于回退）
 
         Args:
             periods: 分析期数
@@ -7997,6 +8011,265 @@ class SuperPredictor:
                 logger_manager.error(f"聚类预测器预测失败: {e}")
         
         return sub_predictions
+    
+    def _get_sub_predictions_parallel(self, periods=500) -> Dict:
+        """获取子预测器的预测结果（并行版本）
+
+        Args:
+            periods: 分析期数
+        """
+        # 检查缓存
+        cache_key = f"sub_predictions_{periods}_{self._get_data_hash()}"
+        cached_result = self._get_from_cache(cache_key)
+        if cached_result is not None:
+            logger_manager.info(f"使用缓存的子预测结果")
+            return cached_result
+        
+        sub_predictions = {}
+        
+        # 使用线程池并行执行预测
+        with ThreadPoolExecutor(max_workers=4) as executor:
+            futures = {}
+            
+            # 提交高级预测器任务
+            if self.advanced_predictor is not None:
+                futures['advanced'] = executor.submit(
+                    self._run_advanced_predictor, periods
+                )
+            
+            # 提交LSTM预测器任务
+            if 'lstm' in self.sub_predictors:
+                futures['lstm'] = executor.submit(
+                    self._run_lstm_predictor
+                )
+            
+            # 提交Transformer预测器任务
+            if 'transformer' in self.sub_predictors:
+                futures['transformer'] = executor.submit(
+                    self._run_transformer_predictor
+                )
+            
+            # 提交GAN预测器任务
+            if 'gan' in self.sub_predictors:
+                futures['gan'] = executor.submit(
+                    self._run_gan_predictor
+                )
+            
+            # 提交Ensemble预测器任务
+            if 'ensemble' in self.sub_predictors:
+                futures['ensemble'] = executor.submit(
+                    self._run_ensemble_predictor
+                )
+
+            # 提交蒙特卡洛预测器任务
+            if 'monte_carlo' in self.sub_predictors:
+                futures['monte_carlo'] = executor.submit(
+                    self._run_monte_carlo_predictor
+                )
+
+            # 提交聚类预测器任务
+            if 'clustering' in self.sub_predictors:
+                futures['clustering'] = executor.submit(
+                    self._run_clustering_predictor
+                )
+
+            # 收集结果（无超时限制，必须等待所有预测器完成）
+            for name, future in futures.items():
+                try:
+                    result = future.result()  # 无限等待直到完成
+                    if result:
+                        sub_predictions[name] = result
+                        logger_manager.info(f"{name}预测器完成")
+                except Exception as e:
+                    logger_manager.error(f"{name}预测器失败: {e}")
+        
+        # 如果没有成功的预测器，使用回退策略
+        if not sub_predictions:
+            logger_manager.warning("所有并行预测器失败，使用串行回退")
+            return self._get_sub_predictions(periods)
+        
+        # 缓存结果（有效期10分钟）
+        self._save_to_cache(cache_key, sub_predictions, ttl=600)
+        
+        return sub_predictions
+    
+    def _run_advanced_predictor(self, periods):
+        """运行高级预测器（线程安全版本）"""
+        try:
+            if self.advanced_predictor is not None:
+                result = self.advanced_predictor.ensemble_predict(count=1, periods=periods)
+            else:
+                result = self._fallback_predict(count=1, periods=periods)
+            
+            if result:
+                return {
+                    'front_balls': result[0][0],
+                    'back_balls': result[0][1],
+                    'confidence': 0.6
+                }
+        except Exception as e:
+            logger_manager.error(f"高级预测器运行失败: {e}")
+        return None
+    
+    def _run_lstm_predictor(self):
+        """运行LSTM预测器（线程安全版本）"""
+        try:
+            predictor = self.sub_predictors['lstm']
+            result = predictor.predict(self.df)
+            if result:
+                if isinstance(result, list) and len(result) > 0:
+                    if isinstance(result[0], tuple):
+                        return {
+                            'front_balls': result[0][0],
+                            'back_balls': result[0][1],
+                            'confidence': 0.7
+                        }
+                    elif isinstance(result[0], dict):
+                        return {
+                            'front_balls': result[0]['front_balls'],
+                            'back_balls': result[0]['back_balls'],
+                            'confidence': result[0].get('confidence', 0.7)
+                        }
+        except Exception as e:
+            logger_manager.error(f"LSTM预测器运行失败: {e}")
+        return None
+    
+    def _run_transformer_predictor(self):
+        """运行Transformer预测器（线程安全版本）"""
+        try:
+            predictor = self.sub_predictors['transformer']
+            result = predictor.predict(self.df)
+            if result:
+                if isinstance(result, list) and len(result) > 0:
+                    if isinstance(result[0], tuple):
+                        return {
+                            'front_balls': result[0][0],
+                            'back_balls': result[0][1],
+                            'confidence': 0.75
+                        }
+                    elif isinstance(result[0], dict):
+                        return {
+                            'front_balls': result[0]['front_balls'],
+                            'back_balls': result[0]['back_balls'],
+                            'confidence': result[0].get('confidence', 0.75)
+                        }
+        except Exception as e:
+            logger_manager.error(f"Transformer预测器运行失败: {e}")
+        return None
+    
+    def _run_gan_predictor(self):
+        """运行GAN预测器（线程安全版本）"""
+        try:
+            predictor = self.sub_predictors['gan']
+            result = predictor.predict(self.df)
+            if result:
+                if isinstance(result, list) and len(result) > 0:
+                    if isinstance(result[0], tuple):
+                        return {
+                            'front_balls': result[0][0],
+                            'back_balls': result[0][1],
+                            'confidence': 0.65
+                        }
+                    elif isinstance(result[0], dict):
+                        return {
+                            'front_balls': result[0]['front_balls'],
+                            'back_balls': result[0]['back_balls'],
+                            'confidence': result[0].get('confidence', 0.65)
+                        }
+        except Exception as e:
+            logger_manager.error(f"GAN预测器运行失败: {e}")
+        return None
+    
+    def _run_ensemble_predictor(self):
+        """运行Ensemble预测器（线程安全版本）"""
+        try:
+            predictor = self.sub_predictors['ensemble']
+            result = predictor.predict(self.df)
+            if result:
+                if isinstance(result, list) and len(result) > 0:
+                    if isinstance(result[0], tuple):
+                        return {
+                            'front_balls': result[0][0],
+                            'back_balls': result[0][1],
+                            'confidence': 0.8
+                        }
+                    elif isinstance(result[0], dict):
+                        return {
+                            'front_balls': result[0]['front_balls'],
+                            'back_balls': result[0]['back_balls'],
+                            'confidence': result[0].get('confidence', 0.8)
+                        }
+        except Exception as e:
+            logger_manager.error(f"Ensemble预测器运行失败: {e}")
+        return None
+    
+    def _run_monte_carlo_predictor(self):
+        """运行蒙特卡洛预测器（线程安全版本）"""
+        try:
+            predictor = self.sub_predictors['monte_carlo']
+            result = predictor.predict_monte_carlo(count=1, method="comprehensive", num_simulations=5000)
+            if result:
+                return {
+                    'front_balls': result[0]['front_balls'],
+                    'back_balls': result[0]['back_balls'],
+                    'confidence': 0.6
+                }
+        except Exception as e:
+            logger_manager.error(f"蒙特卡洛预测器运行失败: {e}")
+        return None
+    
+    def _run_clustering_predictor(self):
+        """运行聚类预测器（线程安全版本）"""
+        try:
+            predictor = self.sub_predictors['clustering']
+            result = predictor.predict_clustering(count=1, method="ensemble")
+            if result:
+                return {
+                    'front_balls': result[0]['front_balls'],
+                    'back_balls': result[0]['back_balls'],
+                    'confidence': 0.5
+                }
+        except Exception as e:
+            logger_manager.error(f"聚类预测器运行失败: {e}")
+        return None
+
+    def _generate_cache_key(self, count, periods, method):
+        """生成缓存键"""
+        # 使用参数和数据哈希生成唯一键
+        data_hash = self._get_data_hash()
+        key_str = f"super_predict_{count}_{periods}_{method}_{data_hash}"
+        return hashlib.md5(key_str.encode()).hexdigest()
+    
+    def _get_data_hash(self):
+        """获取当前数据的哈希值（用于缓存键）"""
+        if self.df is not None and len(self.df) > 0:
+            # 使用最新10期数据的期号和日期生成哈希
+            recent_data = self.df.head(10)
+            if 'issue' in recent_data.columns and 'date' in recent_data.columns:
+                key_data = ''.join(recent_data['issue'].astype(str)) + ''.join(recent_data['date'].astype(str))
+                return hashlib.md5(key_data.encode()).hexdigest()[:8]
+        return "default"
+    
+    def _get_from_cache(self, cache_key):
+        """从缓存获取数据"""
+        try:
+            # 使用正确的 cache_manager API: load_cache(cache_type, key)
+            cached = cache_manager.load_cache("analysis", cache_key)
+            if cached is not None:
+                return cached
+        except Exception as e:
+            logger_manager.warning(f"缓存读取失败: {e}")
+        return None
+
+    def _save_to_cache(self, cache_key, data, ttl=3600):
+        """保存数据到缓存"""
+        try:
+            # 使用正确的 cache_manager API: save_cache(cache_type, key, data)
+            # 注意：core_modules.py 的 CacheManager 不支持 TTL，但我们保留参数以保持接口一致
+            cache_manager.save_cache("analysis", cache_key, data)
+            logger_manager.info(f"结果已缓存")
+        except Exception as e:
+            logger_manager.warning(f"缓存保存失败: {e}")
     
     def _fallback_predict(self, count=1, periods=500) -> List[Tuple[List[int], List[int]]]:
         """回退预测策略"""

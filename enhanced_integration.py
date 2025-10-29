@@ -111,14 +111,7 @@ class EnhancedDLTSystem:
             else:
                 model_name = method
 
-            # 使用增强预测引擎
-            request_id = self.prediction_engine.predict(
-                model_name=model_name,
-                input_data=input_data,
-                **kwargs
-            )
-
-            # 获取预测结果（同步方式）
+            # 使用增强预测引擎（同步方式，避免重复调用）
             result = self.prediction_engine.predict_sync(
                 model_name=model_name,
                 input_data=input_data,
@@ -134,7 +127,7 @@ class EnhancedDLTSystem:
                 "result": result,
                 "method": method,
                 "cached": True,
-                "request_id": request_id
+                "request_id": result.request_id if hasattr(result, 'request_id') else None
             }
 
         except Exception as e:

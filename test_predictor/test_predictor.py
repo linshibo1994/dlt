@@ -211,6 +211,12 @@ class PredictorTester:
         if not self.check_system():
             return
         
+        if not self.test_controller.predictor_caller.validate_method(method):
+            available = ', '.join(sorted(self.test_controller.predictor_caller.available_methods))
+            print(f"错误: 不支持的预测方法: {method}")
+            print(f"请在以下方法中选择: {available}")
+            return
+
         # 生成自定义测试用例
         test_cases = []
         for periods in range(periods_start, periods_end + 1, periods_step):

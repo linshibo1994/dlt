@@ -19,9 +19,17 @@
       "WebSearch",
       "WebFetch(domain:www.lottery.gov.cn)",
       "WebFetch(domain:zhuanlan.zhihu.com)",
-      "Bash(find:*)"
+      "Bash(find:*)",
+      "mcp__seq__sequentialthinking",
+      "mcp__serena__insert_before_symbol",
+      "Bash(python3:*)",
+      "Bash(time python3:*)"
     ],
     "deny": [],
     "ask": []
-  }
+  },
+  "enabledMcpjsonServers": [
+    "browser-server",
+    "mysql"
+  ]
 }

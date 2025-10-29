@@ -804,10 +804,20 @@ class DLTPredictorSystem:
                 
                 predictions = [{'front_balls': r[0], 'back_balls': r[1], 'method': args.method} for r in results]
             
-            elif args.method in ['markov', 'bayesian', 'ensemble']:
+            elif args.method in ['markov', 'bayesian', 'ensemble', 'clustering']:
                 # 高级预测方法
                 if args.method == 'markov':
                     results = self.predictors['advanced'].markov_predict(args.count, args.periods)
+                elif args.method == 'clustering':
+                    print(f"🔍 聚类分析预测 (分析{args.periods}期数据)...")
+                    print(" 构建特征向量...")
+                    print(" 进行K-Means聚类...")
+                    
+                    # 应用加速配置
+                    accel_config = self._apply_acceleration_config('clustering', acceleration_config)
+                    
+                    results = self.predictors['advanced'].clustering_predict(count=args.count, periods=args.periods)
+                    print(f"OK 聚类分析完成，生成{len(results)}注预测")
                 elif args.method == 'bayesian':
                     print(f" 贝叶斯分析预测 (分析{args.periods}期数据)...")
                     print(" 计算先验概率和似然函数...")
@@ -2155,7 +2165,7 @@ def main():
                                        'mixed_strategy', 'highly_integrated', 'advanced_integration',
                                        'nine_models', 'nine_models_compound', 'markov_compound',
                                        'lstm', 'transformer', 'gan', 'stacking', 'adaptive_ensemble', 'ultimate_ensemble',
-                                       'markov_2nd', 'markov_3rd', 'adaptive_markov', 'enhanced'],
+                                       'markov_2nd', 'markov_3rd', 'adaptive_markov', 'enhanced', 'clustering'],
                                default='ensemble', help='预测方法')
     predict_parser.add_argument('--ensemble-method', choices=['stacking', 'weighted', 'adaptive'],
                                default='stacking', help='高级集成方法类型')
