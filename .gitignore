@@ -143,3 +143,12 @@ models
 output
 # 忽略serena
 .serena/
+
+# 重构备份目录
+_old_backup/
+
+# 统一输出目录（生成文件）
+artifacts/cache/
+artifacts/logs/
+artifacts/models/
+artifacts/reports/

@@ -1,0 +1,274 @@
+{
+  "strategy": "optimization",
+  "execution_time": 31058.7731320858,
+  "total_tests": 875,
+  "total_predictions": 3316,
+  "winning_tests": 109,
+  "winning_predictions": 129,
+  "major_prizes": 0,
+  "test_winning_rate": 0.12457142857142857,
+  "prediction_winning_rate": 0.03890229191797346,
+  "prize_statistics": {
+    "6": {
+      "count": 2,
+      "name": "六等奖",
+      "winning_methods": [
+        "markov_2nd",
+        "gan"
+      ],
+      "method_count": 2
+    },
+    "7": {
+      "count": 8,
+      "name": "七等奖",
+      "winning_methods": [
+        "adaptive_markov",
+        "ensemble",
+        "adaptive",
+        "bayesian",
+        "markov_3rd",
+        "gan"
+      ],
+      "method_count": 6
+    },
+    "8": {
+      "count": 16,
+      "name": "八等奖",
+      "winning_methods": [
+        "adaptive_markov",
+        "ensemble",
+        "adaptive",
+        "bayesian",
+        "markov_3rd",
+        "super",
+        "gan",
+        "markov_2nd"
+      ],
+      "method_count": 8
+    },
+    "9": {
+      "count": 103,
+      "name": "九等奖",
+      "winning_methods": [
+        "adaptive_markov",
+        "ensemble",
+        "markov",
+        "adaptive",
+        "bayesian",
+        "markov_3rd",
+        "super",
+        "gan",
+        "markov_2nd"
+      ],
+      "method_count": 9
+    }
+  },
+  "method_statistics": {
+    "adaptive": {
+      "total_tests": 70,
+      "winning_tests": 13,
+      "total_predictions": 365,
+      "winning_predictions": 13,
+      "best_prize_level": 9,
+      "prize_breakdown": {
+        "9": 8,
+        "8": 4,
+        "7": 1
+      },
+      "first_prize_test": null,
+      "major_prize_count": 0,
+      "test_winning_rate": 0.18571428571428572,
+      "prediction_winning_rate": 0.03561643835616438
+    },
+    "adaptive_ensemble": {
+      "total_tests": 69,
+      "winning_tests": 0,
+      "total_predictions": 0,
+      "winning_predictions": 0,
+      "best_prize_level": 0,
+      "prize_breakdown": {},
+      "first_prize_test": null,
+      "major_prize_count": 0,
+      "test_winning_rate": 0.0,
+      "prediction_winning_rate": 0
+    },
+    "adaptive_markov": {
+      "total_tests": 67,
+      "winning_tests": 12,
+      "total_predictions": 391,
+      "winning_predictions": 15,
+      "best_prize_level": 9,
+      "prize_breakdown": {
+        "9": 10,
+        "7": 2,
+        "8": 3
+      },
+      "first_prize_test": null,
+      "major_prize_count": 0,
+      "test_winning_rate": 0.1791044776119403,
+      "prediction_winning_rate": 0.03836317135549872
+    },
+    "bayesian": {
+      "total_tests": 59,
+      "winning_tests": 22,
+      "total_predictions": 299,
+      "winning_predictions": 25,
+      "best_prize_level": 9,
+      "prize_breakdown": {
+        "7": 2,
+        "9": 22,
+        "8": 1
+      },
+      "first_prize_test": null,
+      "major_prize_count": 0,
+      "test_winning_rate": 0.3728813559322034,
+      "prediction_winning_rate": 0.08361204013377926
+    },
+    "ensemble": {
+      "total_tests": 67,
+      "winning_tests": 24,
+      "total_predictions": 448,
+      "winning_predictions": 32,
+      "best_prize_level": 9,
+      "prize_breakdown": {
+        "9": 28,
+        "7": 1,
+        "8": 3
+      },
+      "first_prize_test": null,
+      "major_prize_count": 0,
+      "test_winning_rate": 0.3582089552238806,
+      "prediction_winning_rate": 0.07142857142857142
+    },
+    "gan": {
+      "total_tests": 69,
+      "winning_tests": 6,
+      "total_predictions": 368,
+      "winning_predictions": 6,
+      "best_prize_level": 9,
+      "prize_breakdown": {
+        "9": 3,
+        "7": 1,
+        "8": 1,
+        "6": 1
+      },
+      "first_prize_test": null,
+      "major_prize_count": 0,
+      "test_winning_rate": 0.08695652173913043,
+      "prediction_winning_rate": 0.016304347826086956
+    },
+    "lstm": {
+      "total_tests": 61,
+      "winning_tests": 0,
+      "total_predictions": 0,
+      "winning_predictions": 0,
+      "best_prize_level": 0,
+      "prize_breakdown": {},
+      "first_prize_test": null,
+      "major_prize_count": 0,
+      "test_winning_rate": 0.0,
+      "prediction_winning_rate": 0
+    },
+    "markov": {
+      "total_tests": 67,
+      "winning_tests": 8,
+      "total_predictions": 389,
+      "winning_predictions": 9,
+      "best_prize_level": 9,
+      "prize_breakdown": {
+        "9": 9
+      },
+      "first_prize_test": null,
+      "major_prize_count": 0,
+      "test_winning_rate": 0.11940298507462686,
+      "prediction_winning_rate": 0.02313624678663239
+    },
+    "markov_2nd": {
+      "total_tests": 70,
+      "winning_tests": 9,
+      "total_predictions": 316,
+      "winning_predictions": 11,
+      "best_prize_level": 9,
+      "prize_breakdown": {
+        "9": 9,
+        "6": 1,
+        "8": 1
+      },
+      "first_prize_test": null,
+      "major_prize_count": 0,
+      "test_winning_rate": 0.12857142857142856,
+      "prediction_winning_rate": 0.03481012658227848
+    },
+    "markov_3rd": {
+      "total_tests": 76,
+      "winning_tests": 9,
+      "total_predictions": 325,
+      "winning_predictions": 10,
+      "best_prize_level": 9,
+      "prize_breakdown": {
+        "9": 7,
+        "8": 2,
+        "7": 1
+      },
+      "first_prize_test": null,
+      "major_prize_count": 0,
+      "test_winning_rate": 0.11842105263157894,
+      "prediction_winning_rate": 0.03076923076923077
+    },
+    "markov_custom": {
+      "total_tests": 61,
+      "winning_tests": 0,
+      "total_predictions": 61,
+      "winning_predictions": 0,
+      "best_prize_level": 0,
+      "prize_breakdown": {},
+      "first_prize_test": null,
+      "major_prize_count": 0,
+      "test_winning_rate": 0.0,
+      "prediction_winning_rate": 0.0
+    },
+    "stacking": {
+      "total_tests": 76,
+      "winning_tests": 0,
+      "total_predictions": 0,
+      "winning_predictions": 0,
+      "best_prize_level": 0,
+      "prize_breakdown": {},
+      "first_prize_test": null,
+      "major_prize_count": 0,
+      "test_winning_rate": 0.0,
+      "prediction_winning_rate": 0
+    },
+    "super": {
+      "total_tests": 59,
+      "winning_tests": 6,
+      "total_predictions": 350,
+      "winning_predictions": 8,
+      "best_prize_level": 9,
+      "prize_breakdown": {
+        "9": 7,
+        "8": 1
+      },
+      "first_prize_test": null,
+      "major_prize_count": 0,
+      "test_winning_rate": 0.1016949152542373,
+      "prediction_winning_rate": 0.022857142857142857
+    },
+    "transformer": {
+      "total_tests": 4,
+      "winning_tests": 0,
+      "total_predictions": 4,
+      "winning_predictions": 0,
+      "best_prize_level": 0,
+      "prize_breakdown": {},
+      "first_prize_test": null,
+      "major_prize_count": 0,
+      "test_winning_rate": 0.0,
+      "prediction_winning_rate": 0.0
+    }
+  },
+  "best_method": "ensemble",
+  "best_method_score": 370,
+  "completed_at": "2025-10-06T15:57:44.735177",
+  "stopped_by_major_prize": false
+}

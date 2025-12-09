@@ -34,7 +34,7 @@ analysis_periods:
   # 期数范围
   range:
     min: 50
-    max: 2748
+    max: 2850  # 更新为支持当前数据量(2804期)+未来增长空间
     default: 500
   
   # 推荐期数（按方法）

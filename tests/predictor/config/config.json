@@ -1,0 +1,68 @@
+{
+  "test_settings": {
+    "timeout_seconds": 0,
+    "max_retries": 2,
+    "parallel_workers": 4,
+    "stop_on_major_prize": true,
+    "major_prize_levels": [1, 2]
+  },
+  "prediction_methods": {
+    "basic": ["frequency", "hot_cold", "missing"],
+    "markov": ["markov", "markov_2nd", "markov_3rd", "adaptive_markov", "markov_custom", "markov_compound"],
+    "probabilistic": ["bayesian"],
+    "ensemble": ["ensemble", "stacking", "adaptive_ensemble", "ultimate_ensemble"],
+    "intelligent": ["super", "adaptive", "mixed_strategy", "highly_integrated", "advanced_integration", "enhanced"],
+    "compound": ["compound", "duplex", "nine_models", "nine_models_compound", "markov_compound"],
+    "deep_learning": ["lstm", "transformer", "gan"]
+  },
+  "parameter_ranges": {
+    "periods": {
+      "min": 10,
+      "max": 2000,
+      "basic_test": [50, 100, 200, 500, 1000],
+      "progressive_step": 50
+    },
+    "count": {
+      "min": 1,
+      "max": 10,
+      "basic_test": [1, 2, 3, 5],
+      "optimization_test": [1, 2, 3, 4, 5, 8, 10]
+    }
+  },
+  "test_strategies": {
+    "quick": {
+      "description": "快速测试模式",
+      "methods": ["frequency", "markov", "markov_2nd", "bayesian", "ensemble", "lstm"],
+      "periods_list": [100, 500],
+      "count_list": [1, 2],
+      "max_tests_per_method": 5
+    },
+    "comprehensive": {
+      "description": "全面测试模式",
+      "methods": "all",
+      "periods_range": [50, 1000],
+      "count_range": [1, 5],
+      "progressive_testing": true
+    },
+    "optimization": {
+      "description": "优化测试模式",
+      "methods": ["markov", "markov_2nd", "markov_3rd", "adaptive_markov", "markov_custom", "bayesian", "ensemble", "stacking", "adaptive_ensemble", "ultimate_ensemble", "lstm", "transformer", "gan", "super", "adaptive"],
+      "periods_range": [10, 2000],
+      "count_range": [1, 10],
+      "random_testing": true,
+      "max_tests": 1000
+    }
+  },
+  "output_settings": {
+    "log_level": "INFO",
+    "save_all_results": true,
+    "result_formats": ["json", "csv"],
+    "real_time_display": true,
+    "progress_update_interval": 5
+  },
+  "performance_settings": {
+    "memory_limit_mb": 1024,
+    "disk_space_limit_mb": 2048,
+    "max_execution_time_hours": 24
+  }
+}

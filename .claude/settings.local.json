@@ -23,7 +23,12 @@
       "mcp__seq__sequentialthinking",
       "mcp__serena__insert_before_symbol",
       "Bash(python3:*)",
-      "Bash(time python3:*)"
+      "Bash(time python3:*)",
+      "Bash(node --version)",
+      "Bash(npm --version)",
+      "Read(//Users/linshibo/.claude/**)",
+      "Bash(npm install:*)",
+      "Bash(npm search:*)"
     ],
     "deny": [],
     "ask": []

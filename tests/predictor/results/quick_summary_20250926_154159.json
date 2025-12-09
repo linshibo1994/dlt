@@ -1,0 +1,71 @@
+{
+  "strategy": "quick",
+  "execution_time": 48.54188585281372,
+  "total_tests": 12,
+  "total_predictions": 18,
+  "winning_tests": 11,
+  "winning_predictions": 14,
+  "major_prizes": 0,
+  "test_winning_rate": 0.9166666666666666,
+  "prediction_winning_rate": 0.7777777777777778,
+  "prize_statistics": {
+    "9": {
+      "count": 14,
+      "name": "九等奖",
+      "winning_methods": [
+        "frequency",
+        "bayesian",
+        "markov"
+      ],
+      "method_count": 3
+    }
+  },
+  "method_statistics": {
+    "bayesian": {
+      "total_tests": 4,
+      "winning_tests": 4,
+      "total_predictions": 6,
+      "winning_predictions": 5,
+      "best_prize_level": 9,
+      "prize_breakdown": {
+        "9": 5
+      },
+      "first_prize_test": null,
+      "major_prize_count": 0,
+      "test_winning_rate": 1.0,
+      "prediction_winning_rate": 0.8333333333333334
+    },
+    "frequency": {
+      "total_tests": 4,
+      "winning_tests": 4,
+      "total_predictions": 6,
+      "winning_predictions": 6,
+      "best_prize_level": 9,
+      "prize_breakdown": {
+        "9": 6
+      },
+      "first_prize_test": null,
+      "major_prize_count": 0,
+      "test_winning_rate": 1.0,
+      "prediction_winning_rate": 1.0
+    },
+    "markov": {
+      "total_tests": 4,
+      "winning_tests": 3,
+      "total_predictions": 6,
+      "winning_predictions": 3,
+      "best_prize_level": 9,
+      "prize_breakdown": {
+        "9": 3
+      },
+      "first_prize_test": null,
+      "major_prize_count": 0,
+      "test_winning_rate": 0.75,
+      "prediction_winning_rate": 0.5
+    }
+  },
+  "best_method": "frequency",
+  "best_method_score": 60,
+  "completed_at": "2025-09-26T15:42:54.676096",
+  "stopped_by_major_prize": false
+}

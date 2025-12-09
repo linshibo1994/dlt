@@ -1,0 +1,2344 @@
+[
+  {
+    "success": true,
+    "test_case": {
+      "method": "bayesian",
+      "periods": 100,
+      "count": 2,
+      "strategy": "quick",
+      "priority": "normal"
+    },
+    "prediction_result": {
+      "success": true,
+      "method": "bayesian",
+      "periods": 100,
+      "count": 2,
+      "execution_time": 9.513792991638184,
+      "command": "/Users/linshibo/.codebuddy/bin/python /Users/linshibo/GithubProject/dlt/dlt_main.py predict -m bayesian -p 100 -c 2",
+      "timestamp": 1758872535.6484191,
+      "predictions": [
+        {
+          "front_balls": "24,31,32,34,35",
+          "back_balls": "06,09",
+          "front_balls_list": [
+            24,
+            31,
+            32,
+            34,
+            35
+          ],
+          "back_balls_list": [
+            6,
+            9
+          ],
+          "raw_line": "第 1 注: 24 31 32 34 35 + 06 09 (方法: bayesian, 置信度: 0.500)",
+          "pattern_used": 0
+        },
+        {
+          "front_balls": "11,13,14,22,25",
+          "back_balls": "06,12",
+          "front_balls_list": [
+            11,
+            13,
+            14,
+            22,
+            25
+          ],
+          "back_balls_list": [
+            6,
+            12
+          ],
+          "raw_line": "第 2 注: 11 13 14 22 25 + 06 12 (方法: bayesian, 置信度: 0.500)",
+          "pattern_used": 0
+        }
+      ],
+      "prediction_count": 2,
+      "stdout": "✅ 从缓存加载数据: 2781 期\n[INFO] 使用CPU计算\n[OK] GPU加速模块已加载\n15:42:11 - \u001b[32mINFO\u001b[0m - 配置管理器初始化完成\n15:42:11 - \u001b[32mINFO\u001b[0m - 计算节点注册成功: local (localhost:0)\n15:42:11 - \u001b[32mINFO\u001b[0m - 分布式计算管理器初始化完成\n15:42:11 - \u001b[32mINFO\u001b[0m - 内存优化器初始化完成\n15:42:11 - \u001b[32mINFO\u001b[0m - IO优化器初始化完成\n15:42:11 - \u001b[32mINFO\u001b[0m - 硬件加速器初始化完成\n15:42:11 - \u001b[32mINFO\u001b[0m - 平台检测器初始化完成\n15:42:11 - \u001b[32mINFO\u001b[0m - 未检测到GPU设备或GPU不可用\nBuild Dependencies:\n  blas:\n    detection method: pkgconfig\n    found: true\n    include directory: /opt/arm64-builds/include\n    lib directory: /opt/arm64-builds/lib\n    name: openblas64\n    openblas configuration: USE_64BITINT=1 DYNAMIC_ARCH=1 DYNAMIC_OLDER= NO_CBLAS=\n      NO_LAPACK= NO_LAPACKE= NO_AFFINITY=1 USE_OPENMP= SANDYBRIDGE MAX_THREADS=3\n    pc file directory: /usr/local/lib/pkgconfig\n    version: 0.3.23.dev\n  lapack:\n    detection method: internal\n    found: true\n    include directory: unknown\n    lib directory: unknown\n    name: dep4333629152\n    openblas configuration: unknown\n    pc file directory: unknown\n    version: 1.26.4\nCompilers:\n  c:\n    args: -fno-strict-aliasing, -DBLAS_SYMBOL_SUFFIX=64_, -DHAVE_BLAS_ILP64\n    commands: cc\n    linker: ld64\n    linker args: -fno-strict-aliasing, -DBLAS_SYMBOL_SUFFIX=64_, -DHAVE_BLAS_ILP64\n    name: clang\n    version: 14.0.0\n  c++:\n    args: -DBLAS_SYMBOL_SUFFIX=64_, -DHAVE_BLAS_ILP64\n    commands: c++\n    linker: ld64\n    linker args: -DBLAS_SYMBOL_SUFFIX=64_, -DHAVE_BLAS_ILP64\n    name: clang\n    version: 14.0.0\n  cython:\n    commands: cython\n    linker: cython\n    name: cython\n    version: 3.0.8\nMachine Information:\n  build:\n    cpu: aarch64\n    endian: little\n    family: aarch64\n    system: darwin\n  host:\n    cpu: aarch64\n    endian: little\n    family: aarch64\n    system: darwin\nPython Information:\n  path: /private/var/folders/76/zy5ktkns50v6gt5g8r0sf6sc0000gn/T/cibw-run-rlaq62oz/cp39-macosx_arm64/build/venv/bin/python\n  version: '3.9'\nSIMD Extensions:\n  baseline:\n  - NEON\n  - NEON_FP16\n  - NEON_VFPV4\n  - ASIMD\n  found:\n  - ASIMDHP\n  not found:\n  - ASIMDFHM\n\n15:42:11 - \u001b[32mINFO\u001b[0m - 平台检测完成: macOS 15.6.1 (arm64)\n15:42:11 - \u001b[32mINFO\u001b[0m - 平台适配器初始化完成: windows\n15:42:11 - \u001b[32mINFO\u001b[0m - 平台适配器初始化完成: linux\n15:42:11 - \u001b[32mINFO\u001b[0m - 平台适配器初始化完成: macos\n15:42:12 - \u001b[32mINFO\u001b[0m - 优雅降级系统初始化完成\n15:42:12 - \u001b[32mINFO\u001b[0m - 兼容性测试器初始化完成\n15:42:12 - \u001b[32mINFO\u001b[0m - 跨平台安装器初始化完成\n15:42:12 - \u001b[32mINFO\u001b[0m - 模型优化器初始化完成\n15:42:12 - \u001b[32mINFO\u001b[0m - 模型注册表初始化完成\n15:42:12 - \u001b[32mINFO\u001b[0m - 模型注册成功: lstm v1.0.0\n15:42:12 - \u001b[32mINFO\u001b[0m - 模型注册成功: transformer v1.0.0\n15:42:12 - \u001b[32mINFO\u001b[0m - 模型注册成功: gan v1.0.0\n15:42:12 - \u001b[32mINFO\u001b[0m - 模型注册成功: ensemble v1.0.0\n15:42:12 - \u001b[32mINFO\u001b[0m - 默认模型注册完成\n15:42:12 - \u001b[32mINFO\u001b[0m - 资源监控器初始化完成\n15:42:12 - \u001b[32mINFO\u001b[0m - 模型量化器初始化完成，量化位数: 8\n15:42:12 - \u001b[32mINFO\u001b[0m - 模型剪枝器初始化完成，稀疏度: 0.5\n15:42:12 - \u001b[32mINFO\u001b[0m - 知识蒸馏器初始化完成，温度: 4.0, alpha: 0.7\n15:42:12 - \u001b[32mINFO\u001b[0m - 低秩分解器初始化完成，秩比例: 0.5\n15:42:12 - \u001b[32mINFO\u001b[0m - 模型压缩器初始化完成，方法: hybrid\n15:42:12 - \u001b[32mINFO\u001b[0m - 随机搜索优化器初始化完成\n15:42:12 - \u001b[32mINFO\u001b[0m - 超参数优化器初始化完成，方法: random_search\n15:42:12 - \u001b[32mINFO\u001b[0m - 深度学习命令集初始化完成\n15:42:12 - \u001b[32mINFO\u001b[0m - CLI处理器初始化完成\n15:42:12 - \u001b[32mINFO\u001b[0m - CLI体验增强器初始化完成\n15:42:12 - \u001b[32mINFO\u001b[0m - 命令适配器初始化完成\n15:42:12 - \u001b[32mINFO\u001b[0m - API适配器初始化完成\n15:42:12 - \u001b[32mINFO\u001b[0m - 系统集成器初始化完成\n15:42:12 - \u001b[32mINFO\u001b[0m - 命令注册表初始化完成\n15:42:12 - \u001b[32mINFO\u001b[0m - 数据转换器初始化完成\n15:42:12 - \u001b[32mINFO\u001b[0m - 迁移工具初始化完成\n15:42:12 - \u001b[32mINFO\u001b[0m - 配置管理器初始化完成\n15:42:12 - \u001b[32mINFO\u001b[0m - 异常处理器初始化完成\n15:42:12 - \u001b[32mINFO\u001b[0m - 依赖注入器初始化完成\n15:42:12 - \u001b[32mINFO\u001b[0m - 模型池初始化完成，最大容量: 10\n15:42:12 - \u001b[32mINFO\u001b[0m - 预测调度器初始化完成，工作线程数: 4\n15:42:12 - \u001b[32mINFO\u001b[0m - 预测调度器已启动\n15:42:12 - \u001b[32mINFO\u001b[0m - 预测引擎初始化完成\n15:42:12 - \u001b[32mINFO\u001b[0m - 结果格式化器初始化完成\n15:42:12 - \u001b[32mINFO\u001b[0m - 结果分析器初始化完成\n15:42:12 - \u001b[32mINFO\u001b[0m - 结果处理器初始化完成\n15:42:12 - \u001b[32mINFO\u001b[0m - 置信度计算器初始化完成\n15:42:12 - \u001b[32mINFO\u001b[0m - 预测缓存初始化完成，策略: lru\n15:42:12 - \u001b[32mINFO\u001b[0m - Plotly可视化器初始化完成\n15:42:12 - \u001b[32mINFO\u001b[0m - 交互式可视化器初始化完成，使用后端: plotly\n15:42:12 - \u001b[32mINFO\u001b[0m - 仪表板管理器初始化完成\n15:42:12 - \u001b[32mINFO\u001b[0m - HTML报告构建器初始化完成\n15:42:12 - \u001b[32mINFO\u001b[0m - Markdown报告构建器初始化完成\n15:42:12 - \u001b[32mINFO\u001b[0m - Plotly可视化器初始化完成\n15:42:12 - \u001b[32mINFO\u001b[0m - 交互式可视化器初始化完成，使用后端: plotly\n15:42:12 - \u001b[32mINFO\u001b[0m - 报告生成器初始化完成\n15:42:12 - \u001b[32mINFO\u001b[0m - 工作流执行器初始化完成，最大工作线程: 4\n15:42:12 - \u001b[32mINFO\u001b[0m - 工作流管理器初始化完成\n15:42:12 - \u001b[32mINFO\u001b[0m - 调度器已启动\n15:42:12 - \u001b[32mINFO\u001b[0m - 自动化引擎初始化完成\n15:42:12 - \u001b[32mINFO\u001b[0m - 任务调度器初始化完成，最大工作线程: 4\n15:42:12 - \u001b[32mINFO\u001b[0m - 增强功能模块加载成功\n15:42:12 - \u001b[32mINFO\u001b[0m - 配置管理器初始化完成\n15:42:12 - \u001b[32mINFO\u001b[0m - 异常处理器初始化完成\n15:42:12 - \u001b[32mINFO\u001b[0m - 数据预处理器初始化完成\n15:42:12 - \u001b[32mINFO\u001b[0m - 模型注册表初始化完成\n15:42:12 - \u001b[32mINFO\u001b[0m - 模型池初始化完成，最大容量: 10\n15:42:12 - \u001b[32mINFO\u001b[0m - 预测调度器初始化完成，工作线程数: 4\n15:42:12 - \u001b[32mINFO\u001b[0m - 预测调度器已启动\n15:42:12 - \u001b[32mINFO\u001b[0m - 预测引擎初始化完成\n15:42:12 - \u001b[32mINFO\u001b[0m - 预测缓存初始化完成，策略: lru\n15:42:12 - \u001b[32mINFO\u001b[0m - Plotly可视化器初始化完成\n15:42:12 - \u001b[32mINFO\u001b[0m - 交互式可视化器初始化完成，使用后端: plotly\n15:42:12 - \u001b[32mINFO\u001b[0m - 工作流执行器初始化完成，最大工作线程: 4\n15:42:12 - \u001b[32mINFO\u001b[0m - 工作流管理器初始化完成\n15:42:12 - \u001b[32mINFO\u001b[0m - 平台检测器初始化完成\n15:42:12 - \u001b[32mINFO\u001b[0m - 优雅降级系统初始化完成\n15:42:12 - \u001b[32mINFO\u001b[0m - 计算节点注册成功: local (localhost:0)\n15:42:12 - \u001b[32mINFO\u001b[0m - 分布式计算管理器初始化完成\n15:42:12 - \u001b[32mINFO\u001b[0m - 增强版大乐透预测系统初始化完成\nOK - 增强功能模块已启用\n15:42:12 - \u001b[32mINFO\u001b[0m - OK - 增强功能已集成到主系统\n 加载预测器模块...\n15:42:12 - \u001b[32mINFO\u001b[0m - 开始缓存系统迁移...\n15:42:12 - \u001b[32mINFO\u001b[0m - 清理旧缓存: 2 个文件\n15:42:12 - \u001b[32mINFO\u001b[0m - 清理缓存完成，删除 0 个缓存项\n15:42:12 - \u001b[32mINFO\u001b[0m - 智能缓存系统已准备就绪\n15:42:12 - \u001b[32mINFO\u001b[0m - 缓存兼容层创建成功\n15:42:12 - \u001b[32mINFO\u001b[0m - 缓存系统迁移完成\n15:42:12 - \u001b[32mINFO\u001b[0m - 智能缓存系统已启用\n15:42:12 - \u001b[32mINFO\u001b[0m - 平台检测器初始化完成\n15:42:12 - \u001b[32mINFO\u001b[0m - 未检测到GPU设备或GPU不可用\nBuild Dependencies:\n  blas:\n    detection method: pkgconfig\n    found: true\n    include directory: /opt/arm64-builds/include\n    lib directory: /opt/arm64-builds/lib\n    name: openblas64\n    openblas configuration: USE_64BITINT=1 DYNAMIC_ARCH=1 DYNAMIC_OLDER= NO_CBLAS=\n      NO_LAPACK= NO_LAPACKE= NO_AFFINITY=1 USE_OPENMP= SANDYBRIDGE MAX_THREADS=3\n    pc file directory: /usr/local/lib/pkgconfig\n    version: 0.3.23.dev\n  lapack:\n    detection method: internal\n    found: true\n    include directory: unknown\n    lib directory: unknown\n    name: dep4333629152\n    openblas configuration: unknown\n    pc file directory: unknown\n    version: 1.26.4\nCompilers:\n  c:\n    args: -fno-strict-aliasing, -DBLAS_SYMBOL_SUFFIX=64_, -DHAVE_BLAS_ILP64\n    commands: cc\n    linker: ld64\n    linker args: -fno-strict-aliasing, -DBLAS_SYMBOL_SUFFIX=64_, -DHAVE_BLAS_ILP64\n    name: clang\n    version: 14.0.0\n  c++:\n    args: -DBLAS_SYMBOL_SUFFIX=64_, -DHAVE_BLAS_ILP64\n    commands: c++\n    linker: ld64\n    linker args: -DBLAS_SYMBOL_SUFFIX=64_, -DHAVE_BLAS_ILP64\n    name: clang\n    version: 14.0.0\n  cython:\n    commands: cython\n    linker: cython\n    name: cython\n    version: 3.0.8\nMachine Information:\n  build:\n    cpu: aarch64\n    endian: little\n    family: aarch64\n    system: darwin\n  host:\n    cpu: aarch64\n    endian: little\n    family: aarch64\n    system: darwin\nPython Information:\n  path: /private/var/folders/76/zy5ktkns50v6gt5g8r0sf6sc0000gn/T/cibw-run-rlaq62oz/cp39-macosx_arm64/build/venv/bin/python\n  version: '3.9'\nSIMD Extensions:\n  baseline:\n  - NEON\n  - NEON_FP16\n  - NEON_VFPV4\n  - ASIMD\n  found:\n  - ASIMDHP\n  not found:\n  - ASIMDFHM\n\n15:42:12 - \u001b[32mINFO\u001b[0m - 平台检测完成: macOS 15.6.1 (arm64)\nBuild Dependencies:\n  blas:\n    detection method: pkgconfig\n    found: true\n    include directory: /opt/arm64-builds/include\n    lib directory: /opt/arm64-builds/lib\n    name: openblas64\n    openblas configuration: USE_64BITINT=1 DYNAMIC_ARCH=1 DYNAMIC_OLDER= NO_CBLAS=\n      NO_LAPACK= NO_LAPACKE= NO_AFFINITY=1 USE_OPENMP= SANDYBRIDGE MAX_THREADS=3\n    pc file directory: /usr/local/lib/pkgconfig\n    version: 0.3.23.dev\n  lapack:\n    detection method: internal\n    found: true\n    include directory: unknown\n    lib directory: unknown\n    name: dep4333629152\n    openblas configuration: unknown\n    pc file directory: unknown\n    version: 1.26.4\nCompilers:\n  c:\n    args: -fno-strict-aliasing, -DBLAS_SYMBOL_SUFFIX=64_, -DHAVE_BLAS_ILP64\n    commands: cc\n    linker: ld64\n    linker args: -fno-strict-aliasing, -DBLAS_SYMBOL_SUFFIX=64_, -DHAVE_BLAS_ILP64\n    name: clang\n    version: 14.0.0\n  c++:\n    args: -DBLAS_SYMBOL_SUFFIX=64_, -DHAVE_BLAS_ILP64\n    commands: c++\n    linker: ld64\n    linker args: -DBLAS_SYMBOL_SUFFIX=64_, -DHAVE_BLAS_ILP64\n    name: clang\n    version: 14.0.0\n  cython:\n    commands: cython\n    linker: cython\n    name: cython\n    version: 3.0.8\nMachine Information:\n  build:\n    cpu: aarch64\n    endian: little\n    family: aarch64\n    system: darwin\n  host:\n    cpu: aarch64\n    endian: little\n    family: aarch64\n    system: darwin\nPython Information:\n  path: /private/var/folders/76/zy5ktkns50v6gt5g8r0sf6sc0000gn/T/cibw-run-rlaq62oz/cp39-macosx_arm64/build/venv/bin/python\n  version: '3.9'\nSIMD Extensions:\n  baseline:\n  - NEON\n  - NEON_FP16\n  - NEON_VFPV4\n  - ASIMD\n  found:\n  - ASIMDHP\n  not found:\n  - ASIMDFHM\n\n15:42:12 - \u001b[32mINFO\u001b[0m - 增强硬件加速器初始化完成\n15:42:12 - \u001b[32mINFO\u001b[0m - 硬件检测完成: CPU 10核, 内存 32GB\nACCELERATE 加速配置: cpu_multi\nCPU CPU多线程: -1 线程\n 开始bayesian预测 (分析期数: 100, 生成注数: 2)...\n 贝叶斯分析预测 (分析100期数据)...\n 计算先验概率和似然函数...\nPARALLEL 使用 -1 个CPU线程并行计算\n[OK] 从文件加载数据: 2781 期\n15:42:14 - \u001b[32mINFO\u001b[0m - 开始缓存系统迁移...\n15:42:14 - \u001b[32mINFO\u001b[0m - 清理旧缓存: 1 个文件\n15:42:14 - \u001b[32mINFO\u001b[0m - 清理缓存完成，删除 0 个缓存项\n15:42:14 - \u001b[32mINFO\u001b[0m - 智能缓存系统已准备就绪\n15:42:14 - \u001b[32mINFO\u001b[0m - 缓存兼容层创建成功\n15:42:14 - \u001b[32mINFO\u001b[0m - 缓存系统迁移完成\n15:42:14 - \u001b[32mINFO\u001b[0m - 智能缓存系统已启用\n[OK] 从文件加载数据: 2781 期\n15:42:14 - \u001b[32mINFO\u001b[0m - 开始缓存系统迁移...\n15:42:14 - \u001b[32mINFO\u001b[0m - 清理旧缓存: 0 个文件\n15:42:14 - \u001b[32mINFO\u001b[0m - 清理缓存完成，删除 0 个缓存项\n15:42:14 - \u001b[32mINFO\u001b[0m - 智能缓存系统已准备就绪\n15:42:14 - \u001b[32mINFO\u001b[0m - 缓存兼容层创建成功\n15:42:14 - \u001b[32mINFO\u001b[0m - 缓存系统迁移完成\n15:42:14 - \u001b[32mINFO\u001b[0m - 智能缓存系统已启用\nOK 贝叶斯推理完成:\n  前区先验概率计算: 0 个号码\n  前区后验概率计算: 35 个号码\n  后区先验概率计算: 0 个号码\n  后区后验概率计算: 12 个号码\n  前区最高后验概率: ['35(0.052)', '31(0.048)', '29(0.044)', '33(0.038)', '34(0.038)']\n  后区最高后验概率: ['10(0.115)', '9(0.110)']\n 基于贝叶斯推理进行概率预测...\nOK 预测完成!\n\n 预测结果:\n  第 1 注: 24 31 32 34 35 + 06 09 (方法: bayesian, 置信度: 0.500)\n  第 2 注: 11 13 14 22 25 + 06 12 (方法: bayesian, 置信度: 0.500)\n",
+      "stderr": "/Users/linshibo/GithubProject/dlt/enhanced_deep_learning/platform/platform_detector.py:215: UserWarning: pkg_resources is deprecated as an API. See https://setuptools.pypa.io/en/latest/pkg_resources.html. The pkg_resources package is slated for removal as early as 2025-11-30. Refrain from using this package or pin to Setuptools<81.\n  import pkg_resources\n"
+    },
+    "latest_draw": {
+      "issue": 25109,
+      "date": "2025-09-22",
+      "front_balls": "04,08,10,13,26",
+      "back_balls": "09,10",
+      "front_balls_list": [
+        4,
+        8,
+        10,
+        13,
+        26
+      ],
+      "back_balls_list": [
+        9,
+        10
+      ],
+      "date_obj": "2025-09-22 00:00:00"
+    },
+    "execution_time": 9.549684047698975,
+    "timestamp": "2025-09-26T15:42:15.684304",
+    "predictions_analysis": [
+      {
+        "prediction_index": 1,
+        "prediction": {
+          "front_balls": "24,31,32,34,35",
+          "back_balls": "06,09",
+          "front_balls_list": [
+            24,
+            31,
+            32,
+            34,
+            35
+          ],
+          "back_balls_list": [
+            6,
+            9
+          ],
+          "raw_line": "第 1 注: 24 31 32 34 35 + 06 09 (方法: bayesian, 置信度: 0.500)",
+          "pattern_used": 0
+        },
+        "winning_result": {
+          "is_winning": true,
+          "prize_level": 9,
+          "prize_name": "九等奖",
+          "front_matches": 0,
+          "back_matches": 1,
+          "match_combination": "0+1",
+          "predicted_front": [
+            24,
+            31,
+            32,
+            34,
+            35
+          ],
+          "predicted_back": [
+            6,
+            9
+          ],
+          "winning_front": [
+            4,
+            8,
+            10,
+            13,
+            26
+          ],
+          "winning_back": [
+            9,
+            10
+          ],
+          "matched_front_numbers": [],
+          "matched_back_numbers": [
+            9
+          ]
+        }
+      },
+      {
+        "prediction_index": 2,
+        "prediction": {
+          "front_balls": "11,13,14,22,25",
+          "back_balls": "06,12",
+          "front_balls_list": [
+            11,
+            13,
+            14,
+            22,
+            25
+          ],
+          "back_balls_list": [
+            6,
+            12
+          ],
+          "raw_line": "第 2 注: 11 13 14 22 25 + 06 12 (方法: bayesian, 置信度: 0.500)",
+          "pattern_used": 0
+        },
+        "winning_result": {
+          "is_winning": true,
+          "prize_level": 9,
+          "prize_name": "九等奖",
+          "front_matches": 1,
+          "back_matches": 0,
+          "match_combination": "1+0",
+          "predicted_front": [
+            11,
+            13,
+            14,
+            22,
+            25
+          ],
+          "predicted_back": [
+            6,
+            12
+          ],
+          "winning_front": [
+            4,
+            8,
+            10,
+            13,
+            26
+          ],
+          "winning_back": [
+            9,
+            10
+          ],
+          "matched_front_numbers": [
+            13
+          ],
+          "matched_back_numbers": []
+        }
+      }
+    ],
+    "winnings": [
+      {
+        "prediction_index": 1,
+        "prize_level": 9,
+        "prize_name": "九等奖",
+        "match_combination": "0+1",
+        "predicted_front": [
+          24,
+          31,
+          32,
+          34,
+          35
+        ],
+        "predicted_back": [
+          6,
+          9
+        ],
+        "matched_front_numbers": [],
+        "matched_back_numbers": [
+          9
+        ],
+        "front_matches": 0,
+        "back_matches": 1
+      },
+      {
+        "prediction_index": 2,
+        "prize_level": 9,
+        "prize_name": "九等奖",
+        "match_combination": "1+0",
+        "predicted_front": [
+          11,
+          13,
+          14,
+          22,
+          25
+        ],
+        "predicted_back": [
+          6,
+          12
+        ],
+        "matched_front_numbers": [
+          13
+        ],
+        "matched_back_numbers": [],
+        "front_matches": 1,
+        "back_matches": 0
+      }
+    ],
+    "prize_statistics": {
+      "9": {
+        "name": "九等奖",
+        "count": 2
+      }
+    },
+    "total_predictions": 2,
+    "winning_predictions": 2,
+    "winning_rate": 1.0,
+    "best_prize_level": 9,
+    "is_winning": true,
+    "is_major_prize": false,
+    "prize_level": 9,
+    "total_prize_levels": 1
+  },
+  {
+    "success": true,
+    "test_case": {
+      "method": "bayesian",
+      "periods": 100,
+      "count": 1,
+      "strategy": "quick",
+      "priority": "normal"
+    },
+    "prediction_result": {
+      "success": true,
+      "method": "bayesian",
+      "periods": 100,
+      "count": 1,
+      "execution_time": 9.548264980316162,
+      "command": "/Users/linshibo/.codebuddy/bin/python /Users/linshibo/GithubProject/dlt/dlt_main.py predict -m bayesian -p 100 -c 1",
+      "timestamp": 1758872535.682719,
+      "predictions": [
+        {
+          "front_balls": "01,24,32,33,35",
+          "back_balls": "06,09",
+          "front_balls_list": [
+            1,
+            24,
+            32,
+            33,
+            35
+          ],
+          "back_balls_list": [
+            6,
+            9
+          ],
+          "raw_line": "第 1 注: 01 24 32 33 35 + 06 09 (方法: bayesian, 置信度: 0.500)",
+          "pattern_used": 0
+        }
+      ],
+      "prediction_count": 1,
+      "stdout": "✅ 从缓存加载数据: 2781 期\n[INFO] 使用CPU计算\n[OK] GPU加速模块已加载\n15:42:11 - \u001b[32mINFO\u001b[0m - 配置管理器初始化完成\n15:42:11 - \u001b[32mINFO\u001b[0m - 计算节点注册成功: local (localhost:0)\n15:42:11 - \u001b[32mINFO\u001b[0m - 分布式计算管理器初始化完成\n15:42:11 - \u001b[32mINFO\u001b[0m - 内存优化器初始化完成\n15:42:11 - \u001b[32mINFO\u001b[0m - IO优化器初始化完成\n15:42:11 - \u001b[32mINFO\u001b[0m - 硬件加速器初始化完成\n15:42:11 - \u001b[32mINFO\u001b[0m - 平台检测器初始化完成\n15:42:11 - \u001b[32mINFO\u001b[0m - 未检测到GPU设备或GPU不可用\nBuild Dependencies:\n  blas:\n    detection method: pkgconfig\n    found: true\n    include directory: /opt/arm64-builds/include\n    lib directory: /opt/arm64-builds/lib\n    name: openblas64\n    openblas configuration: USE_64BITINT=1 DYNAMIC_ARCH=1 DYNAMIC_OLDER= NO_CBLAS=\n      NO_LAPACK= NO_LAPACKE= NO_AFFINITY=1 USE_OPENMP= SANDYBRIDGE MAX_THREADS=3\n    pc file directory: /usr/local/lib/pkgconfig\n    version: 0.3.23.dev\n  lapack:\n    detection method: internal\n    found: true\n    include directory: unknown\n    lib directory: unknown\n    name: dep4333629152\n    openblas configuration: unknown\n    pc file directory: unknown\n    version: 1.26.4\nCompilers:\n  c:\n    args: -fno-strict-aliasing, -DBLAS_SYMBOL_SUFFIX=64_, -DHAVE_BLAS_ILP64\n    commands: cc\n    linker: ld64\n    linker args: -fno-strict-aliasing, -DBLAS_SYMBOL_SUFFIX=64_, -DHAVE_BLAS_ILP64\n    name: clang\n    version: 14.0.0\n  c++:\n    args: -DBLAS_SYMBOL_SUFFIX=64_, -DHAVE_BLAS_ILP64\n    commands: c++\n    linker: ld64\n    linker args: -DBLAS_SYMBOL_SUFFIX=64_, -DHAVE_BLAS_ILP64\n    name: clang\n    version: 14.0.0\n  cython:\n    commands: cython\n    linker: cython\n    name: cython\n    version: 3.0.8\nMachine Information:\n  build:\n    cpu: aarch64\n    endian: little\n    family: aarch64\n    system: darwin\n  host:\n    cpu: aarch64\n    endian: little\n    family: aarch64\n    system: darwin\nPython Information:\n  path: /private/var/folders/76/zy5ktkns50v6gt5g8r0sf6sc0000gn/T/cibw-run-rlaq62oz/cp39-macosx_arm64/build/venv/bin/python\n  version: '3.9'\nSIMD Extensions:\n  baseline:\n  - NEON\n  - NEON_FP16\n  - NEON_VFPV4\n  - ASIMD\n  found:\n  - ASIMDHP\n  not found:\n  - ASIMDFHM\n\n15:42:11 - \u001b[32mINFO\u001b[0m - 平台检测完成: macOS 15.6.1 (arm64)\n15:42:11 - \u001b[32mINFO\u001b[0m - 平台适配器初始化完成: windows\n15:42:11 - \u001b[32mINFO\u001b[0m - 平台适配器初始化完成: linux\n15:42:11 - \u001b[32mINFO\u001b[0m - 平台适配器初始化完成: macos\n15:42:12 - \u001b[32mINFO\u001b[0m - 优雅降级系统初始化完成\n15:42:12 - \u001b[32mINFO\u001b[0m - 兼容性测试器初始化完成\n15:42:12 - \u001b[32mINFO\u001b[0m - 跨平台安装器初始化完成\n15:42:12 - \u001b[32mINFO\u001b[0m - 模型优化器初始化完成\n15:42:12 - \u001b[32mINFO\u001b[0m - 模型注册表初始化完成\n15:42:12 - \u001b[32mINFO\u001b[0m - 模型注册成功: lstm v1.0.0\n15:42:12 - \u001b[32mINFO\u001b[0m - 模型注册成功: transformer v1.0.0\n15:42:12 - \u001b[32mINFO\u001b[0m - 模型注册成功: gan v1.0.0\n15:42:12 - \u001b[32mINFO\u001b[0m - 模型注册成功: ensemble v1.0.0\n15:42:12 - \u001b[32mINFO\u001b[0m - 默认模型注册完成\n15:42:12 - \u001b[32mINFO\u001b[0m - 资源监控器初始化完成\n15:42:12 - \u001b[32mINFO\u001b[0m - 模型量化器初始化完成，量化位数: 8\n15:42:12 - \u001b[32mINFO\u001b[0m - 模型剪枝器初始化完成，稀疏度: 0.5\n15:42:12 - \u001b[32mINFO\u001b[0m - 知识蒸馏器初始化完成，温度: 4.0, alpha: 0.7\n15:42:12 - \u001b[32mINFO\u001b[0m - 低秩分解器初始化完成，秩比例: 0.5\n15:42:12 - \u001b[32mINFO\u001b[0m - 模型压缩器初始化完成，方法: hybrid\n15:42:12 - \u001b[32mINFO\u001b[0m - 随机搜索优化器初始化完成\n15:42:12 - \u001b[32mINFO\u001b[0m - 超参数优化器初始化完成，方法: random_search\n15:42:12 - \u001b[32mINFO\u001b[0m - 深度学习命令集初始化完成\n15:42:12 - \u001b[32mINFO\u001b[0m - CLI处理器初始化完成\n15:42:12 - \u001b[32mINFO\u001b[0m - CLI体验增强器初始化完成\n15:42:12 - \u001b[32mINFO\u001b[0m - 命令适配器初始化完成\n15:42:12 - \u001b[32mINFO\u001b[0m - API适配器初始化完成\n15:42:12 - \u001b[32mINFO\u001b[0m - 系统集成器初始化完成\n15:42:12 - \u001b[32mINFO\u001b[0m - 命令注册表初始化完成\n15:42:12 - \u001b[32mINFO\u001b[0m - 数据转换器初始化完成\n15:42:12 - \u001b[32mINFO\u001b[0m - 迁移工具初始化完成\n15:42:12 - \u001b[32mINFO\u001b[0m - 配置管理器初始化完成\n15:42:12 - \u001b[32mINFO\u001b[0m - 异常处理器初始化完成\n15:42:12 - \u001b[32mINFO\u001b[0m - 依赖注入器初始化完成\n15:42:12 - \u001b[32mINFO\u001b[0m - 模型池初始化完成，最大容量: 10\n15:42:12 - \u001b[32mINFO\u001b[0m - 预测调度器初始化完成，工作线程数: 4\n15:42:12 - \u001b[32mINFO\u001b[0m - 预测调度器已启动\n15:42:12 - \u001b[32mINFO\u001b[0m - 预测引擎初始化完成\n15:42:12 - \u001b[32mINFO\u001b[0m - 结果格式化器初始化完成\n15:42:12 - \u001b[32mINFO\u001b[0m - 结果分析器初始化完成\n15:42:12 - \u001b[32mINFO\u001b[0m - 结果处理器初始化完成\n15:42:12 - \u001b[32mINFO\u001b[0m - 置信度计算器初始化完成\n15:42:12 - \u001b[32mINFO\u001b[0m - 预测缓存初始化完成，策略: lru\n15:42:12 - \u001b[32mINFO\u001b[0m - Plotly可视化器初始化完成\n15:42:12 - \u001b[32mINFO\u001b[0m - 交互式可视化器初始化完成，使用后端: plotly\n15:42:12 - \u001b[32mINFO\u001b[0m - 仪表板管理器初始化完成\n15:42:12 - \u001b[32mINFO\u001b[0m - HTML报告构建器初始化完成\n15:42:12 - \u001b[32mINFO\u001b[0m - Markdown报告构建器初始化完成\n15:42:12 - \u001b[32mINFO\u001b[0m - Plotly可视化器初始化完成\n15:42:12 - \u001b[32mINFO\u001b[0m - 交互式可视化器初始化完成，使用后端: plotly\n15:42:12 - \u001b[32mINFO\u001b[0m - 报告生成器初始化完成\n15:42:12 - \u001b[32mINFO\u001b[0m - 工作流执行器初始化完成，最大工作线程: 4\n15:42:12 - \u001b[32mINFO\u001b[0m - 工作流管理器初始化完成\n15:42:12 - \u001b[32mINFO\u001b[0m - 调度器已启动\n15:42:12 - \u001b[32mINFO\u001b[0m - 自动化引擎初始化完成\n15:42:12 - \u001b[32mINFO\u001b[0m - 任务调度器初始化完成，最大工作线程: 4\n15:42:12 - \u001b[32mINFO\u001b[0m - 增强功能模块加载成功\n15:42:12 - \u001b[32mINFO\u001b[0m - 配置管理器初始化完成\n15:42:12 - \u001b[32mINFO\u001b[0m - 异常处理器初始化完成\n15:42:12 - \u001b[32mINFO\u001b[0m - 数据预处理器初始化完成\n15:42:12 - \u001b[32mINFO\u001b[0m - 模型注册表初始化完成\n15:42:12 - \u001b[32mINFO\u001b[0m - 模型池初始化完成，最大容量: 10\n15:42:12 - \u001b[32mINFO\u001b[0m - 预测调度器初始化完成，工作线程数: 4\n15:42:12 - \u001b[32mINFO\u001b[0m - 预测调度器已启动\n15:42:12 - \u001b[32mINFO\u001b[0m - 预测引擎初始化完成\n15:42:12 - \u001b[32mINFO\u001b[0m - 预测缓存初始化完成，策略: lru\n15:42:12 - \u001b[32mINFO\u001b[0m - Plotly可视化器初始化完成\n15:42:12 - \u001b[32mINFO\u001b[0m - 交互式可视化器初始化完成，使用后端: plotly\n15:42:12 - \u001b[32mINFO\u001b[0m - 工作流执行器初始化完成，最大工作线程: 4\n15:42:12 - \u001b[32mINFO\u001b[0m - 工作流管理器初始化完成\n15:42:12 - \u001b[32mINFO\u001b[0m - 平台检测器初始化完成\n15:42:12 - \u001b[32mINFO\u001b[0m - 优雅降级系统初始化完成\n15:42:12 - \u001b[32mINFO\u001b[0m - 计算节点注册成功: local (localhost:0)\n15:42:12 - \u001b[32mINFO\u001b[0m - 分布式计算管理器初始化完成\n15:42:12 - \u001b[32mINFO\u001b[0m - 增强版大乐透预测系统初始化完成\nOK - 增强功能模块已启用\n15:42:12 - \u001b[32mINFO\u001b[0m - OK - 增强功能已集成到主系统\n 加载预测器模块...\n15:42:12 - \u001b[32mINFO\u001b[0m - 开始缓存系统迁移...\n15:42:12 - \u001b[32mINFO\u001b[0m - 清理旧缓存: 1 个文件\n15:42:12 - \u001b[32mINFO\u001b[0m - 清理缓存完成，删除 0 个缓存项\n15:42:12 - \u001b[32mINFO\u001b[0m - 智能缓存系统已准备就绪\n15:42:12 - \u001b[32mINFO\u001b[0m - 缓存兼容层创建成功\n15:42:12 - \u001b[32mINFO\u001b[0m - 缓存系统迁移完成\n15:42:12 - \u001b[32mINFO\u001b[0m - 智能缓存系统已启用\n15:42:12 - \u001b[32mINFO\u001b[0m - 平台检测器初始化完成\n15:42:12 - \u001b[32mINFO\u001b[0m - 未检测到GPU设备或GPU不可用\nBuild Dependencies:\n  blas:\n    detection method: pkgconfig\n    found: true\n    include directory: /opt/arm64-builds/include\n    lib directory: /opt/arm64-builds/lib\n    name: openblas64\n    openblas configuration: USE_64BITINT=1 DYNAMIC_ARCH=1 DYNAMIC_OLDER= NO_CBLAS=\n      NO_LAPACK= NO_LAPACKE= NO_AFFINITY=1 USE_OPENMP= SANDYBRIDGE MAX_THREADS=3\n    pc file directory: /usr/local/lib/pkgconfig\n    version: 0.3.23.dev\n  lapack:\n    detection method: internal\n    found: true\n    include directory: unknown\n    lib directory: unknown\n    name: dep4333629152\n    openblas configuration: unknown\n    pc file directory: unknown\n    version: 1.26.4\nCompilers:\n  c:\n    args: -fno-strict-aliasing, -DBLAS_SYMBOL_SUFFIX=64_, -DHAVE_BLAS_ILP64\n    commands: cc\n    linker: ld64\n    linker args: -fno-strict-aliasing, -DBLAS_SYMBOL_SUFFIX=64_, -DHAVE_BLAS_ILP64\n    name: clang\n    version: 14.0.0\n  c++:\n    args: -DBLAS_SYMBOL_SUFFIX=64_, -DHAVE_BLAS_ILP64\n    commands: c++\n    linker: ld64\n    linker args: -DBLAS_SYMBOL_SUFFIX=64_, -DHAVE_BLAS_ILP64\n    name: clang\n    version: 14.0.0\n  cython:\n    commands: cython\n    linker: cython\n    name: cython\n    version: 3.0.8\nMachine Information:\n  build:\n    cpu: aarch64\n    endian: little\n    family: aarch64\n    system: darwin\n  host:\n    cpu: aarch64\n    endian: little\n    family: aarch64\n    system: darwin\nPython Information:\n  path: /private/var/folders/76/zy5ktkns50v6gt5g8r0sf6sc0000gn/T/cibw-run-rlaq62oz/cp39-macosx_arm64/build/venv/bin/python\n  version: '3.9'\nSIMD Extensions:\n  baseline:\n  - NEON\n  - NEON_FP16\n  - NEON_VFPV4\n  - ASIMD\n  found:\n  - ASIMDHP\n  not found:\n  - ASIMDFHM\n\n15:42:12 - \u001b[32mINFO\u001b[0m - 平台检测完成: macOS 15.6.1 (arm64)\nBuild Dependencies:\n  blas:\n    detection method: pkgconfig\n    found: true\n    include directory: /opt/arm64-builds/include\n    lib directory: /opt/arm64-builds/lib\n    name: openblas64\n    openblas configuration: USE_64BITINT=1 DYNAMIC_ARCH=1 DYNAMIC_OLDER= NO_CBLAS=\n      NO_LAPACK= NO_LAPACKE= NO_AFFINITY=1 USE_OPENMP= SANDYBRIDGE MAX_THREADS=3\n    pc file directory: /usr/local/lib/pkgconfig\n    version: 0.3.23.dev\n  lapack:\n    detection method: internal\n    found: true\n    include directory: unknown\n    lib directory: unknown\n    name: dep4333629152\n    openblas configuration: unknown\n    pc file directory: unknown\n    version: 1.26.4\nCompilers:\n  c:\n    args: -fno-strict-aliasing, -DBLAS_SYMBOL_SUFFIX=64_, -DHAVE_BLAS_ILP64\n    commands: cc\n    linker: ld64\n    linker args: -fno-strict-aliasing, -DBLAS_SYMBOL_SUFFIX=64_, -DHAVE_BLAS_ILP64\n    name: clang\n    version: 14.0.0\n  c++:\n    args: -DBLAS_SYMBOL_SUFFIX=64_, -DHAVE_BLAS_ILP64\n    commands: c++\n    linker: ld64\n    linker args: -DBLAS_SYMBOL_SUFFIX=64_, -DHAVE_BLAS_ILP64\n    name: clang\n    version: 14.0.0\n  cython:\n    commands: cython\n    linker: cython\n    name: cython\n    version: 3.0.8\nMachine Information:\n  build:\n    cpu: aarch64\n    endian: little\n    family: aarch64\n    system: darwin\n  host:\n    cpu: aarch64\n    endian: little\n    family: aarch64\n    system: darwin\nPython Information:\n  path: /private/var/folders/76/zy5ktkns50v6gt5g8r0sf6sc0000gn/T/cibw-run-rlaq62oz/cp39-macosx_arm64/build/venv/bin/python\n  version: '3.9'\nSIMD Extensions:\n  baseline:\n  - NEON\n  - NEON_FP16\n  - NEON_VFPV4\n  - ASIMD\n  found:\n  - ASIMDHP\n  not found:\n  - ASIMDFHM\n\n15:42:12 - \u001b[32mINFO\u001b[0m - 增强硬件加速器初始化完成\n15:42:12 - \u001b[32mINFO\u001b[0m - 硬件检测完成: CPU 10核, 内存 32GB\nACCELERATE 加速配置: cpu_multi\nCPU CPU多线程: -1 线程\n 开始bayesian预测 (分析期数: 100, 生成注数: 1)...\n 贝叶斯分析预测 (分析100期数据)...\n 计算先验概率和似然函数...\nPARALLEL 使用 -1 个CPU线程并行计算\n[OK] 从文件加载数据: 2781 期\n15:42:14 - \u001b[32mINFO\u001b[0m - 开始缓存系统迁移...\n15:42:14 - \u001b[32mINFO\u001b[0m - 清理旧缓存: 0 个文件\n15:42:14 - \u001b[32mINFO\u001b[0m - 清理缓存完成，删除 0 个缓存项\n15:42:14 - \u001b[32mINFO\u001b[0m - 智能缓存系统已准备就绪\n15:42:14 - \u001b[32mINFO\u001b[0m - 缓存兼容层创建成功\n15:42:14 - \u001b[32mINFO\u001b[0m - 缓存系统迁移完成\n15:42:14 - \u001b[32mINFO\u001b[0m - 智能缓存系统已启用\n[OK] 从文件加载数据: 2781 期\n15:42:14 - \u001b[32mINFO\u001b[0m - 开始缓存系统迁移...\n15:42:14 - \u001b[32mINFO\u001b[0m - 清理旧缓存: 1 个文件\n15:42:14 - \u001b[32mINFO\u001b[0m - 清理缓存完成，删除 0 个缓存项\n15:42:14 - \u001b[32mINFO\u001b[0m - 智能缓存系统已准备就绪\n15:42:14 - \u001b[32mINFO\u001b[0m - 缓存兼容层创建成功\n15:42:14 - \u001b[32mINFO\u001b[0m - 缓存系统迁移完成\n15:42:14 - \u001b[32mINFO\u001b[0m - 智能缓存系统已启用\nOK 贝叶斯推理完成:\n  前区先验概率计算: 0 个号码\n  前区后验概率计算: 35 个号码\n  后区先验概率计算: 0 个号码\n  后区后验概率计算: 12 个号码\n  前区最高后验概率: ['35(0.052)', '31(0.048)', '29(0.044)', '33(0.038)', '34(0.038)']\n  后区最高后验概率: ['10(0.115)', '9(0.110)']\n 基于贝叶斯推理进行概率预测...\nOK 预测完成!\n\n 预测结果:\n  第 1 注: 01 24 32 33 35 + 06 09 (方法: bayesian, 置信度: 0.500)\n",
+      "stderr": "/Users/linshibo/GithubProject/dlt/enhanced_deep_learning/platform/platform_detector.py:215: UserWarning: pkg_resources is deprecated as an API. See https://setuptools.pypa.io/en/latest/pkg_resources.html. The pkg_resources package is slated for removal as early as 2025-11-30. Refrain from using this package or pin to Setuptools<81.\n  import pkg_resources\n"
+    },
+    "latest_draw": {
+      "issue": 25109,
+      "date": "2025-09-22",
+      "front_balls": "04,08,10,13,26",
+      "back_balls": "09,10",
+      "front_balls_list": [
+        4,
+        8,
+        10,
+        13,
+        26
+      ],
+      "back_balls_list": [
+        9,
+        10
+      ],
+      "date_obj": "2025-09-22 00:00:00"
+    },
+    "execution_time": 9.584002256393433,
+    "timestamp": "2025-09-26T15:42:15.718448",
+    "predictions_analysis": [
+      {
+        "prediction_index": 1,
+        "prediction": {
+          "front_balls": "01,24,32,33,35",
+          "back_balls": "06,09",
+          "front_balls_list": [
+            1,
+            24,
+            32,
+            33,
+            35
+          ],
+          "back_balls_list": [
+            6,
+            9
+          ],
+          "raw_line": "第 1 注: 01 24 32 33 35 + 06 09 (方法: bayesian, 置信度: 0.500)",
+          "pattern_used": 0
+        },
+        "winning_result": {
+          "is_winning": true,
+          "prize_level": 9,
+          "prize_name": "九等奖",
+          "front_matches": 0,
+          "back_matches": 1,
+          "match_combination": "0+1",
+          "predicted_front": [
+            1,
+            24,
+            32,
+            33,
+            35
+          ],
+          "predicted_back": [
+            6,
+            9
+          ],
+          "winning_front": [
+            4,
+            8,
+            10,
+            13,
+            26
+          ],
+          "winning_back": [
+            9,
+            10
+          ],
+          "matched_front_numbers": [],
+          "matched_back_numbers": [
+            9
+          ]
+        }
+      }
+    ],
+    "winnings": [
+      {
+        "prediction_index": 1,
+        "prize_level": 9,
+        "prize_name": "九等奖",
+        "match_combination": "0+1",
+        "predicted_front": [
+          1,
+          24,
+          32,
+          33,
+          35
+        ],
+        "predicted_back": [
+          6,
+          9
+        ],
+        "matched_front_numbers": [],
+        "matched_back_numbers": [
+          9
+        ],
+        "front_matches": 0,
+        "back_matches": 1
+      }
+    ],
+    "prize_statistics": {
+      "9": {
+        "name": "九等奖",
+        "count": 1
+      }
+    },
+    "total_predictions": 1,
+    "winning_predictions": 1,
+    "winning_rate": 1.0,
+    "best_prize_level": 9,
+    "is_winning": true,
+    "is_major_prize": false,
+    "prize_level": 9,
+    "total_prize_levels": 1
+  },
+  {
+    "success": true,
+    "test_case": {
+      "method": "bayesian",
+      "periods": 500,
+      "count": 1,
+      "strategy": "quick",
+      "priority": "normal"
+    },
+    "prediction_result": {
+      "success": true,
+      "method": "bayesian",
+      "periods": 500,
+      "count": 1,
+      "execution_time": 10.491216897964478,
+      "command": "/Users/linshibo/.codebuddy/bin/python /Users/linshibo/GithubProject/dlt/dlt_main.py predict -m bayesian -p 500 -c 1",
+      "timestamp": 1758872546.175667,
+      "predictions": [
+        {
+          "front_balls": "25,29,30,31,35",
+          "back_balls": "06,09",
+          "front_balls_list": [
+            25,
+            29,
+            30,
+            31,
+            35
+          ],
+          "back_balls_list": [
+            6,
+            9
+          ],
+          "raw_line": "第 1 注: 25 29 30 31 35 + 06 09 (方法: bayesian, 置信度: 0.500)",
+          "pattern_used": 0
+        }
+      ],
+      "prediction_count": 1,
+      "stdout": "[OK] 从文件加载数据: 2781 期\n[INFO] 使用CPU计算\n[OK] GPU加速模块已加载\n15:42:20 - \u001b[32mINFO\u001b[0m - 配置管理器初始化完成\n15:42:20 - \u001b[32mINFO\u001b[0m - 计算节点注册成功: local (localhost:0)\n15:42:20 - \u001b[32mINFO\u001b[0m - 分布式计算管理器初始化完成\n15:42:20 - \u001b[32mINFO\u001b[0m - 内存优化器初始化完成\n15:42:20 - \u001b[32mINFO\u001b[0m - IO优化器初始化完成\n15:42:20 - \u001b[32mINFO\u001b[0m - 硬件加速器初始化完成\n15:42:20 - \u001b[32mINFO\u001b[0m - 平台检测器初始化完成\n15:42:20 - \u001b[32mINFO\u001b[0m - 未检测到GPU设备或GPU不可用\nBuild Dependencies:\n  blas:\n    detection method: pkgconfig\n    found: true\n    include directory: /opt/arm64-builds/include\n    lib directory: /opt/arm64-builds/lib\n    name: openblas64\n    openblas configuration: USE_64BITINT=1 DYNAMIC_ARCH=1 DYNAMIC_OLDER= NO_CBLAS=\n      NO_LAPACK= NO_LAPACKE= NO_AFFINITY=1 USE_OPENMP= SANDYBRIDGE MAX_THREADS=3\n    pc file directory: /usr/local/lib/pkgconfig\n    version: 0.3.23.dev\n  lapack:\n    detection method: internal\n    found: true\n    include directory: unknown\n    lib directory: unknown\n    name: dep4333629152\n    openblas configuration: unknown\n    pc file directory: unknown\n    version: 1.26.4\nCompilers:\n  c:\n    args: -fno-strict-aliasing, -DBLAS_SYMBOL_SUFFIX=64_, -DHAVE_BLAS_ILP64\n    commands: cc\n    linker: ld64\n    linker args: -fno-strict-aliasing, -DBLAS_SYMBOL_SUFFIX=64_, -DHAVE_BLAS_ILP64\n    name: clang\n    version: 14.0.0\n  c++:\n    args: -DBLAS_SYMBOL_SUFFIX=64_, -DHAVE_BLAS_ILP64\n    commands: c++\n    linker: ld64\n    linker args: -DBLAS_SYMBOL_SUFFIX=64_, -DHAVE_BLAS_ILP64\n    name: clang\n    version: 14.0.0\n  cython:\n    commands: cython\n    linker: cython\n    name: cython\n    version: 3.0.8\nMachine Information:\n  build:\n    cpu: aarch64\n    endian: little\n    family: aarch64\n    system: darwin\n  host:\n    cpu: aarch64\n    endian: little\n    family: aarch64\n    system: darwin\nPython Information:\n  path: /private/var/folders/76/zy5ktkns50v6gt5g8r0sf6sc0000gn/T/cibw-run-rlaq62oz/cp39-macosx_arm64/build/venv/bin/python\n  version: '3.9'\nSIMD Extensions:\n  baseline:\n  - NEON\n  - NEON_FP16\n  - NEON_VFPV4\n  - ASIMD\n  found:\n  - ASIMDHP\n  not found:\n  - ASIMDFHM\n\n15:42:21 - \u001b[32mINFO\u001b[0m - 平台检测完成: macOS 15.6.1 (arm64)\n15:42:21 - \u001b[32mINFO\u001b[0m - 平台适配器初始化完成: windows\n15:42:21 - \u001b[32mINFO\u001b[0m - 平台适配器初始化完成: linux\n15:42:21 - \u001b[32mINFO\u001b[0m - 平台适配器初始化完成: macos\n15:42:21 - \u001b[32mINFO\u001b[0m - 优雅降级系统初始化完成\n15:42:21 - \u001b[32mINFO\u001b[0m - 兼容性测试器初始化完成\n15:42:21 - \u001b[32mINFO\u001b[0m - 跨平台安装器初始化完成\n15:42:21 - \u001b[32mINFO\u001b[0m - 模型优化器初始化完成\n15:42:21 - \u001b[32mINFO\u001b[0m - 模型注册表初始化完成\n15:42:21 - \u001b[32mINFO\u001b[0m - 模型注册成功: lstm v1.0.0\n15:42:21 - \u001b[32mINFO\u001b[0m - 模型注册成功: transformer v1.0.0\n15:42:21 - \u001b[32mINFO\u001b[0m - 模型注册成功: gan v1.0.0\n15:42:21 - \u001b[32mINFO\u001b[0m - 模型注册成功: ensemble v1.0.0\n15:42:21 - \u001b[32mINFO\u001b[0m - 默认模型注册完成\n15:42:22 - \u001b[32mINFO\u001b[0m - 资源监控器初始化完成\n15:42:22 - \u001b[32mINFO\u001b[0m - 模型量化器初始化完成，量化位数: 8\n15:42:22 - \u001b[32mINFO\u001b[0m - 模型剪枝器初始化完成，稀疏度: 0.5\n15:42:22 - \u001b[32mINFO\u001b[0m - 知识蒸馏器初始化完成，温度: 4.0, alpha: 0.7\n15:42:22 - \u001b[32mINFO\u001b[0m - 低秩分解器初始化完成，秩比例: 0.5\n15:42:22 - \u001b[32mINFO\u001b[0m - 模型压缩器初始化完成，方法: hybrid\n15:42:22 - \u001b[32mINFO\u001b[0m - 随机搜索优化器初始化完成\n15:42:22 - \u001b[32mINFO\u001b[0m - 超参数优化器初始化完成，方法: random_search\n15:42:22 - \u001b[32mINFO\u001b[0m - 深度学习命令集初始化完成\n15:42:22 - \u001b[32mINFO\u001b[0m - CLI处理器初始化完成\n15:42:22 - \u001b[32mINFO\u001b[0m - CLI体验增强器初始化完成\n15:42:22 - \u001b[32mINFO\u001b[0m - 命令适配器初始化完成\n15:42:22 - \u001b[32mINFO\u001b[0m - API适配器初始化完成\n15:42:22 - \u001b[32mINFO\u001b[0m - 系统集成器初始化完成\n15:42:22 - \u001b[32mINFO\u001b[0m - 命令注册表初始化完成\n15:42:22 - \u001b[32mINFO\u001b[0m - 数据转换器初始化完成\n15:42:22 - \u001b[32mINFO\u001b[0m - 迁移工具初始化完成\n15:42:22 - \u001b[32mINFO\u001b[0m - 配置管理器初始化完成\n15:42:22 - \u001b[32mINFO\u001b[0m - 异常处理器初始化完成\n15:42:22 - \u001b[32mINFO\u001b[0m - 依赖注入器初始化完成\n15:42:22 - \u001b[32mINFO\u001b[0m - 模型池初始化完成，最大容量: 10\n15:42:22 - \u001b[32mINFO\u001b[0m - 预测调度器初始化完成，工作线程数: 4\n15:42:22 - \u001b[32mINFO\u001b[0m - 预测调度器已启动\n15:42:22 - \u001b[32mINFO\u001b[0m - 预测引擎初始化完成\n15:42:22 - \u001b[32mINFO\u001b[0m - 结果格式化器初始化完成\n15:42:22 - \u001b[32mINFO\u001b[0m - 结果分析器初始化完成\n15:42:22 - \u001b[32mINFO\u001b[0m - 结果处理器初始化完成\n15:42:22 - \u001b[32mINFO\u001b[0m - 置信度计算器初始化完成\n15:42:22 - \u001b[32mINFO\u001b[0m - 预测缓存初始化完成，策略: lru\n15:42:22 - \u001b[32mINFO\u001b[0m - Plotly可视化器初始化完成\n15:42:22 - \u001b[32mINFO\u001b[0m - 交互式可视化器初始化完成，使用后端: plotly\n15:42:22 - \u001b[32mINFO\u001b[0m - 仪表板管理器初始化完成\n15:42:22 - \u001b[32mINFO\u001b[0m - HTML报告构建器初始化完成\n15:42:22 - \u001b[32mINFO\u001b[0m - Markdown报告构建器初始化完成\n15:42:22 - \u001b[32mINFO\u001b[0m - Plotly可视化器初始化完成\n15:42:22 - \u001b[32mINFO\u001b[0m - 交互式可视化器初始化完成，使用后端: plotly\n15:42:22 - \u001b[32mINFO\u001b[0m - 报告生成器初始化完成\n15:42:22 - \u001b[32mINFO\u001b[0m - 工作流执行器初始化完成，最大工作线程: 4\n15:42:22 - \u001b[32mINFO\u001b[0m - 工作流管理器初始化完成\n15:42:22 - \u001b[32mINFO\u001b[0m - 调度器已启动\n15:42:22 - \u001b[32mINFO\u001b[0m - 自动化引擎初始化完成\n15:42:22 - \u001b[32mINFO\u001b[0m - 任务调度器初始化完成，最大工作线程: 4\n15:42:22 - \u001b[32mINFO\u001b[0m - 增强功能模块加载成功\n15:42:22 - \u001b[32mINFO\u001b[0m - 配置管理器初始化完成\n15:42:22 - \u001b[32mINFO\u001b[0m - 异常处理器初始化完成\n15:42:22 - \u001b[32mINFO\u001b[0m - 数据预处理器初始化完成\n15:42:22 - \u001b[32mINFO\u001b[0m - 模型注册表初始化完成\n15:42:22 - \u001b[32mINFO\u001b[0m - 模型池初始化完成，最大容量: 10\n15:42:22 - \u001b[32mINFO\u001b[0m - 预测调度器初始化完成，工作线程数: 4\n15:42:22 - \u001b[32mINFO\u001b[0m - 预测调度器已启动\n15:42:22 - \u001b[32mINFO\u001b[0m - 预测引擎初始化完成\n15:42:22 - \u001b[32mINFO\u001b[0m - 预测缓存初始化完成，策略: lru\n15:42:22 - \u001b[32mINFO\u001b[0m - Plotly可视化器初始化完成\n15:42:22 - \u001b[32mINFO\u001b[0m - 交互式可视化器初始化完成，使用后端: plotly\n15:42:22 - \u001b[32mINFO\u001b[0m - 工作流执行器初始化完成，最大工作线程: 4\n15:42:22 - \u001b[32mINFO\u001b[0m - 工作流管理器初始化完成\n15:42:22 - \u001b[32mINFO\u001b[0m - 平台检测器初始化完成\n15:42:22 - \u001b[32mINFO\u001b[0m - 优雅降级系统初始化完成\n15:42:22 - \u001b[32mINFO\u001b[0m - 计算节点注册成功: local (localhost:0)\n15:42:22 - \u001b[32mINFO\u001b[0m - 分布式计算管理器初始化完成\n15:42:22 - \u001b[32mINFO\u001b[0m - 增强版大乐透预测系统初始化完成\nOK - 增强功能模块已启用\n15:42:22 - \u001b[32mINFO\u001b[0m - OK - 增强功能已集成到主系统\n 加载预测器模块...\n15:42:22 - \u001b[32mINFO\u001b[0m - 开始缓存系统迁移...\n15:42:22 - \u001b[32mINFO\u001b[0m - 清理旧缓存: 0 个文件\n15:42:22 - \u001b[32mINFO\u001b[0m - 清理缓存完成，删除 0 个缓存项\n15:42:22 - \u001b[32mINFO\u001b[0m - 智能缓存系统已准备就绪\n15:42:22 - \u001b[32mINFO\u001b[0m - 缓存兼容层创建成功\n15:42:22 - \u001b[32mINFO\u001b[0m - 缓存系统迁移完成\n15:42:22 - \u001b[32mINFO\u001b[0m - 智能缓存系统已启用\n15:42:22 - \u001b[32mINFO\u001b[0m - 平台检测器初始化完成\n15:42:22 - \u001b[32mINFO\u001b[0m - 未检测到GPU设备或GPU不可用\nBuild Dependencies:\n  blas:\n    detection method: pkgconfig\n    found: true\n    include directory: /opt/arm64-builds/include\n    lib directory: /opt/arm64-builds/lib\n    name: openblas64\n    openblas configuration: USE_64BITINT=1 DYNAMIC_ARCH=1 DYNAMIC_OLDER= NO_CBLAS=\n      NO_LAPACK= NO_LAPACKE= NO_AFFINITY=1 USE_OPENMP= SANDYBRIDGE MAX_THREADS=3\n    pc file directory: /usr/local/lib/pkgconfig\n    version: 0.3.23.dev\n  lapack:\n    detection method: internal\n    found: true\n    include directory: unknown\n    lib directory: unknown\n    name: dep4333629152\n    openblas configuration: unknown\n    pc file directory: unknown\n    version: 1.26.4\nCompilers:\n  c:\n    args: -fno-strict-aliasing, -DBLAS_SYMBOL_SUFFIX=64_, -DHAVE_BLAS_ILP64\n    commands: cc\n    linker: ld64\n    linker args: -fno-strict-aliasing, -DBLAS_SYMBOL_SUFFIX=64_, -DHAVE_BLAS_ILP64\n    name: clang\n    version: 14.0.0\n  c++:\n    args: -DBLAS_SYMBOL_SUFFIX=64_, -DHAVE_BLAS_ILP64\n    commands: c++\n    linker: ld64\n    linker args: -DBLAS_SYMBOL_SUFFIX=64_, -DHAVE_BLAS_ILP64\n    name: clang\n    version: 14.0.0\n  cython:\n    commands: cython\n    linker: cython\n    name: cython\n    version: 3.0.8\nMachine Information:\n  build:\n    cpu: aarch64\n    endian: little\n    family: aarch64\n    system: darwin\n  host:\n    cpu: aarch64\n    endian: little\n    family: aarch64\n    system: darwin\nPython Information:\n  path: /private/var/folders/76/zy5ktkns50v6gt5g8r0sf6sc0000gn/T/cibw-run-rlaq62oz/cp39-macosx_arm64/build/venv/bin/python\n  version: '3.9'\nSIMD Extensions:\n  baseline:\n  - NEON\n  - NEON_FP16\n  - NEON_VFPV4\n  - ASIMD\n  found:\n  - ASIMDHP\n  not found:\n  - ASIMDFHM\n\n15:42:22 - \u001b[32mINFO\u001b[0m - 平台检测完成: macOS 15.6.1 (arm64)\nBuild Dependencies:\n  blas:\n    detection method: pkgconfig\n    found: true\n    include directory: /opt/arm64-builds/include\n    lib directory: /opt/arm64-builds/lib\n    name: openblas64\n    openblas configuration: USE_64BITINT=1 DYNAMIC_ARCH=1 DYNAMIC_OLDER= NO_CBLAS=\n      NO_LAPACK= NO_LAPACKE= NO_AFFINITY=1 USE_OPENMP= SANDYBRIDGE MAX_THREADS=3\n    pc file directory: /usr/local/lib/pkgconfig\n    version: 0.3.23.dev\n  lapack:\n    detection method: internal\n    found: true\n    include directory: unknown\n    lib directory: unknown\n    name: dep4333629152\n    openblas configuration: unknown\n    pc file directory: unknown\n    version: 1.26.4\nCompilers:\n  c:\n    args: -fno-strict-aliasing, -DBLAS_SYMBOL_SUFFIX=64_, -DHAVE_BLAS_ILP64\n    commands: cc\n    linker: ld64\n    linker args: -fno-strict-aliasing, -DBLAS_SYMBOL_SUFFIX=64_, -DHAVE_BLAS_ILP64\n    name: clang\n    version: 14.0.0\n  c++:\n    args: -DBLAS_SYMBOL_SUFFIX=64_, -DHAVE_BLAS_ILP64\n    commands: c++\n    linker: ld64\n    linker args: -DBLAS_SYMBOL_SUFFIX=64_, -DHAVE_BLAS_ILP64\n    name: clang\n    version: 14.0.0\n  cython:\n    commands: cython\n    linker: cython\n    name: cython\n    version: 3.0.8\nMachine Information:\n  build:\n    cpu: aarch64\n    endian: little\n    family: aarch64\n    system: darwin\n  host:\n    cpu: aarch64\n    endian: little\n    family: aarch64\n    system: darwin\nPython Information:\n  path: /private/var/folders/76/zy5ktkns50v6gt5g8r0sf6sc0000gn/T/cibw-run-rlaq62oz/cp39-macosx_arm64/build/venv/bin/python\n  version: '3.9'\nSIMD Extensions:\n  baseline:\n  - NEON\n  - NEON_FP16\n  - NEON_VFPV4\n  - ASIMD\n  found:\n  - ASIMDHP\n  not found:\n  - ASIMDFHM\n\n15:42:22 - \u001b[32mINFO\u001b[0m - 增强硬件加速器初始化完成\n15:42:22 - \u001b[32mINFO\u001b[0m - 硬件检测完成: CPU 10核, 内存 32GB\nACCELERATE 加速配置: cpu_multi\nCPU CPU多线程: -1 线程\n 开始bayesian预测 (分析期数: 500, 生成注数: 1)...\n 贝叶斯分析预测 (分析500期数据)...\n 计算先验概率和似然函数...\nPARALLEL 使用 -1 个CPU线程并行计算\n[OK] 从文件加载数据: 2781 期\n15:42:24 - \u001b[32mINFO\u001b[0m - 开始缓存系统迁移...\n15:42:24 - \u001b[32mINFO\u001b[0m - 清理旧缓存: 0 个文件\n15:42:24 - \u001b[32mINFO\u001b[0m - 清理缓存完成，删除 0 个缓存项\n15:42:24 - \u001b[32mINFO\u001b[0m - 智能缓存系统已准备就绪\n15:42:24 - \u001b[32mINFO\u001b[0m - 缓存兼容层创建成功\n15:42:24 - \u001b[32mINFO\u001b[0m - 缓存系统迁移完成\n15:42:24 - \u001b[32mINFO\u001b[0m - 智能缓存系统已启用\n[OK] 从文件加载数据: 2781 期\n15:42:24 - \u001b[32mINFO\u001b[0m - 开始缓存系统迁移...\n15:42:24 - \u001b[32mINFO\u001b[0m - 清理旧缓存: 1 个文件\n15:42:24 - \u001b[32mINFO\u001b[0m - 清理缓存完成，删除 0 个缓存项\n15:42:24 - \u001b[32mINFO\u001b[0m - 智能缓存系统已准备就绪\n15:42:24 - \u001b[32mINFO\u001b[0m - 缓存兼容层创建成功\n15:42:24 - \u001b[32mINFO\u001b[0m - 缓存系统迁移完成\n15:42:24 - \u001b[32mINFO\u001b[0m - 智能缓存系统已启用\nOK 贝叶斯推理完成:\n  前区先验概率计算: 0 个号码\n  前区后验概率计算: 35 个号码\n  后区先验概率计算: 0 个号码\n  后区后验概率计算: 12 个号码\n  前区最高后验概率: ['32(0.046)', '33(0.044)', '35(0.041)', '29(0.040)', '34(0.036)']\n  后区最高后验概率: ['10(0.105)', '9(0.092)']\n 基于贝叶斯推理进行概率预测...\nOK 预测完成!\n\n 预测结果:\n  第 1 注: 25 29 30 31 35 + 06 09 (方法: bayesian, 置信度: 0.500)\n",
+      "stderr": "/Users/linshibo/GithubProject/dlt/enhanced_deep_learning/platform/platform_detector.py:215: UserWarning: pkg_resources is deprecated as an API. See https://setuptools.pypa.io/en/latest/pkg_resources.html. The pkg_resources package is slated for removal as early as 2025-11-30. Refrain from using this package or pin to Setuptools<81.\n  import pkg_resources\n"
+    },
+    "latest_draw": {
+      "issue": 25109,
+      "date": "2025-09-22",
+      "front_balls": "04,08,10,13,26",
+      "back_balls": "09,10",
+      "front_balls_list": [
+        4,
+        8,
+        10,
+        13,
+        26
+      ],
+      "back_balls_list": [
+        9,
+        10
+      ],
+      "date_obj": "2025-09-22 00:00:00"
+    },
+    "execution_time": 10.49306583404541,
+    "timestamp": "2025-09-26T15:42:26.177511",
+    "predictions_analysis": [
+      {
+        "prediction_index": 1,
+        "prediction": {
+          "front_balls": "25,29,30,31,35",
+          "back_balls": "06,09",
+          "front_balls_list": [
+            25,
+            29,
+            30,
+            31,
+            35
+          ],
+          "back_balls_list": [
+            6,
+            9
+          ],
+          "raw_line": "第 1 注: 25 29 30 31 35 + 06 09 (方法: bayesian, 置信度: 0.500)",
+          "pattern_used": 0
+        },
+        "winning_result": {
+          "is_winning": true,
+          "prize_level": 9,
+          "prize_name": "九等奖",
+          "front_matches": 0,
+          "back_matches": 1,
+          "match_combination": "0+1",
+          "predicted_front": [
+            25,
+            29,
+            30,
+            31,
+            35
+          ],
+          "predicted_back": [
+            6,
+            9
+          ],
+          "winning_front": [
+            4,
+            8,
+            10,
+            13,
+            26
+          ],
+          "winning_back": [
+            9,
+            10
+          ],
+          "matched_front_numbers": [],
+          "matched_back_numbers": [
+            9
+          ]
+        }
+      }
+    ],
+    "winnings": [
+      {
+        "prediction_index": 1,
+        "prize_level": 9,
+        "prize_name": "九等奖",
+        "match_combination": "0+1",
+        "predicted_front": [
+          25,
+          29,
+          30,
+          31,
+          35
+        ],
+        "predicted_back": [
+          6,
+          9
+        ],
+        "matched_front_numbers": [],
+        "matched_back_numbers": [
+          9
+        ],
+        "front_matches": 0,
+        "back_matches": 1
+      }
+    ],
+    "prize_statistics": {
+      "9": {
+        "name": "九等奖",
+        "count": 1
+      }
+    },
+    "total_predictions": 1,
+    "winning_predictions": 1,
+    "winning_rate": 1.0,
+    "best_prize_level": 9,
+    "is_winning": true,
+    "is_major_prize": false,
+    "prize_level": 9,
+    "total_prize_levels": 1
+  },
+  {
+    "success": true,
+    "test_case": {
+      "method": "bayesian",
+      "periods": 500,
+      "count": 2,
+      "strategy": "quick",
+      "priority": "normal"
+    },
+    "prediction_result": {
+      "success": true,
+      "method": "bayesian",
+      "periods": 500,
+      "count": 2,
+      "execution_time": 10.471974849700928,
+      "command": "/Users/linshibo/.codebuddy/bin/python /Users/linshibo/GithubProject/dlt/dlt_main.py predict -m bayesian -p 500 -c 2",
+      "timestamp": 1758872546.190531,
+      "predictions": [
+        {
+          "front_balls": "29,30,32,33,34",
+          "back_balls": "04,06",
+          "front_balls_list": [
+            29,
+            30,
+            32,
+            33,
+            34
+          ],
+          "back_balls_list": [
+            4,
+            6
+          ],
+          "raw_line": "第 1 注: 29 30 32 33 34 + 04 06 (方法: bayesian, 置信度: 0.500)",
+          "pattern_used": 0
+        },
+        {
+          "front_balls": "03,07,11,14,19",
+          "back_balls": "06,09",
+          "front_balls_list": [
+            3,
+            7,
+            11,
+            14,
+            19
+          ],
+          "back_balls_list": [
+            6,
+            9
+          ],
+          "raw_line": "第 2 注: 03 07 11 14 19 + 06 09 (方法: bayesian, 置信度: 0.500)",
+          "pattern_used": 0
+        }
+      ],
+      "prediction_count": 2,
+      "stdout": "✅ 从缓存加载数据: 2781 期\n[INFO] 使用CPU计算\n[OK] GPU加速模块已加载\n15:42:20 - \u001b[32mINFO\u001b[0m - 配置管理器初始化完成\n15:42:20 - \u001b[32mINFO\u001b[0m - 计算节点注册成功: local (localhost:0)\n15:42:20 - \u001b[32mINFO\u001b[0m - 分布式计算管理器初始化完成\n15:42:20 - \u001b[32mINFO\u001b[0m - 内存优化器初始化完成\n15:42:20 - \u001b[32mINFO\u001b[0m - IO优化器初始化完成\n15:42:20 - \u001b[32mINFO\u001b[0m - 硬件加速器初始化完成\n15:42:20 - \u001b[32mINFO\u001b[0m - 平台检测器初始化完成\n15:42:20 - \u001b[32mINFO\u001b[0m - 未检测到GPU设备或GPU不可用\nBuild Dependencies:\n  blas:\n    detection method: pkgconfig\n    found: true\n    include directory: /opt/arm64-builds/include\n    lib directory: /opt/arm64-builds/lib\n    name: openblas64\n    openblas configuration: USE_64BITINT=1 DYNAMIC_ARCH=1 DYNAMIC_OLDER= NO_CBLAS=\n      NO_LAPACK= NO_LAPACKE= NO_AFFINITY=1 USE_OPENMP= SANDYBRIDGE MAX_THREADS=3\n    pc file directory: /usr/local/lib/pkgconfig\n    version: 0.3.23.dev\n  lapack:\n    detection method: internal\n    found: true\n    include directory: unknown\n    lib directory: unknown\n    name: dep4333629152\n    openblas configuration: unknown\n    pc file directory: unknown\n    version: 1.26.4\nCompilers:\n  c:\n    args: -fno-strict-aliasing, -DBLAS_SYMBOL_SUFFIX=64_, -DHAVE_BLAS_ILP64\n    commands: cc\n    linker: ld64\n    linker args: -fno-strict-aliasing, -DBLAS_SYMBOL_SUFFIX=64_, -DHAVE_BLAS_ILP64\n    name: clang\n    version: 14.0.0\n  c++:\n    args: -DBLAS_SYMBOL_SUFFIX=64_, -DHAVE_BLAS_ILP64\n    commands: c++\n    linker: ld64\n    linker args: -DBLAS_SYMBOL_SUFFIX=64_, -DHAVE_BLAS_ILP64\n    name: clang\n    version: 14.0.0\n  cython:\n    commands: cython\n    linker: cython\n    name: cython\n    version: 3.0.8\nMachine Information:\n  build:\n    cpu: aarch64\n    endian: little\n    family: aarch64\n    system: darwin\n  host:\n    cpu: aarch64\n    endian: little\n    family: aarch64\n    system: darwin\nPython Information:\n  path: /private/var/folders/76/zy5ktkns50v6gt5g8r0sf6sc0000gn/T/cibw-run-rlaq62oz/cp39-macosx_arm64/build/venv/bin/python\n  version: '3.9'\nSIMD Extensions:\n  baseline:\n  - NEON\n  - NEON_FP16\n  - NEON_VFPV4\n  - ASIMD\n  found:\n  - ASIMDHP\n  not found:\n  - ASIMDFHM\n\n15:42:21 - \u001b[32mINFO\u001b[0m - 平台检测完成: macOS 15.6.1 (arm64)\n15:42:21 - \u001b[32mINFO\u001b[0m - 平台适配器初始化完成: windows\n15:42:21 - \u001b[32mINFO\u001b[0m - 平台适配器初始化完成: linux\n15:42:21 - \u001b[32mINFO\u001b[0m - 平台适配器初始化完成: macos\n15:42:21 - \u001b[32mINFO\u001b[0m - 优雅降级系统初始化完成\n15:42:21 - \u001b[32mINFO\u001b[0m - 兼容性测试器初始化完成\n15:42:21 - \u001b[32mINFO\u001b[0m - 跨平台安装器初始化完成\n15:42:21 - \u001b[32mINFO\u001b[0m - 模型优化器初始化完成\n15:42:21 - \u001b[32mINFO\u001b[0m - 模型注册表初始化完成\n15:42:21 - \u001b[32mINFO\u001b[0m - 模型注册成功: lstm v1.0.0\n15:42:21 - \u001b[32mINFO\u001b[0m - 模型注册成功: transformer v1.0.0\n15:42:21 - \u001b[32mINFO\u001b[0m - 模型注册成功: gan v1.0.0\n15:42:21 - \u001b[32mINFO\u001b[0m - 模型注册成功: ensemble v1.0.0\n15:42:21 - \u001b[32mINFO\u001b[0m - 默认模型注册完成\n15:42:21 - \u001b[32mINFO\u001b[0m - 资源监控器初始化完成\n15:42:21 - \u001b[32mINFO\u001b[0m - 模型量化器初始化完成，量化位数: 8\n15:42:21 - \u001b[32mINFO\u001b[0m - 模型剪枝器初始化完成，稀疏度: 0.5\n15:42:21 - \u001b[32mINFO\u001b[0m - 知识蒸馏器初始化完成，温度: 4.0, alpha: 0.7\n15:42:21 - \u001b[32mINFO\u001b[0m - 低秩分解器初始化完成，秩比例: 0.5\n15:42:21 - \u001b[32mINFO\u001b[0m - 模型压缩器初始化完成，方法: hybrid\n15:42:21 - \u001b[32mINFO\u001b[0m - 随机搜索优化器初始化完成\n15:42:21 - \u001b[32mINFO\u001b[0m - 超参数优化器初始化完成，方法: random_search\n15:42:21 - \u001b[32mINFO\u001b[0m - 深度学习命令集初始化完成\n15:42:21 - \u001b[32mINFO\u001b[0m - CLI处理器初始化完成\n15:42:21 - \u001b[32mINFO\u001b[0m - CLI体验增强器初始化完成\n15:42:21 - \u001b[32mINFO\u001b[0m - 命令适配器初始化完成\n15:42:21 - \u001b[32mINFO\u001b[0m - API适配器初始化完成\n15:42:21 - \u001b[32mINFO\u001b[0m - 系统集成器初始化完成\n15:42:21 - \u001b[32mINFO\u001b[0m - 命令注册表初始化完成\n15:42:21 - \u001b[32mINFO\u001b[0m - 数据转换器初始化完成\n15:42:21 - \u001b[32mINFO\u001b[0m - 迁移工具初始化完成\n15:42:21 - \u001b[32mINFO\u001b[0m - 配置管理器初始化完成\n15:42:21 - \u001b[32mINFO\u001b[0m - 异常处理器初始化完成\n15:42:21 - \u001b[32mINFO\u001b[0m - 依赖注入器初始化完成\n15:42:21 - \u001b[32mINFO\u001b[0m - 模型池初始化完成，最大容量: 10\n15:42:21 - \u001b[32mINFO\u001b[0m - 预测调度器初始化完成，工作线程数: 4\n15:42:21 - \u001b[32mINFO\u001b[0m - 预测调度器已启动\n15:42:21 - \u001b[32mINFO\u001b[0m - 预测引擎初始化完成\n15:42:21 - \u001b[32mINFO\u001b[0m - 结果格式化器初始化完成\n15:42:21 - \u001b[32mINFO\u001b[0m - 结果分析器初始化完成\n15:42:21 - \u001b[32mINFO\u001b[0m - 结果处理器初始化完成\n15:42:21 - \u001b[32mINFO\u001b[0m - 置信度计算器初始化完成\n15:42:21 - \u001b[32mINFO\u001b[0m - 预测缓存初始化完成，策略: lru\n15:42:21 - \u001b[32mINFO\u001b[0m - Plotly可视化器初始化完成\n15:42:21 - \u001b[32mINFO\u001b[0m - 交互式可视化器初始化完成，使用后端: plotly\n15:42:21 - \u001b[32mINFO\u001b[0m - 仪表板管理器初始化完成\n15:42:21 - \u001b[32mINFO\u001b[0m - HTML报告构建器初始化完成\n15:42:21 - \u001b[32mINFO\u001b[0m - Markdown报告构建器初始化完成\n15:42:21 - \u001b[32mINFO\u001b[0m - Plotly可视化器初始化完成\n15:42:21 - \u001b[32mINFO\u001b[0m - 交互式可视化器初始化完成，使用后端: plotly\n15:42:21 - \u001b[32mINFO\u001b[0m - 报告生成器初始化完成\n15:42:21 - \u001b[32mINFO\u001b[0m - 工作流执行器初始化完成，最大工作线程: 4\n15:42:21 - \u001b[32mINFO\u001b[0m - 工作流管理器初始化完成\n15:42:21 - \u001b[32mINFO\u001b[0m - 调度器已启动\n15:42:21 - \u001b[32mINFO\u001b[0m - 自动化引擎初始化完成\n15:42:21 - \u001b[32mINFO\u001b[0m - 任务调度器初始化完成，最大工作线程: 4\n15:42:21 - \u001b[32mINFO\u001b[0m - 增强功能模块加载成功\n15:42:21 - \u001b[32mINFO\u001b[0m - 配置管理器初始化完成\n15:42:21 - \u001b[32mINFO\u001b[0m - 异常处理器初始化完成\n15:42:21 - \u001b[32mINFO\u001b[0m - 数据预处理器初始化完成\n15:42:21 - \u001b[32mINFO\u001b[0m - 模型注册表初始化完成\n15:42:21 - \u001b[32mINFO\u001b[0m - 模型池初始化完成，最大容量: 10\n15:42:21 - \u001b[32mINFO\u001b[0m - 预测调度器初始化完成，工作线程数: 4\n15:42:21 - \u001b[32mINFO\u001b[0m - 预测调度器已启动\n15:42:21 - \u001b[32mINFO\u001b[0m - 预测引擎初始化完成\n15:42:21 - \u001b[32mINFO\u001b[0m - 预测缓存初始化完成，策略: lru\n15:42:21 - \u001b[32mINFO\u001b[0m - Plotly可视化器初始化完成\n15:42:21 - \u001b[32mINFO\u001b[0m - 交互式可视化器初始化完成，使用后端: plotly\n15:42:21 - \u001b[32mINFO\u001b[0m - 工作流执行器初始化完成，最大工作线程: 4\n15:42:21 - \u001b[32mINFO\u001b[0m - 工作流管理器初始化完成\n15:42:21 - \u001b[32mINFO\u001b[0m - 平台检测器初始化完成\n15:42:21 - \u001b[32mINFO\u001b[0m - 优雅降级系统初始化完成\n15:42:21 - \u001b[32mINFO\u001b[0m - 计算节点注册成功: local (localhost:0)\n15:42:21 - \u001b[32mINFO\u001b[0m - 分布式计算管理器初始化完成\n15:42:21 - \u001b[32mINFO\u001b[0m - 增强版大乐透预测系统初始化完成\nOK - 增强功能模块已启用\n15:42:21 - \u001b[32mINFO\u001b[0m - OK - 增强功能已集成到主系统\n 加载预测器模块...\n15:42:21 - \u001b[32mINFO\u001b[0m - 开始缓存系统迁移...\n15:42:21 - \u001b[32mINFO\u001b[0m - 清理旧缓存: 2 个文件\n15:42:21 - \u001b[32mINFO\u001b[0m - 清理缓存完成，删除 0 个缓存项\n15:42:21 - \u001b[32mINFO\u001b[0m - 智能缓存系统已准备就绪\n15:42:21 - \u001b[32mINFO\u001b[0m - 缓存兼容层创建成功\n15:42:21 - \u001b[32mINFO\u001b[0m - 缓存系统迁移完成\n15:42:21 - \u001b[32mINFO\u001b[0m - 智能缓存系统已启用\n15:42:21 - \u001b[32mINFO\u001b[0m - 平台检测器初始化完成\n15:42:21 - \u001b[32mINFO\u001b[0m - 未检测到GPU设备或GPU不可用\nBuild Dependencies:\n  blas:\n    detection method: pkgconfig\n    found: true\n    include directory: /opt/arm64-builds/include\n    lib directory: /opt/arm64-builds/lib\n    name: openblas64\n    openblas configuration: USE_64BITINT=1 DYNAMIC_ARCH=1 DYNAMIC_OLDER= NO_CBLAS=\n      NO_LAPACK= NO_LAPACKE= NO_AFFINITY=1 USE_OPENMP= SANDYBRIDGE MAX_THREADS=3\n    pc file directory: /usr/local/lib/pkgconfig\n    version: 0.3.23.dev\n  lapack:\n    detection method: internal\n    found: true\n    include directory: unknown\n    lib directory: unknown\n    name: dep4333629152\n    openblas configuration: unknown\n    pc file directory: unknown\n    version: 1.26.4\nCompilers:\n  c:\n    args: -fno-strict-aliasing, -DBLAS_SYMBOL_SUFFIX=64_, -DHAVE_BLAS_ILP64\n    commands: cc\n    linker: ld64\n    linker args: -fno-strict-aliasing, -DBLAS_SYMBOL_SUFFIX=64_, -DHAVE_BLAS_ILP64\n    name: clang\n    version: 14.0.0\n  c++:\n    args: -DBLAS_SYMBOL_SUFFIX=64_, -DHAVE_BLAS_ILP64\n    commands: c++\n    linker: ld64\n    linker args: -DBLAS_SYMBOL_SUFFIX=64_, -DHAVE_BLAS_ILP64\n    name: clang\n    version: 14.0.0\n  cython:\n    commands: cython\n    linker: cython\n    name: cython\n    version: 3.0.8\nMachine Information:\n  build:\n    cpu: aarch64\n    endian: little\n    family: aarch64\n    system: darwin\n  host:\n    cpu: aarch64\n    endian: little\n    family: aarch64\n    system: darwin\nPython Information:\n  path: /private/var/folders/76/zy5ktkns50v6gt5g8r0sf6sc0000gn/T/cibw-run-rlaq62oz/cp39-macosx_arm64/build/venv/bin/python\n  version: '3.9'\nSIMD Extensions:\n  baseline:\n  - NEON\n  - NEON_FP16\n  - NEON_VFPV4\n  - ASIMD\n  found:\n  - ASIMDHP\n  not found:\n  - ASIMDFHM\n\n15:42:22 - \u001b[32mINFO\u001b[0m - 平台检测完成: macOS 15.6.1 (arm64)\nBuild Dependencies:\n  blas:\n    detection method: pkgconfig\n    found: true\n    include directory: /opt/arm64-builds/include\n    lib directory: /opt/arm64-builds/lib\n    name: openblas64\n    openblas configuration: USE_64BITINT=1 DYNAMIC_ARCH=1 DYNAMIC_OLDER= NO_CBLAS=\n      NO_LAPACK= NO_LAPACKE= NO_AFFINITY=1 USE_OPENMP= SANDYBRIDGE MAX_THREADS=3\n    pc file directory: /usr/local/lib/pkgconfig\n    version: 0.3.23.dev\n  lapack:\n    detection method: internal\n    found: true\n    include directory: unknown\n    lib directory: unknown\n    name: dep4333629152\n    openblas configuration: unknown\n    pc file directory: unknown\n    version: 1.26.4\nCompilers:\n  c:\n    args: -fno-strict-aliasing, -DBLAS_SYMBOL_SUFFIX=64_, -DHAVE_BLAS_ILP64\n    commands: cc\n    linker: ld64\n    linker args: -fno-strict-aliasing, -DBLAS_SYMBOL_SUFFIX=64_, -DHAVE_BLAS_ILP64\n    name: clang\n    version: 14.0.0\n  c++:\n    args: -DBLAS_SYMBOL_SUFFIX=64_, -DHAVE_BLAS_ILP64\n    commands: c++\n    linker: ld64\n    linker args: -DBLAS_SYMBOL_SUFFIX=64_, -DHAVE_BLAS_ILP64\n    name: clang\n    version: 14.0.0\n  cython:\n    commands: cython\n    linker: cython\n    name: cython\n    version: 3.0.8\nMachine Information:\n  build:\n    cpu: aarch64\n    endian: little\n    family: aarch64\n    system: darwin\n  host:\n    cpu: aarch64\n    endian: little\n    family: aarch64\n    system: darwin\nPython Information:\n  path: /private/var/folders/76/zy5ktkns50v6gt5g8r0sf6sc0000gn/T/cibw-run-rlaq62oz/cp39-macosx_arm64/build/venv/bin/python\n  version: '3.9'\nSIMD Extensions:\n  baseline:\n  - NEON\n  - NEON_FP16\n  - NEON_VFPV4\n  - ASIMD\n  found:\n  - ASIMDHP\n  not found:\n  - ASIMDFHM\n\n15:42:22 - \u001b[32mINFO\u001b[0m - 增强硬件加速器初始化完成\n15:42:22 - \u001b[32mINFO\u001b[0m - 硬件检测完成: CPU 10核, 内存 32GB\nACCELERATE 加速配置: cpu_multi\nCPU CPU多线程: -1 线程\n 开始bayesian预测 (分析期数: 500, 生成注数: 2)...\n 贝叶斯分析预测 (分析500期数据)...\n 计算先验概率和似然函数...\nPARALLEL 使用 -1 个CPU线程并行计算\n[OK] 从文件加载数据: 2781 期\n15:42:24 - \u001b[32mINFO\u001b[0m - 开始缓存系统迁移...\n15:42:24 - \u001b[32mINFO\u001b[0m - 清理旧缓存: 1 个文件\n15:42:24 - \u001b[32mINFO\u001b[0m - 清理缓存完成，删除 0 个缓存项\n15:42:24 - \u001b[32mINFO\u001b[0m - 智能缓存系统已准备就绪\n15:42:24 - \u001b[32mINFO\u001b[0m - 缓存兼容层创建成功\n15:42:24 - \u001b[32mINFO\u001b[0m - 缓存系统迁移完成\n15:42:24 - \u001b[32mINFO\u001b[0m - 智能缓存系统已启用\n[OK] 从文件加载数据: 2781 期\n15:42:24 - \u001b[32mINFO\u001b[0m - 开始缓存系统迁移...\n15:42:24 - \u001b[32mINFO\u001b[0m - 清理旧缓存: 0 个文件\n15:42:24 - \u001b[32mINFO\u001b[0m - 清理缓存完成，删除 0 个缓存项\n15:42:24 - \u001b[32mINFO\u001b[0m - 智能缓存系统已准备就绪\n15:42:24 - \u001b[32mINFO\u001b[0m - 缓存兼容层创建成功\n15:42:24 - \u001b[32mINFO\u001b[0m - 缓存系统迁移完成\n15:42:24 - \u001b[32mINFO\u001b[0m - 智能缓存系统已启用\nOK 贝叶斯推理完成:\n  前区先验概率计算: 0 个号码\n  前区后验概率计算: 35 个号码\n  后区先验概率计算: 0 个号码\n  后区后验概率计算: 12 个号码\n  前区最高后验概率: ['32(0.046)', '33(0.044)', '35(0.041)', '29(0.040)', '34(0.036)']\n  后区最高后验概率: ['10(0.105)', '9(0.092)']\n 基于贝叶斯推理进行概率预测...\nOK 预测完成!\n\n 预测结果:\n  第 1 注: 29 30 32 33 34 + 04 06 (方法: bayesian, 置信度: 0.500)\n  第 2 注: 03 07 11 14 19 + 06 09 (方法: bayesian, 置信度: 0.500)\n",
+      "stderr": "/Users/linshibo/GithubProject/dlt/enhanced_deep_learning/platform/platform_detector.py:215: UserWarning: pkg_resources is deprecated as an API. See https://setuptools.pypa.io/en/latest/pkg_resources.html. The pkg_resources package is slated for removal as early as 2025-11-30. Refrain from using this package or pin to Setuptools<81.\n  import pkg_resources\n"
+    },
+    "latest_draw": {
+      "issue": 25109,
+      "date": "2025-09-22",
+      "front_balls": "04,08,10,13,26",
+      "back_balls": "09,10",
+      "front_balls_list": [
+        4,
+        8,
+        10,
+        13,
+        26
+      ],
+      "back_balls_list": [
+        9,
+        10
+      ],
+      "date_obj": "2025-09-22 00:00:00"
+    },
+    "execution_time": 10.473625183105469,
+    "timestamp": "2025-09-26T15:42:26.192178",
+    "predictions_analysis": [
+      {
+        "prediction_index": 1,
+        "prediction": {
+          "front_balls": "29,30,32,33,34",
+          "back_balls": "04,06",
+          "front_balls_list": [
+            29,
+            30,
+            32,
+            33,
+            34
+          ],
+          "back_balls_list": [
+            4,
+            6
+          ],
+          "raw_line": "第 1 注: 29 30 32 33 34 + 04 06 (方法: bayesian, 置信度: 0.500)",
+          "pattern_used": 0
+        },
+        "winning_result": {
+          "is_winning": false,
+          "prize_level": 0,
+          "prize_name": "未中奖",
+          "front_matches": 0,
+          "back_matches": 0,
+          "match_combination": "0+0",
+          "predicted_front": [
+            29,
+            30,
+            32,
+            33,
+            34
+          ],
+          "predicted_back": [
+            4,
+            6
+          ],
+          "winning_front": [
+            4,
+            8,
+            10,
+            13,
+            26
+          ],
+          "winning_back": [
+            9,
+            10
+          ],
+          "matched_front_numbers": [],
+          "matched_back_numbers": []
+        }
+      },
+      {
+        "prediction_index": 2,
+        "prediction": {
+          "front_balls": "03,07,11,14,19",
+          "back_balls": "06,09",
+          "front_balls_list": [
+            3,
+            7,
+            11,
+            14,
+            19
+          ],
+          "back_balls_list": [
+            6,
+            9
+          ],
+          "raw_line": "第 2 注: 03 07 11 14 19 + 06 09 (方法: bayesian, 置信度: 0.500)",
+          "pattern_used": 0
+        },
+        "winning_result": {
+          "is_winning": true,
+          "prize_level": 9,
+          "prize_name": "九等奖",
+          "front_matches": 0,
+          "back_matches": 1,
+          "match_combination": "0+1",
+          "predicted_front": [
+            3,
+            7,
+            11,
+            14,
+            19
+          ],
+          "predicted_back": [
+            6,
+            9
+          ],
+          "winning_front": [
+            4,
+            8,
+            10,
+            13,
+            26
+          ],
+          "winning_back": [
+            9,
+            10
+          ],
+          "matched_front_numbers": [],
+          "matched_back_numbers": [
+            9
+          ]
+        }
+      }
+    ],
+    "winnings": [
+      {
+        "prediction_index": 2,
+        "prize_level": 9,
+        "prize_name": "九等奖",
+        "match_combination": "0+1",
+        "predicted_front": [
+          3,
+          7,
+          11,
+          14,
+          19
+        ],
+        "predicted_back": [
+          6,
+          9
+        ],
+        "matched_front_numbers": [],
+        "matched_back_numbers": [
+          9
+        ],
+        "front_matches": 0,
+        "back_matches": 1
+      }
+    ],
+    "prize_statistics": {
+      "9": {
+        "name": "九等奖",
+        "count": 1
+      }
+    },
+    "total_predictions": 2,
+    "winning_predictions": 1,
+    "winning_rate": 0.5,
+    "best_prize_level": 9,
+    "is_winning": true,
+    "is_major_prize": false,
+    "prize_level": 9,
+    "total_prize_levels": 1
+  },
+  {
+    "success": true,
+    "test_case": {
+      "method": "frequency",
+      "periods": 100,
+      "count": 2,
+      "strategy": "quick",
+      "priority": "normal"
+    },
+    "prediction_result": {
+      "success": true,
+      "method": "frequency",
+      "periods": 100,
+      "count": 2,
+      "execution_time": 7.193578004837036,
+      "command": "/Users/linshibo/.codebuddy/bin/python /Users/linshibo/GithubProject/dlt/dlt_main.py predict -m frequency -p 100 -c 2",
+      "timestamp": 1758872553.38589,
+      "predictions": [
+        {
+          "front_balls": "04,29,31,32,33",
+          "back_balls": "09,12",
+          "front_balls_list": [
+            4,
+            29,
+            31,
+            32,
+            33
+          ],
+          "back_balls_list": [
+            9,
+            12
+          ],
+          "raw_line": "第 1 注: 04 29 31 32 33 + 09 12 (方法: frequency, 置信度: 0.500)",
+          "pattern_used": 0
+        },
+        {
+          "front_balls": "09,11,13,19,20",
+          "back_balls": "09,12",
+          "front_balls_list": [
+            9,
+            11,
+            13,
+            19,
+            20
+          ],
+          "back_balls_list": [
+            9,
+            12
+          ],
+          "raw_line": "第 2 注: 09 11 13 19 20 + 09 12 (方法: frequency, 置信度: 0.500)",
+          "pattern_used": 0
+        }
+      ],
+      "prediction_count": 2,
+      "stdout": "[OK] 从文件加载数据: 2781 期\n[INFO] 使用CPU计算\n[OK] GPU加速模块已加载\n15:42:31 - \u001b[32mINFO\u001b[0m - 配置管理器初始化完成\n15:42:31 - \u001b[32mINFO\u001b[0m - 计算节点注册成功: local (localhost:0)\n15:42:31 - \u001b[32mINFO\u001b[0m - 分布式计算管理器初始化完成\n15:42:31 - \u001b[32mINFO\u001b[0m - 内存优化器初始化完成\n15:42:31 - \u001b[32mINFO\u001b[0m - IO优化器初始化完成\n15:42:31 - \u001b[32mINFO\u001b[0m - 硬件加速器初始化完成\n15:42:31 - \u001b[32mINFO\u001b[0m - 平台检测器初始化完成\n15:42:31 - \u001b[32mINFO\u001b[0m - 未检测到GPU设备或GPU不可用\nBuild Dependencies:\n  blas:\n    detection method: pkgconfig\n    found: true\n    include directory: /opt/arm64-builds/include\n    lib directory: /opt/arm64-builds/lib\n    name: openblas64\n    openblas configuration: USE_64BITINT=1 DYNAMIC_ARCH=1 DYNAMIC_OLDER= NO_CBLAS=\n      NO_LAPACK= NO_LAPACKE= NO_AFFINITY=1 USE_OPENMP= SANDYBRIDGE MAX_THREADS=3\n    pc file directory: /usr/local/lib/pkgconfig\n    version: 0.3.23.dev\n  lapack:\n    detection method: internal\n    found: true\n    include directory: unknown\n    lib directory: unknown\n    name: dep4333629152\n    openblas configuration: unknown\n    pc file directory: unknown\n    version: 1.26.4\nCompilers:\n  c:\n    args: -fno-strict-aliasing, -DBLAS_SYMBOL_SUFFIX=64_, -DHAVE_BLAS_ILP64\n    commands: cc\n    linker: ld64\n    linker args: -fno-strict-aliasing, -DBLAS_SYMBOL_SUFFIX=64_, -DHAVE_BLAS_ILP64\n    name: clang\n    version: 14.0.0\n  c++:\n    args: -DBLAS_SYMBOL_SUFFIX=64_, -DHAVE_BLAS_ILP64\n    commands: c++\n    linker: ld64\n    linker args: -DBLAS_SYMBOL_SUFFIX=64_, -DHAVE_BLAS_ILP64\n    name: clang\n    version: 14.0.0\n  cython:\n    commands: cython\n    linker: cython\n    name: cython\n    version: 3.0.8\nMachine Information:\n  build:\n    cpu: aarch64\n    endian: little\n    family: aarch64\n    system: darwin\n  host:\n    cpu: aarch64\n    endian: little\n    family: aarch64\n    system: darwin\nPython Information:\n  path: /private/var/folders/76/zy5ktkns50v6gt5g8r0sf6sc0000gn/T/cibw-run-rlaq62oz/cp39-macosx_arm64/build/venv/bin/python\n  version: '3.9'\nSIMD Extensions:\n  baseline:\n  - NEON\n  - NEON_FP16\n  - NEON_VFPV4\n  - ASIMD\n  found:\n  - ASIMDHP\n  not found:\n  - ASIMDFHM\n\n15:42:31 - \u001b[32mINFO\u001b[0m - 平台检测完成: macOS 15.6.1 (arm64)\n15:42:31 - \u001b[32mINFO\u001b[0m - 平台适配器初始化完成: windows\n15:42:31 - \u001b[32mINFO\u001b[0m - 平台适配器初始化完成: linux\n15:42:31 - \u001b[32mINFO\u001b[0m - 平台适配器初始化完成: macos\n15:42:31 - \u001b[32mINFO\u001b[0m - 优雅降级系统初始化完成\n15:42:31 - \u001b[32mINFO\u001b[0m - 兼容性测试器初始化完成\n15:42:31 - \u001b[32mINFO\u001b[0m - 跨平台安装器初始化完成\n15:42:31 - \u001b[32mINFO\u001b[0m - 模型优化器初始化完成\n15:42:31 - \u001b[32mINFO\u001b[0m - 模型注册表初始化完成\n15:42:31 - \u001b[32mINFO\u001b[0m - 模型注册成功: lstm v1.0.0\n15:42:31 - \u001b[32mINFO\u001b[0m - 模型注册成功: transformer v1.0.0\n15:42:31 - \u001b[32mINFO\u001b[0m - 模型注册成功: gan v1.0.0\n15:42:31 - \u001b[32mINFO\u001b[0m - 模型注册成功: ensemble v1.0.0\n15:42:31 - \u001b[32mINFO\u001b[0m - 默认模型注册完成\n15:42:32 - \u001b[32mINFO\u001b[0m - 资源监控器初始化完成\n15:42:32 - \u001b[32mINFO\u001b[0m - 模型量化器初始化完成，量化位数: 8\n15:42:32 - \u001b[32mINFO\u001b[0m - 模型剪枝器初始化完成，稀疏度: 0.5\n15:42:32 - \u001b[32mINFO\u001b[0m - 知识蒸馏器初始化完成，温度: 4.0, alpha: 0.7\n15:42:32 - \u001b[32mINFO\u001b[0m - 低秩分解器初始化完成，秩比例: 0.5\n15:42:32 - \u001b[32mINFO\u001b[0m - 模型压缩器初始化完成，方法: hybrid\n15:42:32 - \u001b[32mINFO\u001b[0m - 随机搜索优化器初始化完成\n15:42:32 - \u001b[32mINFO\u001b[0m - 超参数优化器初始化完成，方法: random_search\n15:42:32 - \u001b[32mINFO\u001b[0m - 深度学习命令集初始化完成\n15:42:32 - \u001b[32mINFO\u001b[0m - CLI处理器初始化完成\n15:42:32 - \u001b[32mINFO\u001b[0m - CLI体验增强器初始化完成\n15:42:32 - \u001b[32mINFO\u001b[0m - 命令适配器初始化完成\n15:42:32 - \u001b[32mINFO\u001b[0m - API适配器初始化完成\n15:42:32 - \u001b[32mINFO\u001b[0m - 系统集成器初始化完成\n15:42:32 - \u001b[32mINFO\u001b[0m - 命令注册表初始化完成\n15:42:32 - \u001b[32mINFO\u001b[0m - 数据转换器初始化完成\n15:42:32 - \u001b[32mINFO\u001b[0m - 迁移工具初始化完成\n15:42:32 - \u001b[32mINFO\u001b[0m - 配置管理器初始化完成\n15:42:32 - \u001b[32mINFO\u001b[0m - 异常处理器初始化完成\n15:42:32 - \u001b[32mINFO\u001b[0m - 依赖注入器初始化完成\n15:42:32 - \u001b[32mINFO\u001b[0m - 模型池初始化完成，最大容量: 10\n15:42:32 - \u001b[32mINFO\u001b[0m - 预测调度器初始化完成，工作线程数: 4\n15:42:32 - \u001b[32mINFO\u001b[0m - 预测调度器已启动\n15:42:32 - \u001b[32mINFO\u001b[0m - 预测引擎初始化完成\n15:42:32 - \u001b[32mINFO\u001b[0m - 结果格式化器初始化完成\n15:42:32 - \u001b[32mINFO\u001b[0m - 结果分析器初始化完成\n15:42:32 - \u001b[32mINFO\u001b[0m - 结果处理器初始化完成\n15:42:32 - \u001b[32mINFO\u001b[0m - 置信度计算器初始化完成\n15:42:32 - \u001b[32mINFO\u001b[0m - 预测缓存初始化完成，策略: lru\n15:42:32 - \u001b[32mINFO\u001b[0m - Plotly可视化器初始化完成\n15:42:32 - \u001b[32mINFO\u001b[0m - 交互式可视化器初始化完成，使用后端: plotly\n15:42:32 - \u001b[32mINFO\u001b[0m - 仪表板管理器初始化完成\n15:42:32 - \u001b[32mINFO\u001b[0m - HTML报告构建器初始化完成\n15:42:32 - \u001b[32mINFO\u001b[0m - Markdown报告构建器初始化完成\n15:42:32 - \u001b[32mINFO\u001b[0m - Plotly可视化器初始化完成\n15:42:32 - \u001b[32mINFO\u001b[0m - 交互式可视化器初始化完成，使用后端: plotly\n15:42:32 - \u001b[32mINFO\u001b[0m - 报告生成器初始化完成\n15:42:32 - \u001b[32mINFO\u001b[0m - 工作流执行器初始化完成，最大工作线程: 4\n15:42:32 - \u001b[32mINFO\u001b[0m - 工作流管理器初始化完成\n15:42:32 - \u001b[32mINFO\u001b[0m - 调度器已启动\n15:42:32 - \u001b[32mINFO\u001b[0m - 自动化引擎初始化完成\n15:42:32 - \u001b[32mINFO\u001b[0m - 任务调度器初始化完成，最大工作线程: 4\n15:42:32 - \u001b[32mINFO\u001b[0m - 增强功能模块加载成功\n15:42:32 - \u001b[32mINFO\u001b[0m - 配置管理器初始化完成\n15:42:32 - \u001b[32mINFO\u001b[0m - 异常处理器初始化完成\n15:42:32 - \u001b[32mINFO\u001b[0m - 数据预处理器初始化完成\n15:42:32 - \u001b[32mINFO\u001b[0m - 模型注册表初始化完成\n15:42:32 - \u001b[32mINFO\u001b[0m - 模型池初始化完成，最大容量: 10\n15:42:32 - \u001b[32mINFO\u001b[0m - 预测调度器初始化完成，工作线程数: 4\n15:42:32 - \u001b[32mINFO\u001b[0m - 预测调度器已启动\n15:42:32 - \u001b[32mINFO\u001b[0m - 预测引擎初始化完成\n15:42:32 - \u001b[32mINFO\u001b[0m - 预测缓存初始化完成，策略: lru\n15:42:32 - \u001b[32mINFO\u001b[0m - Plotly可视化器初始化完成\n15:42:32 - \u001b[32mINFO\u001b[0m - 交互式可视化器初始化完成，使用后端: plotly\n15:42:32 - \u001b[32mINFO\u001b[0m - 工作流执行器初始化完成，最大工作线程: 4\n15:42:32 - \u001b[32mINFO\u001b[0m - 工作流管理器初始化完成\n15:42:32 - \u001b[32mINFO\u001b[0m - 平台检测器初始化完成\n15:42:32 - \u001b[32mINFO\u001b[0m - 优雅降级系统初始化完成\n15:42:32 - \u001b[32mINFO\u001b[0m - 计算节点注册成功: local (localhost:0)\n15:42:32 - \u001b[32mINFO\u001b[0m - 分布式计算管理器初始化完成\n15:42:32 - \u001b[32mINFO\u001b[0m - 增强版大乐透预测系统初始化完成\nOK - 增强功能模块已启用\n15:42:32 - \u001b[32mINFO\u001b[0m - OK - 增强功能已集成到主系统\n 加载预测器模块...\n15:42:32 - \u001b[32mINFO\u001b[0m - 开始缓存系统迁移...\n15:42:32 - \u001b[32mINFO\u001b[0m - 清理旧缓存: 0 个文件\n15:42:32 - \u001b[32mINFO\u001b[0m - 清理缓存完成，删除 0 个缓存项\n15:42:32 - \u001b[32mINFO\u001b[0m - 智能缓存系统已准备就绪\n15:42:32 - \u001b[32mINFO\u001b[0m - 缓存兼容层创建成功\n15:42:32 - \u001b[32mINFO\u001b[0m - 缓存系统迁移完成\n15:42:32 - \u001b[32mINFO\u001b[0m - 智能缓存系统已启用\n15:42:32 - \u001b[32mINFO\u001b[0m - 平台检测器初始化完成\n15:42:32 - \u001b[32mINFO\u001b[0m - 未检测到GPU设备或GPU不可用\nBuild Dependencies:\n  blas:\n    detection method: pkgconfig\n    found: true\n    include directory: /opt/arm64-builds/include\n    lib directory: /opt/arm64-builds/lib\n    name: openblas64\n    openblas configuration: USE_64BITINT=1 DYNAMIC_ARCH=1 DYNAMIC_OLDER= NO_CBLAS=\n      NO_LAPACK= NO_LAPACKE= NO_AFFINITY=1 USE_OPENMP= SANDYBRIDGE MAX_THREADS=3\n    pc file directory: /usr/local/lib/pkgconfig\n    version: 0.3.23.dev\n  lapack:\n    detection method: internal\n    found: true\n    include directory: unknown\n    lib directory: unknown\n    name: dep4333629152\n    openblas configuration: unknown\n    pc file directory: unknown\n    version: 1.26.4\nCompilers:\n  c:\n    args: -fno-strict-aliasing, -DBLAS_SYMBOL_SUFFIX=64_, -DHAVE_BLAS_ILP64\n    commands: cc\n    linker: ld64\n    linker args: -fno-strict-aliasing, -DBLAS_SYMBOL_SUFFIX=64_, -DHAVE_BLAS_ILP64\n    name: clang\n    version: 14.0.0\n  c++:\n    args: -DBLAS_SYMBOL_SUFFIX=64_, -DHAVE_BLAS_ILP64\n    commands: c++\n    linker: ld64\n    linker args: -DBLAS_SYMBOL_SUFFIX=64_, -DHAVE_BLAS_ILP64\n    name: clang\n    version: 14.0.0\n  cython:\n    commands: cython\n    linker: cython\n    name: cython\n    version: 3.0.8\nMachine Information:\n  build:\n    cpu: aarch64\n    endian: little\n    family: aarch64\n    system: darwin\n  host:\n    cpu: aarch64\n    endian: little\n    family: aarch64\n    system: darwin\nPython Information:\n  path: /private/var/folders/76/zy5ktkns50v6gt5g8r0sf6sc0000gn/T/cibw-run-rlaq62oz/cp39-macosx_arm64/build/venv/bin/python\n  version: '3.9'\nSIMD Extensions:\n  baseline:\n  - NEON\n  - NEON_FP16\n  - NEON_VFPV4\n  - ASIMD\n  found:\n  - ASIMDHP\n  not found:\n  - ASIMDFHM\n\n15:42:32 - \u001b[32mINFO\u001b[0m - 平台检测完成: macOS 15.6.1 (arm64)\nBuild Dependencies:\n  blas:\n    detection method: pkgconfig\n    found: true\n    include directory: /opt/arm64-builds/include\n    lib directory: /opt/arm64-builds/lib\n    name: openblas64\n    openblas configuration: USE_64BITINT=1 DYNAMIC_ARCH=1 DYNAMIC_OLDER= NO_CBLAS=\n      NO_LAPACK= NO_LAPACKE= NO_AFFINITY=1 USE_OPENMP= SANDYBRIDGE MAX_THREADS=3\n    pc file directory: /usr/local/lib/pkgconfig\n    version: 0.3.23.dev\n  lapack:\n    detection method: internal\n    found: true\n    include directory: unknown\n    lib directory: unknown\n    name: dep4333629152\n    openblas configuration: unknown\n    pc file directory: unknown\n    version: 1.26.4\nCompilers:\n  c:\n    args: -fno-strict-aliasing, -DBLAS_SYMBOL_SUFFIX=64_, -DHAVE_BLAS_ILP64\n    commands: cc\n    linker: ld64\n    linker args: -fno-strict-aliasing, -DBLAS_SYMBOL_SUFFIX=64_, -DHAVE_BLAS_ILP64\n    name: clang\n    version: 14.0.0\n  c++:\n    args: -DBLAS_SYMBOL_SUFFIX=64_, -DHAVE_BLAS_ILP64\n    commands: c++\n    linker: ld64\n    linker args: -DBLAS_SYMBOL_SUFFIX=64_, -DHAVE_BLAS_ILP64\n    name: clang\n    version: 14.0.0\n  cython:\n    commands: cython\n    linker: cython\n    name: cython\n    version: 3.0.8\nMachine Information:\n  build:\n    cpu: aarch64\n    endian: little\n    family: aarch64\n    system: darwin\n  host:\n    cpu: aarch64\n    endian: little\n    family: aarch64\n    system: darwin\nPython Information:\n  path: /private/var/folders/76/zy5ktkns50v6gt5g8r0sf6sc0000gn/T/cibw-run-rlaq62oz/cp39-macosx_arm64/build/venv/bin/python\n  version: '3.9'\nSIMD Extensions:\n  baseline:\n  - NEON\n  - NEON_FP16\n  - NEON_VFPV4\n  - ASIMD\n  found:\n  - ASIMDHP\n  not found:\n  - ASIMDFHM\n\n15:42:32 - \u001b[32mINFO\u001b[0m - 增强硬件加速器初始化完成\n15:42:32 - \u001b[32mINFO\u001b[0m - 硬件检测完成: CPU 10核, 内存 32GB\nACCELERATE 加速配置: cpu_multi\nCPU CPU多线程: -1 线程\n 开始frequency预测 (分析期数: 100, 生成注数: 2)...\n 频率分析预测 (分析100期数据)...\nOK 预测完成!\n\n 预测结果:\n  第 1 注: 04 29 31 32 33 + 09 12 (方法: frequency, 置信度: 0.500)\n  第 2 注: 09 11 13 19 20 + 09 12 (方法: frequency, 置信度: 0.500)\n",
+      "stderr": "/Users/linshibo/GithubProject/dlt/enhanced_deep_learning/platform/platform_detector.py:215: UserWarning: pkg_resources is deprecated as an API. See https://setuptools.pypa.io/en/latest/pkg_resources.html. The pkg_resources package is slated for removal as early as 2025-11-30. Refrain from using this package or pin to Setuptools<81.\n  import pkg_resources\n"
+    },
+    "latest_draw": {
+      "issue": 25109,
+      "date": "2025-09-22",
+      "front_balls": "04,08,10,13,26",
+      "back_balls": "09,10",
+      "front_balls_list": [
+        4,
+        8,
+        10,
+        13,
+        26
+      ],
+      "back_balls_list": [
+        9,
+        10
+      ],
+      "date_obj": "2025-09-22 00:00:00"
+    },
+    "execution_time": 7.195019006729126,
+    "timestamp": "2025-09-26T15:42:33.387334",
+    "predictions_analysis": [
+      {
+        "prediction_index": 1,
+        "prediction": {
+          "front_balls": "04,29,31,32,33",
+          "back_balls": "09,12",
+          "front_balls_list": [
+            4,
+            29,
+            31,
+            32,
+            33
+          ],
+          "back_balls_list": [
+            9,
+            12
+          ],
+          "raw_line": "第 1 注: 04 29 31 32 33 + 09 12 (方法: frequency, 置信度: 0.500)",
+          "pattern_used": 0
+        },
+        "winning_result": {
+          "is_winning": true,
+          "prize_level": 9,
+          "prize_name": "九等奖",
+          "front_matches": 1,
+          "back_matches": 1,
+          "match_combination": "1+1",
+          "predicted_front": [
+            4,
+            29,
+            31,
+            32,
+            33
+          ],
+          "predicted_back": [
+            9,
+            12
+          ],
+          "winning_front": [
+            4,
+            8,
+            10,
+            13,
+            26
+          ],
+          "winning_back": [
+            9,
+            10
+          ],
+          "matched_front_numbers": [
+            4
+          ],
+          "matched_back_numbers": [
+            9
+          ]
+        }
+      },
+      {
+        "prediction_index": 2,
+        "prediction": {
+          "front_balls": "09,11,13,19,20",
+          "back_balls": "09,12",
+          "front_balls_list": [
+            9,
+            11,
+            13,
+            19,
+            20
+          ],
+          "back_balls_list": [
+            9,
+            12
+          ],
+          "raw_line": "第 2 注: 09 11 13 19 20 + 09 12 (方法: frequency, 置信度: 0.500)",
+          "pattern_used": 0
+        },
+        "winning_result": {
+          "is_winning": true,
+          "prize_level": 9,
+          "prize_name": "九等奖",
+          "front_matches": 1,
+          "back_matches": 1,
+          "match_combination": "1+1",
+          "predicted_front": [
+            9,
+            11,
+            13,
+            19,
+            20
+          ],
+          "predicted_back": [
+            9,
+            12
+          ],
+          "winning_front": [
+            4,
+            8,
+            10,
+            13,
+            26
+          ],
+          "winning_back": [
+            9,
+            10
+          ],
+          "matched_front_numbers": [
+            13
+          ],
+          "matched_back_numbers": [
+            9
+          ]
+        }
+      }
+    ],
+    "winnings": [
+      {
+        "prediction_index": 1,
+        "prize_level": 9,
+        "prize_name": "九等奖",
+        "match_combination": "1+1",
+        "predicted_front": [
+          4,
+          29,
+          31,
+          32,
+          33
+        ],
+        "predicted_back": [
+          9,
+          12
+        ],
+        "matched_front_numbers": [
+          4
+        ],
+        "matched_back_numbers": [
+          9
+        ],
+        "front_matches": 1,
+        "back_matches": 1
+      },
+      {
+        "prediction_index": 2,
+        "prize_level": 9,
+        "prize_name": "九等奖",
+        "match_combination": "1+1",
+        "predicted_front": [
+          9,
+          11,
+          13,
+          19,
+          20
+        ],
+        "predicted_back": [
+          9,
+          12
+        ],
+        "matched_front_numbers": [
+          13
+        ],
+        "matched_back_numbers": [
+          9
+        ],
+        "front_matches": 1,
+        "back_matches": 1
+      }
+    ],
+    "prize_statistics": {
+      "9": {
+        "name": "九等奖",
+        "count": 2
+      }
+    },
+    "total_predictions": 2,
+    "winning_predictions": 2,
+    "winning_rate": 1.0,
+    "best_prize_level": 9,
+    "is_winning": true,
+    "is_major_prize": false,
+    "prize_level": 9,
+    "total_prize_levels": 1
+  },
+  {
+    "success": true,
+    "test_case": {
+      "method": "frequency",
+      "periods": 100,
+      "count": 1,
+      "strategy": "quick",
+      "priority": "normal"
+    },
+    "prediction_result": {
+      "success": true,
+      "method": "frequency",
+      "periods": 100,
+      "count": 1,
+      "execution_time": 7.20651912689209,
+      "command": "/Users/linshibo/.codebuddy/bin/python /Users/linshibo/GithubProject/dlt/dlt_main.py predict -m frequency -p 100 -c 1",
+      "timestamp": 1758872553.384189,
+      "predictions": [
+        {
+          "front_balls": "04,29,31,32,34",
+          "back_balls": "10,12",
+          "front_balls_list": [
+            4,
+            29,
+            31,
+            32,
+            34
+          ],
+          "back_balls_list": [
+            10,
+            12
+          ],
+          "raw_line": "第 1 注: 04 29 31 32 34 + 10 12 (方法: frequency, 置信度: 0.500)",
+          "pattern_used": 0
+        }
+      ],
+      "prediction_count": 1,
+      "stdout": "✅ 从缓存加载数据: 2781 期\n[INFO] 使用CPU计算\n[OK] GPU加速模块已加载\n15:42:31 - \u001b[32mINFO\u001b[0m - 配置管理器初始化完成\n15:42:31 - \u001b[32mINFO\u001b[0m - 计算节点注册成功: local (localhost:0)\n15:42:31 - \u001b[32mINFO\u001b[0m - 分布式计算管理器初始化完成\n15:42:31 - \u001b[32mINFO\u001b[0m - 内存优化器初始化完成\n15:42:31 - \u001b[32mINFO\u001b[0m - IO优化器初始化完成\n15:42:31 - \u001b[32mINFO\u001b[0m - 硬件加速器初始化完成\n15:42:31 - \u001b[32mINFO\u001b[0m - 平台检测器初始化完成\n15:42:31 - \u001b[32mINFO\u001b[0m - 未检测到GPU设备或GPU不可用\nBuild Dependencies:\n  blas:\n    detection method: pkgconfig\n    found: true\n    include directory: /opt/arm64-builds/include\n    lib directory: /opt/arm64-builds/lib\n    name: openblas64\n    openblas configuration: USE_64BITINT=1 DYNAMIC_ARCH=1 DYNAMIC_OLDER= NO_CBLAS=\n      NO_LAPACK= NO_LAPACKE= NO_AFFINITY=1 USE_OPENMP= SANDYBRIDGE MAX_THREADS=3\n    pc file directory: /usr/local/lib/pkgconfig\n    version: 0.3.23.dev\n  lapack:\n    detection method: internal\n    found: true\n    include directory: unknown\n    lib directory: unknown\n    name: dep4333629152\n    openblas configuration: unknown\n    pc file directory: unknown\n    version: 1.26.4\nCompilers:\n  c:\n    args: -fno-strict-aliasing, -DBLAS_SYMBOL_SUFFIX=64_, -DHAVE_BLAS_ILP64\n    commands: cc\n    linker: ld64\n    linker args: -fno-strict-aliasing, -DBLAS_SYMBOL_SUFFIX=64_, -DHAVE_BLAS_ILP64\n    name: clang\n    version: 14.0.0\n  c++:\n    args: -DBLAS_SYMBOL_SUFFIX=64_, -DHAVE_BLAS_ILP64\n    commands: c++\n    linker: ld64\n    linker args: -DBLAS_SYMBOL_SUFFIX=64_, -DHAVE_BLAS_ILP64\n    name: clang\n    version: 14.0.0\n  cython:\n    commands: cython\n    linker: cython\n    name: cython\n    version: 3.0.8\nMachine Information:\n  build:\n    cpu: aarch64\n    endian: little\n    family: aarch64\n    system: darwin\n  host:\n    cpu: aarch64\n    endian: little\n    family: aarch64\n    system: darwin\nPython Information:\n  path: /private/var/folders/76/zy5ktkns50v6gt5g8r0sf6sc0000gn/T/cibw-run-rlaq62oz/cp39-macosx_arm64/build/venv/bin/python\n  version: '3.9'\nSIMD Extensions:\n  baseline:\n  - NEON\n  - NEON_FP16\n  - NEON_VFPV4\n  - ASIMD\n  found:\n  - ASIMDHP\n  not found:\n  - ASIMDFHM\n\n15:42:31 - \u001b[32mINFO\u001b[0m - 平台检测完成: macOS 15.6.1 (arm64)\n15:42:31 - \u001b[32mINFO\u001b[0m - 平台适配器初始化完成: windows\n15:42:31 - \u001b[32mINFO\u001b[0m - 平台适配器初始化完成: linux\n15:42:31 - \u001b[32mINFO\u001b[0m - 平台适配器初始化完成: macos\n15:42:31 - \u001b[32mINFO\u001b[0m - 优雅降级系统初始化完成\n15:42:31 - \u001b[32mINFO\u001b[0m - 兼容性测试器初始化完成\n15:42:31 - \u001b[32mINFO\u001b[0m - 跨平台安装器初始化完成\n15:42:31 - \u001b[32mINFO\u001b[0m - 模型优化器初始化完成\n15:42:31 - \u001b[32mINFO\u001b[0m - 模型注册表初始化完成\n15:42:31 - \u001b[32mINFO\u001b[0m - 模型注册成功: lstm v1.0.0\n15:42:31 - \u001b[32mINFO\u001b[0m - 模型注册成功: transformer v1.0.0\n15:42:31 - \u001b[32mINFO\u001b[0m - 模型注册成功: gan v1.0.0\n15:42:31 - \u001b[32mINFO\u001b[0m - 模型注册成功: ensemble v1.0.0\n15:42:31 - \u001b[32mINFO\u001b[0m - 默认模型注册完成\n15:42:32 - \u001b[32mINFO\u001b[0m - 资源监控器初始化完成\n15:42:32 - \u001b[32mINFO\u001b[0m - 模型量化器初始化完成，量化位数: 8\n15:42:32 - \u001b[32mINFO\u001b[0m - 模型剪枝器初始化完成，稀疏度: 0.5\n15:42:32 - \u001b[32mINFO\u001b[0m - 知识蒸馏器初始化完成，温度: 4.0, alpha: 0.7\n15:42:32 - \u001b[32mINFO\u001b[0m - 低秩分解器初始化完成，秩比例: 0.5\n15:42:32 - \u001b[32mINFO\u001b[0m - 模型压缩器初始化完成，方法: hybrid\n15:42:32 - \u001b[32mINFO\u001b[0m - 随机搜索优化器初始化完成\n15:42:32 - \u001b[32mINFO\u001b[0m - 超参数优化器初始化完成，方法: random_search\n15:42:32 - \u001b[32mINFO\u001b[0m - 深度学习命令集初始化完成\n15:42:32 - \u001b[32mINFO\u001b[0m - CLI处理器初始化完成\n15:42:32 - \u001b[32mINFO\u001b[0m - CLI体验增强器初始化完成\n15:42:32 - \u001b[32mINFO\u001b[0m - 命令适配器初始化完成\n15:42:32 - \u001b[32mINFO\u001b[0m - API适配器初始化完成\n15:42:32 - \u001b[32mINFO\u001b[0m - 系统集成器初始化完成\n15:42:32 - \u001b[32mINFO\u001b[0m - 命令注册表初始化完成\n15:42:32 - \u001b[32mINFO\u001b[0m - 数据转换器初始化完成\n15:42:32 - \u001b[32mINFO\u001b[0m - 迁移工具初始化完成\n15:42:32 - \u001b[32mINFO\u001b[0m - 配置管理器初始化完成\n15:42:32 - \u001b[32mINFO\u001b[0m - 异常处理器初始化完成\n15:42:32 - \u001b[32mINFO\u001b[0m - 依赖注入器初始化完成\n15:42:32 - \u001b[32mINFO\u001b[0m - 模型池初始化完成，最大容量: 10\n15:42:32 - \u001b[32mINFO\u001b[0m - 预测调度器初始化完成，工作线程数: 4\n15:42:32 - \u001b[32mINFO\u001b[0m - 预测调度器已启动\n15:42:32 - \u001b[32mINFO\u001b[0m - 预测引擎初始化完成\n15:42:32 - \u001b[32mINFO\u001b[0m - 结果格式化器初始化完成\n15:42:32 - \u001b[32mINFO\u001b[0m - 结果分析器初始化完成\n15:42:32 - \u001b[32mINFO\u001b[0m - 结果处理器初始化完成\n15:42:32 - \u001b[32mINFO\u001b[0m - 置信度计算器初始化完成\n15:42:32 - \u001b[32mINFO\u001b[0m - 预测缓存初始化完成，策略: lru\n15:42:32 - \u001b[32mINFO\u001b[0m - Plotly可视化器初始化完成\n15:42:32 - \u001b[32mINFO\u001b[0m - 交互式可视化器初始化完成，使用后端: plotly\n15:42:32 - \u001b[32mINFO\u001b[0m - 仪表板管理器初始化完成\n15:42:32 - \u001b[32mINFO\u001b[0m - HTML报告构建器初始化完成\n15:42:32 - \u001b[32mINFO\u001b[0m - Markdown报告构建器初始化完成\n15:42:32 - \u001b[32mINFO\u001b[0m - Plotly可视化器初始化完成\n15:42:32 - \u001b[32mINFO\u001b[0m - 交互式可视化器初始化完成，使用后端: plotly\n15:42:32 - \u001b[32mINFO\u001b[0m - 报告生成器初始化完成\n15:42:32 - \u001b[32mINFO\u001b[0m - 工作流执行器初始化完成，最大工作线程: 4\n15:42:32 - \u001b[32mINFO\u001b[0m - 工作流管理器初始化完成\n15:42:32 - \u001b[32mINFO\u001b[0m - 调度器已启动\n15:42:32 - \u001b[32mINFO\u001b[0m - 自动化引擎初始化完成\n15:42:32 - \u001b[32mINFO\u001b[0m - 任务调度器初始化完成，最大工作线程: 4\n15:42:32 - \u001b[32mINFO\u001b[0m - 增强功能模块加载成功\n15:42:32 - \u001b[32mINFO\u001b[0m - 配置管理器初始化完成\n15:42:32 - \u001b[32mINFO\u001b[0m - 异常处理器初始化完成\n15:42:32 - \u001b[32mINFO\u001b[0m - 数据预处理器初始化完成\n15:42:32 - \u001b[32mINFO\u001b[0m - 模型注册表初始化完成\n15:42:32 - \u001b[32mINFO\u001b[0m - 模型池初始化完成，最大容量: 10\n15:42:32 - \u001b[32mINFO\u001b[0m - 预测调度器初始化完成，工作线程数: 4\n15:42:32 - \u001b[32mINFO\u001b[0m - 预测调度器已启动\n15:42:32 - \u001b[32mINFO\u001b[0m - 预测引擎初始化完成\n15:42:32 - \u001b[32mINFO\u001b[0m - 预测缓存初始化完成，策略: lru\n15:42:32 - \u001b[32mINFO\u001b[0m - Plotly可视化器初始化完成\n15:42:32 - \u001b[32mINFO\u001b[0m - 交互式可视化器初始化完成，使用后端: plotly\n15:42:32 - \u001b[32mINFO\u001b[0m - 工作流执行器初始化完成，最大工作线程: 4\n15:42:32 - \u001b[32mINFO\u001b[0m - 工作流管理器初始化完成\n15:42:32 - \u001b[32mINFO\u001b[0m - 平台检测器初始化完成\n15:42:32 - \u001b[32mINFO\u001b[0m - 优雅降级系统初始化完成\n15:42:32 - \u001b[32mINFO\u001b[0m - 计算节点注册成功: local (localhost:0)\n15:42:32 - \u001b[32mINFO\u001b[0m - 分布式计算管理器初始化完成\n15:42:32 - \u001b[32mINFO\u001b[0m - 增强版大乐透预测系统初始化完成\nOK - 增强功能模块已启用\n15:42:32 - \u001b[32mINFO\u001b[0m - OK - 增强功能已集成到主系统\n 加载预测器模块...\n15:42:32 - \u001b[32mINFO\u001b[0m - 开始缓存系统迁移...\n15:42:32 - \u001b[32mINFO\u001b[0m - 清理旧缓存: 2 个文件\n15:42:32 - \u001b[32mINFO\u001b[0m - 清理缓存完成，删除 0 个缓存项\n15:42:32 - \u001b[32mINFO\u001b[0m - 智能缓存系统已准备就绪\n15:42:32 - \u001b[32mINFO\u001b[0m - 缓存兼容层创建成功\n15:42:32 - \u001b[32mINFO\u001b[0m - 缓存系统迁移完成\n15:42:32 - \u001b[32mINFO\u001b[0m - 智能缓存系统已启用\n15:42:32 - \u001b[32mINFO\u001b[0m - 平台检测器初始化完成\n15:42:32 - \u001b[32mINFO\u001b[0m - 未检测到GPU设备或GPU不可用\nBuild Dependencies:\n  blas:\n    detection method: pkgconfig\n    found: true\n    include directory: /opt/arm64-builds/include\n    lib directory: /opt/arm64-builds/lib\n    name: openblas64\n    openblas configuration: USE_64BITINT=1 DYNAMIC_ARCH=1 DYNAMIC_OLDER= NO_CBLAS=\n      NO_LAPACK= NO_LAPACKE= NO_AFFINITY=1 USE_OPENMP= SANDYBRIDGE MAX_THREADS=3\n    pc file directory: /usr/local/lib/pkgconfig\n    version: 0.3.23.dev\n  lapack:\n    detection method: internal\n    found: true\n    include directory: unknown\n    lib directory: unknown\n    name: dep4333629152\n    openblas configuration: unknown\n    pc file directory: unknown\n    version: 1.26.4\nCompilers:\n  c:\n    args: -fno-strict-aliasing, -DBLAS_SYMBOL_SUFFIX=64_, -DHAVE_BLAS_ILP64\n    commands: cc\n    linker: ld64\n    linker args: -fno-strict-aliasing, -DBLAS_SYMBOL_SUFFIX=64_, -DHAVE_BLAS_ILP64\n    name: clang\n    version: 14.0.0\n  c++:\n    args: -DBLAS_SYMBOL_SUFFIX=64_, -DHAVE_BLAS_ILP64\n    commands: c++\n    linker: ld64\n    linker args: -DBLAS_SYMBOL_SUFFIX=64_, -DHAVE_BLAS_ILP64\n    name: clang\n    version: 14.0.0\n  cython:\n    commands: cython\n    linker: cython\n    name: cython\n    version: 3.0.8\nMachine Information:\n  build:\n    cpu: aarch64\n    endian: little\n    family: aarch64\n    system: darwin\n  host:\n    cpu: aarch64\n    endian: little\n    family: aarch64\n    system: darwin\nPython Information:\n  path: /private/var/folders/76/zy5ktkns50v6gt5g8r0sf6sc0000gn/T/cibw-run-rlaq62oz/cp39-macosx_arm64/build/venv/bin/python\n  version: '3.9'\nSIMD Extensions:\n  baseline:\n  - NEON\n  - NEON_FP16\n  - NEON_VFPV4\n  - ASIMD\n  found:\n  - ASIMDHP\n  not found:\n  - ASIMDFHM\n\n15:42:32 - \u001b[32mINFO\u001b[0m - 平台检测完成: macOS 15.6.1 (arm64)\nBuild Dependencies:\n  blas:\n    detection method: pkgconfig\n    found: true\n    include directory: /opt/arm64-builds/include\n    lib directory: /opt/arm64-builds/lib\n    name: openblas64\n    openblas configuration: USE_64BITINT=1 DYNAMIC_ARCH=1 DYNAMIC_OLDER= NO_CBLAS=\n      NO_LAPACK= NO_LAPACKE= NO_AFFINITY=1 USE_OPENMP= SANDYBRIDGE MAX_THREADS=3\n    pc file directory: /usr/local/lib/pkgconfig\n    version: 0.3.23.dev\n  lapack:\n    detection method: internal\n    found: true\n    include directory: unknown\n    lib directory: unknown\n    name: dep4333629152\n    openblas configuration: unknown\n    pc file directory: unknown\n    version: 1.26.4\nCompilers:\n  c:\n    args: -fno-strict-aliasing, -DBLAS_SYMBOL_SUFFIX=64_, -DHAVE_BLAS_ILP64\n    commands: cc\n    linker: ld64\n    linker args: -fno-strict-aliasing, -DBLAS_SYMBOL_SUFFIX=64_, -DHAVE_BLAS_ILP64\n    name: clang\n    version: 14.0.0\n  c++:\n    args: -DBLAS_SYMBOL_SUFFIX=64_, -DHAVE_BLAS_ILP64\n    commands: c++\n    linker: ld64\n    linker args: -DBLAS_SYMBOL_SUFFIX=64_, -DHAVE_BLAS_ILP64\n    name: clang\n    version: 14.0.0\n  cython:\n    commands: cython\n    linker: cython\n    name: cython\n    version: 3.0.8\nMachine Information:\n  build:\n    cpu: aarch64\n    endian: little\n    family: aarch64\n    system: darwin\n  host:\n    cpu: aarch64\n    endian: little\n    family: aarch64\n    system: darwin\nPython Information:\n  path: /private/var/folders/76/zy5ktkns50v6gt5g8r0sf6sc0000gn/T/cibw-run-rlaq62oz/cp39-macosx_arm64/build/venv/bin/python\n  version: '3.9'\nSIMD Extensions:\n  baseline:\n  - NEON\n  - NEON_FP16\n  - NEON_VFPV4\n  - ASIMD\n  found:\n  - ASIMDHP\n  not found:\n  - ASIMDFHM\n\n15:42:32 - \u001b[32mINFO\u001b[0m - 增强硬件加速器初始化完成\n15:42:32 - \u001b[32mINFO\u001b[0m - 硬件检测完成: CPU 10核, 内存 32GB\nACCELERATE 加速配置: cpu_multi\nCPU CPU多线程: -1 线程\n 开始frequency预测 (分析期数: 100, 生成注数: 1)...\n 频率分析预测 (分析100期数据)...\nOK 预测完成!\n\n 预测结果:\n  第 1 注: 04 29 31 32 34 + 10 12 (方法: frequency, 置信度: 0.500)\n",
+      "stderr": "/Users/linshibo/GithubProject/dlt/enhanced_deep_learning/platform/platform_detector.py:215: UserWarning: pkg_resources is deprecated as an API. See https://setuptools.pypa.io/en/latest/pkg_resources.html. The pkg_resources package is slated for removal as early as 2025-11-30. Refrain from using this package or pin to Setuptools<81.\n  import pkg_resources\n"
+    },
+    "latest_draw": {
+      "issue": 25109,
+      "date": "2025-09-22",
+      "front_balls": "04,08,10,13,26",
+      "back_balls": "09,10",
+      "front_balls_list": [
+        4,
+        8,
+        10,
+        13,
+        26
+      ],
+      "back_balls_list": [
+        9,
+        10
+      ],
+      "date_obj": "2025-09-22 00:00:00"
+    },
+    "execution_time": 7.210724115371704,
+    "timestamp": "2025-09-26T15:42:33.388396",
+    "predictions_analysis": [
+      {
+        "prediction_index": 1,
+        "prediction": {
+          "front_balls": "04,29,31,32,34",
+          "back_balls": "10,12",
+          "front_balls_list": [
+            4,
+            29,
+            31,
+            32,
+            34
+          ],
+          "back_balls_list": [
+            10,
+            12
+          ],
+          "raw_line": "第 1 注: 04 29 31 32 34 + 10 12 (方法: frequency, 置信度: 0.500)",
+          "pattern_used": 0
+        },
+        "winning_result": {
+          "is_winning": true,
+          "prize_level": 9,
+          "prize_name": "九等奖",
+          "front_matches": 1,
+          "back_matches": 1,
+          "match_combination": "1+1",
+          "predicted_front": [
+            4,
+            29,
+            31,
+            32,
+            34
+          ],
+          "predicted_back": [
+            10,
+            12
+          ],
+          "winning_front": [
+            4,
+            8,
+            10,
+            13,
+            26
+          ],
+          "winning_back": [
+            9,
+            10
+          ],
+          "matched_front_numbers": [
+            4
+          ],
+          "matched_back_numbers": [
+            10
+          ]
+        }
+      }
+    ],
+    "winnings": [
+      {
+        "prediction_index": 1,
+        "prize_level": 9,
+        "prize_name": "九等奖",
+        "match_combination": "1+1",
+        "predicted_front": [
+          4,
+          29,
+          31,
+          32,
+          34
+        ],
+        "predicted_back": [
+          10,
+          12
+        ],
+        "matched_front_numbers": [
+          4
+        ],
+        "matched_back_numbers": [
+          10
+        ],
+        "front_matches": 1,
+        "back_matches": 1
+      }
+    ],
+    "prize_statistics": {
+      "9": {
+        "name": "九等奖",
+        "count": 1
+      }
+    },
+    "total_predictions": 1,
+    "winning_predictions": 1,
+    "winning_rate": 1.0,
+    "best_prize_level": 9,
+    "is_winning": true,
+    "is_major_prize": false,
+    "prize_level": 9,
+    "total_prize_levels": 1
+  },
+  {
+    "success": true,
+    "test_case": {
+      "method": "frequency",
+      "periods": 500,
+      "count": 1,
+      "strategy": "quick",
+      "priority": "normal"
+    },
+    "prediction_result": {
+      "success": true,
+      "method": "frequency",
+      "periods": 500,
+      "count": 1,
+      "execution_time": 7.028871297836304,
+      "command": "/Users/linshibo/.codebuddy/bin/python /Users/linshibo/GithubProject/dlt/dlt_main.py predict -m frequency -p 500 -c 1",
+      "timestamp": 1758872560.416351,
+      "predictions": [
+        {
+          "front_balls": "29,30,32,34,35",
+          "back_balls": "06,10",
+          "front_balls_list": [
+            29,
+            30,
+            32,
+            34,
+            35
+          ],
+          "back_balls_list": [
+            6,
+            10
+          ],
+          "raw_line": "第 1 注: 29 30 32 34 35 + 06 10 (方法: frequency, 置信度: 0.500)",
+          "pattern_used": 0
+        }
+      ],
+      "prediction_count": 1,
+      "stdout": "✅ 从缓存加载数据: 2781 期\n[INFO] 使用CPU计算\n[OK] GPU加速模块已加载\n15:42:38 - \u001b[32mINFO\u001b[0m - 配置管理器初始化完成\n15:42:38 - \u001b[32mINFO\u001b[0m - 计算节点注册成功: local (localhost:0)\n15:42:38 - \u001b[32mINFO\u001b[0m - 分布式计算管理器初始化完成\n15:42:38 - \u001b[32mINFO\u001b[0m - 内存优化器初始化完成\n15:42:38 - \u001b[32mINFO\u001b[0m - IO优化器初始化完成\n15:42:38 - \u001b[32mINFO\u001b[0m - 硬件加速器初始化完成\n15:42:38 - \u001b[32mINFO\u001b[0m - 平台检测器初始化完成\n15:42:38 - \u001b[32mINFO\u001b[0m - 未检测到GPU设备或GPU不可用\nBuild Dependencies:\n  blas:\n    detection method: pkgconfig\n    found: true\n    include directory: /opt/arm64-builds/include\n    lib directory: /opt/arm64-builds/lib\n    name: openblas64\n    openblas configuration: USE_64BITINT=1 DYNAMIC_ARCH=1 DYNAMIC_OLDER= NO_CBLAS=\n      NO_LAPACK= NO_LAPACKE= NO_AFFINITY=1 USE_OPENMP= SANDYBRIDGE MAX_THREADS=3\n    pc file directory: /usr/local/lib/pkgconfig\n    version: 0.3.23.dev\n  lapack:\n    detection method: internal\n    found: true\n    include directory: unknown\n    lib directory: unknown\n    name: dep4333629152\n    openblas configuration: unknown\n    pc file directory: unknown\n    version: 1.26.4\nCompilers:\n  c:\n    args: -fno-strict-aliasing, -DBLAS_SYMBOL_SUFFIX=64_, -DHAVE_BLAS_ILP64\n    commands: cc\n    linker: ld64\n    linker args: -fno-strict-aliasing, -DBLAS_SYMBOL_SUFFIX=64_, -DHAVE_BLAS_ILP64\n    name: clang\n    version: 14.0.0\n  c++:\n    args: -DBLAS_SYMBOL_SUFFIX=64_, -DHAVE_BLAS_ILP64\n    commands: c++\n    linker: ld64\n    linker args: -DBLAS_SYMBOL_SUFFIX=64_, -DHAVE_BLAS_ILP64\n    name: clang\n    version: 14.0.0\n  cython:\n    commands: cython\n    linker: cython\n    name: cython\n    version: 3.0.8\nMachine Information:\n  build:\n    cpu: aarch64\n    endian: little\n    family: aarch64\n    system: darwin\n  host:\n    cpu: aarch64\n    endian: little\n    family: aarch64\n    system: darwin\nPython Information:\n  path: /private/var/folders/76/zy5ktkns50v6gt5g8r0sf6sc0000gn/T/cibw-run-rlaq62oz/cp39-macosx_arm64/build/venv/bin/python\n  version: '3.9'\nSIMD Extensions:\n  baseline:\n  - NEON\n  - NEON_FP16\n  - NEON_VFPV4\n  - ASIMD\n  found:\n  - ASIMDHP\n  not found:\n  - ASIMDFHM\n\n15:42:38 - \u001b[32mINFO\u001b[0m - 平台检测完成: macOS 15.6.1 (arm64)\n15:42:38 - \u001b[32mINFO\u001b[0m - 平台适配器初始化完成: windows\n15:42:38 - \u001b[32mINFO\u001b[0m - 平台适配器初始化完成: linux\n15:42:38 - \u001b[32mINFO\u001b[0m - 平台适配器初始化完成: macos\n15:42:38 - \u001b[32mINFO\u001b[0m - 优雅降级系统初始化完成\n15:42:38 - \u001b[32mINFO\u001b[0m - 兼容性测试器初始化完成\n15:42:38 - \u001b[32mINFO\u001b[0m - 跨平台安装器初始化完成\n15:42:38 - \u001b[32mINFO\u001b[0m - 模型优化器初始化完成\n15:42:38 - \u001b[32mINFO\u001b[0m - 模型注册表初始化完成\n15:42:38 - \u001b[32mINFO\u001b[0m - 模型注册成功: lstm v1.0.0\n15:42:38 - \u001b[32mINFO\u001b[0m - 模型注册成功: transformer v1.0.0\n15:42:38 - \u001b[32mINFO\u001b[0m - 模型注册成功: gan v1.0.0\n15:42:38 - \u001b[32mINFO\u001b[0m - 模型注册成功: ensemble v1.0.0\n15:42:38 - \u001b[32mINFO\u001b[0m - 默认模型注册完成\n15:42:39 - \u001b[32mINFO\u001b[0m - 资源监控器初始化完成\n15:42:39 - \u001b[32mINFO\u001b[0m - 模型量化器初始化完成，量化位数: 8\n15:42:39 - \u001b[32mINFO\u001b[0m - 模型剪枝器初始化完成，稀疏度: 0.5\n15:42:39 - \u001b[32mINFO\u001b[0m - 知识蒸馏器初始化完成，温度: 4.0, alpha: 0.7\n15:42:39 - \u001b[32mINFO\u001b[0m - 低秩分解器初始化完成，秩比例: 0.5\n15:42:39 - \u001b[32mINFO\u001b[0m - 模型压缩器初始化完成，方法: hybrid\n15:42:39 - \u001b[32mINFO\u001b[0m - 随机搜索优化器初始化完成\n15:42:39 - \u001b[32mINFO\u001b[0m - 超参数优化器初始化完成，方法: random_search\n15:42:39 - \u001b[32mINFO\u001b[0m - 深度学习命令集初始化完成\n15:42:39 - \u001b[32mINFO\u001b[0m - CLI处理器初始化完成\n15:42:39 - \u001b[32mINFO\u001b[0m - CLI体验增强器初始化完成\n15:42:39 - \u001b[32mINFO\u001b[0m - 命令适配器初始化完成\n15:42:39 - \u001b[32mINFO\u001b[0m - API适配器初始化完成\n15:42:39 - \u001b[32mINFO\u001b[0m - 系统集成器初始化完成\n15:42:39 - \u001b[32mINFO\u001b[0m - 命令注册表初始化完成\n15:42:39 - \u001b[32mINFO\u001b[0m - 数据转换器初始化完成\n15:42:39 - \u001b[32mINFO\u001b[0m - 迁移工具初始化完成\n15:42:39 - \u001b[32mINFO\u001b[0m - 配置管理器初始化完成\n15:42:39 - \u001b[32mINFO\u001b[0m - 异常处理器初始化完成\n15:42:39 - \u001b[32mINFO\u001b[0m - 依赖注入器初始化完成\n15:42:39 - \u001b[32mINFO\u001b[0m - 模型池初始化完成，最大容量: 10\n15:42:39 - \u001b[32mINFO\u001b[0m - 预测调度器初始化完成，工作线程数: 4\n15:42:39 - \u001b[32mINFO\u001b[0m - 预测调度器已启动\n15:42:39 - \u001b[32mINFO\u001b[0m - 预测引擎初始化完成\n15:42:39 - \u001b[32mINFO\u001b[0m - 结果格式化器初始化完成\n15:42:39 - \u001b[32mINFO\u001b[0m - 结果分析器初始化完成\n15:42:39 - \u001b[32mINFO\u001b[0m - 结果处理器初始化完成\n15:42:39 - \u001b[32mINFO\u001b[0m - 置信度计算器初始化完成\n15:42:39 - \u001b[32mINFO\u001b[0m - 预测缓存初始化完成，策略: lru\n15:42:39 - \u001b[32mINFO\u001b[0m - Plotly可视化器初始化完成\n15:42:39 - \u001b[32mINFO\u001b[0m - 交互式可视化器初始化完成，使用后端: plotly\n15:42:39 - \u001b[32mINFO\u001b[0m - 仪表板管理器初始化完成\n15:42:39 - \u001b[32mINFO\u001b[0m - HTML报告构建器初始化完成\n15:42:39 - \u001b[32mINFO\u001b[0m - Markdown报告构建器初始化完成\n15:42:39 - \u001b[32mINFO\u001b[0m - Plotly可视化器初始化完成\n15:42:39 - \u001b[32mINFO\u001b[0m - 交互式可视化器初始化完成，使用后端: plotly\n15:42:39 - \u001b[32mINFO\u001b[0m - 报告生成器初始化完成\n15:42:39 - \u001b[32mINFO\u001b[0m - 工作流执行器初始化完成，最大工作线程: 4\n15:42:39 - \u001b[32mINFO\u001b[0m - 工作流管理器初始化完成\n15:42:39 - \u001b[32mINFO\u001b[0m - 调度器已启动\n15:42:39 - \u001b[32mINFO\u001b[0m - 自动化引擎初始化完成\n15:42:39 - \u001b[32mINFO\u001b[0m - 任务调度器初始化完成，最大工作线程: 4\n15:42:39 - \u001b[32mINFO\u001b[0m - 增强功能模块加载成功\n15:42:39 - \u001b[32mINFO\u001b[0m - 配置管理器初始化完成\n15:42:39 - \u001b[32mINFO\u001b[0m - 异常处理器初始化完成\n15:42:39 - \u001b[32mINFO\u001b[0m - 数据预处理器初始化完成\n15:42:39 - \u001b[32mINFO\u001b[0m - 模型注册表初始化完成\n15:42:39 - \u001b[32mINFO\u001b[0m - 模型池初始化完成，最大容量: 10\n15:42:39 - \u001b[32mINFO\u001b[0m - 预测调度器初始化完成，工作线程数: 4\n15:42:39 - \u001b[32mINFO\u001b[0m - 预测调度器已启动\n15:42:39 - \u001b[32mINFO\u001b[0m - 预测引擎初始化完成\n15:42:39 - \u001b[32mINFO\u001b[0m - 预测缓存初始化完成，策略: lru\n15:42:39 - \u001b[32mINFO\u001b[0m - Plotly可视化器初始化完成\n15:42:39 - \u001b[32mINFO\u001b[0m - 交互式可视化器初始化完成，使用后端: plotly\n15:42:39 - \u001b[32mINFO\u001b[0m - 工作流执行器初始化完成，最大工作线程: 4\n15:42:39 - \u001b[32mINFO\u001b[0m - 工作流管理器初始化完成\n15:42:39 - \u001b[32mINFO\u001b[0m - 平台检测器初始化完成\n15:42:39 - \u001b[32mINFO\u001b[0m - 优雅降级系统初始化完成\n15:42:39 - \u001b[32mINFO\u001b[0m - 计算节点注册成功: local (localhost:0)\n15:42:39 - \u001b[32mINFO\u001b[0m - 分布式计算管理器初始化完成\n15:42:39 - \u001b[32mINFO\u001b[0m - 增强版大乐透预测系统初始化完成\nOK - 增强功能模块已启用\n15:42:39 - \u001b[32mINFO\u001b[0m - OK - 增强功能已集成到主系统\n 加载预测器模块...\n15:42:39 - \u001b[32mINFO\u001b[0m - 开始缓存系统迁移...\n15:42:39 - \u001b[32mINFO\u001b[0m - 清理旧缓存: 2 个文件\n15:42:39 - \u001b[32mINFO\u001b[0m - 清理缓存完成，删除 0 个缓存项\n15:42:39 - \u001b[32mINFO\u001b[0m - 智能缓存系统已准备就绪\n15:42:39 - \u001b[32mINFO\u001b[0m - 缓存兼容层创建成功\n15:42:39 - \u001b[32mINFO\u001b[0m - 缓存系统迁移完成\n15:42:39 - \u001b[32mINFO\u001b[0m - 智能缓存系统已启用\n15:42:39 - \u001b[32mINFO\u001b[0m - 平台检测器初始化完成\n15:42:39 - \u001b[32mINFO\u001b[0m - 未检测到GPU设备或GPU不可用\nBuild Dependencies:\n  blas:\n    detection method: pkgconfig\n    found: true\n    include directory: /opt/arm64-builds/include\n    lib directory: /opt/arm64-builds/lib\n    name: openblas64\n    openblas configuration: USE_64BITINT=1 DYNAMIC_ARCH=1 DYNAMIC_OLDER= NO_CBLAS=\n      NO_LAPACK= NO_LAPACKE= NO_AFFINITY=1 USE_OPENMP= SANDYBRIDGE MAX_THREADS=3\n    pc file directory: /usr/local/lib/pkgconfig\n    version: 0.3.23.dev\n  lapack:\n    detection method: internal\n    found: true\n    include directory: unknown\n    lib directory: unknown\n    name: dep4333629152\n    openblas configuration: unknown\n    pc file directory: unknown\n    version: 1.26.4\nCompilers:\n  c:\n    args: -fno-strict-aliasing, -DBLAS_SYMBOL_SUFFIX=64_, -DHAVE_BLAS_ILP64\n    commands: cc\n    linker: ld64\n    linker args: -fno-strict-aliasing, -DBLAS_SYMBOL_SUFFIX=64_, -DHAVE_BLAS_ILP64\n    name: clang\n    version: 14.0.0\n  c++:\n    args: -DBLAS_SYMBOL_SUFFIX=64_, -DHAVE_BLAS_ILP64\n    commands: c++\n    linker: ld64\n    linker args: -DBLAS_SYMBOL_SUFFIX=64_, -DHAVE_BLAS_ILP64\n    name: clang\n    version: 14.0.0\n  cython:\n    commands: cython\n    linker: cython\n    name: cython\n    version: 3.0.8\nMachine Information:\n  build:\n    cpu: aarch64\n    endian: little\n    family: aarch64\n    system: darwin\n  host:\n    cpu: aarch64\n    endian: little\n    family: aarch64\n    system: darwin\nPython Information:\n  path: /private/var/folders/76/zy5ktkns50v6gt5g8r0sf6sc0000gn/T/cibw-run-rlaq62oz/cp39-macosx_arm64/build/venv/bin/python\n  version: '3.9'\nSIMD Extensions:\n  baseline:\n  - NEON\n  - NEON_FP16\n  - NEON_VFPV4\n  - ASIMD\n  found:\n  - ASIMDHP\n  not found:\n  - ASIMDFHM\n\n15:42:39 - \u001b[32mINFO\u001b[0m - 平台检测完成: macOS 15.6.1 (arm64)\nBuild Dependencies:\n  blas:\n    detection method: pkgconfig\n    found: true\n    include directory: /opt/arm64-builds/include\n    lib directory: /opt/arm64-builds/lib\n    name: openblas64\n    openblas configuration: USE_64BITINT=1 DYNAMIC_ARCH=1 DYNAMIC_OLDER= NO_CBLAS=\n      NO_LAPACK= NO_LAPACKE= NO_AFFINITY=1 USE_OPENMP= SANDYBRIDGE MAX_THREADS=3\n    pc file directory: /usr/local/lib/pkgconfig\n    version: 0.3.23.dev\n  lapack:\n    detection method: internal\n    found: true\n    include directory: unknown\n    lib directory: unknown\n    name: dep4333629152\n    openblas configuration: unknown\n    pc file directory: unknown\n    version: 1.26.4\nCompilers:\n  c:\n    args: -fno-strict-aliasing, -DBLAS_SYMBOL_SUFFIX=64_, -DHAVE_BLAS_ILP64\n    commands: cc\n    linker: ld64\n    linker args: -fno-strict-aliasing, -DBLAS_SYMBOL_SUFFIX=64_, -DHAVE_BLAS_ILP64\n    name: clang\n    version: 14.0.0\n  c++:\n    args: -DBLAS_SYMBOL_SUFFIX=64_, -DHAVE_BLAS_ILP64\n    commands: c++\n    linker: ld64\n    linker args: -DBLAS_SYMBOL_SUFFIX=64_, -DHAVE_BLAS_ILP64\n    name: clang\n    version: 14.0.0\n  cython:\n    commands: cython\n    linker: cython\n    name: cython\n    version: 3.0.8\nMachine Information:\n  build:\n    cpu: aarch64\n    endian: little\n    family: aarch64\n    system: darwin\n  host:\n    cpu: aarch64\n    endian: little\n    family: aarch64\n    system: darwin\nPython Information:\n  path: /private/var/folders/76/zy5ktkns50v6gt5g8r0sf6sc0000gn/T/cibw-run-rlaq62oz/cp39-macosx_arm64/build/venv/bin/python\n  version: '3.9'\nSIMD Extensions:\n  baseline:\n  - NEON\n  - NEON_FP16\n  - NEON_VFPV4\n  - ASIMD\n  found:\n  - ASIMDHP\n  not found:\n  - ASIMDFHM\n\n15:42:39 - \u001b[32mINFO\u001b[0m - 增强硬件加速器初始化完成\n15:42:39 - \u001b[32mINFO\u001b[0m - 硬件检测完成: CPU 10核, 内存 32GB\nACCELERATE 加速配置: cpu_multi\nCPU CPU多线程: -1 线程\n 开始frequency预测 (分析期数: 500, 生成注数: 1)...\n 频率分析预测 (分析500期数据)...\nOK 预测完成!\n\n 预测结果:\n  第 1 注: 29 30 32 34 35 + 06 10 (方法: frequency, 置信度: 0.500)\n",
+      "stderr": "/Users/linshibo/GithubProject/dlt/enhanced_deep_learning/platform/platform_detector.py:215: UserWarning: pkg_resources is deprecated as an API. See https://setuptools.pypa.io/en/latest/pkg_resources.html. The pkg_resources package is slated for removal as early as 2025-11-30. Refrain from using this package or pin to Setuptools<81.\n  import pkg_resources\n"
+    },
+    "latest_draw": {
+      "issue": 25109,
+      "date": "2025-09-22",
+      "front_balls": "04,08,10,13,26",
+      "back_balls": "09,10",
+      "front_balls_list": [
+        4,
+        8,
+        10,
+        13,
+        26
+      ],
+      "back_balls_list": [
+        9,
+        10
+      ],
+      "date_obj": "2025-09-22 00:00:00"
+    },
+    "execution_time": 7.030490159988403,
+    "timestamp": "2025-09-26T15:42:40.417968",
+    "predictions_analysis": [
+      {
+        "prediction_index": 1,
+        "prediction": {
+          "front_balls": "29,30,32,34,35",
+          "back_balls": "06,10",
+          "front_balls_list": [
+            29,
+            30,
+            32,
+            34,
+            35
+          ],
+          "back_balls_list": [
+            6,
+            10
+          ],
+          "raw_line": "第 1 注: 29 30 32 34 35 + 06 10 (方法: frequency, 置信度: 0.500)",
+          "pattern_used": 0
+        },
+        "winning_result": {
+          "is_winning": true,
+          "prize_level": 9,
+          "prize_name": "九等奖",
+          "front_matches": 0,
+          "back_matches": 1,
+          "match_combination": "0+1",
+          "predicted_front": [
+            29,
+            30,
+            32,
+            34,
+            35
+          ],
+          "predicted_back": [
+            6,
+            10
+          ],
+          "winning_front": [
+            4,
+            8,
+            10,
+            13,
+            26
+          ],
+          "winning_back": [
+            9,
+            10
+          ],
+          "matched_front_numbers": [],
+          "matched_back_numbers": [
+            10
+          ]
+        }
+      }
+    ],
+    "winnings": [
+      {
+        "prediction_index": 1,
+        "prize_level": 9,
+        "prize_name": "九等奖",
+        "match_combination": "0+1",
+        "predicted_front": [
+          29,
+          30,
+          32,
+          34,
+          35
+        ],
+        "predicted_back": [
+          6,
+          10
+        ],
+        "matched_front_numbers": [],
+        "matched_back_numbers": [
+          10
+        ],
+        "front_matches": 0,
+        "back_matches": 1
+      }
+    ],
+    "prize_statistics": {
+      "9": {
+        "name": "九等奖",
+        "count": 1
+      }
+    },
+    "total_predictions": 1,
+    "winning_predictions": 1,
+    "winning_rate": 1.0,
+    "best_prize_level": 9,
+    "is_winning": true,
+    "is_major_prize": false,
+    "prize_level": 9,
+    "total_prize_levels": 1
+  },
+  {
+    "success": true,
+    "test_case": {
+      "method": "frequency",
+      "periods": 500,
+      "count": 2,
+      "strategy": "quick",
+      "priority": "normal"
+    },
+    "prediction_result": {
+      "success": true,
+      "method": "frequency",
+      "periods": 500,
+      "count": 2,
+      "execution_time": 7.311130046844482,
+      "command": "/Users/linshibo/.codebuddy/bin/python /Users/linshibo/GithubProject/dlt/dlt_main.py predict -m frequency -p 500 -c 2",
+      "timestamp": 1758872560.6997771,
+      "predictions": [
+        {
+          "front_balls": "25,29,30,31,33",
+          "back_balls": "06,10",
+          "front_balls_list": [
+            25,
+            29,
+            30,
+            31,
+            33
+          ],
+          "back_balls_list": [
+            6,
+            10
+          ],
+          "raw_line": "第 1 注: 25 29 30 31 33 + 06 10 (方法: frequency, 置信度: 0.500)",
+          "pattern_used": 0
+        },
+        {
+          "front_balls": "02,03,11,14,22",
+          "back_balls": "02,09",
+          "front_balls_list": [
+            2,
+            3,
+            11,
+            14,
+            22
+          ],
+          "back_balls_list": [
+            2,
+            9
+          ],
+          "raw_line": "第 2 注: 02 03 11 14 22 + 02 09 (方法: frequency, 置信度: 0.500)",
+          "pattern_used": 0
+        }
+      ],
+      "prediction_count": 2,
+      "stdout": "[OK] 从文件加载数据: 2781 期\n[INFO] 使用CPU计算\n[OK] GPU加速模块已加载\n15:42:38 - \u001b[32mINFO\u001b[0m - 配置管理器初始化完成\n15:42:38 - \u001b[32mINFO\u001b[0m - 计算节点注册成功: local (localhost:0)\n15:42:38 - \u001b[32mINFO\u001b[0m - 分布式计算管理器初始化完成\n15:42:38 - \u001b[32mINFO\u001b[0m - 内存优化器初始化完成\n15:42:38 - \u001b[32mINFO\u001b[0m - IO优化器初始化完成\n15:42:38 - \u001b[32mINFO\u001b[0m - 硬件加速器初始化完成\n15:42:38 - \u001b[32mINFO\u001b[0m - 平台检测器初始化完成\n15:42:38 - \u001b[32mINFO\u001b[0m - 未检测到GPU设备或GPU不可用\nBuild Dependencies:\n  blas:\n    detection method: pkgconfig\n    found: true\n    include directory: /opt/arm64-builds/include\n    lib directory: /opt/arm64-builds/lib\n    name: openblas64\n    openblas configuration: USE_64BITINT=1 DYNAMIC_ARCH=1 DYNAMIC_OLDER= NO_CBLAS=\n      NO_LAPACK= NO_LAPACKE= NO_AFFINITY=1 USE_OPENMP= SANDYBRIDGE MAX_THREADS=3\n    pc file directory: /usr/local/lib/pkgconfig\n    version: 0.3.23.dev\n  lapack:\n    detection method: internal\n    found: true\n    include directory: unknown\n    lib directory: unknown\n    name: dep4333629152\n    openblas configuration: unknown\n    pc file directory: unknown\n    version: 1.26.4\nCompilers:\n  c:\n    args: -fno-strict-aliasing, -DBLAS_SYMBOL_SUFFIX=64_, -DHAVE_BLAS_ILP64\n    commands: cc\n    linker: ld64\n    linker args: -fno-strict-aliasing, -DBLAS_SYMBOL_SUFFIX=64_, -DHAVE_BLAS_ILP64\n    name: clang\n    version: 14.0.0\n  c++:\n    args: -DBLAS_SYMBOL_SUFFIX=64_, -DHAVE_BLAS_ILP64\n    commands: c++\n    linker: ld64\n    linker args: -DBLAS_SYMBOL_SUFFIX=64_, -DHAVE_BLAS_ILP64\n    name: clang\n    version: 14.0.0\n  cython:\n    commands: cython\n    linker: cython\n    name: cython\n    version: 3.0.8\nMachine Information:\n  build:\n    cpu: aarch64\n    endian: little\n    family: aarch64\n    system: darwin\n  host:\n    cpu: aarch64\n    endian: little\n    family: aarch64\n    system: darwin\nPython Information:\n  path: /private/var/folders/76/zy5ktkns50v6gt5g8r0sf6sc0000gn/T/cibw-run-rlaq62oz/cp39-macosx_arm64/build/venv/bin/python\n  version: '3.9'\nSIMD Extensions:\n  baseline:\n  - NEON\n  - NEON_FP16\n  - NEON_VFPV4\n  - ASIMD\n  found:\n  - ASIMDHP\n  not found:\n  - ASIMDFHM\n\n15:42:39 - \u001b[32mINFO\u001b[0m - 平台检测完成: macOS 15.6.1 (arm64)\n15:42:39 - \u001b[32mINFO\u001b[0m - 平台适配器初始化完成: windows\n15:42:39 - \u001b[32mINFO\u001b[0m - 平台适配器初始化完成: linux\n15:42:39 - \u001b[32mINFO\u001b[0m - 平台适配器初始化完成: macos\n15:42:39 - \u001b[32mINFO\u001b[0m - 优雅降级系统初始化完成\n15:42:39 - \u001b[32mINFO\u001b[0m - 兼容性测试器初始化完成\n15:42:39 - \u001b[32mINFO\u001b[0m - 跨平台安装器初始化完成\n15:42:39 - \u001b[32mINFO\u001b[0m - 模型优化器初始化完成\n15:42:39 - \u001b[32mINFO\u001b[0m - 模型注册表初始化完成\n15:42:39 - \u001b[32mINFO\u001b[0m - 模型注册成功: lstm v1.0.0\n15:42:39 - \u001b[32mINFO\u001b[0m - 模型注册成功: transformer v1.0.0\n15:42:39 - \u001b[32mINFO\u001b[0m - 模型注册成功: gan v1.0.0\n15:42:39 - \u001b[32mINFO\u001b[0m - 模型注册成功: ensemble v1.0.0\n15:42:39 - \u001b[32mINFO\u001b[0m - 默认模型注册完成\n15:42:39 - \u001b[32mINFO\u001b[0m - 资源监控器初始化完成\n15:42:39 - \u001b[32mINFO\u001b[0m - 模型量化器初始化完成，量化位数: 8\n15:42:39 - \u001b[32mINFO\u001b[0m - 模型剪枝器初始化完成，稀疏度: 0.5\n15:42:39 - \u001b[32mINFO\u001b[0m - 知识蒸馏器初始化完成，温度: 4.0, alpha: 0.7\n15:42:39 - \u001b[32mINFO\u001b[0m - 低秩分解器初始化完成，秩比例: 0.5\n15:42:39 - \u001b[32mINFO\u001b[0m - 模型压缩器初始化完成，方法: hybrid\n15:42:39 - \u001b[32mINFO\u001b[0m - 随机搜索优化器初始化完成\n15:42:39 - \u001b[32mINFO\u001b[0m - 超参数优化器初始化完成，方法: random_search\n15:42:39 - \u001b[32mINFO\u001b[0m - 深度学习命令集初始化完成\n15:42:39 - \u001b[32mINFO\u001b[0m - CLI处理器初始化完成\n15:42:39 - \u001b[32mINFO\u001b[0m - CLI体验增强器初始化完成\n15:42:39 - \u001b[32mINFO\u001b[0m - 命令适配器初始化完成\n15:42:39 - \u001b[32mINFO\u001b[0m - API适配器初始化完成\n15:42:39 - \u001b[32mINFO\u001b[0m - 系统集成器初始化完成\n15:42:39 - \u001b[32mINFO\u001b[0m - 命令注册表初始化完成\n15:42:39 - \u001b[32mINFO\u001b[0m - 数据转换器初始化完成\n15:42:39 - \u001b[32mINFO\u001b[0m - 迁移工具初始化完成\n15:42:39 - \u001b[32mINFO\u001b[0m - 配置管理器初始化完成\n15:42:39 - \u001b[32mINFO\u001b[0m - 异常处理器初始化完成\n15:42:39 - \u001b[32mINFO\u001b[0m - 依赖注入器初始化完成\n15:42:39 - \u001b[32mINFO\u001b[0m - 模型池初始化完成，最大容量: 10\n15:42:39 - \u001b[32mINFO\u001b[0m - 预测调度器初始化完成，工作线程数: 4\n15:42:39 - \u001b[32mINFO\u001b[0m - 预测调度器已启动\n15:42:39 - \u001b[32mINFO\u001b[0m - 预测引擎初始化完成\n15:42:39 - \u001b[32mINFO\u001b[0m - 结果格式化器初始化完成\n15:42:39 - \u001b[32mINFO\u001b[0m - 结果分析器初始化完成\n15:42:39 - \u001b[32mINFO\u001b[0m - 结果处理器初始化完成\n15:42:39 - \u001b[32mINFO\u001b[0m - 置信度计算器初始化完成\n15:42:39 - \u001b[32mINFO\u001b[0m - 预测缓存初始化完成，策略: lru\n15:42:39 - \u001b[32mINFO\u001b[0m - Plotly可视化器初始化完成\n15:42:39 - \u001b[32mINFO\u001b[0m - 交互式可视化器初始化完成，使用后端: plotly\n15:42:39 - \u001b[32mINFO\u001b[0m - 仪表板管理器初始化完成\n15:42:39 - \u001b[32mINFO\u001b[0m - HTML报告构建器初始化完成\n15:42:39 - \u001b[32mINFO\u001b[0m - Markdown报告构建器初始化完成\n15:42:39 - \u001b[32mINFO\u001b[0m - Plotly可视化器初始化完成\n15:42:39 - \u001b[32mINFO\u001b[0m - 交互式可视化器初始化完成，使用后端: plotly\n15:42:39 - \u001b[32mINFO\u001b[0m - 报告生成器初始化完成\n15:42:39 - \u001b[32mINFO\u001b[0m - 工作流执行器初始化完成，最大工作线程: 4\n15:42:39 - \u001b[32mINFO\u001b[0m - 工作流管理器初始化完成\n15:42:39 - \u001b[32mINFO\u001b[0m - 调度器已启动\n15:42:39 - \u001b[32mINFO\u001b[0m - 自动化引擎初始化完成\n15:42:39 - \u001b[32mINFO\u001b[0m - 任务调度器初始化完成，最大工作线程: 4\n15:42:39 - \u001b[32mINFO\u001b[0m - 增强功能模块加载成功\n15:42:39 - \u001b[32mINFO\u001b[0m - 配置管理器初始化完成\n15:42:39 - \u001b[32mINFO\u001b[0m - 异常处理器初始化完成\n15:42:39 - \u001b[32mINFO\u001b[0m - 数据预处理器初始化完成\n15:42:39 - \u001b[32mINFO\u001b[0m - 模型注册表初始化完成\n15:42:39 - \u001b[32mINFO\u001b[0m - 模型池初始化完成，最大容量: 10\n15:42:39 - \u001b[32mINFO\u001b[0m - 预测调度器初始化完成，工作线程数: 4\n15:42:39 - \u001b[32mINFO\u001b[0m - 预测调度器已启动\n15:42:39 - \u001b[32mINFO\u001b[0m - 预测引擎初始化完成\n15:42:39 - \u001b[32mINFO\u001b[0m - 预测缓存初始化完成，策略: lru\n15:42:39 - \u001b[32mINFO\u001b[0m - Plotly可视化器初始化完成\n15:42:39 - \u001b[32mINFO\u001b[0m - 交互式可视化器初始化完成，使用后端: plotly\n15:42:39 - \u001b[32mINFO\u001b[0m - 工作流执行器初始化完成，最大工作线程: 4\n15:42:39 - \u001b[32mINFO\u001b[0m - 工作流管理器初始化完成\n15:42:39 - \u001b[32mINFO\u001b[0m - 平台检测器初始化完成\n15:42:39 - \u001b[32mINFO\u001b[0m - 优雅降级系统初始化完成\n15:42:39 - \u001b[32mINFO\u001b[0m - 计算节点注册成功: local (localhost:0)\n15:42:39 - \u001b[32mINFO\u001b[0m - 分布式计算管理器初始化完成\n15:42:39 - \u001b[32mINFO\u001b[0m - 增强版大乐透预测系统初始化完成\nOK - 增强功能模块已启用\n15:42:39 - \u001b[32mINFO\u001b[0m - OK - 增强功能已集成到主系统\n 加载预测器模块...\n15:42:39 - \u001b[32mINFO\u001b[0m - 开始缓存系统迁移...\n15:42:39 - \u001b[32mINFO\u001b[0m - 清理旧缓存: 0 个文件\n15:42:39 - \u001b[32mINFO\u001b[0m - 清理缓存完成，删除 0 个缓存项\n15:42:39 - \u001b[32mINFO\u001b[0m - 智能缓存系统已准备就绪\n15:42:39 - \u001b[32mINFO\u001b[0m - 缓存兼容层创建成功\n15:42:39 - \u001b[32mINFO\u001b[0m - 缓存系统迁移完成\n15:42:39 - \u001b[32mINFO\u001b[0m - 智能缓存系统已启用\n15:42:39 - \u001b[32mINFO\u001b[0m - 平台检测器初始化完成\n15:42:39 - \u001b[32mINFO\u001b[0m - 未检测到GPU设备或GPU不可用\nBuild Dependencies:\n  blas:\n    detection method: pkgconfig\n    found: true\n    include directory: /opt/arm64-builds/include\n    lib directory: /opt/arm64-builds/lib\n    name: openblas64\n    openblas configuration: USE_64BITINT=1 DYNAMIC_ARCH=1 DYNAMIC_OLDER= NO_CBLAS=\n      NO_LAPACK= NO_LAPACKE= NO_AFFINITY=1 USE_OPENMP= SANDYBRIDGE MAX_THREADS=3\n    pc file directory: /usr/local/lib/pkgconfig\n    version: 0.3.23.dev\n  lapack:\n    detection method: internal\n    found: true\n    include directory: unknown\n    lib directory: unknown\n    name: dep4333629152\n    openblas configuration: unknown\n    pc file directory: unknown\n    version: 1.26.4\nCompilers:\n  c:\n    args: -fno-strict-aliasing, -DBLAS_SYMBOL_SUFFIX=64_, -DHAVE_BLAS_ILP64\n    commands: cc\n    linker: ld64\n    linker args: -fno-strict-aliasing, -DBLAS_SYMBOL_SUFFIX=64_, -DHAVE_BLAS_ILP64\n    name: clang\n    version: 14.0.0\n  c++:\n    args: -DBLAS_SYMBOL_SUFFIX=64_, -DHAVE_BLAS_ILP64\n    commands: c++\n    linker: ld64\n    linker args: -DBLAS_SYMBOL_SUFFIX=64_, -DHAVE_BLAS_ILP64\n    name: clang\n    version: 14.0.0\n  cython:\n    commands: cython\n    linker: cython\n    name: cython\n    version: 3.0.8\nMachine Information:\n  build:\n    cpu: aarch64\n    endian: little\n    family: aarch64\n    system: darwin\n  host:\n    cpu: aarch64\n    endian: little\n    family: aarch64\n    system: darwin\nPython Information:\n  path: /private/var/folders/76/zy5ktkns50v6gt5g8r0sf6sc0000gn/T/cibw-run-rlaq62oz/cp39-macosx_arm64/build/venv/bin/python\n  version: '3.9'\nSIMD Extensions:\n  baseline:\n  - NEON\n  - NEON_FP16\n  - NEON_VFPV4\n  - ASIMD\n  found:\n  - ASIMDHP\n  not found:\n  - ASIMDFHM\n\n15:42:39 - \u001b[32mINFO\u001b[0m - 平台检测完成: macOS 15.6.1 (arm64)\nBuild Dependencies:\n  blas:\n    detection method: pkgconfig\n    found: true\n    include directory: /opt/arm64-builds/include\n    lib directory: /opt/arm64-builds/lib\n    name: openblas64\n    openblas configuration: USE_64BITINT=1 DYNAMIC_ARCH=1 DYNAMIC_OLDER= NO_CBLAS=\n      NO_LAPACK= NO_LAPACKE= NO_AFFINITY=1 USE_OPENMP= SANDYBRIDGE MAX_THREADS=3\n    pc file directory: /usr/local/lib/pkgconfig\n    version: 0.3.23.dev\n  lapack:\n    detection method: internal\n    found: true\n    include directory: unknown\n    lib directory: unknown\n    name: dep4333629152\n    openblas configuration: unknown\n    pc file directory: unknown\n    version: 1.26.4\nCompilers:\n  c:\n    args: -fno-strict-aliasing, -DBLAS_SYMBOL_SUFFIX=64_, -DHAVE_BLAS_ILP64\n    commands: cc\n    linker: ld64\n    linker args: -fno-strict-aliasing, -DBLAS_SYMBOL_SUFFIX=64_, -DHAVE_BLAS_ILP64\n    name: clang\n    version: 14.0.0\n  c++:\n    args: -DBLAS_SYMBOL_SUFFIX=64_, -DHAVE_BLAS_ILP64\n    commands: c++\n    linker: ld64\n    linker args: -DBLAS_SYMBOL_SUFFIX=64_, -DHAVE_BLAS_ILP64\n    name: clang\n    version: 14.0.0\n  cython:\n    commands: cython\n    linker: cython\n    name: cython\n    version: 3.0.8\nMachine Information:\n  build:\n    cpu: aarch64\n    endian: little\n    family: aarch64\n    system: darwin\n  host:\n    cpu: aarch64\n    endian: little\n    family: aarch64\n    system: darwin\nPython Information:\n  path: /private/var/folders/76/zy5ktkns50v6gt5g8r0sf6sc0000gn/T/cibw-run-rlaq62oz/cp39-macosx_arm64/build/venv/bin/python\n  version: '3.9'\nSIMD Extensions:\n  baseline:\n  - NEON\n  - NEON_FP16\n  - NEON_VFPV4\n  - ASIMD\n  found:\n  - ASIMDHP\n  not found:\n  - ASIMDFHM\n\n15:42:39 - \u001b[32mINFO\u001b[0m - 增强硬件加速器初始化完成\n15:42:39 - \u001b[32mINFO\u001b[0m - 硬件检测完成: CPU 10核, 内存 32GB\nACCELERATE 加速配置: cpu_multi\nCPU CPU多线程: -1 线程\n 开始frequency预测 (分析期数: 500, 生成注数: 2)...\n 频率分析预测 (分析500期数据)...\nOK 预测完成!\n\n 预测结果:\n  第 1 注: 25 29 30 31 33 + 06 10 (方法: frequency, 置信度: 0.500)\n  第 2 注: 02 03 11 14 22 + 02 09 (方法: frequency, 置信度: 0.500)\n",
+      "stderr": "/Users/linshibo/GithubProject/dlt/enhanced_deep_learning/platform/platform_detector.py:215: UserWarning: pkg_resources is deprecated as an API. See https://setuptools.pypa.io/en/latest/pkg_resources.html. The pkg_resources package is slated for removal as early as 2025-11-30. Refrain from using this package or pin to Setuptools<81.\n  import pkg_resources\n"
+    },
+    "latest_draw": {
+      "issue": 25109,
+      "date": "2025-09-22",
+      "front_balls": "04,08,10,13,26",
+      "back_balls": "09,10",
+      "front_balls_list": [
+        4,
+        8,
+        10,
+        13,
+        26
+      ],
+      "back_balls_list": [
+        9,
+        10
+      ],
+      "date_obj": "2025-09-22 00:00:00"
+    },
+    "execution_time": 7.312766075134277,
+    "timestamp": "2025-09-26T15:42:40.701400",
+    "predictions_analysis": [
+      {
+        "prediction_index": 1,
+        "prediction": {
+          "front_balls": "25,29,30,31,33",
+          "back_balls": "06,10",
+          "front_balls_list": [
+            25,
+            29,
+            30,
+            31,
+            33
+          ],
+          "back_balls_list": [
+            6,
+            10
+          ],
+          "raw_line": "第 1 注: 25 29 30 31 33 + 06 10 (方法: frequency, 置信度: 0.500)",
+          "pattern_used": 0
+        },
+        "winning_result": {
+          "is_winning": true,
+          "prize_level": 9,
+          "prize_name": "九等奖",
+          "front_matches": 0,
+          "back_matches": 1,
+          "match_combination": "0+1",
+          "predicted_front": [
+            25,
+            29,
+            30,
+            31,
+            33
+          ],
+          "predicted_back": [
+            6,
+            10
+          ],
+          "winning_front": [
+            4,
+            8,
+            10,
+            13,
+            26
+          ],
+          "winning_back": [
+            9,
+            10
+          ],
+          "matched_front_numbers": [],
+          "matched_back_numbers": [
+            10
+          ]
+        }
+      },
+      {
+        "prediction_index": 2,
+        "prediction": {
+          "front_balls": "02,03,11,14,22",
+          "back_balls": "02,09",
+          "front_balls_list": [
+            2,
+            3,
+            11,
+            14,
+            22
+          ],
+          "back_balls_list": [
+            2,
+            9
+          ],
+          "raw_line": "第 2 注: 02 03 11 14 22 + 02 09 (方法: frequency, 置信度: 0.500)",
+          "pattern_used": 0
+        },
+        "winning_result": {
+          "is_winning": true,
+          "prize_level": 9,
+          "prize_name": "九等奖",
+          "front_matches": 0,
+          "back_matches": 1,
+          "match_combination": "0+1",
+          "predicted_front": [
+            2,
+            3,
+            11,
+            14,
+            22
+          ],
+          "predicted_back": [
+            2,
+            9
+          ],
+          "winning_front": [
+            4,
+            8,
+            10,
+            13,
+            26
+          ],
+          "winning_back": [
+            9,
+            10
+          ],
+          "matched_front_numbers": [],
+          "matched_back_numbers": [
+            9
+          ]
+        }
+      }
+    ],
+    "winnings": [
+      {
+        "prediction_index": 1,
+        "prize_level": 9,
+        "prize_name": "九等奖",
+        "match_combination": "0+1",
+        "predicted_front": [
+          25,
+          29,
+          30,
+          31,
+          33
+        ],
+        "predicted_back": [
+          6,
+          10
+        ],
+        "matched_front_numbers": [],
+        "matched_back_numbers": [
+          10
+        ],
+        "front_matches": 0,
+        "back_matches": 1
+      },
+      {
+        "prediction_index": 2,
+        "prize_level": 9,
+        "prize_name": "九等奖",
+        "match_combination": "0+1",
+        "predicted_front": [
+          2,
+          3,
+          11,
+          14,
+          22
+        ],
+        "predicted_back": [
+          2,
+          9
+        ],
+        "matched_front_numbers": [],
+        "matched_back_numbers": [
+          9
+        ],
+        "front_matches": 0,
+        "back_matches": 1
+      }
+    ],
+    "prize_statistics": {
+      "9": {
+        "name": "九等奖",
+        "count": 2
+      }
+    },
+    "total_predictions": 2,
+    "winning_predictions": 2,
+    "winning_rate": 1.0,
+    "best_prize_level": 9,
+    "is_winning": true,
+    "is_major_prize": false,
+    "prize_level": 9,
+    "total_prize_levels": 1
+  },
+  {
+    "success": true,
+    "test_case": {
+      "method": "markov",
+      "periods": 100,
+      "count": 1,
+      "strategy": "quick",
+      "priority": "normal"
+    },
+    "prediction_result": {
+      "success": true,
+      "method": "markov",
+      "periods": 100,
+      "count": 1,
+      "execution_time": 6.875096082687378,
+      "command": "/Users/linshibo/.codebuddy/bin/python /Users/linshibo/GithubProject/dlt/dlt_main.py predict -m markov -p 100 -c 1",
+      "timestamp": 1758872567.2932081,
+      "predictions": [
+        {
+          "front_balls": "01,08,15,31,35",
+          "back_balls": "01,11",
+          "front_balls_list": [
+            1,
+            8,
+            15,
+            31,
+            35
+          ],
+          "back_balls_list": [
+            1,
+            11
+          ],
+          "raw_line": "第 1 注: 01 08 15 31 35 + 01 11 (方法: markov, 置信度: 0.500)",
+          "pattern_used": 0
+        }
+      ],
+      "prediction_count": 1,
+      "stdout": "[OK] 从文件加载数据: 2781 期\n[INFO] 使用CPU计算\n[OK] GPU加速模块已加载\n15:42:45 - \u001b[32mINFO\u001b[0m - 配置管理器初始化完成\n15:42:45 - \u001b[32mINFO\u001b[0m - 计算节点注册成功: local (localhost:0)\n15:42:45 - \u001b[32mINFO\u001b[0m - 分布式计算管理器初始化完成\n15:42:45 - \u001b[32mINFO\u001b[0m - 内存优化器初始化完成\n15:42:45 - \u001b[32mINFO\u001b[0m - IO优化器初始化完成\n15:42:45 - \u001b[32mINFO\u001b[0m - 硬件加速器初始化完成\n15:42:45 - \u001b[32mINFO\u001b[0m - 平台检测器初始化完成\n15:42:45 - \u001b[32mINFO\u001b[0m - 未检测到GPU设备或GPU不可用\nBuild Dependencies:\n  blas:\n    detection method: pkgconfig\n    found: true\n    include directory: /opt/arm64-builds/include\n    lib directory: /opt/arm64-builds/lib\n    name: openblas64\n    openblas configuration: USE_64BITINT=1 DYNAMIC_ARCH=1 DYNAMIC_OLDER= NO_CBLAS=\n      NO_LAPACK= NO_LAPACKE= NO_AFFINITY=1 USE_OPENMP= SANDYBRIDGE MAX_THREADS=3\n    pc file directory: /usr/local/lib/pkgconfig\n    version: 0.3.23.dev\n  lapack:\n    detection method: internal\n    found: true\n    include directory: unknown\n    lib directory: unknown\n    name: dep4333629152\n    openblas configuration: unknown\n    pc file directory: unknown\n    version: 1.26.4\nCompilers:\n  c:\n    args: -fno-strict-aliasing, -DBLAS_SYMBOL_SUFFIX=64_, -DHAVE_BLAS_ILP64\n    commands: cc\n    linker: ld64\n    linker args: -fno-strict-aliasing, -DBLAS_SYMBOL_SUFFIX=64_, -DHAVE_BLAS_ILP64\n    name: clang\n    version: 14.0.0\n  c++:\n    args: -DBLAS_SYMBOL_SUFFIX=64_, -DHAVE_BLAS_ILP64\n    commands: c++\n    linker: ld64\n    linker args: -DBLAS_SYMBOL_SUFFIX=64_, -DHAVE_BLAS_ILP64\n    name: clang\n    version: 14.0.0\n  cython:\n    commands: cython\n    linker: cython\n    name: cython\n    version: 3.0.8\nMachine Information:\n  build:\n    cpu: aarch64\n    endian: little\n    family: aarch64\n    system: darwin\n  host:\n    cpu: aarch64\n    endian: little\n    family: aarch64\n    system: darwin\nPython Information:\n  path: /private/var/folders/76/zy5ktkns50v6gt5g8r0sf6sc0000gn/T/cibw-run-rlaq62oz/cp39-macosx_arm64/build/venv/bin/python\n  version: '3.9'\nSIMD Extensions:\n  baseline:\n  - NEON\n  - NEON_FP16\n  - NEON_VFPV4\n  - ASIMD\n  found:\n  - ASIMDHP\n  not found:\n  - ASIMDFHM\n\n15:42:45 - \u001b[32mINFO\u001b[0m - 平台检测完成: macOS 15.6.1 (arm64)\n15:42:45 - \u001b[32mINFO\u001b[0m - 平台适配器初始化完成: windows\n15:42:45 - \u001b[32mINFO\u001b[0m - 平台适配器初始化完成: linux\n15:42:45 - \u001b[32mINFO\u001b[0m - 平台适配器初始化完成: macos\n15:42:45 - \u001b[32mINFO\u001b[0m - 优雅降级系统初始化完成\n15:42:45 - \u001b[32mINFO\u001b[0m - 兼容性测试器初始化完成\n15:42:45 - \u001b[32mINFO\u001b[0m - 跨平台安装器初始化完成\n15:42:45 - \u001b[32mINFO\u001b[0m - 模型优化器初始化完成\n15:42:45 - \u001b[32mINFO\u001b[0m - 模型注册表初始化完成\n15:42:45 - \u001b[32mINFO\u001b[0m - 模型注册成功: lstm v1.0.0\n15:42:45 - \u001b[32mINFO\u001b[0m - 模型注册成功: transformer v1.0.0\n15:42:45 - \u001b[32mINFO\u001b[0m - 模型注册成功: gan v1.0.0\n15:42:45 - \u001b[32mINFO\u001b[0m - 模型注册成功: ensemble v1.0.0\n15:42:45 - \u001b[32mINFO\u001b[0m - 默认模型注册完成\n15:42:46 - \u001b[32mINFO\u001b[0m - 资源监控器初始化完成\n15:42:46 - \u001b[32mINFO\u001b[0m - 模型量化器初始化完成，量化位数: 8\n15:42:46 - \u001b[32mINFO\u001b[0m - 模型剪枝器初始化完成，稀疏度: 0.5\n15:42:46 - \u001b[32mINFO\u001b[0m - 知识蒸馏器初始化完成，温度: 4.0, alpha: 0.7\n15:42:46 - \u001b[32mINFO\u001b[0m - 低秩分解器初始化完成，秩比例: 0.5\n15:42:46 - \u001b[32mINFO\u001b[0m - 模型压缩器初始化完成，方法: hybrid\n15:42:46 - \u001b[32mINFO\u001b[0m - 随机搜索优化器初始化完成\n15:42:46 - \u001b[32mINFO\u001b[0m - 超参数优化器初始化完成，方法: random_search\n15:42:46 - \u001b[32mINFO\u001b[0m - 深度学习命令集初始化完成\n15:42:46 - \u001b[32mINFO\u001b[0m - CLI处理器初始化完成\n15:42:46 - \u001b[32mINFO\u001b[0m - CLI体验增强器初始化完成\n15:42:46 - \u001b[32mINFO\u001b[0m - 命令适配器初始化完成\n15:42:46 - \u001b[32mINFO\u001b[0m - API适配器初始化完成\n15:42:46 - \u001b[32mINFO\u001b[0m - 系统集成器初始化完成\n15:42:46 - \u001b[32mINFO\u001b[0m - 命令注册表初始化完成\n15:42:46 - \u001b[32mINFO\u001b[0m - 数据转换器初始化完成\n15:42:46 - \u001b[32mINFO\u001b[0m - 迁移工具初始化完成\n15:42:46 - \u001b[32mINFO\u001b[0m - 配置管理器初始化完成\n15:42:46 - \u001b[32mINFO\u001b[0m - 异常处理器初始化完成\n15:42:46 - \u001b[32mINFO\u001b[0m - 依赖注入器初始化完成\n15:42:46 - \u001b[32mINFO\u001b[0m - 模型池初始化完成，最大容量: 10\n15:42:46 - \u001b[32mINFO\u001b[0m - 预测调度器初始化完成，工作线程数: 4\n15:42:46 - \u001b[32mINFO\u001b[0m - 预测调度器已启动\n15:42:46 - \u001b[32mINFO\u001b[0m - 预测引擎初始化完成\n15:42:46 - \u001b[32mINFO\u001b[0m - 结果格式化器初始化完成\n15:42:46 - \u001b[32mINFO\u001b[0m - 结果分析器初始化完成\n15:42:46 - \u001b[32mINFO\u001b[0m - 结果处理器初始化完成\n15:42:46 - \u001b[32mINFO\u001b[0m - 置信度计算器初始化完成\n15:42:46 - \u001b[32mINFO\u001b[0m - 预测缓存初始化完成，策略: lru\n15:42:46 - \u001b[32mINFO\u001b[0m - Plotly可视化器初始化完成\n15:42:46 - \u001b[32mINFO\u001b[0m - 交互式可视化器初始化完成，使用后端: plotly\n15:42:46 - \u001b[32mINFO\u001b[0m - 仪表板管理器初始化完成\n15:42:46 - \u001b[32mINFO\u001b[0m - HTML报告构建器初始化完成\n15:42:46 - \u001b[32mINFO\u001b[0m - Markdown报告构建器初始化完成\n15:42:46 - \u001b[32mINFO\u001b[0m - Plotly可视化器初始化完成\n15:42:46 - \u001b[32mINFO\u001b[0m - 交互式可视化器初始化完成，使用后端: plotly\n15:42:46 - \u001b[32mINFO\u001b[0m - 报告生成器初始化完成\n15:42:46 - \u001b[32mINFO\u001b[0m - 工作流执行器初始化完成，最大工作线程: 4\n15:42:46 - \u001b[32mINFO\u001b[0m - 工作流管理器初始化完成\n15:42:46 - \u001b[32mINFO\u001b[0m - 调度器已启动\n15:42:46 - \u001b[32mINFO\u001b[0m - 自动化引擎初始化完成\n15:42:46 - \u001b[32mINFO\u001b[0m - 任务调度器初始化完成，最大工作线程: 4\n15:42:46 - \u001b[32mINFO\u001b[0m - 增强功能模块加载成功\n15:42:46 - \u001b[32mINFO\u001b[0m - 配置管理器初始化完成\n15:42:46 - \u001b[32mINFO\u001b[0m - 异常处理器初始化完成\n15:42:46 - \u001b[32mINFO\u001b[0m - 数据预处理器初始化完成\n15:42:46 - \u001b[32mINFO\u001b[0m - 模型注册表初始化完成\n15:42:46 - \u001b[32mINFO\u001b[0m - 模型池初始化完成，最大容量: 10\n15:42:46 - \u001b[32mINFO\u001b[0m - 预测调度器初始化完成，工作线程数: 4\n15:42:46 - \u001b[32mINFO\u001b[0m - 预测调度器已启动\n15:42:46 - \u001b[32mINFO\u001b[0m - 预测引擎初始化完成\n15:42:46 - \u001b[32mINFO\u001b[0m - 预测缓存初始化完成，策略: lru\n15:42:46 - \u001b[32mINFO\u001b[0m - Plotly可视化器初始化完成\n15:42:46 - \u001b[32mINFO\u001b[0m - 交互式可视化器初始化完成，使用后端: plotly\n15:42:46 - \u001b[32mINFO\u001b[0m - 工作流执行器初始化完成，最大工作线程: 4\n15:42:46 - \u001b[32mINFO\u001b[0m - 工作流管理器初始化完成\n15:42:46 - \u001b[32mINFO\u001b[0m - 平台检测器初始化完成\n15:42:46 - \u001b[32mINFO\u001b[0m - 优雅降级系统初始化完成\n15:42:46 - \u001b[32mINFO\u001b[0m - 计算节点注册成功: local (localhost:0)\n15:42:46 - \u001b[32mINFO\u001b[0m - 分布式计算管理器初始化完成\n15:42:46 - \u001b[32mINFO\u001b[0m - 增强版大乐透预测系统初始化完成\nOK - 增强功能模块已启用\n15:42:46 - \u001b[32mINFO\u001b[0m - OK - 增强功能已集成到主系统\n 加载预测器模块...\n15:42:46 - \u001b[32mINFO\u001b[0m - 开始缓存系统迁移...\n15:42:46 - \u001b[32mINFO\u001b[0m - 清理旧缓存: 2 个文件\n15:42:46 - \u001b[32mINFO\u001b[0m - 清理缓存完成，删除 0 个缓存项\n15:42:46 - \u001b[32mINFO\u001b[0m - 智能缓存系统已准备就绪\n15:42:46 - \u001b[32mINFO\u001b[0m - 缓存兼容层创建成功\n15:42:46 - \u001b[32mINFO\u001b[0m - 缓存系统迁移完成\n15:42:46 - \u001b[32mINFO\u001b[0m - 智能缓存系统已启用\n15:42:46 - \u001b[32mINFO\u001b[0m - 平台检测器初始化完成\n15:42:46 - \u001b[32mINFO\u001b[0m - 未检测到GPU设备或GPU不可用\nBuild Dependencies:\n  blas:\n    detection method: pkgconfig\n    found: true\n    include directory: /opt/arm64-builds/include\n    lib directory: /opt/arm64-builds/lib\n    name: openblas64\n    openblas configuration: USE_64BITINT=1 DYNAMIC_ARCH=1 DYNAMIC_OLDER= NO_CBLAS=\n      NO_LAPACK= NO_LAPACKE= NO_AFFINITY=1 USE_OPENMP= SANDYBRIDGE MAX_THREADS=3\n    pc file directory: /usr/local/lib/pkgconfig\n    version: 0.3.23.dev\n  lapack:\n    detection method: internal\n    found: true\n    include directory: unknown\n    lib directory: unknown\n    name: dep4333629152\n    openblas configuration: unknown\n    pc file directory: unknown\n    version: 1.26.4\nCompilers:\n  c:\n    args: -fno-strict-aliasing, -DBLAS_SYMBOL_SUFFIX=64_, -DHAVE_BLAS_ILP64\n    commands: cc\n    linker: ld64\n    linker args: -fno-strict-aliasing, -DBLAS_SYMBOL_SUFFIX=64_, -DHAVE_BLAS_ILP64\n    name: clang\n    version: 14.0.0\n  c++:\n    args: -DBLAS_SYMBOL_SUFFIX=64_, -DHAVE_BLAS_ILP64\n    commands: c++\n    linker: ld64\n    linker args: -DBLAS_SYMBOL_SUFFIX=64_, -DHAVE_BLAS_ILP64\n    name: clang\n    version: 14.0.0\n  cython:\n    commands: cython\n    linker: cython\n    name: cython\n    version: 3.0.8\nMachine Information:\n  build:\n    cpu: aarch64\n    endian: little\n    family: aarch64\n    system: darwin\n  host:\n    cpu: aarch64\n    endian: little\n    family: aarch64\n    system: darwin\nPython Information:\n  path: /private/var/folders/76/zy5ktkns50v6gt5g8r0sf6sc0000gn/T/cibw-run-rlaq62oz/cp39-macosx_arm64/build/venv/bin/python\n  version: '3.9'\nSIMD Extensions:\n  baseline:\n  - NEON\n  - NEON_FP16\n  - NEON_VFPV4\n  - ASIMD\n  found:\n  - ASIMDHP\n  not found:\n  - ASIMDFHM\n\n15:42:46 - \u001b[32mINFO\u001b[0m - 平台检测完成: macOS 15.6.1 (arm64)\nBuild Dependencies:\n  blas:\n    detection method: pkgconfig\n    found: true\n    include directory: /opt/arm64-builds/include\n    lib directory: /opt/arm64-builds/lib\n    name: openblas64\n    openblas configuration: USE_64BITINT=1 DYNAMIC_ARCH=1 DYNAMIC_OLDER= NO_CBLAS=\n      NO_LAPACK= NO_LAPACKE= NO_AFFINITY=1 USE_OPENMP= SANDYBRIDGE MAX_THREADS=3\n    pc file directory: /usr/local/lib/pkgconfig\n    version: 0.3.23.dev\n  lapack:\n    detection method: internal\n    found: true\n    include directory: unknown\n    lib directory: unknown\n    name: dep4333629152\n    openblas configuration: unknown\n    pc file directory: unknown\n    version: 1.26.4\nCompilers:\n  c:\n    args: -fno-strict-aliasing, -DBLAS_SYMBOL_SUFFIX=64_, -DHAVE_BLAS_ILP64\n    commands: cc\n    linker: ld64\n    linker args: -fno-strict-aliasing, -DBLAS_SYMBOL_SUFFIX=64_, -DHAVE_BLAS_ILP64\n    name: clang\n    version: 14.0.0\n  c++:\n    args: -DBLAS_SYMBOL_SUFFIX=64_, -DHAVE_BLAS_ILP64\n    commands: c++\n    linker: ld64\n    linker args: -DBLAS_SYMBOL_SUFFIX=64_, -DHAVE_BLAS_ILP64\n    name: clang\n    version: 14.0.0\n  cython:\n    commands: cython\n    linker: cython\n    name: cython\n    version: 3.0.8\nMachine Information:\n  build:\n    cpu: aarch64\n    endian: little\n    family: aarch64\n    system: darwin\n  host:\n    cpu: aarch64\n    endian: little\n    family: aarch64\n    system: darwin\nPython Information:\n  path: /private/var/folders/76/zy5ktkns50v6gt5g8r0sf6sc0000gn/T/cibw-run-rlaq62oz/cp39-macosx_arm64/build/venv/bin/python\n  version: '3.9'\nSIMD Extensions:\n  baseline:\n  - NEON\n  - NEON_FP16\n  - NEON_VFPV4\n  - ASIMD\n  found:\n  - ASIMDHP\n  not found:\n  - ASIMDFHM\n\n15:42:46 - \u001b[32mINFO\u001b[0m - 增强硬件加速器初始化完成\n15:42:46 - \u001b[32mINFO\u001b[0m - 硬件检测完成: CPU 10核, 内存 32GB\nACCELERATE 加速配置: cpu_multi\nCPU CPU多线程: -1 线程\n 开始markov预测 (分析期数: 100, 生成注数: 1)...\n15:42:46 - \u001b[32mINFO\u001b[0m - 开始马尔可夫链预测: 注数=1, 分析期数=100\n15:42:46 - \u001b[32mINFO\u001b[0m - 马尔可夫链预测完成，生成1注预测\nOK 预测完成!\n\n 预测结果:\n  第 1 注: 01 08 15 31 35 + 01 11 (方法: markov, 置信度: 0.500)\n",
+      "stderr": "/Users/linshibo/GithubProject/dlt/enhanced_deep_learning/platform/platform_detector.py:215: UserWarning: pkg_resources is deprecated as an API. See https://setuptools.pypa.io/en/latest/pkg_resources.html. The pkg_resources package is slated for removal as early as 2025-11-30. Refrain from using this package or pin to Setuptools<81.\n  import pkg_resources\n"
+    },
+    "latest_draw": {
+      "issue": 25109,
+      "date": "2025-09-22",
+      "front_balls": "04,08,10,13,26",
+      "back_balls": "09,10",
+      "front_balls_list": [
+        4,
+        8,
+        10,
+        13,
+        26
+      ],
+      "back_balls_list": [
+        9,
+        10
+      ],
+      "date_obj": "2025-09-22 00:00:00"
+    },
+    "execution_time": 6.8767170906066895,
+    "timestamp": "2025-09-26T15:42:47.294829",
+    "predictions_analysis": [
+      {
+        "prediction_index": 1,
+        "prediction": {
+          "front_balls": "01,08,15,31,35",
+          "back_balls": "01,11",
+          "front_balls_list": [
+            1,
+            8,
+            15,
+            31,
+            35
+          ],
+          "back_balls_list": [
+            1,
+            11
+          ],
+          "raw_line": "第 1 注: 01 08 15 31 35 + 01 11 (方法: markov, 置信度: 0.500)",
+          "pattern_used": 0
+        },
+        "winning_result": {
+          "is_winning": true,
+          "prize_level": 9,
+          "prize_name": "九等奖",
+          "front_matches": 1,
+          "back_matches": 0,
+          "match_combination": "1+0",
+          "predicted_front": [
+            1,
+            8,
+            15,
+            31,
+            35
+          ],
+          "predicted_back": [
+            1,
+            11
+          ],
+          "winning_front": [
+            4,
+            8,
+            10,
+            13,
+            26
+          ],
+          "winning_back": [
+            9,
+            10
+          ],
+          "matched_front_numbers": [
+            8
+          ],
+          "matched_back_numbers": []
+        }
+      }
+    ],
+    "winnings": [
+      {
+        "prediction_index": 1,
+        "prize_level": 9,
+        "prize_name": "九等奖",
+        "match_combination": "1+0",
+        "predicted_front": [
+          1,
+          8,
+          15,
+          31,
+          35
+        ],
+        "predicted_back": [
+          1,
+          11
+        ],
+        "matched_front_numbers": [
+          8
+        ],
+        "matched_back_numbers": [],
+        "front_matches": 1,
+        "back_matches": 0
+      }
+    ],
+    "prize_statistics": {
+      "9": {
+        "name": "九等奖",
+        "count": 1
+      }
+    },
+    "total_predictions": 1,
+    "winning_predictions": 1,
+    "winning_rate": 1.0,
+    "best_prize_level": 9,
+    "is_winning": true,
+    "is_major_prize": false,
+    "prize_level": 9,
+    "total_prize_levels": 1
+  },
+  {
+    "success": true,
+    "test_case": {
+      "method": "markov",
+      "periods": 100,
+      "count": 2,
+      "strategy": "quick",
+      "priority": "normal"
+    },
+    "prediction_result": {
+      "success": true,
+      "method": "markov",
+      "periods": 100,
+      "count": 2,
+      "execution_time": 6.84931206703186,
+      "command": "/Users/linshibo/.codebuddy/bin/python /Users/linshibo/GithubProject/dlt/dlt_main.py predict -m markov -p 100 -c 2",
+      "timestamp": 1758872567.550851,
+      "predictions": [
+        {
+          "front_balls": "01,21,29,30,33",
+          "back_balls": "02,04",
+          "front_balls_list": [
+            1,
+            21,
+            29,
+            30,
+            33
+          ],
+          "back_balls_list": [
+            2,
+            4
+          ],
+          "raw_line": "第 1 注: 01 21 29 30 33 + 02 04 (方法: markov, 置信度: 0.500)",
+          "pattern_used": 0
+        },
+        {
+          "front_balls": "01,03,09,15,18",
+          "back_balls": "05,08",
+          "front_balls_list": [
+            1,
+            3,
+            9,
+            15,
+            18
+          ],
+          "back_balls_list": [
+            5,
+            8
+          ],
+          "raw_line": "第 2 注: 01 03 09 15 18 + 05 08 (方法: markov, 置信度: 0.500)",
+          "pattern_used": 0
+        }
+      ],
+      "prediction_count": 2,
+      "stdout": "✅ 从缓存加载数据: 2781 期\n[INFO] 使用CPU计算\n[OK] GPU加速模块已加载\n15:42:45 - \u001b[32mINFO\u001b[0m - 配置管理器初始化完成\n15:42:45 - \u001b[32mINFO\u001b[0m - 计算节点注册成功: local (localhost:0)\n15:42:45 - \u001b[32mINFO\u001b[0m - 分布式计算管理器初始化完成\n15:42:45 - \u001b[32mINFO\u001b[0m - 内存优化器初始化完成\n15:42:45 - \u001b[32mINFO\u001b[0m - IO优化器初始化完成\n15:42:45 - \u001b[32mINFO\u001b[0m - 硬件加速器初始化完成\n15:42:45 - \u001b[32mINFO\u001b[0m - 平台检测器初始化完成\n15:42:45 - \u001b[32mINFO\u001b[0m - 未检测到GPU设备或GPU不可用\nBuild Dependencies:\n  blas:\n    detection method: pkgconfig\n    found: true\n    include directory: /opt/arm64-builds/include\n    lib directory: /opt/arm64-builds/lib\n    name: openblas64\n    openblas configuration: USE_64BITINT=1 DYNAMIC_ARCH=1 DYNAMIC_OLDER= NO_CBLAS=\n      NO_LAPACK= NO_LAPACKE= NO_AFFINITY=1 USE_OPENMP= SANDYBRIDGE MAX_THREADS=3\n    pc file directory: /usr/local/lib/pkgconfig\n    version: 0.3.23.dev\n  lapack:\n    detection method: internal\n    found: true\n    include directory: unknown\n    lib directory: unknown\n    name: dep4333629152\n    openblas configuration: unknown\n    pc file directory: unknown\n    version: 1.26.4\nCompilers:\n  c:\n    args: -fno-strict-aliasing, -DBLAS_SYMBOL_SUFFIX=64_, -DHAVE_BLAS_ILP64\n    commands: cc\n    linker: ld64\n    linker args: -fno-strict-aliasing, -DBLAS_SYMBOL_SUFFIX=64_, -DHAVE_BLAS_ILP64\n    name: clang\n    version: 14.0.0\n  c++:\n    args: -DBLAS_SYMBOL_SUFFIX=64_, -DHAVE_BLAS_ILP64\n    commands: c++\n    linker: ld64\n    linker args: -DBLAS_SYMBOL_SUFFIX=64_, -DHAVE_BLAS_ILP64\n    name: clang\n    version: 14.0.0\n  cython:\n    commands: cython\n    linker: cython\n    name: cython\n    version: 3.0.8\nMachine Information:\n  build:\n    cpu: aarch64\n    endian: little\n    family: aarch64\n    system: darwin\n  host:\n    cpu: aarch64\n    endian: little\n    family: aarch64\n    system: darwin\nPython Information:\n  path: /private/var/folders/76/zy5ktkns50v6gt5g8r0sf6sc0000gn/T/cibw-run-rlaq62oz/cp39-macosx_arm64/build/venv/bin/python\n  version: '3.9'\nSIMD Extensions:\n  baseline:\n  - NEON\n  - NEON_FP16\n  - NEON_VFPV4\n  - ASIMD\n  found:\n  - ASIMDHP\n  not found:\n  - ASIMDFHM\n\n15:42:45 - \u001b[32mINFO\u001b[0m - 平台检测完成: macOS 15.6.1 (arm64)\n15:42:45 - \u001b[32mINFO\u001b[0m - 平台适配器初始化完成: windows\n15:42:45 - \u001b[32mINFO\u001b[0m - 平台适配器初始化完成: linux\n15:42:45 - \u001b[32mINFO\u001b[0m - 平台适配器初始化完成: macos\n15:42:46 - \u001b[32mINFO\u001b[0m - 优雅降级系统初始化完成\n15:42:46 - \u001b[32mINFO\u001b[0m - 兼容性测试器初始化完成\n15:42:46 - \u001b[32mINFO\u001b[0m - 跨平台安装器初始化完成\n15:42:46 - \u001b[32mINFO\u001b[0m - 模型优化器初始化完成\n15:42:46 - \u001b[32mINFO\u001b[0m - 模型注册表初始化完成\n15:42:46 - \u001b[32mINFO\u001b[0m - 模型注册成功: lstm v1.0.0\n15:42:46 - \u001b[32mINFO\u001b[0m - 模型注册成功: transformer v1.0.0\n15:42:46 - \u001b[32mINFO\u001b[0m - 模型注册成功: gan v1.0.0\n15:42:46 - \u001b[32mINFO\u001b[0m - 模型注册成功: ensemble v1.0.0\n15:42:46 - \u001b[32mINFO\u001b[0m - 默认模型注册完成\n15:42:46 - \u001b[32mINFO\u001b[0m - 资源监控器初始化完成\n15:42:46 - \u001b[32mINFO\u001b[0m - 模型量化器初始化完成，量化位数: 8\n15:42:46 - \u001b[32mINFO\u001b[0m - 模型剪枝器初始化完成，稀疏度: 0.5\n15:42:46 - \u001b[32mINFO\u001b[0m - 知识蒸馏器初始化完成，温度: 4.0, alpha: 0.7\n15:42:46 - \u001b[32mINFO\u001b[0m - 低秩分解器初始化完成，秩比例: 0.5\n15:42:46 - \u001b[32mINFO\u001b[0m - 模型压缩器初始化完成，方法: hybrid\n15:42:46 - \u001b[32mINFO\u001b[0m - 随机搜索优化器初始化完成\n15:42:46 - \u001b[32mINFO\u001b[0m - 超参数优化器初始化完成，方法: random_search\n15:42:46 - \u001b[32mINFO\u001b[0m - 深度学习命令集初始化完成\n15:42:46 - \u001b[32mINFO\u001b[0m - CLI处理器初始化完成\n15:42:46 - \u001b[32mINFO\u001b[0m - CLI体验增强器初始化完成\n15:42:46 - \u001b[32mINFO\u001b[0m - 命令适配器初始化完成\n15:42:46 - \u001b[32mINFO\u001b[0m - API适配器初始化完成\n15:42:46 - \u001b[32mINFO\u001b[0m - 系统集成器初始化完成\n15:42:46 - \u001b[32mINFO\u001b[0m - 命令注册表初始化完成\n15:42:46 - \u001b[32mINFO\u001b[0m - 数据转换器初始化完成\n15:42:46 - \u001b[32mINFO\u001b[0m - 迁移工具初始化完成\n15:42:46 - \u001b[32mINFO\u001b[0m - 配置管理器初始化完成\n15:42:46 - \u001b[32mINFO\u001b[0m - 异常处理器初始化完成\n15:42:46 - \u001b[32mINFO\u001b[0m - 依赖注入器初始化完成\n15:42:46 - \u001b[32mINFO\u001b[0m - 模型池初始化完成，最大容量: 10\n15:42:46 - \u001b[32mINFO\u001b[0m - 预测调度器初始化完成，工作线程数: 4\n15:42:46 - \u001b[32mINFO\u001b[0m - 预测调度器已启动\n15:42:46 - \u001b[32mINFO\u001b[0m - 预测引擎初始化完成\n15:42:46 - \u001b[32mINFO\u001b[0m - 结果格式化器初始化完成\n15:42:46 - \u001b[32mINFO\u001b[0m - 结果分析器初始化完成\n15:42:46 - \u001b[32mINFO\u001b[0m - 结果处理器初始化完成\n15:42:46 - \u001b[32mINFO\u001b[0m - 置信度计算器初始化完成\n15:42:46 - \u001b[32mINFO\u001b[0m - 预测缓存初始化完成，策略: lru\n15:42:46 - \u001b[32mINFO\u001b[0m - Plotly可视化器初始化完成\n15:42:46 - \u001b[32mINFO\u001b[0m - 交互式可视化器初始化完成，使用后端: plotly\n15:42:46 - \u001b[32mINFO\u001b[0m - 仪表板管理器初始化完成\n15:42:46 - \u001b[32mINFO\u001b[0m - HTML报告构建器初始化完成\n15:42:46 - \u001b[32mINFO\u001b[0m - Markdown报告构建器初始化完成\n15:42:46 - \u001b[32mINFO\u001b[0m - Plotly可视化器初始化完成\n15:42:46 - \u001b[32mINFO\u001b[0m - 交互式可视化器初始化完成，使用后端: plotly\n15:42:46 - \u001b[32mINFO\u001b[0m - 报告生成器初始化完成\n15:42:46 - \u001b[32mINFO\u001b[0m - 工作流执行器初始化完成，最大工作线程: 4\n15:42:46 - \u001b[32mINFO\u001b[0m - 工作流管理器初始化完成\n15:42:46 - \u001b[32mINFO\u001b[0m - 调度器已启动\n15:42:46 - \u001b[32mINFO\u001b[0m - 自动化引擎初始化完成\n15:42:46 - \u001b[32mINFO\u001b[0m - 任务调度器初始化完成，最大工作线程: 4\n15:42:46 - \u001b[32mINFO\u001b[0m - 增强功能模块加载成功\n15:42:46 - \u001b[32mINFO\u001b[0m - 配置管理器初始化完成\n15:42:46 - \u001b[32mINFO\u001b[0m - 异常处理器初始化完成\n15:42:46 - \u001b[32mINFO\u001b[0m - 数据预处理器初始化完成\n15:42:46 - \u001b[32mINFO\u001b[0m - 模型注册表初始化完成\n15:42:46 - \u001b[32mINFO\u001b[0m - 模型池初始化完成，最大容量: 10\n15:42:46 - \u001b[32mINFO\u001b[0m - 预测调度器初始化完成，工作线程数: 4\n15:42:46 - \u001b[32mINFO\u001b[0m - 预测调度器已启动\n15:42:46 - \u001b[32mINFO\u001b[0m - 预测引擎初始化完成\n15:42:46 - \u001b[32mINFO\u001b[0m - 预测缓存初始化完成，策略: lru\n15:42:46 - \u001b[32mINFO\u001b[0m - Plotly可视化器初始化完成\n15:42:46 - \u001b[32mINFO\u001b[0m - 交互式可视化器初始化完成，使用后端: plotly\n15:42:46 - \u001b[32mINFO\u001b[0m - 工作流执行器初始化完成，最大工作线程: 4\n15:42:46 - \u001b[32mINFO\u001b[0m - 工作流管理器初始化完成\n15:42:46 - \u001b[32mINFO\u001b[0m - 平台检测器初始化完成\n15:42:46 - \u001b[32mINFO\u001b[0m - 优雅降级系统初始化完成\n15:42:46 - \u001b[32mINFO\u001b[0m - 计算节点注册成功: local (localhost:0)\n15:42:46 - \u001b[32mINFO\u001b[0m - 分布式计算管理器初始化完成\n15:42:46 - \u001b[32mINFO\u001b[0m - 增强版大乐透预测系统初始化完成\nOK - 增强功能模块已启用\n15:42:46 - \u001b[32mINFO\u001b[0m - OK - 增强功能已集成到主系统\n 加载预测器模块...\n15:42:46 - \u001b[32mINFO\u001b[0m - 开始缓存系统迁移...\n15:42:46 - \u001b[32mINFO\u001b[0m - 清理旧缓存: 0 个文件\n15:42:46 - \u001b[32mINFO\u001b[0m - 清理缓存完成，删除 0 个缓存项\n15:42:46 - \u001b[32mINFO\u001b[0m - 智能缓存系统已准备就绪\n15:42:46 - \u001b[32mINFO\u001b[0m - 缓存兼容层创建成功\n15:42:46 - \u001b[32mINFO\u001b[0m - 缓存系统迁移完成\n15:42:46 - \u001b[32mINFO\u001b[0m - 智能缓存系统已启用\n15:42:46 - \u001b[32mINFO\u001b[0m - 平台检测器初始化完成\n15:42:46 - \u001b[32mINFO\u001b[0m - 未检测到GPU设备或GPU不可用\nBuild Dependencies:\n  blas:\n    detection method: pkgconfig\n    found: true\n    include directory: /opt/arm64-builds/include\n    lib directory: /opt/arm64-builds/lib\n    name: openblas64\n    openblas configuration: USE_64BITINT=1 DYNAMIC_ARCH=1 DYNAMIC_OLDER= NO_CBLAS=\n      NO_LAPACK= NO_LAPACKE= NO_AFFINITY=1 USE_OPENMP= SANDYBRIDGE MAX_THREADS=3\n    pc file directory: /usr/local/lib/pkgconfig\n    version: 0.3.23.dev\n  lapack:\n    detection method: internal\n    found: true\n    include directory: unknown\n    lib directory: unknown\n    name: dep4333629152\n    openblas configuration: unknown\n    pc file directory: unknown\n    version: 1.26.4\nCompilers:\n  c:\n    args: -fno-strict-aliasing, -DBLAS_SYMBOL_SUFFIX=64_, -DHAVE_BLAS_ILP64\n    commands: cc\n    linker: ld64\n    linker args: -fno-strict-aliasing, -DBLAS_SYMBOL_SUFFIX=64_, -DHAVE_BLAS_ILP64\n    name: clang\n    version: 14.0.0\n  c++:\n    args: -DBLAS_SYMBOL_SUFFIX=64_, -DHAVE_BLAS_ILP64\n    commands: c++\n    linker: ld64\n    linker args: -DBLAS_SYMBOL_SUFFIX=64_, -DHAVE_BLAS_ILP64\n    name: clang\n    version: 14.0.0\n  cython:\n    commands: cython\n    linker: cython\n    name: cython\n    version: 3.0.8\nMachine Information:\n  build:\n    cpu: aarch64\n    endian: little\n    family: aarch64\n    system: darwin\n  host:\n    cpu: aarch64\n    endian: little\n    family: aarch64\n    system: darwin\nPython Information:\n  path: /private/var/folders/76/zy5ktkns50v6gt5g8r0sf6sc0000gn/T/cibw-run-rlaq62oz/cp39-macosx_arm64/build/venv/bin/python\n  version: '3.9'\nSIMD Extensions:\n  baseline:\n  - NEON\n  - NEON_FP16\n  - NEON_VFPV4\n  - ASIMD\n  found:\n  - ASIMDHP\n  not found:\n  - ASIMDFHM\n\n15:42:46 - \u001b[32mINFO\u001b[0m - 平台检测完成: macOS 15.6.1 (arm64)\nBuild Dependencies:\n  blas:\n    detection method: pkgconfig\n    found: true\n    include directory: /opt/arm64-builds/include\n    lib directory: /opt/arm64-builds/lib\n    name: openblas64\n    openblas configuration: USE_64BITINT=1 DYNAMIC_ARCH=1 DYNAMIC_OLDER= NO_CBLAS=\n      NO_LAPACK= NO_LAPACKE= NO_AFFINITY=1 USE_OPENMP= SANDYBRIDGE MAX_THREADS=3\n    pc file directory: /usr/local/lib/pkgconfig\n    version: 0.3.23.dev\n  lapack:\n    detection method: internal\n    found: true\n    include directory: unknown\n    lib directory: unknown\n    name: dep4333629152\n    openblas configuration: unknown\n    pc file directory: unknown\n    version: 1.26.4\nCompilers:\n  c:\n    args: -fno-strict-aliasing, -DBLAS_SYMBOL_SUFFIX=64_, -DHAVE_BLAS_ILP64\n    commands: cc\n    linker: ld64\n    linker args: -fno-strict-aliasing, -DBLAS_SYMBOL_SUFFIX=64_, -DHAVE_BLAS_ILP64\n    name: clang\n    version: 14.0.0\n  c++:\n    args: -DBLAS_SYMBOL_SUFFIX=64_, -DHAVE_BLAS_ILP64\n    commands: c++\n    linker: ld64\n    linker args: -DBLAS_SYMBOL_SUFFIX=64_, -DHAVE_BLAS_ILP64\n    name: clang\n    version: 14.0.0\n  cython:\n    commands: cython\n    linker: cython\n    name: cython\n    version: 3.0.8\nMachine Information:\n  build:\n    cpu: aarch64\n    endian: little\n    family: aarch64\n    system: darwin\n  host:\n    cpu: aarch64\n    endian: little\n    family: aarch64\n    system: darwin\nPython Information:\n  path: /private/var/folders/76/zy5ktkns50v6gt5g8r0sf6sc0000gn/T/cibw-run-rlaq62oz/cp39-macosx_arm64/build/venv/bin/python\n  version: '3.9'\nSIMD Extensions:\n  baseline:\n  - NEON\n  - NEON_FP16\n  - NEON_VFPV4\n  - ASIMD\n  found:\n  - ASIMDHP\n  not found:\n  - ASIMDFHM\n\n15:42:46 - \u001b[32mINFO\u001b[0m - 增强硬件加速器初始化完成\n15:42:46 - \u001b[32mINFO\u001b[0m - 硬件检测完成: CPU 10核, 内存 32GB\nACCELERATE 加速配置: cpu_multi\nCPU CPU多线程: -1 线程\n 开始markov预测 (分析期数: 100, 生成注数: 2)...\n15:42:46 - \u001b[32mINFO\u001b[0m - 开始马尔可夫链预测: 注数=2, 分析期数=100\n15:42:46 - \u001b[32mINFO\u001b[0m - 马尔可夫链预测完成，生成2注预测\nOK 预测完成!\n\n 预测结果:\n  第 1 注: 01 21 29 30 33 + 02 04 (方法: markov, 置信度: 0.500)\n  第 2 注: 01 03 09 15 18 + 05 08 (方法: markov, 置信度: 0.500)\n",
+      "stderr": "/Users/linshibo/GithubProject/dlt/enhanced_deep_learning/platform/platform_detector.py:215: UserWarning: pkg_resources is deprecated as an API. See https://setuptools.pypa.io/en/latest/pkg_resources.html. The pkg_resources package is slated for removal as early as 2025-11-30. Refrain from using this package or pin to Setuptools<81.\n  import pkg_resources\n"
+    },
+    "latest_draw": {
+      "issue": 25109,
+      "date": "2025-09-22",
+      "front_balls": "04,08,10,13,26",
+      "back_balls": "09,10",
+      "front_balls_list": [
+        4,
+        8,
+        10,
+        13,
+        26
+      ],
+      "back_balls_list": [
+        9,
+        10
+      ],
+      "date_obj": "2025-09-22 00:00:00"
+    },
+    "execution_time": 6.850944995880127,
+    "timestamp": "2025-09-26T15:42:47.552479",
+    "predictions_analysis": [
+      {
+        "prediction_index": 1,
+        "prediction": {
+          "front_balls": "01,21,29,30,33",
+          "back_balls": "02,04",
+          "front_balls_list": [
+            1,
+            21,
+            29,
+            30,
+            33
+          ],
+          "back_balls_list": [
+            2,
+            4
+          ],
+          "raw_line": "第 1 注: 01 21 29 30 33 + 02 04 (方法: markov, 置信度: 0.500)",
+          "pattern_used": 0
+        },
+        "winning_result": {
+          "is_winning": false,
+          "prize_level": 0,
+          "prize_name": "未中奖",
+          "front_matches": 0,
+          "back_matches": 0,
+          "match_combination": "0+0",
+          "predicted_front": [
+            1,
+            21,
+            29,
+            30,
+            33
+          ],
+          "predicted_back": [
+            2,
+            4
+          ],
+          "winning_front": [
+            4,
+            8,
+            10,
+            13,
+            26
+          ],
+          "winning_back": [
+            9,
+            10
+          ],
+          "matched_front_numbers": [],
+          "matched_back_numbers": []
+        }
+      },
+      {
+        "prediction_index": 2,
+        "prediction": {
+          "front_balls": "01,03,09,15,18",
+          "back_balls": "05,08",
+          "front_balls_list": [
+            1,
+            3,
+            9,
+            15,
+            18
+          ],
+          "back_balls_list": [
+            5,
+            8
+          ],
+          "raw_line": "第 2 注: 01 03 09 15 18 + 05 08 (方法: markov, 置信度: 0.500)",
+          "pattern_used": 0
+        },
+        "winning_result": {
+          "is_winning": false,
+          "prize_level": 0,
+          "prize_name": "未中奖",
+          "front_matches": 0,
+          "back_matches": 0,
+          "match_combination": "0+0",
+          "predicted_front": [
+            1,
+            3,
+            9,
+            15,
+            18
+          ],
+          "predicted_back": [
+            5,
+            8
+          ],
+          "winning_front": [
+            4,
+            8,
+            10,
+            13,
+            26
+          ],
+          "winning_back": [
+            9,
+            10
+          ],
+          "matched_front_numbers": [],
+          "matched_back_numbers": []
+        }
+      }
+    ],
+    "winnings": [],
+    "prize_statistics": {},
+    "total_predictions": 2,
+    "winning_predictions": 0,
+    "winning_rate": 0.0,
+    "best_prize_level": 0,
+    "is_winning": false,
+    "is_major_prize": false,
+    "prize_level": 0,
+    "total_prize_levels": 0
+  },
+  {
+    "success": true,
+    "test_case": {
+      "method": "markov",
+      "periods": 500,
+      "count": 1,
+      "strategy": "quick",
+      "priority": "normal"
+    },
+    "prediction_result": {
+      "success": true,
+      "method": "markov",
+      "periods": 500,
+      "count": 1,
+      "execution_time": 6.848293304443359,
+      "command": "/Users/linshibo/.codebuddy/bin/python /Users/linshibo/GithubProject/dlt/dlt_main.py predict -m markov -p 500 -c 1",
+      "timestamp": 1758872574.143285,
+      "predictions": [
+        {
+          "front_balls": "02,14,16,31,35",
+          "back_balls": "08,09",
+          "front_balls_list": [
+            2,
+            14,
+            16,
+            31,
+            35
+          ],
+          "back_balls_list": [
+            8,
+            9
+          ],
+          "raw_line": "第 1 注: 02 14 16 31 35 + 08 09 (方法: markov, 置信度: 0.500)",
+          "pattern_used": 0
+        }
+      ],
+      "prediction_count": 1,
+      "stdout": "[OK] 从文件加载数据: 2781 期\n[INFO] 使用CPU计算\n[OK] GPU加速模块已加载\n15:42:52 - \u001b[32mINFO\u001b[0m - 配置管理器初始化完成\n15:42:52 - \u001b[32mINFO\u001b[0m - 计算节点注册成功: local (localhost:0)\n15:42:52 - \u001b[32mINFO\u001b[0m - 分布式计算管理器初始化完成\n15:42:52 - \u001b[32mINFO\u001b[0m - 内存优化器初始化完成\n15:42:52 - \u001b[32mINFO\u001b[0m - IO优化器初始化完成\n15:42:52 - \u001b[32mINFO\u001b[0m - 硬件加速器初始化完成\n15:42:52 - \u001b[32mINFO\u001b[0m - 平台检测器初始化完成\n15:42:52 - \u001b[32mINFO\u001b[0m - 未检测到GPU设备或GPU不可用\nBuild Dependencies:\n  blas:\n    detection method: pkgconfig\n    found: true\n    include directory: /opt/arm64-builds/include\n    lib directory: /opt/arm64-builds/lib\n    name: openblas64\n    openblas configuration: USE_64BITINT=1 DYNAMIC_ARCH=1 DYNAMIC_OLDER= NO_CBLAS=\n      NO_LAPACK= NO_LAPACKE= NO_AFFINITY=1 USE_OPENMP= SANDYBRIDGE MAX_THREADS=3\n    pc file directory: /usr/local/lib/pkgconfig\n    version: 0.3.23.dev\n  lapack:\n    detection method: internal\n    found: true\n    include directory: unknown\n    lib directory: unknown\n    name: dep4333629152\n    openblas configuration: unknown\n    pc file directory: unknown\n    version: 1.26.4\nCompilers:\n  c:\n    args: -fno-strict-aliasing, -DBLAS_SYMBOL_SUFFIX=64_, -DHAVE_BLAS_ILP64\n    commands: cc\n    linker: ld64\n    linker args: -fno-strict-aliasing, -DBLAS_SYMBOL_SUFFIX=64_, -DHAVE_BLAS_ILP64\n    name: clang\n    version: 14.0.0\n  c++:\n    args: -DBLAS_SYMBOL_SUFFIX=64_, -DHAVE_BLAS_ILP64\n    commands: c++\n    linker: ld64\n    linker args: -DBLAS_SYMBOL_SUFFIX=64_, -DHAVE_BLAS_ILP64\n    name: clang\n    version: 14.0.0\n  cython:\n    commands: cython\n    linker: cython\n    name: cython\n    version: 3.0.8\nMachine Information:\n  build:\n    cpu: aarch64\n    endian: little\n    family: aarch64\n    system: darwin\n  host:\n    cpu: aarch64\n    endian: little\n    family: aarch64\n    system: darwin\nPython Information:\n  path: /private/var/folders/76/zy5ktkns50v6gt5g8r0sf6sc0000gn/T/cibw-run-rlaq62oz/cp39-macosx_arm64/build/venv/bin/python\n  version: '3.9'\nSIMD Extensions:\n  baseline:\n  - NEON\n  - NEON_FP16\n  - NEON_VFPV4\n  - ASIMD\n  found:\n  - ASIMDHP\n  not found:\n  - ASIMDFHM\n\n15:42:52 - \u001b[32mINFO\u001b[0m - 平台检测完成: macOS 15.6.1 (arm64)\n15:42:52 - \u001b[32mINFO\u001b[0m - 平台适配器初始化完成: windows\n15:42:52 - \u001b[32mINFO\u001b[0m - 平台适配器初始化完成: linux\n15:42:52 - \u001b[32mINFO\u001b[0m - 平台适配器初始化完成: macos\n15:42:52 - \u001b[32mINFO\u001b[0m - 优雅降级系统初始化完成\n15:42:52 - \u001b[32mINFO\u001b[0m - 兼容性测试器初始化完成\n15:42:52 - \u001b[32mINFO\u001b[0m - 跨平台安装器初始化完成\n15:42:52 - \u001b[32mINFO\u001b[0m - 模型优化器初始化完成\n15:42:52 - \u001b[32mINFO\u001b[0m - 模型注册表初始化完成\n15:42:52 - \u001b[32mINFO\u001b[0m - 模型注册成功: lstm v1.0.0\n15:42:52 - \u001b[32mINFO\u001b[0m - 模型注册成功: transformer v1.0.0\n15:42:52 - \u001b[32mINFO\u001b[0m - 模型注册成功: gan v1.0.0\n15:42:52 - \u001b[32mINFO\u001b[0m - 模型注册成功: ensemble v1.0.0\n15:42:52 - \u001b[32mINFO\u001b[0m - 默认模型注册完成\n15:42:53 - \u001b[32mINFO\u001b[0m - 资源监控器初始化完成\n15:42:53 - \u001b[32mINFO\u001b[0m - 模型量化器初始化完成，量化位数: 8\n15:42:53 - \u001b[32mINFO\u001b[0m - 模型剪枝器初始化完成，稀疏度: 0.5\n15:42:53 - \u001b[32mINFO\u001b[0m - 知识蒸馏器初始化完成，温度: 4.0, alpha: 0.7\n15:42:53 - \u001b[32mINFO\u001b[0m - 低秩分解器初始化完成，秩比例: 0.5\n15:42:53 - \u001b[32mINFO\u001b[0m - 模型压缩器初始化完成，方法: hybrid\n15:42:53 - \u001b[32mINFO\u001b[0m - 随机搜索优化器初始化完成\n15:42:53 - \u001b[32mINFO\u001b[0m - 超参数优化器初始化完成，方法: random_search\n15:42:53 - \u001b[32mINFO\u001b[0m - 深度学习命令集初始化完成\n15:42:53 - \u001b[32mINFO\u001b[0m - CLI处理器初始化完成\n15:42:53 - \u001b[32mINFO\u001b[0m - CLI体验增强器初始化完成\n15:42:53 - \u001b[32mINFO\u001b[0m - 命令适配器初始化完成\n15:42:53 - \u001b[32mINFO\u001b[0m - API适配器初始化完成\n15:42:53 - \u001b[32mINFO\u001b[0m - 系统集成器初始化完成\n15:42:53 - \u001b[32mINFO\u001b[0m - 命令注册表初始化完成\n15:42:53 - \u001b[32mINFO\u001b[0m - 数据转换器初始化完成\n15:42:53 - \u001b[32mINFO\u001b[0m - 迁移工具初始化完成\n15:42:53 - \u001b[32mINFO\u001b[0m - 配置管理器初始化完成\n15:42:53 - \u001b[32mINFO\u001b[0m - 异常处理器初始化完成\n15:42:53 - \u001b[32mINFO\u001b[0m - 依赖注入器初始化完成\n15:42:53 - \u001b[32mINFO\u001b[0m - 模型池初始化完成，最大容量: 10\n15:42:53 - \u001b[32mINFO\u001b[0m - 预测调度器初始化完成，工作线程数: 4\n15:42:53 - \u001b[32mINFO\u001b[0m - 预测调度器已启动\n15:42:53 - \u001b[32mINFO\u001b[0m - 预测引擎初始化完成\n15:42:53 - \u001b[32mINFO\u001b[0m - 结果格式化器初始化完成\n15:42:53 - \u001b[32mINFO\u001b[0m - 结果分析器初始化完成\n15:42:53 - \u001b[32mINFO\u001b[0m - 结果处理器初始化完成\n15:42:53 - \u001b[32mINFO\u001b[0m - 置信度计算器初始化完成\n15:42:53 - \u001b[32mINFO\u001b[0m - 预测缓存初始化完成，策略: lru\n15:42:53 - \u001b[32mINFO\u001b[0m - Plotly可视化器初始化完成\n15:42:53 - \u001b[32mINFO\u001b[0m - 交互式可视化器初始化完成，使用后端: plotly\n15:42:53 - \u001b[32mINFO\u001b[0m - 仪表板管理器初始化完成\n15:42:53 - \u001b[32mINFO\u001b[0m - HTML报告构建器初始化完成\n15:42:53 - \u001b[32mINFO\u001b[0m - Markdown报告构建器初始化完成\n15:42:53 - \u001b[32mINFO\u001b[0m - Plotly可视化器初始化完成\n15:42:53 - \u001b[32mINFO\u001b[0m - 交互式可视化器初始化完成，使用后端: plotly\n15:42:53 - \u001b[32mINFO\u001b[0m - 报告生成器初始化完成\n15:42:53 - \u001b[32mINFO\u001b[0m - 工作流执行器初始化完成，最大工作线程: 4\n15:42:53 - \u001b[32mINFO\u001b[0m - 工作流管理器初始化完成\n15:42:53 - \u001b[32mINFO\u001b[0m - 调度器已启动\n15:42:53 - \u001b[32mINFO\u001b[0m - 自动化引擎初始化完成\n15:42:53 - \u001b[32mINFO\u001b[0m - 任务调度器初始化完成，最大工作线程: 4\n15:42:53 - \u001b[32mINFO\u001b[0m - 增强功能模块加载成功\n15:42:53 - \u001b[32mINFO\u001b[0m - 配置管理器初始化完成\n15:42:53 - \u001b[32mINFO\u001b[0m - 异常处理器初始化完成\n15:42:53 - \u001b[32mINFO\u001b[0m - 数据预处理器初始化完成\n15:42:53 - \u001b[32mINFO\u001b[0m - 模型注册表初始化完成\n15:42:53 - \u001b[32mINFO\u001b[0m - 模型池初始化完成，最大容量: 10\n15:42:53 - \u001b[32mINFO\u001b[0m - 预测调度器初始化完成，工作线程数: 4\n15:42:53 - \u001b[32mINFO\u001b[0m - 预测调度器已启动\n15:42:53 - \u001b[32mINFO\u001b[0m - 预测引擎初始化完成\n15:42:53 - \u001b[32mINFO\u001b[0m - 预测缓存初始化完成，策略: lru\n15:42:53 - \u001b[32mINFO\u001b[0m - Plotly可视化器初始化完成\n15:42:53 - \u001b[32mINFO\u001b[0m - 交互式可视化器初始化完成，使用后端: plotly\n15:42:53 - \u001b[32mINFO\u001b[0m - 工作流执行器初始化完成，最大工作线程: 4\n15:42:53 - \u001b[32mINFO\u001b[0m - 工作流管理器初始化完成\n15:42:53 - \u001b[32mINFO\u001b[0m - 平台检测器初始化完成\n15:42:53 - \u001b[32mINFO\u001b[0m - 优雅降级系统初始化完成\n15:42:53 - \u001b[32mINFO\u001b[0m - 计算节点注册成功: local (localhost:0)\n15:42:53 - \u001b[32mINFO\u001b[0m - 分布式计算管理器初始化完成\n15:42:53 - \u001b[32mINFO\u001b[0m - 增强版大乐透预测系统初始化完成\nOK - 增强功能模块已启用\n15:42:53 - \u001b[32mINFO\u001b[0m - OK - 增强功能已集成到主系统\n 加载预测器模块...\n15:42:53 - \u001b[32mINFO\u001b[0m - 开始缓存系统迁移...\n15:42:53 - \u001b[32mINFO\u001b[0m - 清理旧缓存: 2 个文件\n15:42:53 - \u001b[32mINFO\u001b[0m - 清理缓存完成，删除 0 个缓存项\n15:42:53 - \u001b[32mINFO\u001b[0m - 智能缓存系统已准备就绪\n15:42:53 - \u001b[32mINFO\u001b[0m - 缓存兼容层创建成功\n15:42:53 - \u001b[32mINFO\u001b[0m - 缓存系统迁移完成\n15:42:53 - \u001b[32mINFO\u001b[0m - 智能缓存系统已启用\n15:42:53 - \u001b[32mINFO\u001b[0m - 平台检测器初始化完成\n15:42:53 - \u001b[32mINFO\u001b[0m - 未检测到GPU设备或GPU不可用\nBuild Dependencies:\n  blas:\n    detection method: pkgconfig\n    found: true\n    include directory: /opt/arm64-builds/include\n    lib directory: /opt/arm64-builds/lib\n    name: openblas64\n    openblas configuration: USE_64BITINT=1 DYNAMIC_ARCH=1 DYNAMIC_OLDER= NO_CBLAS=\n      NO_LAPACK= NO_LAPACKE= NO_AFFINITY=1 USE_OPENMP= SANDYBRIDGE MAX_THREADS=3\n    pc file directory: /usr/local/lib/pkgconfig\n    version: 0.3.23.dev\n  lapack:\n    detection method: internal\n    found: true\n    include directory: unknown\n    lib directory: unknown\n    name: dep4333629152\n    openblas configuration: unknown\n    pc file directory: unknown\n    version: 1.26.4\nCompilers:\n  c:\n    args: -fno-strict-aliasing, -DBLAS_SYMBOL_SUFFIX=64_, -DHAVE_BLAS_ILP64\n    commands: cc\n    linker: ld64\n    linker args: -fno-strict-aliasing, -DBLAS_SYMBOL_SUFFIX=64_, -DHAVE_BLAS_ILP64\n    name: clang\n    version: 14.0.0\n  c++:\n    args: -DBLAS_SYMBOL_SUFFIX=64_, -DHAVE_BLAS_ILP64\n    commands: c++\n    linker: ld64\n    linker args: -DBLAS_SYMBOL_SUFFIX=64_, -DHAVE_BLAS_ILP64\n    name: clang\n    version: 14.0.0\n  cython:\n    commands: cython\n    linker: cython\n    name: cython\n    version: 3.0.8\nMachine Information:\n  build:\n    cpu: aarch64\n    endian: little\n    family: aarch64\n    system: darwin\n  host:\n    cpu: aarch64\n    endian: little\n    family: aarch64\n    system: darwin\nPython Information:\n  path: /private/var/folders/76/zy5ktkns50v6gt5g8r0sf6sc0000gn/T/cibw-run-rlaq62oz/cp39-macosx_arm64/build/venv/bin/python\n  version: '3.9'\nSIMD Extensions:\n  baseline:\n  - NEON\n  - NEON_FP16\n  - NEON_VFPV4\n  - ASIMD\n  found:\n  - ASIMDHP\n  not found:\n  - ASIMDFHM\n\n15:42:53 - \u001b[32mINFO\u001b[0m - 平台检测完成: macOS 15.6.1 (arm64)\nBuild Dependencies:\n  blas:\n    detection method: pkgconfig\n    found: true\n    include directory: /opt/arm64-builds/include\n    lib directory: /opt/arm64-builds/lib\n    name: openblas64\n    openblas configuration: USE_64BITINT=1 DYNAMIC_ARCH=1 DYNAMIC_OLDER= NO_CBLAS=\n      NO_LAPACK= NO_LAPACKE= NO_AFFINITY=1 USE_OPENMP= SANDYBRIDGE MAX_THREADS=3\n    pc file directory: /usr/local/lib/pkgconfig\n    version: 0.3.23.dev\n  lapack:\n    detection method: internal\n    found: true\n    include directory: unknown\n    lib directory: unknown\n    name: dep4333629152\n    openblas configuration: unknown\n    pc file directory: unknown\n    version: 1.26.4\nCompilers:\n  c:\n    args: -fno-strict-aliasing, -DBLAS_SYMBOL_SUFFIX=64_, -DHAVE_BLAS_ILP64\n    commands: cc\n    linker: ld64\n    linker args: -fno-strict-aliasing, -DBLAS_SYMBOL_SUFFIX=64_, -DHAVE_BLAS_ILP64\n    name: clang\n    version: 14.0.0\n  c++:\n    args: -DBLAS_SYMBOL_SUFFIX=64_, -DHAVE_BLAS_ILP64\n    commands: c++\n    linker: ld64\n    linker args: -DBLAS_SYMBOL_SUFFIX=64_, -DHAVE_BLAS_ILP64\n    name: clang\n    version: 14.0.0\n  cython:\n    commands: cython\n    linker: cython\n    name: cython\n    version: 3.0.8\nMachine Information:\n  build:\n    cpu: aarch64\n    endian: little\n    family: aarch64\n    system: darwin\n  host:\n    cpu: aarch64\n    endian: little\n    family: aarch64\n    system: darwin\nPython Information:\n  path: /private/var/folders/76/zy5ktkns50v6gt5g8r0sf6sc0000gn/T/cibw-run-rlaq62oz/cp39-macosx_arm64/build/venv/bin/python\n  version: '3.9'\nSIMD Extensions:\n  baseline:\n  - NEON\n  - NEON_FP16\n  - NEON_VFPV4\n  - ASIMD\n  found:\n  - ASIMDHP\n  not found:\n  - ASIMDFHM\n\n15:42:53 - \u001b[32mINFO\u001b[0m - 增强硬件加速器初始化完成\n15:42:53 - \u001b[32mINFO\u001b[0m - 硬件检测完成: CPU 10核, 内存 32GB\nACCELERATE 加速配置: cpu_multi\nCPU CPU多线程: -1 线程\n 开始markov预测 (分析期数: 500, 生成注数: 1)...\n15:42:53 - \u001b[32mINFO\u001b[0m - 开始马尔可夫链预测: 注数=1, 分析期数=500\n15:42:53 - \u001b[32mINFO\u001b[0m - 马尔可夫链预测完成，生成1注预测\nOK 预测完成!\n\n 预测结果:\n  第 1 注: 02 14 16 31 35 + 08 09 (方法: markov, 置信度: 0.500)\n",
+      "stderr": "/Users/linshibo/GithubProject/dlt/enhanced_deep_learning/platform/platform_detector.py:215: UserWarning: pkg_resources is deprecated as an API. See https://setuptools.pypa.io/en/latest/pkg_resources.html. The pkg_resources package is slated for removal as early as 2025-11-30. Refrain from using this package or pin to Setuptools<81.\n  import pkg_resources\n"
+    },
+    "latest_draw": {
+      "issue": 25109,
+      "date": "2025-09-22",
+      "front_balls": "04,08,10,13,26",
+      "back_balls": "09,10",
+      "front_balls_list": [
+        4,
+        8,
+        10,
+        13,
+        26
+      ],
+      "back_balls_list": [
+        9,
+        10
+      ],
+      "date_obj": "2025-09-22 00:00:00"
+    },
+    "execution_time": 6.849914073944092,
+    "timestamp": "2025-09-26T15:42:54.144902",
+    "predictions_analysis": [
+      {
+        "prediction_index": 1,
+        "prediction": {
+          "front_balls": "02,14,16,31,35",
+          "back_balls": "08,09",
+          "front_balls_list": [
+            2,
+            14,
+            16,
+            31,
+            35
+          ],
+          "back_balls_list": [
+            8,
+            9
+          ],
+          "raw_line": "第 1 注: 02 14 16 31 35 + 08 09 (方法: markov, 置信度: 0.500)",
+          "pattern_used": 0
+        },
+        "winning_result": {
+          "is_winning": true,
+          "prize_level": 9,
+          "prize_name": "九等奖",
+          "front_matches": 0,
+          "back_matches": 1,
+          "match_combination": "0+1",
+          "predicted_front": [
+            2,
+            14,
+            16,
+            31,
+            35
+          ],
+          "predicted_back": [
+            8,
+            9
+          ],
+          "winning_front": [
+            4,
+            8,
+            10,
+            13,
+            26
+          ],
+          "winning_back": [
+            9,
+            10
+          ],
+          "matched_front_numbers": [],
+          "matched_back_numbers": [
+            9
+          ]
+        }
+      }
+    ],
+    "winnings": [
+      {
+        "prediction_index": 1,
+        "prize_level": 9,
+        "prize_name": "九等奖",
+        "match_combination": "0+1",
+        "predicted_front": [
+          2,
+          14,
+          16,
+          31,
+          35
+        ],
+        "predicted_back": [
+          8,
+          9
+        ],
+        "matched_front_numbers": [],
+        "matched_back_numbers": [
+          9
+        ],
+        "front_matches": 0,
+        "back_matches": 1
+      }
+    ],
+    "prize_statistics": {
+      "9": {
+        "name": "九等奖",
+        "count": 1
+      }
+    },
+    "total_predictions": 1,
+    "winning_predictions": 1,
+    "winning_rate": 1.0,
+    "best_prize_level": 9,
+    "is_winning": true,
+    "is_major_prize": false,
+    "prize_level": 9,
+    "total_prize_levels": 1
+  },
+  {
+    "success": true,
+    "test_case": {
+      "method": "markov",
+      "periods": 500,
+      "count": 2,
+      "strategy": "quick",
+      "priority": "normal"
+    },
+    "prediction_result": {
+      "success": true,
+      "method": "markov",
+      "periods": 500,
+      "count": 2,
+      "execution_time": 7.121786832809448,
+      "command": "/Users/linshibo/.codebuddy/bin/python /Users/linshibo/GithubProject/dlt/dlt_main.py predict -m markov -p 500 -c 2",
+      "timestamp": 1758872574.67437,
+      "predictions": [
+        {
+          "front_balls": "07,11,13,18,35",
+          "back_balls": "06,08",
+          "front_balls_list": [
+            7,
+            11,
+            13,
+            18,
+            35
+          ],
+          "back_balls_list": [
+            6,
+            8
+          ],
+          "raw_line": "第 1 注: 07 11 13 18 35 + 06 08 (方法: markov, 置信度: 0.500)",
+          "pattern_used": 0
+        },
+        {
+          "front_balls": "14,15,16,20,25",
+          "back_balls": "01,08",
+          "front_balls_list": [
+            14,
+            15,
+            16,
+            20,
+            25
+          ],
+          "back_balls_list": [
+            1,
+            8
+          ],
+          "raw_line": "第 2 注: 14 15 16 20 25 + 01 08 (方法: markov, 置信度: 0.500)",
+          "pattern_used": 0
+        }
+      ],
+      "prediction_count": 2,
+      "stdout": "✅ 从缓存加载数据: 2781 期\n[INFO] 使用CPU计算\n[OK] GPU加速模块已加载\n15:42:52 - \u001b[32mINFO\u001b[0m - 配置管理器初始化完成\n15:42:52 - \u001b[32mINFO\u001b[0m - 计算节点注册成功: local (localhost:0)\n15:42:52 - \u001b[32mINFO\u001b[0m - 分布式计算管理器初始化完成\n15:42:52 - \u001b[32mINFO\u001b[0m - 内存优化器初始化完成\n15:42:52 - \u001b[32mINFO\u001b[0m - IO优化器初始化完成\n15:42:52 - \u001b[32mINFO\u001b[0m - 硬件加速器初始化完成\n15:42:52 - \u001b[32mINFO\u001b[0m - 平台检测器初始化完成\n15:42:52 - \u001b[32mINFO\u001b[0m - 未检测到GPU设备或GPU不可用\nBuild Dependencies:\n  blas:\n    detection method: pkgconfig\n    found: true\n    include directory: /opt/arm64-builds/include\n    lib directory: /opt/arm64-builds/lib\n    name: openblas64\n    openblas configuration: USE_64BITINT=1 DYNAMIC_ARCH=1 DYNAMIC_OLDER= NO_CBLAS=\n      NO_LAPACK= NO_LAPACKE= NO_AFFINITY=1 USE_OPENMP= SANDYBRIDGE MAX_THREADS=3\n    pc file directory: /usr/local/lib/pkgconfig\n    version: 0.3.23.dev\n  lapack:\n    detection method: internal\n    found: true\n    include directory: unknown\n    lib directory: unknown\n    name: dep4333629152\n    openblas configuration: unknown\n    pc file directory: unknown\n    version: 1.26.4\nCompilers:\n  c:\n    args: -fno-strict-aliasing, -DBLAS_SYMBOL_SUFFIX=64_, -DHAVE_BLAS_ILP64\n    commands: cc\n    linker: ld64\n    linker args: -fno-strict-aliasing, -DBLAS_SYMBOL_SUFFIX=64_, -DHAVE_BLAS_ILP64\n    name: clang\n    version: 14.0.0\n  c++:\n    args: -DBLAS_SYMBOL_SUFFIX=64_, -DHAVE_BLAS_ILP64\n    commands: c++\n    linker: ld64\n    linker args: -DBLAS_SYMBOL_SUFFIX=64_, -DHAVE_BLAS_ILP64\n    name: clang\n    version: 14.0.0\n  cython:\n    commands: cython\n    linker: cython\n    name: cython\n    version: 3.0.8\nMachine Information:\n  build:\n    cpu: aarch64\n    endian: little\n    family: aarch64\n    system: darwin\n  host:\n    cpu: aarch64\n    endian: little\n    family: aarch64\n    system: darwin\nPython Information:\n  path: /private/var/folders/76/zy5ktkns50v6gt5g8r0sf6sc0000gn/T/cibw-run-rlaq62oz/cp39-macosx_arm64/build/venv/bin/python\n  version: '3.9'\nSIMD Extensions:\n  baseline:\n  - NEON\n  - NEON_FP16\n  - NEON_VFPV4\n  - ASIMD\n  found:\n  - ASIMDHP\n  not found:\n  - ASIMDFHM\n\n15:42:52 - \u001b[32mINFO\u001b[0m - 平台检测完成: macOS 15.6.1 (arm64)\n15:42:52 - \u001b[32mINFO\u001b[0m - 平台适配器初始化完成: windows\n15:42:52 - \u001b[32mINFO\u001b[0m - 平台适配器初始化完成: linux\n15:42:52 - \u001b[32mINFO\u001b[0m - 平台适配器初始化完成: macos\n15:42:53 - \u001b[32mINFO\u001b[0m - 优雅降级系统初始化完成\n15:42:53 - \u001b[32mINFO\u001b[0m - 兼容性测试器初始化完成\n15:42:53 - \u001b[32mINFO\u001b[0m - 跨平台安装器初始化完成\n15:42:53 - \u001b[32mINFO\u001b[0m - 模型优化器初始化完成\n15:42:53 - \u001b[32mINFO\u001b[0m - 模型注册表初始化完成\n15:42:53 - \u001b[32mINFO\u001b[0m - 模型注册成功: lstm v1.0.0\n15:42:53 - \u001b[32mINFO\u001b[0m - 模型注册成功: transformer v1.0.0\n15:42:53 - \u001b[32mINFO\u001b[0m - 模型注册成功: gan v1.0.0\n15:42:53 - \u001b[32mINFO\u001b[0m - 模型注册成功: ensemble v1.0.0\n15:42:53 - \u001b[32mINFO\u001b[0m - 默认模型注册完成\n15:42:53 - \u001b[32mINFO\u001b[0m - 资源监控器初始化完成\n15:42:53 - \u001b[32mINFO\u001b[0m - 模型量化器初始化完成，量化位数: 8\n15:42:53 - \u001b[32mINFO\u001b[0m - 模型剪枝器初始化完成，稀疏度: 0.5\n15:42:53 - \u001b[32mINFO\u001b[0m - 知识蒸馏器初始化完成，温度: 4.0, alpha: 0.7\n15:42:53 - \u001b[32mINFO\u001b[0m - 低秩分解器初始化完成，秩比例: 0.5\n15:42:53 - \u001b[32mINFO\u001b[0m - 模型压缩器初始化完成，方法: hybrid\n15:42:53 - \u001b[32mINFO\u001b[0m - 随机搜索优化器初始化完成\n15:42:53 - \u001b[32mINFO\u001b[0m - 超参数优化器初始化完成，方法: random_search\n15:42:53 - \u001b[32mINFO\u001b[0m - 深度学习命令集初始化完成\n15:42:53 - \u001b[32mINFO\u001b[0m - CLI处理器初始化完成\n15:42:53 - \u001b[32mINFO\u001b[0m - CLI体验增强器初始化完成\n15:42:53 - \u001b[32mINFO\u001b[0m - 命令适配器初始化完成\n15:42:53 - \u001b[32mINFO\u001b[0m - API适配器初始化完成\n15:42:53 - \u001b[32mINFO\u001b[0m - 系统集成器初始化完成\n15:42:53 - \u001b[32mINFO\u001b[0m - 命令注册表初始化完成\n15:42:53 - \u001b[32mINFO\u001b[0m - 数据转换器初始化完成\n15:42:53 - \u001b[32mINFO\u001b[0m - 迁移工具初始化完成\n15:42:53 - \u001b[32mINFO\u001b[0m - 配置管理器初始化完成\n15:42:53 - \u001b[32mINFO\u001b[0m - 异常处理器初始化完成\n15:42:53 - \u001b[32mINFO\u001b[0m - 依赖注入器初始化完成\n15:42:53 - \u001b[32mINFO\u001b[0m - 模型池初始化完成，最大容量: 10\n15:42:53 - \u001b[32mINFO\u001b[0m - 预测调度器初始化完成，工作线程数: 4\n15:42:53 - \u001b[32mINFO\u001b[0m - 预测调度器已启动\n15:42:53 - \u001b[32mINFO\u001b[0m - 预测引擎初始化完成\n15:42:53 - \u001b[32mINFO\u001b[0m - 结果格式化器初始化完成\n15:42:53 - \u001b[32mINFO\u001b[0m - 结果分析器初始化完成\n15:42:53 - \u001b[32mINFO\u001b[0m - 结果处理器初始化完成\n15:42:53 - \u001b[32mINFO\u001b[0m - 置信度计算器初始化完成\n15:42:53 - \u001b[32mINFO\u001b[0m - 预测缓存初始化完成，策略: lru\n15:42:53 - \u001b[32mINFO\u001b[0m - Plotly可视化器初始化完成\n15:42:53 - \u001b[32mINFO\u001b[0m - 交互式可视化器初始化完成，使用后端: plotly\n15:42:53 - \u001b[32mINFO\u001b[0m - 仪表板管理器初始化完成\n15:42:53 - \u001b[32mINFO\u001b[0m - HTML报告构建器初始化完成\n15:42:53 - \u001b[32mINFO\u001b[0m - Markdown报告构建器初始化完成\n15:42:53 - \u001b[32mINFO\u001b[0m - Plotly可视化器初始化完成\n15:42:53 - \u001b[32mINFO\u001b[0m - 交互式可视化器初始化完成，使用后端: plotly\n15:42:53 - \u001b[32mINFO\u001b[0m - 报告生成器初始化完成\n15:42:53 - \u001b[32mINFO\u001b[0m - 工作流执行器初始化完成，最大工作线程: 4\n15:42:53 - \u001b[32mINFO\u001b[0m - 工作流管理器初始化完成\n15:42:53 - \u001b[32mINFO\u001b[0m - 调度器已启动\n15:42:53 - \u001b[32mINFO\u001b[0m - 自动化引擎初始化完成\n15:42:53 - \u001b[32mINFO\u001b[0m - 任务调度器初始化完成，最大工作线程: 4\n15:42:53 - \u001b[32mINFO\u001b[0m - 增强功能模块加载成功\n15:42:53 - \u001b[32mINFO\u001b[0m - 配置管理器初始化完成\n15:42:53 - \u001b[32mINFO\u001b[0m - 异常处理器初始化完成\n15:42:53 - \u001b[32mINFO\u001b[0m - 数据预处理器初始化完成\n15:42:53 - \u001b[32mINFO\u001b[0m - 模型注册表初始化完成\n15:42:53 - \u001b[32mINFO\u001b[0m - 模型池初始化完成，最大容量: 10\n15:42:53 - \u001b[32mINFO\u001b[0m - 预测调度器初始化完成，工作线程数: 4\n15:42:53 - \u001b[32mINFO\u001b[0m - 预测调度器已启动\n15:42:53 - \u001b[32mINFO\u001b[0m - 预测引擎初始化完成\n15:42:53 - \u001b[32mINFO\u001b[0m - 预测缓存初始化完成，策略: lru\n15:42:53 - \u001b[32mINFO\u001b[0m - Plotly可视化器初始化完成\n15:42:53 - \u001b[32mINFO\u001b[0m - 交互式可视化器初始化完成，使用后端: plotly\n15:42:53 - \u001b[32mINFO\u001b[0m - 工作流执行器初始化完成，最大工作线程: 4\n15:42:53 - \u001b[32mINFO\u001b[0m - 工作流管理器初始化完成\n15:42:53 - \u001b[32mINFO\u001b[0m - 平台检测器初始化完成\n15:42:53 - \u001b[32mINFO\u001b[0m - 优雅降级系统初始化完成\n15:42:53 - \u001b[32mINFO\u001b[0m - 计算节点注册成功: local (localhost:0)\n15:42:53 - \u001b[32mINFO\u001b[0m - 分布式计算管理器初始化完成\n15:42:53 - \u001b[32mINFO\u001b[0m - 增强版大乐透预测系统初始化完成\nOK - 增强功能模块已启用\n15:42:53 - \u001b[32mINFO\u001b[0m - OK - 增强功能已集成到主系统\n 加载预测器模块...\n15:42:53 - \u001b[32mINFO\u001b[0m - 开始缓存系统迁移...\n15:42:53 - \u001b[32mINFO\u001b[0m - 清理旧缓存: 0 个文件\n15:42:53 - \u001b[32mINFO\u001b[0m - 清理缓存完成，删除 0 个缓存项\n15:42:53 - \u001b[32mINFO\u001b[0m - 智能缓存系统已准备就绪\n15:42:53 - \u001b[32mINFO\u001b[0m - 缓存兼容层创建成功\n15:42:53 - \u001b[32mINFO\u001b[0m - 缓存系统迁移完成\n15:42:53 - \u001b[32mINFO\u001b[0m - 智能缓存系统已启用\n15:42:53 - \u001b[32mINFO\u001b[0m - 平台检测器初始化完成\n15:42:53 - \u001b[32mINFO\u001b[0m - 未检测到GPU设备或GPU不可用\nBuild Dependencies:\n  blas:\n    detection method: pkgconfig\n    found: true\n    include directory: /opt/arm64-builds/include\n    lib directory: /opt/arm64-builds/lib\n    name: openblas64\n    openblas configuration: USE_64BITINT=1 DYNAMIC_ARCH=1 DYNAMIC_OLDER= NO_CBLAS=\n      NO_LAPACK= NO_LAPACKE= NO_AFFINITY=1 USE_OPENMP= SANDYBRIDGE MAX_THREADS=3\n    pc file directory: /usr/local/lib/pkgconfig\n    version: 0.3.23.dev\n  lapack:\n    detection method: internal\n    found: true\n    include directory: unknown\n    lib directory: unknown\n    name: dep4333629152\n    openblas configuration: unknown\n    pc file directory: unknown\n    version: 1.26.4\nCompilers:\n  c:\n    args: -fno-strict-aliasing, -DBLAS_SYMBOL_SUFFIX=64_, -DHAVE_BLAS_ILP64\n    commands: cc\n    linker: ld64\n    linker args: -fno-strict-aliasing, -DBLAS_SYMBOL_SUFFIX=64_, -DHAVE_BLAS_ILP64\n    name: clang\n    version: 14.0.0\n  c++:\n    args: -DBLAS_SYMBOL_SUFFIX=64_, -DHAVE_BLAS_ILP64\n    commands: c++\n    linker: ld64\n    linker args: -DBLAS_SYMBOL_SUFFIX=64_, -DHAVE_BLAS_ILP64\n    name: clang\n    version: 14.0.0\n  cython:\n    commands: cython\n    linker: cython\n    name: cython\n    version: 3.0.8\nMachine Information:\n  build:\n    cpu: aarch64\n    endian: little\n    family: aarch64\n    system: darwin\n  host:\n    cpu: aarch64\n    endian: little\n    family: aarch64\n    system: darwin\nPython Information:\n  path: /private/var/folders/76/zy5ktkns50v6gt5g8r0sf6sc0000gn/T/cibw-run-rlaq62oz/cp39-macosx_arm64/build/venv/bin/python\n  version: '3.9'\nSIMD Extensions:\n  baseline:\n  - NEON\n  - NEON_FP16\n  - NEON_VFPV4\n  - ASIMD\n  found:\n  - ASIMDHP\n  not found:\n  - ASIMDFHM\n\n15:42:54 - \u001b[32mINFO\u001b[0m - 平台检测完成: macOS 15.6.1 (arm64)\nBuild Dependencies:\n  blas:\n    detection method: pkgconfig\n    found: true\n    include directory: /opt/arm64-builds/include\n    lib directory: /opt/arm64-builds/lib\n    name: openblas64\n    openblas configuration: USE_64BITINT=1 DYNAMIC_ARCH=1 DYNAMIC_OLDER= NO_CBLAS=\n      NO_LAPACK= NO_LAPACKE= NO_AFFINITY=1 USE_OPENMP= SANDYBRIDGE MAX_THREADS=3\n    pc file directory: /usr/local/lib/pkgconfig\n    version: 0.3.23.dev\n  lapack:\n    detection method: internal\n    found: true\n    include directory: unknown\n    lib directory: unknown\n    name: dep4333629152\n    openblas configuration: unknown\n    pc file directory: unknown\n    version: 1.26.4\nCompilers:\n  c:\n    args: -fno-strict-aliasing, -DBLAS_SYMBOL_SUFFIX=64_, -DHAVE_BLAS_ILP64\n    commands: cc\n    linker: ld64\n    linker args: -fno-strict-aliasing, -DBLAS_SYMBOL_SUFFIX=64_, -DHAVE_BLAS_ILP64\n    name: clang\n    version: 14.0.0\n  c++:\n    args: -DBLAS_SYMBOL_SUFFIX=64_, -DHAVE_BLAS_ILP64\n    commands: c++\n    linker: ld64\n    linker args: -DBLAS_SYMBOL_SUFFIX=64_, -DHAVE_BLAS_ILP64\n    name: clang\n    version: 14.0.0\n  cython:\n    commands: cython\n    linker: cython\n    name: cython\n    version: 3.0.8\nMachine Information:\n  build:\n    cpu: aarch64\n    endian: little\n    family: aarch64\n    system: darwin\n  host:\n    cpu: aarch64\n    endian: little\n    family: aarch64\n    system: darwin\nPython Information:\n  path: /private/var/folders/76/zy5ktkns50v6gt5g8r0sf6sc0000gn/T/cibw-run-rlaq62oz/cp39-macosx_arm64/build/venv/bin/python\n  version: '3.9'\nSIMD Extensions:\n  baseline:\n  - NEON\n  - NEON_FP16\n  - NEON_VFPV4\n  - ASIMD\n  found:\n  - ASIMDHP\n  not found:\n  - ASIMDFHM\n\n15:42:54 - \u001b[32mINFO\u001b[0m - 增强硬件加速器初始化完成\n15:42:54 - \u001b[32mINFO\u001b[0m - 硬件检测完成: CPU 10核, 内存 32GB\nACCELERATE 加速配置: cpu_multi\nCPU CPU多线程: -1 线程\n 开始markov预测 (分析期数: 500, 生成注数: 2)...\n15:42:54 - \u001b[32mINFO\u001b[0m - 开始马尔可夫链预测: 注数=2, 分析期数=500\n15:42:54 - \u001b[32mINFO\u001b[0m - 马尔可夫链预测完成，生成2注预测\nOK 预测完成!\n\n 预测结果:\n  第 1 注: 07 11 13 18 35 + 06 08 (方法: markov, 置信度: 0.500)\n  第 2 注: 14 15 16 20 25 + 01 08 (方法: markov, 置信度: 0.500)\n",
+      "stderr": "/Users/linshibo/GithubProject/dlt/enhanced_deep_learning/platform/platform_detector.py:215: UserWarning: pkg_resources is deprecated as an API. See https://setuptools.pypa.io/en/latest/pkg_resources.html. The pkg_resources package is slated for removal as early as 2025-11-30. Refrain from using this package or pin to Setuptools<81.\n  import pkg_resources\n"
+    },
+    "latest_draw": {
+      "issue": 25109,
+      "date": "2025-09-22",
+      "front_balls": "04,08,10,13,26",
+      "back_balls": "09,10",
+      "front_balls_list": [
+        4,
+        8,
+        10,
+        13,
+        26
+      ],
+      "back_balls_list": [
+        9,
+        10
+      ],
+      "date_obj": "2025-09-22 00:00:00"
+    },
+    "execution_time": 7.123256683349609,
+    "timestamp": "2025-09-26T15:42:54.675837",
+    "predictions_analysis": [
+      {
+        "prediction_index": 1,
+        "prediction": {
+          "front_balls": "07,11,13,18,35",
+          "back_balls": "06,08",
+          "front_balls_list": [
+            7,
+            11,
+            13,
+            18,
+            35
+          ],
+          "back_balls_list": [
+            6,
+            8
+          ],
+          "raw_line": "第 1 注: 07 11 13 18 35 + 06 08 (方法: markov, 置信度: 0.500)",
+          "pattern_used": 0
+        },
+        "winning_result": {
+          "is_winning": true,
+          "prize_level": 9,
+          "prize_name": "九等奖",
+          "front_matches": 1,
+          "back_matches": 0,
+          "match_combination": "1+0",
+          "predicted_front": [
+            7,
+            11,
+            13,
+            18,
+            35
+          ],
+          "predicted_back": [
+            6,
+            8
+          ],
+          "winning_front": [
+            4,
+            8,
+            10,
+            13,
+            26
+          ],
+          "winning_back": [
+            9,
+            10
+          ],
+          "matched_front_numbers": [
+            13
+          ],
+          "matched_back_numbers": []
+        }
+      },
+      {
+        "prediction_index": 2,
+        "prediction": {
+          "front_balls": "14,15,16,20,25",
+          "back_balls": "01,08",
+          "front_balls_list": [
+            14,
+            15,
+            16,
+            20,
+            25
+          ],
+          "back_balls_list": [
+            1,
+            8
+          ],
+          "raw_line": "第 2 注: 14 15 16 20 25 + 01 08 (方法: markov, 置信度: 0.500)",
+          "pattern_used": 0
+        },
+        "winning_result": {
+          "is_winning": false,
+          "prize_level": 0,
+          "prize_name": "未中奖",
+          "front_matches": 0,
+          "back_matches": 0,
+          "match_combination": "0+0",
+          "predicted_front": [
+            14,
+            15,
+            16,
+            20,
+            25
+          ],
+          "predicted_back": [
+            1,
+            8
+          ],
+          "winning_front": [
+            4,
+            8,
+            10,
+            13,
+            26
+          ],
+          "winning_back": [
+            9,
+            10
+          ],
+          "matched_front_numbers": [],
+          "matched_back_numbers": []
+        }
+      }
+    ],
+    "winnings": [
+      {
+        "prediction_index": 1,
+        "prize_level": 9,
+        "prize_name": "九等奖",
+        "match_combination": "1+0",
+        "predicted_front": [
+          7,
+          11,
+          13,
+          18,
+          35
+        ],
+        "predicted_back": [
+          6,
+          8
+        ],
+        "matched_front_numbers": [
+          13
+        ],
+        "matched_back_numbers": [],
+        "front_matches": 1,
+        "back_matches": 0
+      }
+    ],
+    "prize_statistics": {
+      "9": {
+        "name": "九等奖",
+        "count": 1
+      }
+    },
+    "total_predictions": 2,
+    "winning_predictions": 1,
+    "winning_rate": 0.5,
+    "best_prize_level": 9,
+    "is_winning": true,
+    "is_major_prize": false,
+    "prize_level": 9,
+    "total_prize_levels": 1
+  }
+]

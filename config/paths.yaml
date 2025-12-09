@@ -1,0 +1,86 @@
+# 大乐透智能预测系统 - 路径配置
+# 统一管理所有文件路径
+
+# 数据目录
+data:
+  root: "data"
+  historical: "data/dlt_data_all.csv"
+
+# 输出目录（统一到artifacts）
+artifacts:
+  root: "artifacts"
+
+  # 缓存
+  cache:
+    root: "artifacts/cache"
+    analysis: "artifacts/cache/analysis"
+    data: "artifacts/cache/data"
+    models: "artifacts/cache/models"
+
+  # 日志
+  logs:
+    root: "artifacts/logs"
+    app: "artifacts/logs/app.log"
+    deep_learning: "artifacts/logs/deep_learning.log"
+    errors: "artifacts/logs/errors.log"
+
+  # 模型
+  models:
+    root: "artifacts/models"
+    lstm: "artifacts/models/lstm"
+    transformer: "artifacts/models/transformer"
+    gan: "artifacts/models/gan"
+
+  # 报告
+  reports:
+    root: "artifacts/reports"
+    predictions: "artifacts/reports/predictions"
+    analysis: "artifacts/reports/analysis"
+    backtest: "artifacts/reports/backtest"
+    visualization: "artifacts/reports/visualization"
+
+# 配置目录
+config:
+  root: "config"
+  main: "config/config.json"
+  prediction: "config/prediction.yaml"
+  training: "config/training.yaml"
+  acceleration: "config/acceleration.yaml"
+  gui: "config/gui_config.json"
+
+# 后端代码目录
+backend:
+  root: "backend"
+  app: "backend/app"
+  core: "backend/app/core"
+  predictors: "backend/app/predictors"
+  analyzers: "backend/app/analyzers"
+  learning: "backend/app/learning"
+  utils: "backend/app/utils"
+  api: "backend/api"
+
+# 前端代码目录
+frontend:
+  root: "frontend"
+  streamlit: "frontend/streamlit"
+  components: "frontend/streamlit/components"
+
+# 部署目录
+deploy:
+  root: "deploy"
+  docker: "deploy/docker"
+  scripts:
+    linux: "deploy/scripts/linux"
+    windows: "deploy/scripts/windows"
+  nginx: "deploy/nginx"
+
+# 测试目录
+tests:
+  root: "tests"
+  unit: "tests/unit"
+  integration: "tests/integration"
+  predictor: "tests/predictor"
+
+# 文档目录
+docs:
+  root: "docs"

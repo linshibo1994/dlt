@@ -1,0 +1,1588 @@
+
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>大乐透预测方法测试报告</title>
+    <style>
+        body { 
+            font-family: 'Microsoft YaHei', Arial, sans-serif; 
+            margin: 20px; 
+            background-color: #f5f5f5;
+        }
+        .container { 
+            max-width: 1200px; 
+            margin: 0 auto; 
+            background: white; 
+            padding: 20px; 
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .header { 
+            text-align: center; 
+            color: #333; 
+            border-bottom: 2px solid #007acc;
+            padding-bottom: 20px;
+            margin-bottom: 30px;
+        }
+        .summary { 
+            display: grid; 
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); 
+            gap: 20px; 
+            margin-bottom: 30px;
+        }
+        .summary-card { 
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white; 
+            padding: 20px; 
+            border-radius: 10px;
+            text-align: center;
+        }
+        .summary-card h3 { margin: 0 0 10px 0; }
+        .summary-card .value { font-size: 2em; font-weight: bold; }
+        .section { 
+            margin-bottom: 30px; 
+            background: #f9f9f9; 
+            padding: 20px; 
+            border-radius: 8px;
+        }
+        .section h2 { 
+            color: #333; 
+            border-bottom: 1px solid #ddd;
+            padding-bottom: 10px;
+        }
+        table { 
+            width: 100%; 
+            border-collapse: collapse; 
+            margin-top: 20px;
+        }
+        th, td { 
+            padding: 12px; 
+            text-align: left; 
+            border-bottom: 1px solid #ddd;
+        }
+        th { 
+            background-color: #007acc; 
+            color: white;
+        }
+        tr:nth-child(even) { background-color: #f2f2f2; }
+        .winning { color: #28a745; font-weight: bold; }
+        .major-prize { color: #dc3545; font-weight: bold; }
+        .method-stats { 
+            display: grid; 
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); 
+            gap: 20px;
+        }
+        .method-card { 
+            background: white; 
+            padding: 15px; 
+            border-radius: 8px;
+            border-left: 4px solid #007acc;
+        }
+        .prize-badge { 
+            display: inline-block; 
+            padding: 4px 8px; 
+            background: #28a745; 
+            color: white; 
+            border-radius: 4px; 
+            font-size: 0.8em;
+        }
+        .timestamp { color: #666; font-size: 0.9em; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎯 大乐透预测方法测试报告</h1>
+            <p class="timestamp">生成时间: 2025-10-06 15:57:45</p>
+        </div>
+        
+        <div class="section">
+            <h2>📊 测试概览</h2>
+            <div class="summary">
+                <div class="summary-card">
+                    <h3>总测试数</h3>
+                    <div class="value">875</div>
+                </div>
+                <div class="summary-card">
+                    <h3>中奖测试</h3>
+                    <div class="value">109</div>
+                </div>
+                <div class="summary-card">
+                    <h3>重大奖项</h3>
+                    <div class="value">0</div>
+                </div>
+                <div class="summary-card">
+                    <h3>执行时间</h3>
+                    <div class="value">31058.8s</div>
+                </div>
+            </div>
+        </div>
+        
+        
+        <div class="section">
+            <h2>🏆 中奖等级统计</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>奖级</th>
+                        <th>奖项名称</th>
+                        <th>中奖次数</th>
+                    </tr>
+                </thead>
+                <tbody>
+        
+                    <tr>
+                        <td>6等奖</td>
+                        <td>六等奖</td>
+                        <td><span class="prize-badge">2</span></td>
+                    </tr>
+            
+                    <tr>
+                        <td>7等奖</td>
+                        <td>七等奖</td>
+                        <td><span class="prize-badge">8</span></td>
+                    </tr>
+            
+                    <tr>
+                        <td>8等奖</td>
+                        <td>八等奖</td>
+                        <td><span class="prize-badge">16</span></td>
+                    </tr>
+            
+                    <tr>
+                        <td>9等奖</td>
+                        <td>九等奖</td>
+                        <td><span class="prize-badge">103</span></td>
+                    </tr>
+            
+                </tbody>
+            </table>
+        </div>
+        
+        
+        
+        <div class="section">
+            <h2>🔍 预测方法统计</h2>
+            <div class="method-stats">
+        
+            <div class="method-card">
+                <h3>adaptive</h3>
+                <p><strong>测试数量:</strong> 70</p>
+                <p><strong>预测数量:</strong> 365</p>
+                <p><strong>测试中奖率:</strong> 18.6%</p>
+                <p><strong>预测中奖率:</strong> 3.6%</p>
+                <p><strong>最佳成绩:</strong> 
+                    <span class="winning">
+                        9等奖
+                    </span>
+                </p>
+            </div>
+            
+            <div class="method-card">
+                <h3>adaptive_markov</h3>
+                <p><strong>测试数量:</strong> 67</p>
+                <p><strong>预测数量:</strong> 391</p>
+                <p><strong>测试中奖率:</strong> 17.9%</p>
+                <p><strong>预测中奖率:</strong> 3.8%</p>
+                <p><strong>最佳成绩:</strong> 
+                    <span class="winning">
+                        9等奖
+                    </span>
+                </p>
+            </div>
+            
+            <div class="method-card">
+                <h3>bayesian</h3>
+                <p><strong>测试数量:</strong> 59</p>
+                <p><strong>预测数量:</strong> 299</p>
+                <p><strong>测试中奖率:</strong> 37.3%</p>
+                <p><strong>预测中奖率:</strong> 8.4%</p>
+                <p><strong>最佳成绩:</strong> 
+                    <span class="winning">
+                        9等奖
+                    </span>
+                </p>
+            </div>
+            
+            <div class="method-card">
+                <h3>ensemble</h3>
+                <p><strong>测试数量:</strong> 67</p>
+                <p><strong>预测数量:</strong> 448</p>
+                <p><strong>测试中奖率:</strong> 35.8%</p>
+                <p><strong>预测中奖率:</strong> 7.1%</p>
+                <p><strong>最佳成绩:</strong> 
+                    <span class="winning">
+                        9等奖
+                    </span>
+                </p>
+            </div>
+            
+            <div class="method-card">
+                <h3>gan</h3>
+                <p><strong>测试数量:</strong> 69</p>
+                <p><strong>预测数量:</strong> 368</p>
+                <p><strong>测试中奖率:</strong> 8.7%</p>
+                <p><strong>预测中奖率:</strong> 1.6%</p>
+                <p><strong>最佳成绩:</strong> 
+                    <span class="winning">
+                        9等奖
+                    </span>
+                </p>
+            </div>
+            
+            <div class="method-card">
+                <h3>markov</h3>
+                <p><strong>测试数量:</strong> 67</p>
+                <p><strong>预测数量:</strong> 389</p>
+                <p><strong>测试中奖率:</strong> 11.9%</p>
+                <p><strong>预测中奖率:</strong> 2.3%</p>
+                <p><strong>最佳成绩:</strong> 
+                    <span class="winning">
+                        9等奖
+                    </span>
+                </p>
+            </div>
+            
+            <div class="method-card">
+                <h3>markov_2nd</h3>
+                <p><strong>测试数量:</strong> 70</p>
+                <p><strong>预测数量:</strong> 316</p>
+                <p><strong>测试中奖率:</strong> 12.9%</p>
+                <p><strong>预测中奖率:</strong> 3.5%</p>
+                <p><strong>最佳成绩:</strong> 
+                    <span class="winning">
+                        9等奖
+                    </span>
+                </p>
+            </div>
+            
+            <div class="method-card">
+                <h3>markov_3rd</h3>
+                <p><strong>测试数量:</strong> 76</p>
+                <p><strong>预测数量:</strong> 325</p>
+                <p><strong>测试中奖率:</strong> 11.8%</p>
+                <p><strong>预测中奖率:</strong> 3.1%</p>
+                <p><strong>最佳成绩:</strong> 
+                    <span class="winning">
+                        9等奖
+                    </span>
+                </p>
+            </div>
+            
+            <div class="method-card">
+                <h3>super</h3>
+                <p><strong>测试数量:</strong> 59</p>
+                <p><strong>预测数量:</strong> 350</p>
+                <p><strong>测试中奖率:</strong> 10.2%</p>
+                <p><strong>预测中奖率:</strong> 2.3%</p>
+                <p><strong>最佳成绩:</strong> 
+                    <span class="winning">
+                        9等奖
+                    </span>
+                </p>
+            </div>
+            
+            <div class="method-card">
+                <h3>adaptive_ensemble</h3>
+                <p><strong>测试数量:</strong> 69</p>
+                <p><strong>预测数量:</strong> 0</p>
+                <p><strong>测试中奖率:</strong> 0.0%</p>
+                <p><strong>预测中奖率:</strong> 0.0%</p>
+                <p><strong>最佳成绩:</strong> 
+                    <span class="major-prize">
+                        0等奖
+                    </span>
+                </p>
+            </div>
+            
+            <div class="method-card">
+                <h3>lstm</h3>
+                <p><strong>测试数量:</strong> 61</p>
+                <p><strong>预测数量:</strong> 0</p>
+                <p><strong>测试中奖率:</strong> 0.0%</p>
+                <p><strong>预测中奖率:</strong> 0.0%</p>
+                <p><strong>最佳成绩:</strong> 
+                    <span class="major-prize">
+                        0等奖
+                    </span>
+                </p>
+            </div>
+            
+            <div class="method-card">
+                <h3>markov_custom</h3>
+                <p><strong>测试数量:</strong> 61</p>
+                <p><strong>预测数量:</strong> 61</p>
+                <p><strong>测试中奖率:</strong> 0.0%</p>
+                <p><strong>预测中奖率:</strong> 0.0%</p>
+                <p><strong>最佳成绩:</strong> 
+                    <span class="major-prize">
+                        0等奖
+                    </span>
+                </p>
+            </div>
+            
+            <div class="method-card">
+                <h3>stacking</h3>
+                <p><strong>测试数量:</strong> 76</p>
+                <p><strong>预测数量:</strong> 0</p>
+                <p><strong>测试中奖率:</strong> 0.0%</p>
+                <p><strong>预测中奖率:</strong> 0.0%</p>
+                <p><strong>最佳成绩:</strong> 
+                    <span class="major-prize">
+                        0等奖
+                    </span>
+                </p>
+            </div>
+            
+            <div class="method-card">
+                <h3>transformer</h3>
+                <p><strong>测试数量:</strong> 4</p>
+                <p><strong>预测数量:</strong> 4</p>
+                <p><strong>测试中奖率:</strong> 0.0%</p>
+                <p><strong>预测中奖率:</strong> 0.0%</p>
+                <p><strong>最佳成绩:</strong> 
+                    <span class="major-prize">
+                        0等奖
+                    </span>
+                </p>
+            </div>
+            
+            </div>
+        </div>
+        
+        
+        
+        <div class="section">
+            <h2>🎯 中奖结果详情</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>时间</th>
+                        <th>预测方法</th>
+                        <th>参数</th>
+                        <th>奖级</th>
+                        <th>中奖号码</th>
+                        <th>匹配情况</th>
+                    </tr>
+                </thead>
+                <tbody>
+        
+                <tr class="winning">
+                    <td>2025-10-06T07:20:31</td>
+                    <td>adaptive</td>
+                    <td>p=406, c=1</td>
+                    <td>9等奖</td>
+                    <td>03,04,07,11,13 + 08,09</td>
+                    <td>2+1</td>
+                </tr>
+                
+                <tr class="winning">
+                    <td>2025-10-06T07:20:42</td>
+                    <td>adaptive</td>
+                    <td>p=307, c=6</td>
+                    <td>8等奖</td>
+                    <td>18,21,23,24,27 + 01,02</td>
+                    <td>3+0</td>
+                </tr>
+                
+                <tr class="winning">
+                    <td>2025-10-06T07:22:16</td>
+                    <td>adaptive</td>
+                    <td>p=1294, c=6</td>
+                    <td>9等奖</td>
+                    <td>02,13,22,33,34 + 09,12</td>
+                    <td>0+2</td>
+                </tr>
+                
+                <tr class="winning">
+                    <td>2025-10-06T07:22:30</td>
+                    <td>adaptive</td>
+                    <td>p=1118, c=10</td>
+                    <td>9等奖</td>
+                    <td>06,09,11,22,30 + 09,12</td>
+                    <td>0+2</td>
+                </tr>
+                
+                <tr class="winning">
+                    <td>2025-10-06T07:22:40</td>
+                    <td>adaptive</td>
+                    <td>p=250, c=9</td>
+                    <td>9等奖</td>
+                    <td>04,14,15,23,35 + 07,09</td>
+                    <td>2+1</td>
+                </tr>
+                
+                <tr class="winning">
+                    <td>2025-10-06T07:22:59</td>
+                    <td>adaptive</td>
+                    <td>p=1665, c=10</td>
+                    <td>9等奖</td>
+                    <td>01,09,16,23,24 + 10,12</td>
+                    <td>2+1</td>
+                </tr>
+                
+                <tr class="winning">
+                    <td>2025-10-06T07:23:38</td>
+                    <td>adaptive</td>
+                    <td>p=179, c=8</td>
+                    <td>7等奖</td>
+                    <td>03,04,09,10,24 + 04,09</td>
+                    <td>3+1</td>
+                </tr>
+                
+                <tr class="winning">
+                    <td>2025-10-06T07:24:11</td>
+                    <td>adaptive</td>
+                    <td>p=1393, c=8</td>
+                    <td>8等奖</td>
+                    <td>02,03,14,22,24 + 09,12</td>
+                    <td>2+2</td>
+                </tr>
+                
+                <tr class="winning">
+                    <td>2025-10-06T07:25:26</td>
+                    <td>adaptive</td>
+                    <td>p=60, c=5</td>
+                    <td>8等奖</td>
+                    <td>03,04,20,21,31 + 01,03</td>
+                    <td>3+0</td>
+                </tr>
+                
+                <tr class="winning">
+                    <td>2025-10-06T07:26:49</td>
+                    <td>adaptive</td>
+                    <td>p=1969, c=4</td>
+                    <td>8等奖</td>
+                    <td>03,04,09,11,21 + 02,04</td>
+                    <td>3+0</td>
+                </tr>
+                
+                <tr class="winning">
+                    <td>2025-10-06T07:28:17</td>
+                    <td>adaptive</td>
+                    <td>p=1586, c=8</td>
+                    <td>9等奖</td>
+                    <td>03,14,16,17,21 + 02,09</td>
+                    <td>2+1</td>
+                </tr>
+                
+                <tr class="winning">
+                    <td>2025-10-06T07:28:46</td>
+                    <td>adaptive</td>
+                    <td>p=1135, c=7</td>
+                    <td>9等奖</td>
+                    <td>01,02,10,22,30 + 09,12</td>
+                    <td>0+2</td>
+                </tr>
+                
+                <tr class="winning">
+                    <td>2025-10-06T07:31:14</td>
+                    <td>adaptive</td>
+                    <td>p=1113, c=9</td>
+                    <td>9等奖</td>
+                    <td>03,07,17,22,23 + 10,12</td>
+                    <td>2+1</td>
+                </tr>
+                
+                <tr class="winning">
+                    <td>2025-10-06T07:33:20</td>
+                    <td>adaptive_markov</td>
+                    <td>p=1216, c=7</td>
+                    <td>9等奖</td>
+                    <td>07,09,10,11,19 + 09,12</td>
+                    <td>0+2</td>
+                </tr>
+                
+                <tr class="winning">
+                    <td>2025-10-06T07:33:48</td>
+                    <td>adaptive_markov</td>
+                    <td>p=76, c=7</td>
+                    <td>9等奖</td>
+                    <td>04,10,11,24,33 + 02,09</td>
+                    <td>2+1</td>
+                </tr>
+                
+                <tr class="winning">
+                    <td>2025-10-06T07:33:56</td>
+                    <td>adaptive_markov</td>
+                    <td>p=560, c=10</td>
+                    <td>9等奖</td>
+                    <td>03,05,07,20,21 + 02,09</td>
+                    <td>2+1</td>
+                </tr>
+                
+                <tr class="winning">
+                    <td>2025-10-06T07:34:00</td>
+                    <td>adaptive_markov</td>
+                    <td>p=663, c=8</td>
+                    <td>9等奖</td>
+                    <td>10,11,18,23,24 + 06,09</td>
+                    <td>2+1</td>
+                </tr>
+                
+                <tr class="winning">
+                    <td>2025-10-06T07:34:08</td>
+                    <td>adaptive_markov</td>
+                    <td>p=1332, c=5</td>
+                    <td>9等奖</td>
+                    <td>04,07,24,25,33 + 04,09</td>
+                    <td>2+1</td>
+                </tr>
+                
+                <tr class="winning">
+                    <td>2025-10-06T07:34:16</td>
+                    <td>adaptive_markov</td>
+                    <td>p=1554, c=5</td>
+                    <td>9等奖</td>
+                    <td>13,21,24,26,29 + 07,09</td>
+                    <td>2+1</td>
+                </tr>
+                
+                <tr class="winning">
+                    <td>2025-10-06T07:34:46</td>
+                    <td>adaptive_markov</td>
+                    <td>p=1095, c=8</td>
+                    <td>9等奖</td>
+                    <td>04,08,19,23,33 + 11,12</td>
+                    <td>2+1</td>
+                </tr>
+                
+                <tr class="winning">
+                    <td>2025-10-06T07:34:51</td>
+                    <td>adaptive_markov</td>
+                    <td>p=1442, c=10</td>
+                    <td>8等奖</td>
+                    <td>17,21,23,24,34 + 03,04</td>
+                    <td>3+0</td>
+                </tr>
+                
+                <tr class="winning">
+                    <td>2025-10-06T07:35:06</td>
+                    <td>adaptive_markov</td>
+                    <td>p=51, c=9</td>
+                    <td>9等奖</td>
+                    <td>04,12,21,23,32 + 02,06</td>
+                    <td>3+0</td>
+                </tr>
+                
+                <tr class="winning">
+                    <td>2025-10-06T07:35:10</td>
+                    <td>adaptive_markov</td>
+                    <td>p=1684, c=7</td>
+                    <td>8等奖</td>
+                    <td>04,12,23,24,35 + 07,10</td>
+                    <td>3+0</td>
+                </tr>
+                
+                <tr class="winning">
+                    <td>2025-10-06T07:35:10</td>
+                    <td>adaptive_markov</td>
+                    <td>p=93, c=9</td>
+                    <td>7等奖</td>
+                    <td>03,04,05,10,21 + 08,09</td>
+                    <td>3+1</td>
+                </tr>
+                
+                <tr class="winning">
+                    <td>2025-10-06T07:35:18</td>
+                    <td>adaptive_markov</td>
+                    <td>p=1728, c=9</td>
+                    <td>9等奖</td>
+                    <td>02,10,13,21,23 + 02,09</td>
+                    <td>2+1</td>
+                </tr>
+                
+                <tr class="winning">
+                    <td>2025-10-06T07:35:32</td>
+                    <td>bayesian</td>
+                    <td>p=417, c=7</td>
+                    <td>7等奖</td>
+                    <td>03,11,13,23,24 + 09,11</td>
+                    <td>3+1</td>
+                </tr>
+                
+                <tr class="winning">
+                    <td>2025-10-06T07:35:43</td>
+                    <td>bayesian</td>
+                    <td>p=632, c=4</td>
+                    <td>9等奖</td>
+                    <td>10,23,24,29,34 + 04,09</td>
+                    <td>2+1</td>
+                </tr>
+                
+                <tr class="winning">
+                    <td>2025-10-06T07:35:48</td>
+                    <td>bayesian</td>
+                    <td>p=1974, c=6</td>
+                    <td>9等奖</td>
+                    <td>04,05,09,24,28 + 07,09</td>
+                    <td>2+1</td>
+                </tr>
+                
+                <tr class="winning">
+                    <td>2025-10-06T07:35:52</td>
+                    <td>bayesian</td>
+                    <td>p=100, c=9</td>
+                    <td>9等奖</td>
+                    <td>02,08,23,24,31 + 05,09</td>
+                    <td>2+1</td>
+                </tr>
+                
+                <tr class="winning">
+                    <td>2025-10-06T07:36:00</td>
+                    <td>bayesian</td>
+                    <td>p=479, c=10</td>
+                    <td>9等奖</td>
+                    <td>03,24,30,31,33 + 04,12</td>
+                    <td>2+1</td>
+                </tr>
+                
+                <tr class="winning">
+                    <td>2025-10-06T07:36:09</td>
+                    <td>bayesian</td>
+                    <td>p=355, c=9</td>
+                    <td>7等奖</td>
+                    <td>07,13,21,23,24 + 06,09</td>
+                    <td>3+1</td>
+                </tr>
+                
+                <tr class="winning">
+                    <td>2025-10-06T07:36:38</td>
+                    <td>bayesian</td>
+                    <td>p=1296, c=2</td>
+                    <td>9等奖</td>
+                    <td>22,30,31,34,35 + 09,12</td>
+                    <td>0+2</td>
+                </tr>
+                
+                <tr class="winning">
+                    <td>2025-10-06T07:36:48</td>
+                    <td>bayesian</td>
+                    <td>p=1047, c=5</td>
+                    <td>9等奖</td>
+                    <td>03,06,10,27,28 + 09,12</td>
+                    <td>1+2</td>
+                </tr>
+                
+                <tr class="winning">
+                    <td>2025-10-06T07:36:49</td>
+                    <td>bayesian</td>
+                    <td>p=531, c=2</td>
+                    <td>9等奖</td>
+                    <td>10,14,19,23,24 + 02,09</td>
+                    <td>2+1</td>
+                </tr>
+                
+                <tr class="winning">
+                    <td>2025-10-06T07:36:52</td>
+                    <td>bayesian</td>
+                    <td>p=1663, c=6</td>
+                    <td>9等奖</td>
+                    <td>22,29,32,33,34 + 09,12</td>
+                    <td>0+2</td>
+                </tr>
+                
+                <tr class="winning">
+                    <td>2025-10-06T07:37:02</td>
+                    <td>bayesian</td>
+                    <td>p=1236, c=2</td>
+                    <td>9等奖</td>
+                    <td>29,31,32,33,34 + 09,12</td>
+                    <td>0+2</td>
+                </tr>
+                
+                <tr class="winning">
+                    <td>2025-10-06T07:37:16</td>
+                    <td>bayesian</td>
+                    <td>p=1330, c=5</td>
+                    <td>9等奖</td>
+                    <td>02,10,11,23,24 + 07,09</td>
+                    <td>2+1</td>
+                </tr>
+                
+                <tr class="winning">
+                    <td>2025-10-06T07:37:18</td>
+                    <td>bayesian</td>
+                    <td>p=1996, c=10</td>
+                    <td>8等奖</td>
+                    <td>03,05,07,21,23 + 02,05</td>
+                    <td>3+0</td>
+                </tr>
+                
+                <tr class="winning">
+                    <td>2025-10-06T07:37:29</td>
+                    <td>bayesian</td>
+                    <td>p=1212, c=6</td>
+                    <td>9等奖</td>
+                    <td>29,30,31,32,34 + 09,12</td>
+                    <td>0+2</td>
+                </tr>
+                
+                <tr class="winning">
+                    <td>2025-10-06T07:37:30</td>
+                    <td>bayesian</td>
+                    <td>p=728, c=10</td>
+                    <td>9等奖</td>
+                    <td>11,23,27,30,34 + 09,12</td>
+                    <td>1+2</td>
+                </tr>
+                
+                <tr class="winning">
+                    <td>2025-10-06T07:37:40</td>
+                    <td>bayesian</td>
+                    <td>p=1956, c=5</td>
+                    <td>9等奖</td>
+                    <td>03,19,20,23,25 + 11,12</td>
+                    <td>2+1</td>
+                </tr>
+                
+                <tr class="winning">
+                    <td>2025-10-06T07:37:51</td>
+                    <td>bayesian</td>
+                    <td>p=897, c=10</td>
+                    <td>9等奖</td>
+                    <td>01,12,14,19,21 + 09,12</td>
+                    <td>1+2</td>
+                </tr>
+                
+                <tr class="winning">
+                    <td>2025-10-06T07:37:59</td>
+                    <td>bayesian</td>
+                    <td>p=1645, c=9</td>
+                    <td>9等奖</td>
+                    <td>22,29,31,32,34 + 09,12</td>
+                    <td>0+2</td>
+                </tr>
+                
+                <tr class="winning">
+                    <td>2025-10-06T07:38:07</td>
+                    <td>bayesian</td>
+                    <td>p=1706, c=5</td>
+                    <td>9等奖</td>
+                    <td>22,30,33,34,35 + 09,12</td>
+                    <td>0+2</td>
+                </tr>
+                
+                <tr class="winning">
+                    <td>2025-10-06T07:38:09</td>
+                    <td>bayesian</td>
+                    <td>p=914, c=8</td>
+                    <td>9等奖</td>
+                    <td>03,05,23,27,28 + 08,09</td>
+                    <td>2+1</td>
+                </tr>
+                
+                <tr class="winning">
+                    <td>2025-10-06T07:38:28</td>
+                    <td>bayesian</td>
+                    <td>p=1035, c=2</td>
+                    <td>9等奖</td>
+                    <td>29,31,33,34,35 + 09,12</td>
+                    <td>0+2</td>
+                </tr>
+                
+                <tr class="winning">
+                    <td>2025-10-06T07:38:33</td>
+                    <td>bayesian</td>
+                    <td>p=1030, c=2</td>
+                    <td>9等奖</td>
+                    <td>10,11,21,23,26 + 01,09</td>
+                    <td>2+1</td>
+                </tr>
+                
+                <tr class="winning">
+                    <td>2025-10-06T07:38:40</td>
+                    <td>ensemble</td>
+                    <td>p=649, c=4</td>
+                    <td>9等奖</td>
+                    <td>04,20,24,30,32 + 05,09</td>
+                    <td>2+1</td>
+                </tr>
+                
+                <tr class="winning">
+                    <td>2025-10-06T07:38:41</td>
+                    <td>ensemble</td>
+                    <td>p=1500, c=6</td>
+                    <td>9等奖</td>
+                    <td>02,13,17,18,29 + 09,12</td>
+                    <td>0+2</td>
+                </tr>
+                
+                <tr class="winning">
+                    <td>2025-10-06T07:38:43</td>
+                    <td>ensemble</td>
+                    <td>p=94, c=9</td>
+                    <td>9等奖</td>
+                    <td>03,10,17,24,30 + 03,09</td>
+                    <td>2+1</td>
+                </tr>
+                
+                <tr class="winning">
+                    <td>2025-10-06T07:38:48</td>
+                    <td>ensemble</td>
+                    <td>p=1147, c=6</td>
+                    <td>9等奖</td>
+                    <td>03,08,20,21,31 + 03,09</td>
+                    <td>2+1</td>
+                </tr>
+                
+                <tr class="winning">
+                    <td>2025-10-06T07:38:48</td>
+                    <td>ensemble</td>
+                    <td>p=1204, c=9</td>
+                    <td>9等奖</td>
+                    <td>02,04,06,27,32 + 09,12</td>
+                    <td>1+2</td>
+                </tr>
+                
+                <tr class="winning">
+                    <td>2025-10-06T07:38:56</td>
+                    <td>ensemble</td>
+                    <td>p=112, c=10</td>
+                    <td>9等奖</td>
+                    <td>03,14,21,25,30 + 09,11</td>
+                    <td>2+1</td>
+                </tr>
+                
+                <tr class="winning">
+                    <td>2025-10-06T07:39:03</td>
+                    <td>ensemble</td>
+                    <td>p=1935, c=8</td>
+                    <td>9等奖</td>
+                    <td>03,13,15,23,34 + 04,09</td>
+                    <td>2+1</td>
+                </tr>
+                
+                <tr class="winning">
+                    <td>2025-10-06T07:39:05</td>
+                    <td>ensemble</td>
+                    <td>p=1353, c=9</td>
+                    <td>9等奖</td>
+                    <td>17,23,26,32,34 + 09,12</td>
+                    <td>1+2</td>
+                </tr>
+                
+                <tr class="winning">
+                    <td>2025-10-06T07:39:12</td>
+                    <td>ensemble</td>
+                    <td>p=719, c=5</td>
+                    <td>9等奖</td>
+                    <td>04,13,21,28,33 + 01,09</td>
+                    <td>2+1</td>
+                </tr>
+                
+                <tr class="winning">
+                    <td>2025-10-06T07:39:26</td>
+                    <td>ensemble</td>
+                    <td>p=1407, c=8</td>
+                    <td>9等奖</td>
+                    <td>09,21,24,27,33 + 01,12</td>
+                    <td>2+1</td>
+                </tr>
+                
+                <tr class="winning">
+                    <td>2025-10-06T07:39:33</td>
+                    <td>ensemble</td>
+                    <td>p=1317, c=7</td>
+                    <td>9等奖</td>
+                    <td>01,04,07,11,21 + 04,09</td>
+                    <td>2+1</td>
+                </tr>
+                
+                <tr class="winning">
+                    <td>2025-10-06T07:39:33</td>
+                    <td>ensemble</td>
+                    <td>p=1327, c=6</td>
+                    <td>8等奖</td>
+                    <td>02,03,04,05,23 + 04,07</td>
+                    <td>3+0</td>
+                </tr>
+                
+                <tr class="winning">
+                    <td>2025-10-06T07:39:34</td>
+                    <td>ensemble</td>
+                    <td>p=1906, c=10</td>
+                    <td>9等奖</td>
+                    <td>03,11,19,20,21 + 06,12</td>
+                    <td>2+1</td>
+                </tr>
+                
+                <tr class="winning">
+                    <td>2025-10-06T07:39:49</td>
+                    <td>ensemble</td>
+                    <td>p=879, c=10</td>
+                    <td>9等奖</td>
+                    <td>03,15,21,31,35 + 04,12</td>
+                    <td>2+1</td>
+                </tr>
+                
+                <tr class="winning">
+                    <td>2025-10-06T07:39:54</td>
+                    <td>ensemble</td>
+                    <td>p=1331, c=8</td>
+                    <td>9等奖</td>
+                    <td>04,09,18,23,32 + 03,12</td>
+                    <td>2+1</td>
+                </tr>
+                
+                <tr class="winning">
+                    <td>2025-10-06T07:39:55</td>
+                    <td>ensemble</td>
+                    <td>p=939, c=5</td>
+                    <td>9等奖</td>
+                    <td>03,09,24,25,28 + 02,12</td>
+                    <td>2+1</td>
+                </tr>
+                
+                <tr class="winning">
+                    <td>2025-10-06T07:40:01</td>
+                    <td>ensemble</td>
+                    <td>p=691, c=5</td>
+                    <td>8等奖</td>
+                    <td>09,21,23,24,30 + 04,05</td>
+                    <td>3+0</td>
+                </tr>
+                
+                <tr class="winning">
+                    <td>2025-10-06T07:40:11</td>
+                    <td>ensemble</td>
+                    <td>p=365, c=8</td>
+                    <td>9等奖</td>
+                    <td>03,18,19,21,30 + 03,12</td>
+                    <td>2+1</td>
+                </tr>
+                
+                <tr class="winning">
+                    <td>2025-10-06T07:40:18</td>
+                    <td>ensemble</td>
+                    <td>p=820, c=10</td>
+                    <td>9等奖</td>
+                    <td>03,21,24,28,33 + 07,11</td>
+                    <td>3+0</td>
+                </tr>
+                
+                <tr class="winning">
+                    <td>2025-10-06T07:40:23</td>
+                    <td>ensemble</td>
+                    <td>p=1788, c=10</td>
+                    <td>9等奖</td>
+                    <td>03,05,17,26,33 + 09,12</td>
+                    <td>1+2</td>
+                </tr>
+                
+                <tr class="winning">
+                    <td>2025-10-06T07:40:32</td>
+                    <td>ensemble</td>
+                    <td>p=1035, c=8</td>
+                    <td>9等奖</td>
+                    <td>02,04,15,21,32 + 04,09</td>
+                    <td>2+1</td>
+                </tr>
+                
+                <tr class="winning">
+                    <td>2025-10-06T07:40:33</td>
+                    <td>ensemble</td>
+                    <td>p=200, c=4</td>
+                    <td>9等奖</td>
+                    <td>01,03,13,19,23 + 03,12</td>
+                    <td>2+1</td>
+                </tr>
+                
+                <tr class="winning">
+                    <td>2025-10-06T07:40:38</td>
+                    <td>ensemble</td>
+                    <td>p=194, c=9</td>
+                    <td>9等奖</td>
+                    <td>03,08,13,20,21 + 04,12</td>
+                    <td>2+1</td>
+                </tr>
+                
+                <tr class="winning">
+                    <td>2025-10-06T07:40:40</td>
+                    <td>ensemble</td>
+                    <td>p=1489, c=9</td>
+                    <td>9等奖</td>
+                    <td>04,08,10,24,29 + 01,09</td>
+                    <td>2+1</td>
+                </tr>
+                
+                <tr class="winning">
+                    <td>2025-10-06T07:40:58</td>
+                    <td>gan</td>
+                    <td>p=1473, c=5</td>
+                    <td>9等奖</td>
+                    <td>01,04,07,12,24 + 01,12</td>
+                    <td>2+1</td>
+                </tr>
+                
+                <tr class="winning">
+                    <td>2025-10-06T07:41:47</td>
+                    <td>gan</td>
+                    <td>p=515, c=8</td>
+                    <td>7等奖</td>
+                    <td>01,04,21,22,23 + 01,12</td>
+                    <td>3+1</td>
+                </tr>
+                
+                <tr class="winning">
+                    <td>2025-10-06T07:42:12</td>
+                    <td>gan</td>
+                    <td>p=539, c=9</td>
+                    <td>8等奖</td>
+                    <td>01,03,09,23,24 + 01,07</td>
+                    <td>3+0</td>
+                </tr>
+                
+                <tr class="winning">
+                    <td>2025-10-06T07:42:37</td>
+                    <td>gan</td>
+                    <td>p=1777, c=7</td>
+                    <td>9等奖</td>
+                    <td>01,03,04,11,17 + 01,12</td>
+                    <td>2+1</td>
+                </tr>
+                
+                <tr class="winning">
+                    <td>2025-10-06T07:42:50</td>
+                    <td>gan</td>
+                    <td>p=757, c=2</td>
+                    <td>6等奖</td>
+                    <td>01,03,04,21,23 + 01,04</td>
+                    <td>4+0</td>
+                </tr>
+                
+                <tr class="winning">
+                    <td>2025-10-06T07:43:06</td>
+                    <td>gan</td>
+                    <td>p=1442, c=9</td>
+                    <td>9等奖</td>
+                    <td>01,07,11,21,24 + 01,12</td>
+                    <td>2+1</td>
+                </tr>
+                
+                <tr class="winning">
+                    <td>2025-10-06T08:36:50</td>
+                    <td>markov</td>
+                    <td>p=948, c=10</td>
+                    <td>9等奖</td>
+                    <td>03,04,27,32,33 + 02,09</td>
+                    <td>2+1</td>
+                </tr>
+                
+                <tr class="winning">
+                    <td>2025-10-06T08:38:00</td>
+                    <td>markov</td>
+                    <td>p=769, c=6</td>
+                    <td>9等奖</td>
+                    <td>11,19,22,33,34 + 09,12</td>
+                    <td>0+2</td>
+                </tr>
+                
+                <tr class="winning">
+                    <td>2025-10-06T08:38:04</td>
+                    <td>markov</td>
+                    <td>p=604, c=6</td>
+                    <td>9等奖</td>
+                    <td>21,23,26,29,32 + 03,09</td>
+                    <td>2+1</td>
+                </tr>
+                
+                <tr class="winning">
+                    <td>2025-10-06T08:38:11</td>
+                    <td>markov</td>
+                    <td>p=941, c=9</td>
+                    <td>9等奖</td>
+                    <td>05,11,22,23,32 + 09,12</td>
+                    <td>1+2</td>
+                </tr>
+                
+                <tr class="winning">
+                    <td>2025-10-06T08:38:14</td>
+                    <td>markov</td>
+                    <td>p=745, c=5</td>
+                    <td>9等奖</td>
+                    <td>03,15,18,24,30 + 02,12</td>
+                    <td>2+1</td>
+                </tr>
+                
+                <tr class="winning">
+                    <td>2025-10-06T08:38:55</td>
+                    <td>markov</td>
+                    <td>p=1875, c=6</td>
+                    <td>9等奖</td>
+                    <td>07,21,24,27,29 + 09,11</td>
+                    <td>2+1</td>
+                </tr>
+                
+                <tr class="winning">
+                    <td>2025-10-06T08:39:48</td>
+                    <td>markov</td>
+                    <td>p=1220, c=9</td>
+                    <td>9等奖</td>
+                    <td>01,09,14,19,23 + 09,12</td>
+                    <td>1+2</td>
+                </tr>
+                
+                <tr class="winning">
+                    <td>2025-10-06T08:40:27</td>
+                    <td>markov</td>
+                    <td>p=1009, c=9</td>
+                    <td>9等奖</td>
+                    <td>03,21,28,33,35 + 01,09</td>
+                    <td>2+1</td>
+                </tr>
+                
+                <tr class="winning">
+                    <td>2025-10-06T08:40:56</td>
+                    <td>markov_2nd</td>
+                    <td>p=408, c=4</td>
+                    <td>9等奖</td>
+                    <td>03,10,21,25,26 + 07,09</td>
+                    <td>2+1</td>
+                </tr>
+                
+                <tr class="winning">
+                    <td>2025-10-06T08:41:58</td>
+                    <td>markov_2nd</td>
+                    <td>p=1732, c=10</td>
+                    <td>9等奖</td>
+                    <td>03,04,21,29,33 + 09,12</td>
+                    <td>3+2</td>
+                </tr>
+                
+                <tr class="winning">
+                    <td>2025-10-06T08:42:36</td>
+                    <td>markov_2nd</td>
+                    <td>p=502, c=10</td>
+                    <td>9等奖</td>
+                    <td>07,21,25,29,31 + 09,12</td>
+                    <td>1+2</td>
+                </tr>
+                
+                <tr class="winning">
+                    <td>2025-10-06T08:42:51</td>
+                    <td>markov_2nd</td>
+                    <td>p=213, c=10</td>
+                    <td>8等奖</td>
+                    <td>11,13,14,21,24 + 09,12</td>
+                    <td>2+2</td>
+                </tr>
+                
+                <tr class="winning">
+                    <td>2025-10-06T08:43:15</td>
+                    <td>markov_2nd</td>
+                    <td>p=827, c=9</td>
+                    <td>9等奖</td>
+                    <td>04,08,21,34,35 + 04,12</td>
+                    <td>2+1</td>
+                </tr>
+                
+                <tr class="winning">
+                    <td>2025-10-06T08:43:23</td>
+                    <td>markov_2nd</td>
+                    <td>p=1226, c=10</td>
+                    <td>9等奖</td>
+                    <td>03,07,23,26,32 + 02,09</td>
+                    <td>2+1</td>
+                </tr>
+                
+                <tr class="winning">
+                    <td>2025-10-06T08:43:26</td>
+                    <td>markov_2nd</td>
+                    <td>p=57, c=5</td>
+                    <td>9等奖</td>
+                    <td>09,21,24,27,33 + 09,11</td>
+                    <td>2+1</td>
+                </tr>
+                
+                <tr class="winning">
+                    <td>2025-10-06T08:44:01</td>
+                    <td>markov_2nd</td>
+                    <td>p=425, c=9</td>
+                    <td>9等奖</td>
+                    <td>03,23,26,29,35 + 02,09</td>
+                    <td>2+1</td>
+                </tr>
+                
+                <tr class="winning">
+                    <td>2025-10-06T08:44:03</td>
+                    <td>markov_2nd</td>
+                    <td>p=1914, c=9</td>
+                    <td>9等奖</td>
+                    <td>03,08,15,20,24 + 04,09</td>
+                    <td>2+1</td>
+                </tr>
+                
+                <tr class="winning">
+                    <td>2025-10-06T08:44:25</td>
+                    <td>markov_3rd</td>
+                    <td>p=1969, c=7</td>
+                    <td>9等奖</td>
+                    <td>03,14,17,21,35 + 02,09</td>
+                    <td>2+1</td>
+                </tr>
+                
+                <tr class="winning">
+                    <td>2025-10-06T08:44:41</td>
+                    <td>markov_3rd</td>
+                    <td>p=1891, c=9</td>
+                    <td>8等奖</td>
+                    <td>03,20,22,23,27 + 09,12</td>
+                    <td>2+2</td>
+                </tr>
+                
+                <tr class="winning">
+                    <td>2025-10-06T08:45:05</td>
+                    <td>markov_3rd</td>
+                    <td>p=873, c=10</td>
+                    <td>9等奖</td>
+                    <td>03,23,30,32,33 + 08,12</td>
+                    <td>2+1</td>
+                </tr>
+                
+                <tr class="winning">
+                    <td>2025-10-06T08:45:37</td>
+                    <td>markov_3rd</td>
+                    <td>p=1383, c=5</td>
+                    <td>8等奖</td>
+                    <td>03,11,18,21,23 + 03,05</td>
+                    <td>3+0</td>
+                </tr>
+                
+                <tr class="winning">
+                    <td>2025-10-06T08:45:52</td>
+                    <td>markov_3rd</td>
+                    <td>p=966, c=10</td>
+                    <td>9等奖</td>
+                    <td>03,17,21,29,33 + 03,09</td>
+                    <td>2+1</td>
+                </tr>
+                
+                <tr class="winning">
+                    <td>2025-10-06T08:46:00</td>
+                    <td>markov_3rd</td>
+                    <td>p=1729, c=10</td>
+                    <td>9等奖</td>
+                    <td>06,23,24,30,35 + 02,12</td>
+                    <td>2+1</td>
+                </tr>
+                
+                <tr class="winning">
+                    <td>2025-10-06T08:46:32</td>
+                    <td>markov_3rd</td>
+                    <td>p=960, c=10</td>
+                    <td>9等奖</td>
+                    <td>06,13,19,23,29 + 09,12</td>
+                    <td>1+2</td>
+                </tr>
+                
+                <tr class="winning">
+                    <td>2025-10-06T08:46:48</td>
+                    <td>markov_3rd</td>
+                    <td>p=305, c=10</td>
+                    <td>7等奖</td>
+                    <td>01,03,23,24,33 + 06,09</td>
+                    <td>3+1</td>
+                </tr>
+                
+                <tr class="winning">
+                    <td>2025-10-06T08:47:12</td>
+                    <td>markov_3rd</td>
+                    <td>p=440, c=7</td>
+                    <td>9等奖</td>
+                    <td>04,10,24,30,33 + 09,10</td>
+                    <td>2+1</td>
+                </tr>
+                
+                <tr class="winning">
+                    <td>2025-10-06T09:24:49</td>
+                    <td>super</td>
+                    <td>p=1195, c=4</td>
+                    <td>9等奖</td>
+                    <td>22,23,30,32,33 + 09,12</td>
+                    <td>1+2</td>
+                </tr>
+                
+                <tr class="winning">
+                    <td>2025-10-06T10:52:26</td>
+                    <td>super</td>
+                    <td>p=120, c=2</td>
+                    <td>9等奖</td>
+                    <td>04,06,24,28,29 + 09,10</td>
+                    <td>2+1</td>
+                </tr>
+                
+                <tr class="winning">
+                    <td>2025-10-06T11:37:09</td>
+                    <td>super</td>
+                    <td>p=75, c=10</td>
+                    <td>9等奖</td>
+                    <td>04,09,10,16,21 + 01,09</td>
+                    <td>2+1</td>
+                </tr>
+                
+                <tr class="winning">
+                    <td>2025-10-06T14:20:01</td>
+                    <td>super</td>
+                    <td>p=335, c=9</td>
+                    <td>9等奖</td>
+                    <td>04,11,29,30,31 + 09,12</td>
+                    <td>1+2</td>
+                </tr>
+                
+                <tr class="winning">
+                    <td>2025-10-06T14:41:26</td>
+                    <td>super</td>
+                    <td>p=1889, c=8</td>
+                    <td>9等奖</td>
+                    <td>05,21,22,30,34 + 09,12</td>
+                    <td>1+2</td>
+                </tr>
+                
+                <tr class="winning">
+                    <td>2025-10-06T14:51:38</td>
+                    <td>super</td>
+                    <td>p=1819, c=7</td>
+                    <td>9等奖</td>
+                    <td>04,22,33,34,35 + 09,12</td>
+                    <td>1+2</td>
+                </tr>
+                
+                </tbody>
+            </table>
+        </div>
+        
+        
+        
+        <div class="section">
+            <h2>📋 详细测试结果 (前20项)</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>方法</th>
+                        <th>参数</th>
+                        <th>状态</th>
+                        <th>预测数</th>
+                        <th>中奖数</th>
+                        <th>最佳奖级</th>
+                        <th>执行时间</th>
+                    </tr>
+                </thead>
+                <tbody>
+        
+            <tr class="">
+                <td>adaptive</td>
+                <td>p=450, c=10</td>
+                <td>成功</td>
+                <td>10</td>
+                <td>0</td>
+                <td>-</td>
+                <td>10.6s</td>
+            </tr>
+            
+            <tr class="">
+                <td>adaptive</td>
+                <td>p=1257, c=9</td>
+                <td>成功</td>
+                <td>9</td>
+                <td>0</td>
+                <td>-</td>
+                <td>16.1s</td>
+            </tr>
+            
+            <tr class="winning">
+                <td>adaptive</td>
+                <td>p=406, c=1</td>
+                <td>成功</td>
+                <td>1</td>
+                <td>1</td>
+                <td>9等奖</td>
+                <td>9.0s</td>
+            </tr>
+            
+            <tr class="">
+                <td>adaptive</td>
+                <td>p=755, c=5</td>
+                <td>成功</td>
+                <td>5</td>
+                <td>0</td>
+                <td>-</td>
+                <td>26.3s</td>
+            </tr>
+            
+            <tr class="winning">
+                <td>adaptive</td>
+                <td>p=307, c=6</td>
+                <td>成功</td>
+                <td>6</td>
+                <td>1</td>
+                <td>8等奖</td>
+                <td>10.6s</td>
+            </tr>
+            
+            <tr class="">
+                <td>adaptive</td>
+                <td>p=1232, c=1</td>
+                <td>成功</td>
+                <td>1</td>
+                <td>0</td>
+                <td>-</td>
+                <td>13.5s</td>
+            </tr>
+            
+            <tr class="">
+                <td>adaptive</td>
+                <td>p=1014, c=3</td>
+                <td>成功</td>
+                <td>3</td>
+                <td>0</td>
+                <td>-</td>
+                <td>13.1s</td>
+            </tr>
+            
+            <tr class="">
+                <td>adaptive</td>
+                <td>p=1477, c=4</td>
+                <td>成功</td>
+                <td>4</td>
+                <td>0</td>
+                <td>-</td>
+                <td>72.1s</td>
+            </tr>
+            
+            <tr class="">
+                <td>adaptive</td>
+                <td>p=374, c=4</td>
+                <td>成功</td>
+                <td>4</td>
+                <td>0</td>
+                <td>-</td>
+                <td>12.9s</td>
+            </tr>
+            
+            <tr class="">
+                <td>adaptive</td>
+                <td>p=1547, c=1</td>
+                <td>成功</td>
+                <td>1</td>
+                <td>0</td>
+                <td>-</td>
+                <td>15.6s</td>
+            </tr>
+            
+            <tr class="">
+                <td>adaptive</td>
+                <td>p=1495, c=7</td>
+                <td>成功</td>
+                <td>7</td>
+                <td>0</td>
+                <td>-</td>
+                <td>68.5s</td>
+            </tr>
+            
+            <tr class="">
+                <td>adaptive</td>
+                <td>p=377, c=6</td>
+                <td>成功</td>
+                <td>6</td>
+                <td>0</td>
+                <td>-</td>
+                <td>13.2s</td>
+            </tr>
+            
+            <tr class="">
+                <td>adaptive</td>
+                <td>p=618, c=5</td>
+                <td>成功</td>
+                <td>5</td>
+                <td>0</td>
+                <td>-</td>
+                <td>9.8s</td>
+            </tr>
+            
+            <tr class="winning">
+                <td>adaptive</td>
+                <td>p=1294, c=6</td>
+                <td>成功</td>
+                <td>6</td>
+                <td>1</td>
+                <td>9等奖</td>
+                <td>58.1s</td>
+            </tr>
+            
+            <tr class="">
+                <td>adaptive</td>
+                <td>p=1553, c=9</td>
+                <td>成功</td>
+                <td>9</td>
+                <td>0</td>
+                <td>-</td>
+                <td>17.0s</td>
+            </tr>
+            
+            <tr class="winning">
+                <td>adaptive</td>
+                <td>p=1118, c=10</td>
+                <td>成功</td>
+                <td>10</td>
+                <td>1</td>
+                <td>9等奖</td>
+                <td>14.6s</td>
+            </tr>
+            
+            <tr class="winning">
+                <td>adaptive</td>
+                <td>p=250, c=9</td>
+                <td>成功</td>
+                <td>9</td>
+                <td>1</td>
+                <td>9等奖</td>
+                <td>10.1s</td>
+            </tr>
+            
+            <tr class="">
+                <td>adaptive</td>
+                <td>p=1438, c=5</td>
+                <td>成功</td>
+                <td>5</td>
+                <td>0</td>
+                <td>-</td>
+                <td>64.8s</td>
+            </tr>
+            
+            <tr class="">
+                <td>adaptive</td>
+                <td>p=640, c=4</td>
+                <td>成功</td>
+                <td>4</td>
+                <td>0</td>
+                <td>-</td>
+                <td>11.1s</td>
+            </tr>
+            
+            <tr class="winning">
+                <td>adaptive</td>
+                <td>p=1665, c=10</td>
+                <td>成功</td>
+                <td>10</td>
+                <td>1</td>
+                <td>9等奖</td>
+                <td>162.9s</td>
+            </tr>
+            
+            <tr>
+                <td colspan="7" style="text-align: center; color: #666;">
+                    ... 还有 855 个结果未显示
+                </td>
+            </tr>
+            
+                </tbody>
+            </table>
+        </div>
+        
+    </div>
+</body>
+</html>
+        
