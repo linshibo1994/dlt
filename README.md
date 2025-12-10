@@ -2,6 +2,8 @@
 
 [![python](https://img.shields.io/badge/python-3.8+-blue.svg)](https://python.org)
 [![TensorFlow](https://img.shields.io/badge/TensorFlow-2.8+-orange.svg)](https://tensorflow.org)
+[![Vue](https://img.shields.io/badge/Vue-3.x-brightgreen.svg)](https://vuejs.org)
+[![FastAPI](https://img.shields.io/badge/FastAPI-0.100+-009688.svg)](https://fastapi.tiangolo.com)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 [![Status](https://img.shields.io/badge/Status-Production%20Ready-brightgreen.svg)]()
 
@@ -131,6 +133,51 @@
 - **优雅降级** - GPU不可用时自动降级，确保稳定运行
 - **性能基准** - 实时评估硬件性能，推荐最优配置
 
+## 🔌 REST API 接口
+
+系统提供完整的 REST API，支持前后端分离和第三方集成。
+
+### 接口概览
+
+| 类别 | 接口 | 说明 |
+|------|------|------|
+| **数据** | `GET /api/data/latest` | 获取最新开奖数据 |
+| | `GET /api/data/history` | 获取历史数据（分页） |
+| | `GET /api/data/stats` | 获取数据统计信息 |
+| **预测** | `GET /api/algorithms` | 获取算法列表 |
+| | `POST /api/predict` | 执行预测 |
+| | `GET /api/predict/history` | 预测历史记录 |
+| **分析** | `POST /api/analysis/frequency` | 频率分析 |
+| | `POST /api/analysis/hot-cold` | 冷热号分析 |
+| | `POST /api/analysis/trend` | 趋势分析 |
+| | `POST /api/analysis/missing` | 遗漏值分析 |
+| **对比** | `POST /api/compare` | 批量预测对比 |
+| **系统** | `GET /api/system/info` | 系统信息 |
+| | `GET /api/system/health` | 健康检查 |
+
+### 接口文档
+
+启动后端服务后访问：
+- **Swagger UI**: http://localhost:8000/docs
+- **ReDoc**: http://localhost:8000/redoc
+
+### 示例请求
+
+```bash
+# 获取最新开奖数据
+curl http://localhost:8000/api/data/latest
+
+# 执行预测
+curl -X POST http://localhost:8000/api/predict \
+  -H "Content-Type: application/json" \
+  -d '{"method": "ensemble", "periods": 500, "count": 3}'
+
+# 频率分析
+curl -X POST http://localhost:8000/api/analysis/frequency \
+  -H "Content-Type: application/json" \
+  -d '{"periods": 100}'
+```
+
 ## 🎯 大乐透中奖规则 (2019年新规则)
 
 系统采用大乐透2019年新规则，共9个奖级：
@@ -179,12 +226,15 @@ python3 dlt_main.py data status
 ### 🔧 技术栈
 | 组件 | 技术 | 版本 | 说明 |
 |------|------|------|------|
-| **核心语言** | Python | 3.8+ | 主要开发语言 |
+| **核心语言** | Python | 3.8+ | 后端开发语言 |
+| **后端框架** | FastAPI | 0.100+ | 高性能 REST API |
+| **前端框架** | Vue 3 + TypeScript | 3.x | 响应式 UI 框架 |
+| **UI 组件** | Naive UI | 2.x | 企业级组件库 |
 | **深度学习** | TensorFlow | 2.8+ | 神经网络框架(可选) |
 | **数据处理** | Pandas, NumPy | 1.5+, 1.24+ | 数据科学栈 |
 | **机器学习** | Scikit-learn | 1.3+ | 传统ML算法 |
-| **图形界面** | Streamlit | 1.28+ | Web界面框架 |
-| **数据可视化** | Plotly | 5.15+ | 交互式图表 |
+| **数据可视化** | ECharts | 5.x | 交互式图表 |
+| **构建工具** | Vite | 5.x | 快速构建 |
 
 ## 📖 使用指南
 
@@ -232,15 +282,12 @@ npm run dev
 # 访问 http://localhost:3000
 ```
 
-**传统 Streamlit GUI（可选）：**
+**旧版 Streamlit GUI（已弃用）：**
 ```bash
-# 启动GUI界面
-./start_gui.sh      # Linux/macOS
-start_gui.bat       # Windows
-python3 run_gui.py  # 通用方式
+# Streamlit 版本已迁移至 frontend-streamlit/ 目录
+cd frontend-streamlit
+python -m streamlit run streamlit/app.py
 ```
-
-浏览器打开 http://localhost:8501 使用完整的图形界面功能。
 
 ### 💻 命令行使用
 
@@ -751,24 +798,40 @@ python3 dlt_main.py compare --issue 25103 -m frequency -p 200 -t 30
 python3 dlt_main.py compare --issue 25103 -m frequency -p 150 -t 60 --export
 ```
 
-## 🖥️ 图形用户界面
+## 🖥️ 图形用户界面 (Vue 3)
 
-### 🚀 GUI启动
+### 🚀 启动方式
+
+**Docker 部署（推荐）：**
 ```bash
-./start_gui.sh      # Linux/macOS
-start_gui.bat       # Windows
-python3 run_gui.py  # 通用方式
+./deploy.sh start
+# 访问 http://localhost
+```
+
+**本地开发：**
+```bash
+# 终端 1: 后端
+python -m uvicorn backend.api.server:app --reload --port 8000
+
+# 终端 2: 前端
+cd frontend && npm run dev
+# 访问 http://localhost:3000
 ```
 
 ### 📱 界面功能
-- **系统首页** - 硬件监控、最新开奖结果、快速预测
-- **数据管理** - 数据状态查看、更新、历史数据分析
-- **预测功能** - 26+种预测方法，支持复式预测和成本计算
-- **数据分析** - 统计图表、多维度分析报告
-- **批量对比** - 批量预测对比功能，Excel报告导出
-- **学习功能** - 自适应学习和算法优化
-- **性能优化** - 硬件加速配置和性能监控
-- **系统设置** - 界面设置和参数配置
+| 页面 | 功能说明 |
+|------|----------|
+| **Dashboard** | 系统概览、最新开奖、快速预测入口 |
+| **Prediction** | 26+ 预测算法、复式投注、成本计算 |
+| **Analysis** | 频率分析、冷热号、遗漏值、趋势图表 |
+| **Compare** | 批量预测对比、中奖统计、Excel 导出 |
+| **Settings** | 主题切换、语言设置、系统配置 |
+
+### 🎨 设计风格
+- **Cyberpunk + Glassmorphism** 现代设计
+- **响应式布局** 适配桌面和移动设备
+- **深色主题** 护眼舒适
+- **流畅动画** 优质用户体验
 
 ## 📊 数据管理
 
