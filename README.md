@@ -65,15 +65,59 @@
 
 ## 🛠️ 系统架构
 
+### 🏗️ 前后端分离架构 (v2.0)
+
+本系统采用现代前后端分离架构：
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                         前端 (Vue 3)                         │
+│   ┌─────────┬─────────┬─────────┬─────────┬─────────┐      │
+│   │Dashboard│Prediction│ Analysis│ Compare │Settings │      │
+│   └────┬────┴────┬────┴────┬────┴────┬────┴────┬────┘      │
+│        └─────────┴─────────┴─────────┴─────────┘            │
+│                         ↓ Axios                              │
+│   ┌─────────────────────────────────────────────────┐       │
+│   │               Nginx (端口 80)                    │       │
+│   │     静态文件服务 + API 反向代理                  │       │
+│   └────────────────────────┬────────────────────────┘       │
+└────────────────────────────┼────────────────────────────────┘
+                             │ /api/*
+┌────────────────────────────┴────────────────────────────────┐
+│                     后端 (FastAPI)                           │
+│   ┌──────────────────────────────────────────────────┐      │
+│   │           REST API (端口 8000)                    │      │
+│   │  /api/data/* | /api/predict | /api/analysis/*    │      │
+│   └────────────────────────┬─────────────────────────┘      │
+│                            ↓                                 │
+│   ┌──────────────────────────────────────────────────┐      │
+│   │               核心预测引擎                        │      │
+│   │  26+ 算法 | 数据管理 | 缓存系统 | 分析模块       │      │
+│   └──────────────────────────────────────────────────┘      │
+└─────────────────────────────────────────────────────────────┘
+```
+
+**技术栈：**
+| 层级 | 技术 | 说明 |
+|------|------|------|
+| 前端框架 | Vue 3 + TypeScript | 响应式 UI 框架 |
+| 状态管理 | Pinia | Vue 官方状态管理 |
+| UI 组件 | Naive UI | 企业级 Vue 组件库 |
+| 图表 | ECharts | 数据可视化 |
+| 样式 | Tailwind CSS | 原子化 CSS |
+| 构建工具 | Vite | 快速构建 |
+| 后端框架 | FastAPI | 高性能 Python API |
+| 数据验证 | Pydantic | 类型安全 |
+| Web 服务器 | Nginx | 反向代理 |
+
 ### 📊 核心模块
-- **dlt_main.py** - 命令行主程序和系统调度中心
-- **core_modules.py** - 核心模块（数据/缓存/日志/任务管理）
-- **predictor_modules.py** - 预测算法模块（26+种算法实现）
-- **analyzer_modules.py** - 数据分析模块（统计分析和异常检测）
-- **adaptive_learning_modules.py** - 自适应学习模块（智能算法选择）
-- **gui_app.py** - Streamlit图形界面程序
-- **smart_cache_system.py** - 智能缓存系统
-- **batch_comparison_module.py** - 批量预测对比模块
+- **backend/api/server.py** - FastAPI REST API 服务器
+- **backend/app/core/** - 核心模块（数据/缓存/日志/任务管理）
+- **backend/app/predictors/** - 预测算法模块（26+种算法实现）
+- **backend/app/analyzers/** - 数据分析模块（统计分析和异常检测）
+- **frontend/src/views/** - Vue 页面组件
+- **frontend/src/stores/** - Pinia 状态管理
+- **frontend/src/api/** - API 接口层
 
 ### 💾 智能缓存系统
 - **版本控制** - 基于数据内容的版本签名，自动失效机制
@@ -144,7 +188,51 @@ python3 dlt_main.py data status
 
 ## 📖 使用指南
 
-### 🖥️ 图形界面（推荐）
+### 🐳 Docker 部署（推荐）
+
+最简单的部署方式，一键启动前后端服务：
+
+```bash
+# 1. 克隆项目
+git clone https://github.com/linshibo1994/dlt.git
+cd dlt
+
+# 2. 启动服务
+./deploy.sh start
+
+# 3. 访问应用
+# 前端界面: http://localhost
+# 后端API: http://localhost:8000/api
+# API文档: http://localhost:8000/docs
+```
+
+**部署脚本命令：**
+```bash
+./deploy.sh start    # 启动所有服务
+./deploy.sh stop     # 停止所有服务
+./deploy.sh restart  # 重启所有服务
+./deploy.sh logs     # 查看服务日志
+./deploy.sh build    # 重新构建镜像
+./deploy.sh status   # 查看服务状态
+```
+
+### 🖥️ 本地开发
+
+**前后端分离开发：**
+```bash
+# 终端 1：启动后端 API
+cd dlt
+pip install -r backend/requirements.txt
+python -m uvicorn backend.api.server:app --reload --port 8000
+
+# 终端 2：启动前端开发服务器
+cd dlt/frontend
+npm install
+npm run dev
+# 访问 http://localhost:3000
+```
+
+**传统 Streamlit GUI（可选）：**
 ```bash
 # 启动GUI界面
 ./start_gui.sh      # Linux/macOS

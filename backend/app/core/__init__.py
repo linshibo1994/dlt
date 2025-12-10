@@ -4,7 +4,6 @@
 """
 
 from . import core_modules
-from . import smart_cache_system
 
 # 导出核心类
 from .core_modules import (
@@ -13,4 +12,5 @@ from .core_modules import (
     LoggerManager,
     TaskManager
 )
-from .smart_cache_system import SmartCacheManager
+
+# smart_cache_system 按需导入以避免循环依赖

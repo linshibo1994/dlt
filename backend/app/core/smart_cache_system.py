@@ -13,12 +13,24 @@ import json
 import time
 import hashlib
 import threading
+import logging
 from typing import Any, Dict, Optional, List, Tuple
 from datetime import datetime, timedelta
 from collections import OrderedDict
 import pandas as pd
 
-from core_modules import logger_manager, data_manager
+try:
+    from . import core_modules
+    logger_manager = core_modules.logger_manager
+    data_manager = core_modules.data_manager
+except ImportError:
+    try:
+        from backend.app.core import core_modules
+        logger_manager = core_modules.logger_manager
+        data_manager = core_modules.data_manager
+    except ImportError:
+        logger_manager = None
+        data_manager = None
 
 # 导入路径配置（使用相对导入，因为在同一目录下）
 _PATH_CONFIG_SOURCE = None  # 用于记录路径配置来源
