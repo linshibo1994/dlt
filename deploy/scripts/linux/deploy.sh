@@ -332,9 +332,8 @@ create_virtual_environment() {
         source $VIRTUAL_ENV_NAME/bin/activate
         pip install --upgrade pip
         pip install -r requirements.txt
-        pip install -r requirements_gui.txt
     "
-    
+
     log_success "Python虚拟环境创建完成"
 }
 
@@ -473,7 +472,6 @@ update_deployment() {
         source $VIRTUAL_ENV_NAME/bin/activate
         pip install --upgrade pip
         pip install -r requirements.txt --upgrade
-        pip install -r requirements_gui.txt --upgrade
     "
 
     # 重启服务

@@ -203,18 +203,16 @@ deploy_with_dev() {
         log_info "创建Python虚拟环境..."
         python3 -m venv venv
     fi
-    
+
     # 激活虚拟环境并安装依赖
     log_info "安装依赖包..."
     source venv/bin/activate
     pip install --upgrade pip
     pip install -r requirements.txt
-    pip install -r requirements_gui.txt
-    
+
     # 启动应用
     log_info "启动应用..."
-    chmod +x run_gui.py
-    python3 run_gui.py
+    python -m uvicorn backend.api.server:app --host 0.0.0.0 --port 8000
 }
 
 # 显示部署结果

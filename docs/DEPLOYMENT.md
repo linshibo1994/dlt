@@ -189,7 +189,7 @@ sudo git clone https://github.com/your-username/dlt-prediction-system.git .
 
 # 创建虚拟环境
 sudo -u dlt python3.9 -m venv venv
-sudo -u dlt bash -c "source venv/bin/activate && pip install -r requirements.txt && pip install -r requirements_gui.txt"
+sudo -u dlt bash -c "source venv/bin/activate && pip install -r requirements.txt"
 
 # 设置权限
 sudo chown -R dlt:dlt /opt/dlt

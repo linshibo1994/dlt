@@ -17,10 +17,10 @@ if errorlevel 1 (
 
 REM 检查依赖包
 echo 🔍 检查依赖包...
-python -c "import streamlit" >nul 2>&1
+python -c "import fastapi" >nul 2>&1
 if errorlevel 1 (
-    echo ⚠️ 缺少Streamlit，正在安装...
-    pip install -r requirements_gui.txt
+    echo 缺少依赖，正在安装...
+    pip install -r requirements.txt
 )
 
 REM 检查核心文件

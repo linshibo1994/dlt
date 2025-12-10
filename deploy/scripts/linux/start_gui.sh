@@ -18,10 +18,10 @@ if [ "$version_check" = "1" ]; then
 fi
 
 # 检查依赖包
-echo "🔍 检查依赖包..."
-if ! python3 -c "import streamlit" 2>/dev/null; then
-    echo "⚠️ 缺少Streamlit，正在安装..."
-    pip3 install -r requirements_gui.txt
+echo "检查依赖包..."
+if ! python3 -c "import fastapi" 2>/dev/null; then
+    echo "缺少依赖，正在安装..."
+    pip3 install -r requirements.txt
 fi
 
 # 检查核心文件

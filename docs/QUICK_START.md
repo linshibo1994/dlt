@@ -1,45 +1,46 @@
-# 🚀 快速开始指南
+# 快速开始指南
 
-## 📋 系统要求
-- Python 3.8+
+## 系统要求
+- Python 3.8+ (推荐 3.10+)
+- Node.js 18+ (前端开发)
 - 操作系统: Windows 10+、macOS 10.15+、Linux (Ubuntu 18.04+)
 
-## ⚡ 快速安装
+## Docker 部署（推荐）
 
 ```bash
 # 1. 克隆项目
 git clone https://github.com/linshibo1994/dlt.git
 cd dlt
 
-# 2. 安装基础依赖
+# 2. 启动服务
+./deploy.sh start
+
+# 3. 访问应用
+# 前端界面: http://localhost
+# 后端API: http://localhost:8000/api
+# API文档: http://localhost:8000/docs
+```
+
+## 本地开发
+
+### 后端 API
+```bash
+# 安装依赖
 pip install -r requirements.txt
 
-# 3. 安装GUI依赖（推荐）
-pip install -r requirements_gui.txt
+# 启动服务
+python -m uvicorn backend.api.server:app --reload --port 8000
 ```
 
-## 🖥️ 启动GUI界面（推荐）
-
-### 方式一：使用启动脚本
+### 前端界面
 ```bash
-# Linux/macOS
-./start_gui.sh
-
-# Windows
-start_gui.bat
+cd frontend
+npm install
+npm run dev
+# 访问 http://localhost:3000
 ```
 
-### 方式二：使用Python脚本
-```bash
-python3 run_gui.py
-```
-
-### 方式三：直接启动
-```bash
-streamlit run gui_app.py
-```
-
-## 💻 命令行使用
+## 命令行使用
 
 ### 基本预测
 ```bash
@@ -71,7 +72,7 @@ python3 dlt_main.py predict -m bayesian --acceleration auto
 python3 dlt_main.py predict -m markov --acceleration cpu_multi --cpu-threads 6
 ```
 
-## 📊 数据管理
+## 数据管理
 
 ```bash
 # 查看数据状态
@@ -84,33 +85,23 @@ python3 dlt_main.py data update --incremental
 python3 dlt_main.py data update
 ```
 
-## 🎯 GUI功能说明
+## 界面功能
 
-### 🏠 系统首页
-- 实时硬件监控
-- 最新开奖结果
-- 快速预测入口
+| 页面 | 功能 |
+|------|------|
+| Dashboard | 系统概览、最新开奖、快速预测 |
+| Prediction | 26+ 预测算法、复式投注、成本计算 |
+| Analysis | 频率分析、冷热号、遗漏值分析 |
+| Compare | 批量预测对比、中奖统计 |
+| Settings | 主题切换、系统配置 |
 
-### 🔮 预测功能
-- 传统方法：频率、冷热、遗漏分析
-- 高级方法：马尔可夫、贝叶斯、聚类
-- 复式预测：支持所有方法
-- 成本计算：自动计算投注成本
+## 常见问题
 
-### 📈 数据分析
-- 统计图表可视化
-- 多维度分析报告
-- 异常检测分析
+### Q: 后端无法启动？
+A: 确保已安装依赖：`pip install -r requirements.txt`
 
-### ⚡ 性能优化
-- 硬件加速配置
-- 缓存管理
-- 性能监控
-
-## 🔧 常见问题
-
-### Q: GUI无法启动？
-A: 确保已安装GUI依赖：`pip install -r requirements_gui.txt`
+### Q: 前端无法启动？
+A: 确保已安装 Node.js 并运行 `npm install`
 
 ### Q: 预测结果为空？
 A: 检查数据是否正常加载：`python3 dlt_main.py data status`
@@ -118,20 +109,8 @@ A: 检查数据是否正常加载：`python3 dlt_main.py data status`
 ### Q: 如何更新数据？
 A: 运行：`python3 dlt_main.py data update --incremental`
 
-### Q: 支持哪些预测方法？
-A: 支持25+种算法，包括传统统计、机器学习、深度学习等
+## 获取帮助
 
-## 📞 获取帮助
-
-- 📖 完整文档：查看 README.md
-- 🐛 问题反馈：GitHub Issues
-- 💬 讨论交流：GitHub Discussions
-
-## 🎉 开始使用
-
-推荐使用GUI界面，功能更直观：
-```bash
-python3 run_gui.py
-```
-
-然后在浏览器中打开：http://localhost:8501
+- 完整文档：查看 README.md
+- 问题反馈：GitHub Issues
+- API 文档：http://localhost:8000/docs

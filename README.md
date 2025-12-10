@@ -213,13 +213,10 @@ curl -X POST http://localhost:8000/api/analysis/frequency \
 git clone https://github.com/linshibo1994/dlt.git
 cd dlt
 
-# 2. 安装基础依赖
+# 2. 安装依赖
 pip install -r requirements.txt
 
-# 3. 安装GUI依赖（推荐）
-pip install -r requirements_gui.txt
-
-# 4. 验证安装
+# 3. 验证安装
 python3 dlt_main.py data status
 ```
 
@@ -272,7 +269,7 @@ cd dlt
 ```bash
 # 终端 1：启动后端 API
 cd dlt
-pip install -r backend/requirements.txt
+pip install -r requirements.txt
 python -m uvicorn backend.api.server:app --reload --port 8000
 
 # 终端 2：启动前端开发服务器
