@@ -211,11 +211,14 @@ class PredictorService:
 
         if use_deep_learning and not args.compound:
             success, predictions = self.system._handle_deep_learning_prediction(args, acceleration_config)
-            if success:
+            if success and predictions:
                 return {
                     'mode': 'deep_learning',
                     'predictions': self._normalize_predictions(predictions),
                 }
+            # 深度学习失败，回退到 ensemble 传统方法
+            logger.warning(f"深度学习方法 {args.method} 失败，回退到 ensemble 方法")
+            args.method = 'ensemble'
 
         if args.compound:
             compound_result = self.system._handle_compound_prediction(args)
