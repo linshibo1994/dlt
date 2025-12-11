@@ -16,9 +16,9 @@ from collections import defaultdict, Counter, deque
 import copy
 import math
 
-from core_modules import cache_manager, logger_manager, data_manager, task_manager
-from analyzer_modules import basic_analyzer, advanced_analyzer, comprehensive_analyzer
-from smart_cache_system import smart_cache_manager
+from backend.app.core.core_modules import cache_manager, logger_manager, data_manager, task_manager
+from backend.app.analyzers.analyzer_modules import basic_analyzer, advanced_analyzer, comprehensive_analyzer
+from backend.app.core.smart_cache_system import smart_cache_manager
 from concurrent.futures import ThreadPoolExecutor, TimeoutError as FutureTimeoutError
 import hashlib
 

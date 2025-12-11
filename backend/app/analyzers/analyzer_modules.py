@@ -20,7 +20,7 @@ from sklearn.cluster import KMeans
 import warnings
 warnings.filterwarnings('ignore')
 
-import core_modules as cm
+import backend.app.core.core_modules as cm
 
 # 导入统一路径配置（使用相对导入，支持多种运行环境）
 _PATH_CONFIG_SOURCE = None  # 用于记录路径配置来源
@@ -54,7 +54,7 @@ if _PATH_CONFIG_SOURCE == "environment_variables_and_defaults":
     logger_manager.info(f"analyzer_modules 使用环境变量和默认路径配置 - REPORTS_VISUALIZATION_DIR: {REPORTS_VISUALIZATION_DIR}")
 
 # 导入智能缓存系统
-from smart_cache_system import smart_cache_manager
+from backend.app.core.smart_cache_system import smart_cache_manager
 
 # 导入复式预测功能（支持多种导入路径）
 try:

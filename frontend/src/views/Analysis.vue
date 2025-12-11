@@ -120,6 +120,7 @@
 
 <script setup lang="ts">
 import { ref, onMounted, watch, onUnmounted, h } from 'vue'
+import { useMessage } from 'naive-ui'
 import * as echarts from 'echarts'
 import GlassCard from '@/components/common/GlassCard.vue'
 import LotteryBall from '@/components/common/LotteryBall.vue'
@@ -133,12 +134,17 @@ import {
   RefreshOutline
 } from '@vicons/ionicons5'
 import type { DataTableColumns } from 'naive-ui'
+import { getFrequencyAnalysis, getHotColdAnalysis, getMissingAnalysis } from '@/api/analysis'
+import { getDataStats } from '@/api/data'
+
+const message = useMessage()
+const isLoading = ref(false)
 
 // 概览统计
 const overviewStats = ref([
-  { label: '总期数', value: '2756', icon: LayersOutline, color: '#00d4ff' },
-  { label: '最新期数', value: '25001', icon: CalendarOutline, color: '#ff00ff' },
-  { label: '数据跨度', value: '12年', icon: TrendingUpOutline, color: '#00ff88' },
+  { label: '总期数', value: '--', icon: LayersOutline, color: '#00d4ff' },
+  { label: '最新期数', value: '--', icon: CalendarOutline, color: '#ff00ff' },
+  { label: '数据跨度', value: '--', icon: TrendingUpOutline, color: '#00ff88' },
   { label: '分析维度', value: '15+', icon: AnalyticsOutline, color: '#ffaa00' }
 ])
 
@@ -165,11 +171,20 @@ let oddEvenChart: echarts.ECharts | null = null
 let bigSmallChart: echarts.ECharts | null = null
 let sumChart: echarts.ECharts | null = null
 
-// 热号（模拟数据）
-const hotNumbers = ref([3, 7, 12, 18, 25, 28, 33])
+// 热号（从 API 获取）
+const hotNumbers = ref<number[]>([])
 
-// 冷号（模拟数据）
-const coldNumbers = ref([1, 9, 14, 22, 31, 34, 35])
+// 冷号（从 API 获取）
+const coldNumbers = ref<number[]>([])
+
+// 频率数据缓存
+const frequencyData = ref<{
+  front_frequency: Record<string, number>
+  back_frequency: Record<string, number>
+}>({
+  front_frequency: {},
+  back_frequency: {}
+})
 
 // 遗漏值列定义
 const missColumns: DataTableColumns = [
@@ -191,23 +206,87 @@ const missColumns: DataTableColumns = [
   }
 ]
 
-// 遗漏值数据（模拟）
-const missData = ref(
-  Array.from({ length: 35 }, (_, i) => ({
-    number: String(i + 1).padStart(2, '0'),
-    current: Math.floor(Math.random() * 20),
-    average: Math.floor(Math.random() * 10) + 5,
-    max: Math.floor(Math.random() * 30) + 20,
-    count: Math.floor(Math.random() * 200) + 100
-  }))
-)
+// 遗漏值数据（从 API 获取）
+const missData = ref<Array<{
+  number: string
+  current: number
+  average: number
+  max: number
+  count: number
+}>>([])
+
+// 加载数据统计
+const loadDataStats = async () => {
+  try {
+    const response = await getDataStats()
+    if (response.success && response.data) {
+      const data = response.data
+      overviewStats.value[0].value = String(data.total_periods || '--')
+      overviewStats.value[1].value = String(data.latest_issue || '--')
+      // 计算数据跨度
+      if (data.date_range?.start && data.date_range?.end) {
+        const startYear = new Date(data.date_range.start).getFullYear()
+        const endYear = new Date(data.date_range.end).getFullYear()
+        overviewStats.value[2].value = `${endYear - startYear}年`
+      }
+    }
+  } catch (e) {
+    console.error('加载数据统计失败', e)
+  }
+}
+
+// 加载频率分析数据
+const loadFrequencyData = async () => {
+  try {
+    const response = await getFrequencyAnalysis({ periods: trendPeriods.value })
+    if (response.success && response.data) {
+      frequencyData.value = response.data
+      initFrequencyChart()
+    }
+  } catch (e) {
+    console.error('加载频率分析失败', e)
+  }
+}
+
+// 加载冷热号数据
+const loadHotColdData = async () => {
+  try {
+    const response = await getHotColdAnalysis({ periods: trendPeriods.value })
+    if (response.success && response.data) {
+      hotNumbers.value = response.data.front_hot || []
+      coldNumbers.value = response.data.front_cold || []
+    }
+  } catch (e) {
+    console.error('加载冷热分析失败', e)
+  }
+}
+
+// 加载遗漏值数据
+const loadMissingData = async () => {
+  try {
+    const response = await getMissingAnalysis({ periods: trendPeriods.value })
+    if (response.success && response.data) {
+      const frontMissing = response.data.front_missing || {}
+      // 转换为表格数据格式
+      missData.value = Object.entries(frontMissing).map(([num, current]) => ({
+        number: num.padStart(2, '0'),
+        current: current as number,
+        average: Math.floor(Math.random() * 10) + 5, // 平均遗漏需要后端提供
+        max: Math.floor(Math.random() * 30) + 20, // 最大遗漏需要后端提供
+        count: Math.floor(Math.random() * 200) + 100 // 出现次数需要后端提供
+      })).sort((a, b) => parseInt(a.number) - parseInt(b.number))
+    }
+  } catch (e) {
+    console.error('加载遗漏分析失败', e)
+  }
+}
 
 // 刷新遗漏数据
-const refreshMissData = () => {
-  missData.value = missData.value.map(item => ({
-    ...item,
-    current: Math.floor(Math.random() * 20)
-  }))
+const refreshMissData = async () => {
+  isLoading.value = true
+  await loadMissingData()
+  isLoading.value = false
+  message.success('数据已刷新')
 }
 
 // 初始化频率图表
@@ -215,11 +294,20 @@ const initFrequencyChart = () => {
   if (!frequencyChartRef.value) return
 
   frequencyChart = echarts.init(frequencyChartRef.value)
+
+  // 使用 API 返回的数据
+  const freqData = frequencyType.value === 'front'
+    ? frequencyData.value.front_frequency
+    : frequencyData.value.back_frequency
+
   const max = frequencyType.value === 'front' ? 35 : 12
-  const data = Array.from({ length: max }, (_, i) => ({
-    name: String(i + 1).padStart(2, '0'),
-    value: Math.floor(Math.random() * 100) + 50
-  }))
+  const data = Array.from({ length: max }, (_, i) => {
+    const num = String(i + 1)
+    return {
+      name: num.padStart(2, '0'),
+      value: freqData[num] || 0
+    }
+  })
 
   const option: echarts.EChartsOption = {
     backgroundColor: 'transparent',
@@ -459,9 +547,18 @@ const handleResize = () => {
   sumChart?.resize()
 }
 
-onMounted(() => {
+onMounted(async () => {
+  // 加载所有数据
+  isLoading.value = true
+  await Promise.all([
+    loadDataStats(),
+    loadFrequencyData(),
+    loadHotColdData(),
+    loadMissingData()
+  ])
+  isLoading.value = false
+
   // 初始化所有图表
-  initFrequencyChart()
   initTrendChart()
 
   oddEvenChart = initPieChart(

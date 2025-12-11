@@ -1,5 +1,5 @@
 import request from './index'
-import type { ApiResponse, AlgorithmInfo, PredictionRequest, PredictionResult } from '@/types'
+import type { ApiResponse, AlgorithmInfo, PredictionRequest, PredictionResponseData } from '@/types'
 
 // List all available algorithms
 export const getAlgorithms = () => {
@@ -8,7 +8,7 @@ export const getAlgorithms = () => {
 
 // Execute prediction
 export const executePrediction = (data: PredictionRequest) => {
-  return request.post<any, ApiResponse<PredictionResult[]>>('/predict', data)
+  return request.post<any, ApiResponse<PredictionResponseData>>('/predict', data)
 }
 
 // Get prediction history

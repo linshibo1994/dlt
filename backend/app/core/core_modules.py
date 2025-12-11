@@ -128,9 +128,22 @@ class CacheManager:
                     return pickle.load(f)
         
         except Exception as e:
-            print(f"❌ 加载缓存失败: {e}")
+            print(f"加载缓存失败: {e}")
             return None
-    
+
+    def invalidate_cache(self, cache_type: str, key: str) -> bool:
+        """使特定缓存失效（删除）"""
+        cache_path = self.get_cache_path(cache_type, key)
+        try:
+            if os.path.exists(cache_path):
+                os.remove(cache_path)
+                print(f"[OK] 缓存已失效: {cache_path}")
+                return True
+            return False
+        except Exception as e:
+            print(f"[ERROR] 删除缓存失败: {e}")
+            return False
+
     def clear_cache(self, cache_type: str = "all") -> int:
         """清理缓存"""
         cleared_count = 0
@@ -476,7 +489,15 @@ class DataManager:
             },
             'latest_issue': self.df.iloc[0]['issue']  # 最新期号
         }
-    
+
+    def reload_data(self):
+        """重新加载数据（用于数据更新后刷新）"""
+        # 清除缓存
+        self.cache_manager.invalidate_cache("data", "dlt_data_all")
+        # 重新加载
+        self._load_data()
+        print(f"[OK] 数据已重新加载: {len(self.df)} 期")
+
     def get_data(self) -> pd.DataFrame:
         """获取数据"""
         return self.df

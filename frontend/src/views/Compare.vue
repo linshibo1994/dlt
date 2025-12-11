@@ -5,32 +5,63 @@
       <div class="compare-config">
         <div class="config-row">
           <div class="config-item">
-            <label>起始期数</label>
-            <n-input-number
-              v-model:value="config.startPeriod"
-              :min="1"
-              :max="25000"
-              placeholder="起始期数"
+            <label>目标期号</label>
+            <n-input
+              v-model:value="config.targetIssue"
+              placeholder="输入要验证的期号"
             />
           </div>
           <div class="config-item">
-            <label>结束期数</label>
-            <n-input-number
-              v-model:value="config.endPeriod"
-              :min="config.startPeriod"
-              :max="25001"
-              placeholder="结束期数"
-            />
-          </div>
-          <div class="config-item">
-            <label>对比算法</label>
+            <label>预测算法</label>
             <n-select
-              v-model:value="config.algorithms"
+              v-model:value="config.method"
               :options="algorithmOptions"
-              multiple
               placeholder="选择算法"
-              max-tag-count="responsive"
             />
+          </div>
+          <div class="config-item">
+            <label>对比次数</label>
+            <n-input-number
+              v-model:value="config.times"
+              :min="1"
+              :max="1000"
+              placeholder="对比次数"
+            />
+          </div>
+        </div>
+        <div class="config-row">
+          <div class="config-item">
+            <label>分析期数</label>
+            <n-input-number
+              v-model:value="config.periods"
+              :min="50"
+              :max="2000"
+              placeholder="分析期数"
+            />
+          </div>
+          <div class="config-item">
+            <label>随机期数</label>
+            <n-switch v-model:value="config.randomPeriods" />
+          </div>
+          <div class="config-item" v-if="config.randomPeriods">
+            <label>期数范围</label>
+            <div style="display: flex; gap: 8px;">
+              <n-input-number
+                v-model:value="config.minPeriods"
+                :min="10"
+                :max="config.maxPeriods"
+                placeholder="最小"
+                style="width: 100px"
+              />
+              <span style="line-height: 34px;">-</span>
+              <n-input-number
+                v-model:value="config.maxPeriods"
+                :min="config.minPeriods"
+                :max="2000"
+                placeholder="最大"
+                style="width: 100px"
+              />
+            </div>
           </div>
         </div>
         <div class="config-actions">
@@ -177,21 +208,27 @@ import {
   DownloadOutline
 } from '@vicons/ionicons5'
 import type { DataTableColumns } from 'naive-ui'
+import { executeBatchComparison } from '@/api/compare'
+import { getLatestData } from '@/api/data'
 
 const message = useMessage()
 
 // 对比配置
 const config = ref({
-  startPeriod: 24900,
-  endPeriod: 25000,
-  algorithms: ['ensemble', 'lstm']
+  targetIssue: '',
+  method: 'markov',
+  periods: 100,
+  times: 50,
+  randomPeriods: false,
+  minPeriods: 20,
+  maxPeriods: 500
 })
 
 // 算法选项
 const algorithmOptions = [
   { label: '集成深度学习', value: 'ensemble' },
   { label: 'LSTM时序预测', value: 'lstm' },
-  { label: '自适应马尔可夫', value: 'markov' },
+  { label: '一阶马尔可夫', value: 'markov' },
   { label: 'Transformer', value: 'transformer' },
   { label: '贝叶斯分析', value: 'bayesian' },
   { label: '频率分析', value: 'frequency' }
@@ -201,7 +238,7 @@ const algorithmOptions = [
 const isComparing = ref(false)
 const compareProgress = ref(0)
 const currentCompareIndex = ref(0)
-const totalCompareCount = computed(() => config.value.endPeriod - config.value.startPeriod + 1)
+const totalCompareCount = computed(() => config.value.times)
 
 // 对比结果
 const compareResults = ref<Array<{
@@ -360,8 +397,8 @@ const getRowClassName = (row: any) => {
 
 // 开始对比
 const startCompare = async () => {
-  if (config.value.algorithms.length === 0) {
-    message.warning('请至少选择一种算法')
+  if (!config.value.targetIssue) {
+    message.warning('请输入目标期号')
     return
   }
 
@@ -370,44 +407,68 @@ const startCompare = async () => {
   currentCompareIndex.value = 0
   compareResults.value = []
 
-  const total = totalCompareCount.value
-
-  // 模拟对比过程
-  for (let i = 0; i < total; i++) {
-    currentCompareIndex.value = i + 1
-    compareProgress.value = Math.round(((i + 1) / total) * 100)
-
-    // 生成模拟数据
-    const actual = {
-      front: generateRandomNumbers(5, 1, 35),
-      back: generateRandomNumbers(2, 1, 12)
-    }
-    const predicted = {
-      front: generateRandomNumbers(5, 1, 35),
-      back: generateRandomNumbers(2, 1, 12)
-    }
-
-    const frontHit = predicted.front.filter(n => actual.front.includes(n)).length
-    const backHit = predicted.back.filter(n => actual.back.includes(n)).length
-
-    compareResults.value.push({
-      period: String(config.value.startPeriod + i),
-      actual,
-      predicted,
-      frontHit,
-      backHit,
-      prizeLevel: getPrizeLevel(frontHit, backHit),
-      algorithm: config.value.algorithms[i % config.value.algorithms.length] ?? 'ensemble'
+  try {
+    // 调用后端 API 执行批量对比
+    const response = await executeBatchComparison({
+      target_issue: config.value.targetIssue,
+      method: config.value.method,
+      periods: config.value.periods,
+      times: config.value.times,
+      random_periods: config.value.randomPeriods,
+      min_periods: config.value.minPeriods,
+      max_periods: config.value.maxPeriods,
+      export_excel: false,
+      show_progress: false
     })
 
-    await new Promise(resolve => setTimeout(resolve, 50))
+    if (response.success && response.data) {
+      const { records, summary } = response.data
+
+      // 转换后端返回的数据格式
+      compareResults.value = (records || []).map((record: any, index: number) => ({
+        period: config.value.targetIssue,
+        actual: {
+          front: record.actual_front || summary?.actual_numbers?.front_balls || [],
+          back: record.actual_back || summary?.actual_numbers?.back_balls || []
+        },
+        predicted: {
+          front: record.predicted_front || [],
+          back: record.predicted_back || []
+        },
+        frontHit: record.front_hits || 0,
+        backHit: record.back_hits || 0,
+        prizeLevel: getPrizeLevelFromNumber(record.prize_level),
+        algorithm: algorithmOptions.find(a => a.value === config.value.method)?.label || config.value.method
+      }))
+
+      compareProgress.value = 100
+      currentCompareIndex.value = records?.length || 0
+      message.success(`对比完成，共 ${records?.length || 0} 轮`)
+
+      // 初始化趋势图
+      setTimeout(() => initHitTrendChart(), 100)
+    } else {
+      message.error(response.message || '对比失败')
+    }
+  } catch (error: any) {
+    message.error(`对比出错: ${error.message || '未知错误'}`)
+  } finally {
+    isComparing.value = false
   }
+}
 
-  isComparing.value = false
-  message.success('对比完成')
-
-  // 初始化趋势图
-  setTimeout(() => initHitTrendChart(), 100)
+// 根据中奖等级数字返回中文名称
+const getPrizeLevelFromNumber = (level: number): string => {
+  const levelMap: Record<number, string> = {
+    1: '一等奖',
+    2: '二等奖',
+    3: '三等奖',
+    4: '四等奖',
+    5: '五等奖',
+    6: '六等奖',
+    0: '-'
+  }
+  return levelMap[level] || '-'
 }
 
 // 生成随机号码
@@ -439,12 +500,22 @@ const getPrizeLevel = (frontHit: number, backHit: number): string => {
 }
 
 // 重置配置
-const resetConfig = () => {
-  config.value = {
-    startPeriod: 24900,
-    endPeriod: 25000,
-    algorithms: ['ensemble', 'lstm']
+const resetConfig = async () => {
+  // 获取最新期号作为默认目标期号
+  try {
+    const response = await getLatestData()
+    if (response.success && response.data) {
+      config.value.targetIssue = response.data.issue || ''
+    }
+  } catch (e) {
+    // 忽略错误
   }
+  config.value.method = 'markov'
+  config.value.periods = 100
+  config.value.times = 50
+  config.value.randomPeriods = false
+  config.value.minPeriods = 20
+  config.value.maxPeriods = 500
   compareResults.value = []
 }
 
@@ -569,8 +640,10 @@ const handleResize = () => {
   hitTrendChart?.resize()
 }
 
-onMounted(() => {
+onMounted(async () => {
   window.addEventListener('resize', handleResize)
+  // 初始化时获取最新期号
+  await resetConfig()
 })
 
 onUnmounted(() => {

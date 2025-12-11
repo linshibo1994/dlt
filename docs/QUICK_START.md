@@ -17,8 +17,8 @@ cd dlt
 
 # 3. 访问应用
 # 前端界面: http://localhost
-# 后端API: http://localhost:8000/api
-# API文档: http://localhost:8000/docs
+# 后端API: http://localhost:6000/api
+# API文档: http://localhost:6000/docs
 ```
 
 ## 本地开发
@@ -29,7 +29,7 @@ cd dlt
 pip install -r requirements.txt
 
 # 启动服务
-python -m uvicorn backend.api.server:app --reload --port 8000
+python -m uvicorn backend.api.server:app --reload --port 6000
 ```
 
 ### 前端界面
@@ -113,4 +113,4 @@ A: 运行：`python3 dlt_main.py data update --incremental`
 
 - 完整文档：查看 README.md
 - 问题反馈：GitHub Issues
-- API 文档：http://localhost:8000/docs
+- API 文档：http://localhost:6000/docs

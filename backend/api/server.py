@@ -6,14 +6,16 @@ from __future__ import annotations
 
 import logging
 import os
+import requests
 from datetime import datetime
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 from fastapi import Depends, FastAPI, HTTPException, Query, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 from backend.app.core import core_modules as cm
+from backend.app.utils.crawlers import update_data as crawler_update_data
 
 from . import schemas
 from .dependencies import (
@@ -67,6 +69,35 @@ def raise_http_error(message: str, status_code: int = status.HTTP_400_BAD_REQUES
 
 # ==================== 数据接口 ====================
 
+def fetch_prize_info(issue: str) -> Optional[List[Dict[str, Any]]]:
+    """从 sporttery.cn 获取奖项信息"""
+    try:
+        url = (
+            "https://webapi.sporttery.cn/gateway/lottery/getHistoryPageListV1.qry?"
+            "gameNo=85&provinceId=0&pageSize=1&isVerify=1&pageNo=1"
+        )
+        response = requests.get(url, timeout=5)
+        response.raise_for_status()
+        data = response.json()
+
+        if data.get('value') and data['value'].get('list'):
+            for item in data['value']['list']:
+                if str(item.get('lotteryDrawNum')) == issue:
+                    prize_list = item.get('prizeLevelList', [])
+                    return [
+                        {
+                            'level': p.get('prizeLevelName'),
+                            'count': p.get('prizeNum'),
+                            'amount': p.get('prizeAmountStr'),
+                        }
+                        for p in prize_list
+                    ]
+        return None
+    except Exception as exc:
+        logger.warning(f"获取奖项信息失败 (期号: {issue}): {exc}")
+        return None
+
+
 @app.get("/api/data/latest", response_model=schemas.ApiResponse)
 def get_latest_data(data_manager=Depends(get_data_manager)):
     df = data_manager.get_data()
@@ -75,11 +106,14 @@ def get_latest_data(data_manager=Depends(get_data_manager)):
 
     latest = df.iloc[0]
     front, back = data_manager.parse_balls(latest)
+    issue = str(latest.get('issue'))
+
     record = schemas.DataRecord(
-        issue=str(latest.get('issue')),
+        issue=issue,
         date=str(latest.get('date')),
         front_balls=[int(x) for x in front],
         back_balls=[int(x) for x in back],
+        prize_grades=fetch_prize_info(issue),
     )
     return build_response(record.dict(), "获取最新数据成功")
 
@@ -124,16 +158,78 @@ def get_data_history(
 def get_data_stats(data_manager=Depends(get_data_manager), cache_manager=Depends(get_cache_manager)):
     stats = data_manager.get_stats() or {}
     cache_info = cache_manager.get_cache_info()
+
+    # 转换 numpy 类型为 Python 原生类型
+    total_periods = stats.get('total_periods', 0)
+    if hasattr(total_periods, 'item'):
+        total_periods = total_periods.item()
+
+    latest_issue = stats.get('latest_issue')
+    if latest_issue is not None and hasattr(latest_issue, 'item'):
+        latest_issue = latest_issue.item()
+
+    date_range = stats.get('date_range', {})
+    # 处理 date_range 中可能的 numpy 类型
+    if isinstance(date_range, dict):
+        date_range = {k: (v.item() if hasattr(v, 'item') else v) for k, v in date_range.items()}
+
+    # 处理缓存信息（'total' 是一个字典结构）
+    cache_total = cache_info.get('total', {})
+    if isinstance(cache_total, dict):
+        cache_files = cache_total.get('files', 0)
+        cache_size_mb = cache_total.get('size_mb', 0.0)
+    else:
+        cache_files = 0
+        cache_size_mb = 0.0
+
     response = schemas.DataStatsResponse(
-        total_periods=stats.get('total_periods', 0),
-        date_range=stats.get('date_range', {}),
-        latest_issue=stats.get('latest_issue'),
+        total_periods=int(total_periods) if total_periods else 0,
+        date_range=date_range,
+        latest_issue=str(latest_issue) if latest_issue else None,
         cache={
             'cache_dir': cache_info.get('cache_dir'),
-            'total': cache_info.get('total'),
+            'total': int(cache_files) if cache_files else 0,
+            'size_mb': float(cache_size_mb) if cache_size_mb else 0.0,
         },
     )
     return build_response(response.dict(), "统计信息获取成功")
+
+
+@app.post("/api/data/update", response_model=schemas.ApiResponse)
+def update_lottery_data(data_manager=Depends(get_data_manager)):
+    """更新彩票数据（从官网爬取最新数据）"""
+    try:
+        # 调用爬虫更新数据
+        updated_count = crawler_update_data(source="zhcw")
+
+        # 重新加载数据
+        data_manager.reload_data()
+
+        # 获取更新后的统计信息
+        df = data_manager.get_data()
+        latest_issue = None
+        latest_date = None
+        total_periods = 0
+
+        if df is not None and len(df) > 0:
+            total_periods = len(df)
+            latest = df.iloc[0]
+            latest_issue = str(latest.get('issue', ''))
+            latest_date = str(latest.get('date', ''))
+
+        response = schemas.DataUpdateResponse(
+            updated_count=updated_count,
+            total_periods=total_periods,
+            latest_issue=latest_issue,
+            latest_date=latest_date,
+        )
+
+        message = f"数据更新成功，新增 {updated_count} 期数据" if updated_count > 0 else "数据已是最新，无需更新"
+        return build_response(response.dict(), message)
+
+    except Exception as exc:
+        logger.exception("数据更新失败: %s", exc)
+        raise_http_error(f"数据更新失败: {str(exc)}", status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 # ==================== 预测接口 ====================
@@ -329,4 +425,4 @@ async def generic_exception_handler(_, exc: Exception):
 if __name__ == "__main__":
     import uvicorn
 
-    uvicorn.run("backend.api.server:app", host="0.0.0.0", port=8000, reload=False)
+    uvicorn.run("backend.api.server:app", host="0.0.0.0", port=6000, reload=False)

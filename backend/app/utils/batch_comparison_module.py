@@ -21,13 +21,13 @@ import threading
 import time
 
 # 导入核心模块
-from core_modules import cache_manager, logger_manager, data_manager, task_manager
+from backend.app.core.core_modules import cache_manager, logger_manager, data_manager, task_manager
 
 # 导入预测器
-from predictor_modules import get_traditional_predictor, get_advanced_predictor, get_super_predictor
+from backend.app.predictors.predictor_modules import get_traditional_predictor, get_advanced_predictor, get_super_predictor
 
 # 导入分析器
-from analyzer_modules import basic_analyzer, advanced_analyzer, comprehensive_analyzer
+from backend.app.analyzers.analyzer_modules import basic_analyzer, advanced_analyzer, comprehensive_analyzer
 
 @dataclass
 class BatchComparisonConfig:

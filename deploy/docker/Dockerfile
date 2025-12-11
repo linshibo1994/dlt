@@ -40,11 +40,11 @@ COPY . .
 RUN mkdir -p cache logs models output data config
 
 # 暴露端口
-EXPOSE 8000
+EXPOSE 6000
 
 # 健康检查
 HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
-    CMD curl -f http://localhost:8000/api/system/health || exit 1
+    CMD curl -f http://localhost:6000/api/system/health || exit 1
 
 # 启动命令
-CMD ["python", "-m", "uvicorn", "backend.api.server:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["python", "-m", "uvicorn", "backend.api.server:app", "--host", "0.0.0.0", "--port", "6000"]

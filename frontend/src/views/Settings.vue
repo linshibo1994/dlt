@@ -10,7 +10,7 @@
           </div>
           <n-input
             v-model:value="settings.apiBaseUrl"
-            placeholder="http://localhost:8000"
+            placeholder="http://localhost:6000"
             style="width: 300px"
           />
         </div>

@@ -188,6 +188,7 @@ class DataRecord(BaseModel):
     date: str
     front_balls: List[int]
     back_balls: List[int]
+    prize_grades: Optional[List[Dict[str, Any]]] = None
 
 
 class DataHistoryResponse(BaseModel):
@@ -224,3 +225,12 @@ class HealthStatusResponse(BaseModel):
 
     status: str
     components: Dict[str, bool]
+
+
+class DataUpdateResponse(BaseModel):
+    """数据更新响应"""
+
+    updated_count: int
+    total_periods: int
+    latest_issue: Optional[str] = None
+    latest_date: Optional[str] = None

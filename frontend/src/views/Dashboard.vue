@@ -27,22 +27,33 @@
       <!-- 最新开奖结果 -->
       <GlassCard title="最新开奖结果" class="latest-result-card">
         <template #headerExtra>
-          <n-button text type="primary" @click="refreshLatest">
-            <template #icon><RefreshOutline /></template>
-            刷新
-          </n-button>
+          <div class="header-actions">
+            <n-button
+              text
+              type="warning"
+              :loading="dataStore.isUpdating"
+              @click="handleUpdateData"
+            >
+              <template #icon><CloudDownloadOutline /></template>
+              {{ dataStore.isUpdating ? '更新中...' : '更新数据' }}
+            </n-button>
+            <n-button text type="primary" @click="refreshLatest">
+              <template #icon><RefreshOutline /></template>
+              刷新
+            </n-button>
+          </div>
         </template>
         <div class="latest-result">
           <div class="result-header">
-            <span class="period">第 {{ latestResult.period }} 期</span>
-            <span class="date">{{ latestResult.date }}</span>
+            <span class="period">第 {{ displayResult.period }} 期</span>
+            <span class="date">{{ displayResult.date }}</span>
           </div>
           <div class="balls-container">
             <div class="ball-group front">
               <span class="group-label">前区</span>
               <div class="balls">
                 <LotteryBall
-                  v-for="(num, idx) in latestResult.front"
+                  v-for="(num, idx) in displayResult.front"
                   :key="'f' + idx"
                   :number="num"
                   type="front"
@@ -56,13 +67,13 @@
               <span class="group-label">后区</span>
               <div class="balls">
                 <LotteryBall
-                  v-for="(num, idx) in latestResult.back"
+                  v-for="(num, idx) in displayResult.back"
                   :key="'b' + idx"
                   :number="num"
                   type="back"
                   size="lg"
                   :animate="animateBalls"
-                  :delay="(latestResult.front.length + idx) * 100"
+                  :delay="(displayResult.front.length + idx) * 100"
                 />
               </div>
             </div>
@@ -70,13 +81,23 @@
           <div class="prize-info">
             <div class="prize-item">
               <span class="prize-label">一等奖</span>
-              <span class="prize-value">{{ latestResult.prize1Count }} 注</span>
-              <span class="prize-amount">{{ formatMoney(latestResult.prize1Amount) }}</span>
+              <span class="prize-value">{{ displayResult.prize1Count }} 注</span>
+              <span class="prize-amount">{{ formatMoney(displayResult.prize1Amount) }}</span>
             </div>
             <div class="prize-item">
               <span class="prize-label">二等奖</span>
-              <span class="prize-value">{{ latestResult.prize2Count }} 注</span>
-              <span class="prize-amount">{{ formatMoney(latestResult.prize2Amount) }}</span>
+              <span class="prize-value">{{ displayResult.prize2Count }} 注</span>
+              <span class="prize-amount">{{ formatMoney(displayResult.prize2Amount) }}</span>
+            </div>
+            <div class="prize-item">
+              <span class="prize-label">三等奖</span>
+              <span class="prize-value">{{ displayResult.prize3Count }} 注</span>
+              <span class="prize-amount">{{ formatMoney(displayResult.prize3Amount) }}</span>
+            </div>
+            <div class="prize-item">
+              <span class="prize-label">四等奖</span>
+              <span class="prize-value">{{ displayResult.prize4Count }} 注</span>
+              <span class="prize-amount">{{ formatMoney(displayResult.prize4Amount) }}</span>
             </div>
           </div>
         </div>
@@ -159,7 +180,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, watch, onUnmounted } from 'vue'
+import { ref, computed, onMounted, watch, onUnmounted } from 'vue'
 import { useMessage } from 'naive-ui'
 import * as echarts from 'echarts'
 import NumberFlow from '@number-flow/vue'
@@ -169,6 +190,7 @@ import {
   TrendingUpOutline,
   TrendingDownOutline,
   RefreshOutline,
+  CloudDownloadOutline,
   DiceOutline,
   BarChartOutline,
   GitCompareOutline,
@@ -186,6 +208,89 @@ const animateBalls = ref(false)
 const trendRange = ref('30')
 const trendChartRef = ref<HTMLElement | null>(null)
 let trendChart: echarts.ECharts | null = null
+
+// 使用 computed 从 store 获取最新开奖结果，提供默认值
+const displayResult = computed(() => {
+  const result = dataStore.latestResult
+  if (result) {
+    // 解析奖项信息（兼容多种后端返回格式）
+    const prizeGrades = result.prize_grades || []
+    const levelNames = ['一等奖', '二等奖', '三等奖', '四等奖', '五等奖', '六等奖']
+
+    const getPrizeInfo = (level: number) => {
+      const targetName = levelNames[level - 1]
+
+      const prize = prizeGrades.find((p: any) => {
+        // 格式1: 后端转换后的格式 (level 为字符串)
+        if (typeof p.level === 'string') {
+          return p.level === targetName
+        }
+        // 格式2: 原始 sporttery.cn 格式 (prizeLevelName)
+        if (p.prizeLevelName) {
+          return p.prizeLevelName === targetName
+        }
+        // 格式3: 旧格式 (level/grade 为数字)
+        return p.level === level || p.grade === level
+      })
+
+      if (!prize) {
+        return { count: 0, amount: 0 }
+      }
+
+      // 处理不同格式的数量字段
+      const count = prize.prizeNum ?? prize.count ?? prize.prize_count ?? 0
+
+      // 处理不同格式的金额字段
+      let amount = 0
+      if (prize.prizeAmount) {
+        amount = parseInt(String(prize.prizeAmount).replace(/[^0-9]/g, ''), 10) || 0
+      } else if (prize.amount) {
+        amount = typeof prize.amount === 'string'
+          ? parseInt(prize.amount.replace(/[^0-9]/g, ''), 10) || 0
+          : prize.amount
+      } else if (prize.prize_amount) {
+        amount = prize.prize_amount
+      }
+
+      return { count, amount }
+    }
+
+    const prize1 = getPrizeInfo(1)
+    const prize2 = getPrizeInfo(2)
+    const prize3 = getPrizeInfo(3)
+    const prize4 = getPrizeInfo(4)
+
+    return {
+      period: result.issue || '---',
+      date: result.date || '---',
+      front: result.front_balls || [],
+      back: result.back_balls || [],
+      prize1Count: prize1.count,
+      prize1Amount: prize1.amount,
+      prize2Count: prize2.count,
+      prize2Amount: prize2.amount,
+      prize3Count: prize3.count,
+      prize3Amount: prize3.amount,
+      prize4Count: prize4.count,
+      prize4Amount: prize4.amount
+    }
+  }
+  // 默认值
+  return {
+    period: '---',
+    date: '---',
+    front: [],
+    back: [],
+    prize1Count: 0,
+    prize1Amount: 0,
+    prize2Count: 0,
+    prize2Amount: 0,
+    prize3Count: 0,
+    prize3Amount: 0,
+    prize4Count: 0,
+    prize4Amount: 0
+  }
+})
 
 // 统计数据
 const statsData = ref([
@@ -218,18 +323,6 @@ const statsData = ref([
     gradient: 'linear-gradient(135deg, #ffaa00 0%, #cc8800 100%)'
   }
 ])
-
-// 最新开奖结果
-const latestResult = ref({
-  period: '25001',
-  date: '2025-01-01',
-  front: [3, 12, 18, 27, 35],
-  back: [5, 11],
-  prize1Count: 2,
-  prize1Amount: 10000000,
-  prize2Count: 56,
-  prize2Amount: 150000
-})
 
 // 算法性能排行
 const topAlgorithms = ref([
@@ -264,6 +357,24 @@ const refreshLatest = async () => {
     animateBalls.value = true
   }, 100)
   message.success('数据已刷新')
+}
+
+// 更新数据（从官网爬取）
+const handleUpdateData = async () => {
+  const result = await dataStore.updateData()
+  if (result.success) {
+    animateBalls.value = false
+    setTimeout(() => {
+      animateBalls.value = true
+    }, 100)
+    if (result.data && result.data.updated_count > 0) {
+      message.success(`更新成功，新增 ${result.data.updated_count} 期数据`)
+    } else {
+      message.info('数据已是最新，无需更新')
+    }
+  } else {
+    message.error(result.message || '更新失败')
+  }
 }
 
 // 初始化走势图
@@ -353,7 +464,10 @@ const handleResize = () => {
   trendChart?.resize()
 }
 
-onMounted(() => {
+onMounted(async () => {
+  // 获取最新开奖数据
+  await dataStore.fetchLatestResult()
+
   // 触发球号动画
   setTimeout(() => {
     animateBalls.value = true
@@ -494,9 +608,16 @@ onUnmounted(() => {
   gap: 8px;
 }
 
-.prize-info {
+.header-actions {
   display: flex;
-  gap: 24px;
+  gap: 12px;
+  align-items: center;
+}
+
+.prize-info {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
   padding-top: 16px;
   border-top: 1px solid var(--border-default);
 }

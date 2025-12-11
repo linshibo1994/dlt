@@ -139,14 +139,14 @@ dashboard.start_server(port=8080)
         return '''```bash
 # Docker部署示例
 docker build -t deep-learning-platform .
-docker run -p 8000:8000 deep-learning-platform
+docker run -p 6000:6000 deep-learning-platform
 
 # Kubernetes部署
 kubectl apply -f k8s/deployment.yaml
 kubectl apply -f k8s/service.yaml
 
 # 使用API
-curl -X POST http://localhost:8000/api/v1/predict \\
+curl -X POST http://localhost:6000/api/v1/predict \\
   -H "Content-Type: application/json" \\
   -d '{"data": [[1, 2, 3, 4, 5]]}'
 ```'''

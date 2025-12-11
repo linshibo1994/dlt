@@ -10,7 +10,7 @@ services:
     container_name: dlt-backend
     restart: unless-stopped
     ports:
-      - "8000:8000"
+      - "6000:6000"
     volumes:
       # 持久化数据目录
       - ./data:/app/data
@@ -22,7 +22,7 @@ services:
       - PYTHONPATH=/app
       - ENV=production
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/api/system/health"]
+      test: ["CMD", "curl", "-f", "http://localhost:6000/api/system/health"]
       interval: 30s
       timeout: 10s
       retries: 3

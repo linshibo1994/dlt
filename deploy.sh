@@ -39,8 +39,8 @@ start_services() {
     echo ""
     echo "访问地址:"
     echo "  前端: http://localhost"
-    echo "  后端API: http://localhost:8000/api"
-    echo "  健康检查: http://localhost:8000/api/system/health"
+    echo "  后端API: http://localhost:6000/api"
+    echo "  健康检查: http://localhost:6000/api/system/health"
 }
 
 # 停止服务

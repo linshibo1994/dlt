@@ -15,13 +15,35 @@ from typing import Any, Dict, List, Optional
 
 from backend.app.main import DLTPredictorSystem
 from backend.app.core import core_modules as cm
+from backend.app.core.method_categories import REQUIRES_DEEP_LEARNING
 from backend.app.analyzers import analyzer_modules
-from backend.app.utils.batch_comparison_module import (
-    BatchComparison,
-    BatchComparisonConfig,
-    ComparisonResult,
-    PredictionRecord,
-)
+
+# 批量对比模块导入（可选，由于循环依赖问题可能失败）
+try:
+    from backend.app.utils.batch_comparison_module import (
+        BatchComparison,
+        BatchComparisonConfig,
+        ComparisonResult,
+        PredictionRecord,
+    )
+    BATCH_COMPARISON_AVAILABLE = True
+except ImportError as e:
+    logging.warning(f"批量对比模块导入失败: {e}")
+    BATCH_COMPARISON_AVAILABLE = False
+    # 定义占位类
+    class BatchComparison:
+        def execute(self, config):
+            raise NotImplementedError("批量对比模块不可用")
+    class BatchComparisonConfig:
+        def __init__(self, **kwargs):
+            for k, v in kwargs.items():
+                setattr(self, k, v)
+        def validate(self):
+            return False, "批量对比模块不可用"
+    class ComparisonResult:
+        pass
+    class PredictionRecord:
+        pass
 
 logger = logging.getLogger(__name__)
 
@@ -71,35 +93,35 @@ def get_batch_comparison() -> BatchComparison:
 
 # ==================== 算法元数据 ====================
 
-ALGORITHM_DEFINITIONS: List[Dict[str, str]] = [
-    {"id": "frequency", "name": "频率分析", "category": "传统统计", "description": "根据期号频率分布生成组合"},
-    {"id": "hot_cold", "name": "冷热分析", "category": "传统统计", "description": "结合热号冷号趋势"},
-    {"id": "missing", "name": "遗漏分析", "category": "传统统计", "description": "评估号码遗漏周期"},
-    {"id": "markov", "name": "一阶马尔可夫", "category": "高级算法", "description": "基于状态转移矩阵预测"},
-    {"id": "markov_2nd", "name": "二阶马尔可夫", "category": "高级算法", "description": "使用更长历史刻画惯性"},
-    {"id": "markov_3rd", "name": "三阶马尔可夫", "category": "高级算法", "description": "多阶链综合判断趋势"},
-    {"id": "adaptive_markov", "name": "自适应马尔可夫", "category": "高级算法", "description": "动态调整阶数与权重"},
-    {"id": "bayesian", "name": "贝叶斯推理", "category": "高级算法", "description": "按照先验与似然生成概率模型"},
-    {"id": "ensemble", "name": "集成预测", "category": "高级算法", "description": "组合多模型加权"},
-    {"id": "clustering", "name": "聚类预测", "category": "高级算法", "description": "向量化特征后进行 K-Means"},
-    {"id": "super", "name": "超级预测", "category": "智能增强", "description": "调用超级预测器"},
-    {"id": "adaptive", "name": "自适应学习", "category": "智能增强", "description": "多臂老虎机动态选择预测器"},
-    {"id": "compound", "name": "复式选号", "category": "投注策略", "description": "生成高覆盖复式组合"},
-    {"id": "duplex", "name": "胆拖选号", "category": "投注策略", "description": "根据胆码拖码构建组合"},
-    {"id": "markov_custom", "name": "自定义马尔可夫", "category": "高级算法", "description": "自定义分析期与预测期"},
-    {"id": "mixed_strategy", "name": "混合策略", "category": "智能增强", "description": "多策略融合控制风险"},
-    {"id": "highly_integrated", "name": "高度集成", "category": "智能增强", "description": "多模型融合并加入评估"},
-    {"id": "advanced_integration", "name": "高级集成", "category": "智能增强", "description": "综合热冷、马尔可夫、贝叶斯等"},
-    {"id": "nine_models", "name": "九模型融合", "category": "智能增强", "description": "九种数学模型投票"},
-    {"id": "nine_models_compound", "name": "九模型复式", "category": "投注策略", "description": "九模型结果生成复式"},
-    {"id": "markov_compound", "name": "马尔可夫复式", "category": "投注策略", "description": "基于马尔可夫生成复式"},
-    {"id": "lstm", "name": "LSTM 深度学习", "category": "深度学习", "description": "调用 LSTM 序列模型"},
-    {"id": "transformer", "name": "Transformer", "category": "深度学习", "description": "Transformer 时序预测模型"},
-    {"id": "gan", "name": "GAN 生成式", "category": "深度学习", "description": "生成式对抗网络构造组合"},
-    {"id": "stacking", "name": "Stacking 集成", "category": "深度学习", "description": "深度模型堆叠融合"},
-    {"id": "adaptive_ensemble", "name": "自适应集成", "category": "深度学习", "description": "根据表现自适应调整"},
-    {"id": "ultimate_ensemble", "name": "终极集成", "category": "深度学习", "description": "多通道终极加权"},
-    {"id": "enhanced", "name": "增强引擎", "category": "系统增强", "description": "使用 enhanced_integration 提供的高级能力"},
+ALGORITHM_DEFINITIONS: List[Dict[str, Any]] = [
+    {"id": "frequency", "name": "频率分析", "category": "传统统计", "description": "根据期号频率分布生成组合", "support_compound": False},
+    {"id": "hot_cold", "name": "冷热分析", "category": "传统统计", "description": "结合热号冷号趋势", "support_compound": False},
+    {"id": "missing", "name": "遗漏分析", "category": "传统统计", "description": "评估号码遗漏周期", "support_compound": False},
+    {"id": "markov", "name": "一阶马尔可夫", "category": "高级算法", "description": "基于状态转移矩阵预测", "support_compound": False},
+    {"id": "markov_2nd", "name": "二阶马尔可夫", "category": "高级算法", "description": "使用更长历史刻画惯性", "support_compound": False},
+    {"id": "markov_3rd", "name": "三阶马尔可夫", "category": "高级算法", "description": "多阶链综合判断趋势", "support_compound": False},
+    {"id": "adaptive_markov", "name": "自适应马尔可夫", "category": "高级算法", "description": "动态调整阶数与权重", "support_compound": False},
+    {"id": "bayesian", "name": "贝叶斯推理", "category": "高级算法", "description": "按照先验与似然生成概率模型", "support_compound": False},
+    {"id": "ensemble", "name": "集成预测", "category": "高级算法", "description": "组合多模型加权", "support_compound": False},
+    {"id": "clustering", "name": "聚类预测", "category": "高级算法", "description": "向量化特征后进行 K-Means", "support_compound": False},
+    {"id": "super", "name": "超级预测", "category": "智能增强", "description": "调用超级预测器", "support_compound": True},
+    {"id": "adaptive", "name": "自适应学习", "category": "智能增强", "description": "多臂老虎机动态选择预测器", "support_compound": False},
+    {"id": "compound", "name": "复式选号", "category": "投注策略", "description": "生成高覆盖复式组合", "support_compound": True},
+    {"id": "duplex", "name": "胆拖选号", "category": "投注策略", "description": "根据胆码拖码构建组合", "support_compound": True},
+    {"id": "markov_custom", "name": "自定义马尔可夫", "category": "高级算法", "description": "自定义分析期与预测期", "support_compound": False},
+    {"id": "mixed_strategy", "name": "混合策略", "category": "智能增强", "description": "多策略融合控制风险", "support_compound": False},
+    {"id": "highly_integrated", "name": "高度集成", "category": "智能增强", "description": "多模型融合并加入评估", "support_compound": True},
+    {"id": "advanced_integration", "name": "高级集成", "category": "智能增强", "description": "综合热冷、马尔可夫、贝叶斯等", "support_compound": True},
+    {"id": "nine_models", "name": "九模型融合", "category": "智能增强", "description": "九种数学模型投票", "support_compound": False},
+    {"id": "nine_models_compound", "name": "九模型复式", "category": "投注策略", "description": "九模型结果生成复式", "support_compound": True},
+    {"id": "markov_compound", "name": "马尔可夫复式", "category": "投注策略", "description": "基于马尔可夫生成复式", "support_compound": True},
+    {"id": "lstm", "name": "LSTM 深度学习", "category": "深度学习", "description": "调用 LSTM 序列模型", "support_compound": False},
+    {"id": "transformer", "name": "Transformer", "category": "深度学习", "description": "Transformer 时序预测模型", "support_compound": False},
+    {"id": "gan", "name": "GAN 生成式", "category": "深度学习", "description": "生成式对抗网络构造组合", "support_compound": False},
+    {"id": "stacking", "name": "Stacking 集成", "category": "深度学习", "description": "深度模型堆叠融合", "support_compound": False},
+    {"id": "adaptive_ensemble", "name": "自适应集成", "category": "深度学习", "description": "根据表现自适应调整", "support_compound": False},
+    {"id": "ultimate_ensemble", "name": "终极集成", "category": "深度学习", "description": "多通道终极加权", "support_compound": True},
+    {"id": "enhanced", "name": "增强引擎", "category": "系统增强", "description": "使用 enhanced_integration 提供的高级能力", "support_compound": True},
 ]
 
 
@@ -177,7 +199,7 @@ class PredictorService:
             raise ValueError(error_msg)
 
         use_enhanced = self.system.enhanced_available and args.method == 'enhanced' and not args.compound
-        use_deep_learning = args.method in ['lstm', 'transformer', 'gan', 'ensemble', 'stacking', 'adaptive_ensemble', 'ultimate_ensemble']
+        use_deep_learning = args.method in REQUIRES_DEEP_LEARNING
 
         if use_enhanced:
             success, predictions = self.system._handle_enhanced_prediction(args, acceleration_config)

@@ -48,7 +48,7 @@ class APIDocConfig:
     title: str
     description: str = ""
     version: str = "1.0.0"
-    base_url: str = "http://localhost:8000"
+    base_url: str = "http://localhost:6000"
     contact: Dict[str, str] = field(default_factory=dict)
     license: Dict[str, str] = field(default_factory=dict)
     servers: List[Dict[str, str]] = field(default_factory=list)
@@ -399,7 +399,7 @@ if __name__ == "__main__":
             title="深度学习预测平台 API",
             description="提供深度学习模型训练、预测和管理的REST API",
             version="1.0.0",
-            base_url="http://localhost:8000/api/v1",
+            base_url="http://localhost:6000/api/v1",
             contact={
                 "name": "API Support",
                 "email": "support@example.com"

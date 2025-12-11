@@ -27,7 +27,7 @@ export interface AppSettings {
 }
 
 const defaultSettings: AppSettings = {
-  apiBaseUrl: 'http://localhost:8000',
+  apiBaseUrl: 'http://localhost:6000',
   defaultPeriods: 200,
   defaultCount: 5,
   autoSave: true,

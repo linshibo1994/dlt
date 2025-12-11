@@ -35,6 +35,7 @@ except ImportError:
 
 # 只导入核心模块
 import core_modules as cm
+from core.method_categories import REQUIRES_DEEP_LEARNING, DEEP_LEARNING_METHODS, ADVANCED_METHODS, MARKOV_METHODS
 cache_manager = cm.cache_manager
 logger_manager = cm.logger_manager
 data_manager = cm.data_manager
@@ -625,7 +626,7 @@ class DLTPredictorSystem:
                     print(f"{OutputStatus.INFO} 回退到传统预测方法...")
                     return (False, [])
             
-            elif args.method in ['lstm', 'transformer', 'gan', 'ensemble', 'stacking', 'adaptive_ensemble', 'ultimate_ensemble']:
+            elif args.method in REQUIRES_DEEP_LEARNING:
                 # 使用增强深度学习模型或集成方法
                 print(f"{OutputStatus.INFO} 检测到深度学习方法: {args.method}")
                 return self._handle_enhanced_deep_learning(args)
@@ -648,7 +649,7 @@ class DLTPredictorSystem:
             tuple: (success, predictions)
         """
         try:
-            if args.method in ['lstm', 'transformer', 'gan', 'ensemble']:
+            if args.method in DEEP_LEARNING_METHODS:
                 # 深度学习模型
                 print(f"{OutputStatus.LOADING} 导入深度学习模型注册表...")
                 from enhanced_deep_learning.models import get_model_registry
@@ -773,7 +774,7 @@ class DLTPredictorSystem:
             tuple: (success, predictions)
         """
         try:
-            if args.method in ['lstm', 'transformer', 'gan', 'ensemble']:
+            if args.method in DEEP_LEARNING_METHODS:
                 # 深度学习模型
                 from enhanced_deep_learning.models import get_model_registry
                 model_registry = get_model_registry()
@@ -914,14 +915,14 @@ class DLTPredictorSystem:
                 analyzer = BasicAnalyzer()
                 compound_result = analyzer.predict_compound(compound_config)
             
-            elif args.method in ['markov', 'markov_2nd', 'markov_3rd', 'adaptive_markov', 'bayesian', 'ensemble']:
+            elif args.method in MARKOV_METHODS + ['bayesian', 'ensemble']:
                 print(f"{OutputStatus.INFO} {args.method}复式预测 (分析{args.periods}期数据)...")
                 # 直接使用基础分析器进行复式预测
                 from analyzer_modules import BasicAnalyzer
                 analyzer = BasicAnalyzer()
                 compound_result = analyzer.predict_compound(compound_config)
             
-            elif args.method in ['lstm', 'transformer', 'gan']:
+            elif args.method in DEEP_LEARNING_METHODS:
                 print(f"{OutputStatus.INFO} {args.method}深度学习复式预测 (分析{args.periods}期数据)...")
                 compound_result = self._handle_deep_learning_compound(args, compound_config)
             
@@ -1028,7 +1029,7 @@ class DLTPredictorSystem:
         if args.method in ['frequency', 'hot_cold', 'missing']:
             predictions = self._handle_basic_prediction(args, acceleration_config)
         
-        elif args.method in ['markov', 'bayesian', 'ensemble', 'clustering']:
+        elif args.method in ADVANCED_METHODS:
             predictions = self._handle_advanced_prediction(args, acceleration_config)
         
         elif args.method == 'super':
@@ -1861,7 +1862,7 @@ class DLTPredictorSystem:
         
         # 检查是否可以使用增强功能或深度学习方法
         use_enhanced = self.enhanced_available and args.method == 'enhanced' and not (hasattr(args, 'compound') and args.compound)
-        use_deep_learning = args.method in ['lstm', 'transformer', 'gan', 'ensemble', 'stacking', 'adaptive_ensemble', 'ultimate_ensemble']
+        use_deep_learning = args.method in REQUIRES_DEEP_LEARNING
         
         # 增强预测模式
         if use_enhanced:
@@ -2223,7 +2224,7 @@ class DLTPredictorSystem:
 
                         predicted_front, predicted_back = result[0]
 
-                    elif args.method in ['markov', 'bayesian', 'ensemble']:
+                    elif args.method in ['markov', 'bayesian', 'ensemble']:  # 保持原样，此处是具体预测逻辑
                         if args.method == 'markov':
                             result = self.predictors['advanced'].markov_predict(1)
                         elif args.method == 'bayesian':

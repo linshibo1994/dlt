@@ -15,7 +15,7 @@ from datetime import datetime, timedelta
 from bs4 import BeautifulSoup
 from typing import List, Dict, Optional
 
-from core_modules import logger_manager, data_manager
+from backend.app.core.core_modules import logger_manager, data_manager
 
 
 class BaseCrawler:

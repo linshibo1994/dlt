@@ -9,10 +9,10 @@
 
 ## 📖 项目简介
 
-大乐透智能预测系统是一个基于Python的AI预测平台，集成26+种算法，使用2756期真实历史数据进行大乐透号码预测。系统支持命令行和图形界面两种使用方式，提供从基础统计到深度学习的完整预测方案。
+大乐透智能预测系统是一个基于Python的AI预测平台，集成28种算法，使用2756期真实历史数据进行大乐透号码预测。系统支持命令行和图形界面两种使用方式，提供从基础统计到深度学习的完整预测方案。
 
 ### ✨ 核心特色
-- **🧠 26+种算法** - 涵盖传统统计、马尔可夫链、深度学习、集成学习等
+- **🧠 28种算法** - 涵盖传统统计、马尔可夫链、深度学习、集成学习等
 - **📊 真实数据** - 基于2756期历史开奖数据，支持增量更新
 - **🔧 灵活配置** - 支持自定义分析期数（50-2756期）和生成注数（1-100注）
 - **🎲 多种投注** - 单式、复式、胆拖等投注模式，智能成本控制
@@ -88,13 +88,13 @@
 ┌────────────────────────────┴────────────────────────────────┐
 │                     后端 (FastAPI)                           │
 │   ┌──────────────────────────────────────────────────┐      │
-│   │           REST API (端口 8000)                    │      │
+│   │           REST API (端口 6000)                    │      │
 │   │  /api/data/* | /api/predict | /api/analysis/*    │      │
 │   └────────────────────────┬─────────────────────────┘      │
 │                            ↓                                 │
 │   ┌──────────────────────────────────────────────────┐      │
 │   │               核心预测引擎                        │      │
-│   │  26+ 算法 | 数据管理 | 缓存系统 | 分析模块       │      │
+│   │  28 种算法 | 数据管理 | 缓存系统 | 分析模块       │      │
 │   └──────────────────────────────────────────────────┘      │
 └─────────────────────────────────────────────────────────────┘
 ```
@@ -115,7 +115,7 @@
 ### 📊 核心模块
 - **backend/api/server.py** - FastAPI REST API 服务器
 - **backend/app/core/** - 核心模块（数据/缓存/日志/任务管理）
-- **backend/app/predictors/** - 预测算法模块（26+种算法实现）
+- **backend/app/predictors/** - 预测算法模块（28种算法实现）
 - **backend/app/analyzers/** - 数据分析模块（统计分析和异常检测）
 - **frontend/src/views/** - Vue 页面组件
 - **frontend/src/stores/** - Pinia 状态管理
@@ -158,22 +158,22 @@
 ### 接口文档
 
 启动后端服务后访问：
-- **Swagger UI**: http://localhost:8000/docs
-- **ReDoc**: http://localhost:8000/redoc
+- **Swagger UI**: http://localhost:6000/docs
+- **ReDoc**: http://localhost:6000/redoc
 
 ### 示例请求
 
 ```bash
 # 获取最新开奖数据
-curl http://localhost:8000/api/data/latest
+curl http://localhost:6000/api/data/latest
 
 # 执行预测
-curl -X POST http://localhost:8000/api/predict \
+curl -X POST http://localhost:6000/api/predict \
   -H "Content-Type: application/json" \
   -d '{"method": "ensemble", "periods": 500, "count": 3}'
 
 # 频率分析
-curl -X POST http://localhost:8000/api/analysis/frequency \
+curl -X POST http://localhost:6000/api/analysis/frequency \
   -H "Content-Type: application/json" \
   -d '{"periods": 100}'
 ```
@@ -249,8 +249,8 @@ cd dlt
 
 # 3. 访问应用
 # 前端界面: http://localhost
-# 后端API: http://localhost:8000/api
-# API文档: http://localhost:8000/docs
+# 后端API: http://localhost:6000/api
+# API文档: http://localhost:6000/docs
 ```
 
 **部署脚本命令：**
@@ -270,7 +270,7 @@ cd dlt
 # 终端 1：启动后端 API
 cd dlt
 pip install -r requirements.txt
-python -m uvicorn backend.api.server:app --reload --port 8000
+python -m uvicorn backend.api.server:app --reload --port 6000
 
 # 终端 2：启动前端开发服务器
 cd dlt/frontend
@@ -808,7 +808,7 @@ python3 dlt_main.py compare --issue 25103 -m frequency -p 150 -t 60 --export
 **本地开发：**
 ```bash
 # 终端 1: 后端
-python -m uvicorn backend.api.server:app --reload --port 8000
+python -m uvicorn backend.api.server:app --reload --port 6000
 
 # 终端 2: 前端
 cd frontend && npm run dev
@@ -819,7 +819,7 @@ cd frontend && npm run dev
 | 页面 | 功能说明 |
 |------|----------|
 | **Dashboard** | 系统概览、最新开奖、快速预测入口 |
-| **Prediction** | 26+ 预测算法、复式投注、成本计算 |
+| **Prediction** | 28 种预测算法、复式投注、一键复制、成本计算 |
 | **Analysis** | 频率分析、冷热号、遗漏值、趋势图表 |
 | **Compare** | 批量预测对比、中奖统计、Excel 导出 |
 | **Settings** | 主题切换、语言设置、系统配置 |
