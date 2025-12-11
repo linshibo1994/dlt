@@ -221,13 +221,14 @@ const loadDataStats = async () => {
     const response = await getDataStats()
     if (response.success && response.data) {
       const data = response.data
-      overviewStats.value[0].value = String(data.total_periods || '--')
-      overviewStats.value[1].value = String(data.latest_issue || '--')
+      const stats = overviewStats.value
+      if (stats[0]) stats[0].value = String(data.total_periods || '--')
+      if (stats[1]) stats[1].value = String(data.latest_issue || '--')
       // 计算数据跨度
-      if (data.date_range?.start && data.date_range?.end) {
+      if (stats[2] && data.date_range?.start && data.date_range?.end) {
         const startYear = new Date(data.date_range.start).getFullYear()
         const endYear = new Date(data.date_range.end).getFullYear()
-        overviewStats.value[2].value = `${endYear - startYear}年`
+        stats[2].value = `${endYear - startYear}年`
       }
     }
   } catch (e) {

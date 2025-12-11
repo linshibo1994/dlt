@@ -45,8 +45,9 @@ export const usePredictStore = defineStore('predict', () => {
       }, 500)
 
       const response = await executePrediction(params)
-      if (response.success) {
-        results.value = response.data
+      if (response.success && response.data) {
+        // response.data 是 PredictionResponseData，提取其中的 predictions
+        results.value = response.data.predictions || []
       }
 
       progress.value = 100

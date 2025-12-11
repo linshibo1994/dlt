@@ -700,6 +700,7 @@ const startPredict = async () => {
     let totalProcessed = 0
     for (let i = 0; i < selectedMethods.value.length; i++) {
       const methodId = selectedMethods.value[i]
+      if (!methodId) continue // 跳过 undefined
 
       // 计算当前算法应生成的组数（前面的算法分配余数）
       const countForMethod = i < remainder ? baseCountPerMethod + 1 : baseCountPerMethod
@@ -742,7 +743,7 @@ const startPredict = async () => {
               predictionResults.value.push({
                 front: compound.front_balls,
                 back: compound.back_balls,
-                algorithm: methodInfo?.name || compound.method || methodId,
+                algorithm: methodInfo?.name ?? compound.method ?? methodId,
                 confidence: typeof compound.confidence === 'number' ? compound.confidence : 65,
                 timestamp: new Date().toLocaleTimeString()
               })
@@ -763,7 +764,7 @@ const startPredict = async () => {
               predictionResults.value.push({
                 front: pred.front_balls,
                 back: pred.back_balls,
-                algorithm: methodInfo?.name || pred.method || methodId,
+                algorithm: methodInfo?.name ?? pred.method ?? methodId,
                 confidence: typeof pred.confidence === 'number' ? pred.confidence : 65,
                 timestamp: new Date().toLocaleTimeString()
               })

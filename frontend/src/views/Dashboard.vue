@@ -244,12 +244,13 @@ const displayResult = computed(() => {
       let amount = 0
       if (prize.prizeAmount) {
         amount = parseInt(String(prize.prizeAmount).replace(/[^0-9]/g, ''), 10) || 0
-      } else if (prize.amount) {
-        amount = typeof prize.amount === 'string'
-          ? parseInt(prize.amount.replace(/[^0-9]/g, ''), 10) || 0
-          : prize.amount
+      } else if (prize.amount !== undefined) {
+        const amountVal = prize.amount
+        amount = typeof amountVal === 'string'
+          ? parseInt(String(amountVal).replace(/[^0-9]/g, ''), 10) || 0
+          : Number(amountVal) || 0
       } else if (prize.prize_amount) {
-        amount = prize.prize_amount
+        amount = Number(prize.prize_amount) || 0
       }
 
       return { count, amount }
