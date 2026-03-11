@@ -8,6 +8,9 @@ from . import predictor_modules
 # 算法类型子模块
 from . import traditional
 from . import markov
-from . import deep_learning
+try:
+    from . import deep_learning
+except ImportError:
+    pass
 from . import intelligent
 from . import compound
