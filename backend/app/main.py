@@ -10,6 +10,8 @@
 import argparse
 import sys
 import os
+import random
+from collections import Counter
 from datetime import datetime
 from typing import List, Dict, Tuple
 
@@ -741,13 +743,13 @@ class DLTPredictorSystem:
                 predictions = integrator.gan_predict(args.count, args.periods)
             elif args.method == 'stacking':
                 print(f"{OutputStatus.INFO} Stacking集成预测...")
-                predictions = integrator.stacking_predict(args.count)
+                predictions = integrator.stacking_predict(args.count, args.periods)
             elif args.method == 'adaptive_ensemble':
                 print(f"{OutputStatus.INFO} 自适应集成预测...")
-                predictions = integrator.adaptive_ensemble_predict(args.count)
+                predictions = integrator.adaptive_ensemble_predict(args.count, args.periods)
             elif args.method == 'ultimate_ensemble':
                 print(f"{OutputStatus.INFO} 终极集成预测...")
-                predictions = integrator.ultimate_ensemble_predict(args.count)
+                predictions = integrator.ultimate_ensemble_predict(args.count, args.periods)
             
             if predictions:
                 print(f"{OutputStatus.OK} {args.method.upper()}预测完成")
@@ -788,11 +790,7 @@ class DLTPredictorSystem:
                         historical_data = historical_data.head(args.periods)
                     
                     # 修复方法调用一致性：使用与GUI相同的predict方法
-                    predictions = []
-                    for _ in range(args.count):
-                        single_result = model.predict(historical_data)
-                        if single_result:
-                            predictions.extend(single_result)
+                    predictions = model.predict(historical_data, count=args.count)
                     
                     # 转换为命令行期望的格式
                     if predictions:
@@ -860,7 +858,7 @@ class DLTPredictorSystem:
             try:
                 from improvements.integration import IntegratedPredictor
                 integrator = IntegratedPredictor()
-                predictions = integrator.ultimate_ensemble_predict(count=args.count)
+                predictions = integrator.ultimate_ensemble_predict(count=args.count, periods=args.periods)
                 
                 # 确保包含置信度信息
                 if predictions and isinstance(predictions[0], dict):
@@ -1025,11 +1023,23 @@ class DLTPredictorSystem:
             list: 预测结果列表
         """
         predictions = []
+
+        # 传递遗漏预测模式到相关预测器（避免影响其他方法）
+        missing_mode = getattr(args, 'missing_mode', 'auto')
+        if 'traditional' in self.predictors and hasattr(self.predictors['traditional'], 'set_missing_mode_override'):
+            self.predictors['traditional'].set_missing_mode_override(missing_mode)
+        if 'advanced' in self.predictors and hasattr(self.predictors['advanced'], 'set_missing_mode_override'):
+            self.predictors['advanced'].set_missing_mode_override(missing_mode)
+        if 'super' in self.predictors and hasattr(self.predictors['super'], 'set_missing_mode_override'):
+            self.predictors['super'].set_missing_mode_override(missing_mode)
         
-        if args.method in ['frequency', 'hot_cold', 'missing']:
+        if args.method == 'consensus_halving':
+            predictions = self._handle_consensus_halving(args)
+
+        elif args.method in ['frequency', 'hot_cold', 'missing']:
             predictions = self._handle_basic_prediction(args, acceleration_config)
         
-        elif args.method in ADVANCED_METHODS:
+        elif args.method in ADVANCED_METHODS or args.method in ['markov', 'bayesian']:
             predictions = self._handle_advanced_prediction(args, acceleration_config)
         
         elif args.method == 'super':
@@ -1076,6 +1086,233 @@ class DLTPredictorSystem:
         
         return predictions
 
+    def _handle_consensus_halving(self, args) -> list:
+        """
+        交集递减预测：
+        每轮执行冷热号/一阶马尔可夫/频率/二阶马尔可夫，提取重复号，
+        若不足则对半缩小期数继续，最后用全轮次高频号码补齐。
+        """
+        print(f"{OutputStatus.INFO} 交集递减预测 (初始分析{args.periods}期, 生成{args.count}注)...")
+
+        predictions = []
+        for _ in range(args.count):
+            ticket = self._build_consensus_ticket(args.periods)
+            predictions.append({
+                'front_balls': ticket['front_balls'],
+                'back_balls': ticket['back_balls'],
+                'method': 'consensus_halving',
+                'confidence': ticket['confidence'],
+                'details': ticket['details']
+            })
+
+        return predictions
+
+    def _build_consensus_ticket(self, initial_periods: int) -> dict:
+        """构建单注交集递减号码。"""
+        selected_front = []
+        selected_back = []
+        selected_front_set = set()
+        selected_back_set = set()
+
+        total_front_counter = Counter()
+        total_back_counter = Counter()
+        total_front_pool = []
+        total_back_pool = []
+
+        rounds = []
+        periods = max(50, int(initial_periods))
+        max_rounds = 8
+        round_index = 0
+        fallback_used = False
+
+        while round_index < max_rounds:
+            round_index += 1
+            round_predictions = self._run_consensus_round(periods)
+
+            round_front_counter = Counter()
+            round_back_counter = Counter()
+
+            for pred in round_predictions:
+                front_balls = pred.get('front_balls', [])
+                back_balls = pred.get('back_balls', [])
+                round_front_counter.update(front_balls)
+                round_back_counter.update(back_balls)
+                total_front_counter.update(front_balls)
+                total_back_counter.update(back_balls)
+                total_front_pool.extend(front_balls)
+                total_back_pool.extend(back_balls)
+
+            repeated_front = sorted([num for num, cnt in round_front_counter.items() if cnt >= 2])
+            repeated_back = sorted([num for num, cnt in round_back_counter.items() if cnt >= 2])
+
+            for num in repeated_front:
+                if num not in selected_front_set:
+                    selected_front.append(num)
+                    selected_front_set.add(num)
+
+            for num in repeated_back:
+                if num not in selected_back_set:
+                    selected_back.append(num)
+                    selected_back_set.add(num)
+
+            rounds.append({
+                'round': round_index,
+                'periods': periods,
+                'repeated_front': repeated_front,
+                'repeated_back': repeated_back
+            })
+
+            if len(selected_front) >= 5 and len(selected_back) >= 2:
+                break
+
+            if periods <= 50:
+                break
+
+            next_periods = max(50, periods // 2)
+            if next_periods == periods:
+                break
+            periods = next_periods
+
+        if len(selected_front) < 5:
+            fallback_used = True
+            self._fill_from_counter(total_front_counter, selected_front, selected_front_set, 5, 1, 35)
+        if len(selected_back) < 2:
+            fallback_used = True
+            self._fill_from_counter(total_back_counter, selected_back, selected_back_set, 2, 1, 12)
+
+        # 二次兜底：若高频仍不足，则从所有已生成号码中随机补齐（去重）
+        if len(selected_front) < 5 or len(selected_back) < 2:
+            fallback_used = True
+        self._fill_random_from_pool(total_front_pool, selected_front, selected_front_set, 5, 1, 35)
+        self._fill_random_from_pool(total_back_pool, selected_back, selected_back_set, 2, 1, 12)
+
+        # 最终兜底：若仍不足，使用随机合法号码补齐（去重）
+        self._fill_with_random_range(selected_front, selected_front_set, 5, 1, 35)
+        self._fill_with_random_range(selected_back, selected_back_set, 2, 1, 12)
+
+        final_front = sorted(selected_front[:5])
+        final_back = sorted(selected_back[:2])
+        used_rounds = len(rounds)
+        confidence = min(0.92, 0.55 + 0.04 * used_rounds)
+
+        return {
+            'front_balls': final_front,
+            'back_balls': final_back,
+            'confidence': round(confidence, 3),
+            'details': {
+                'strategy': 'consensus_halving',
+                'rounds': rounds,
+                'total_rounds': used_rounds,
+                'fallback_used': fallback_used
+            }
+        }
+
+    def _run_consensus_round(self, periods: int) -> list:
+        """执行一轮四算法预测。"""
+        methods = ['markov', 'hot_cold', 'frequency', 'markov_2nd']
+        round_predictions = []
+
+        for method in methods:
+            prediction = self._predict_single_for_consensus(method, periods)
+            if prediction:
+                round_predictions.append(prediction)
+
+        return round_predictions
+
+    def _predict_single_for_consensus(self, method: str, periods: int) -> dict:
+        """调用单个基础算法，返回标准化后的单注结果。"""
+        try:
+            results = []
+            if method == 'markov':
+                results = self.predictors['advanced'].markov_predict(1, periods)
+            elif method == 'hot_cold':
+                results = self.predictors['traditional'].hot_cold_predict(count=1, periods=periods)
+            elif method == 'frequency':
+                results = self.predictors['traditional'].frequency_predict(count=1, periods=periods)
+            elif method == 'markov_2nd':
+                from improvements.enhanced_markov import get_markov_predictor
+                markov_predictor = get_markov_predictor()
+                results = markov_predictor.multi_order_markov_predict(count=1, periods=periods, order=2)
+
+            if not results:
+                return {}
+
+            first_result = results[0]
+            if not isinstance(first_result, (list, tuple)) or len(first_result) < 2:
+                return {}
+
+            front_balls = self._normalize_ball_list(first_result[0], 1, 35)
+            back_balls = self._normalize_ball_list(first_result[1], 1, 12)
+
+            return {
+                'method': method,
+                'front_balls': front_balls,
+                'back_balls': back_balls
+            }
+
+        except Exception as e:
+            logger_manager.warning(f"交集递减方法调用{method}失败: {e}")
+            return {}
+
+    @staticmethod
+    def _normalize_ball_list(ball_list, min_value: int, max_value: int) -> List[int]:
+        """标准化号码列表，去重并过滤越界值。"""
+        normalized = []
+        seen = set()
+        for ball in ball_list or []:
+            try:
+                num = int(ball)
+            except (TypeError, ValueError):
+                continue
+            if min_value <= num <= max_value and num not in seen:
+                normalized.append(num)
+                seen.add(num)
+        return normalized
+
+    @staticmethod
+    def _fill_from_counter(counter: Counter, selected: list, selected_set: set, target: int, min_value: int, max_value: int):
+        """从全局频次中按高频优先补齐。"""
+        for num, _ in sorted(counter.items(), key=lambda item: (-item[1], item[0])):
+            if num in selected_set:
+                continue
+            if not (min_value <= num <= max_value):
+                continue
+            selected.append(num)
+            selected_set.add(num)
+            if len(selected) >= target:
+                break
+
+    @staticmethod
+    def _fill_random_from_pool(pool: list, selected: list, selected_set: set, target: int, min_value: int, max_value: int):
+        """从已生成号码池中随机补齐（自动去重）。"""
+        if len(selected) >= target:
+            return
+        candidates = [int(num) for num in pool if isinstance(num, int) or str(num).isdigit()]
+        candidates = [num for num in candidates if min_value <= num <= max_value and num not in selected_set]
+        random.shuffle(candidates)
+        for num in candidates:
+            if num in selected_set:
+                continue
+            selected.append(num)
+            selected_set.add(num)
+            if len(selected) >= target:
+                break
+
+    @staticmethod
+    def _fill_with_random_range(selected: list, selected_set: set, target: int, min_value: int, max_value: int):
+        """最终兜底：从合法范围随机补齐。"""
+        if len(selected) >= target:
+            return
+        remaining_candidates = [num for num in range(min_value, max_value + 1) if num not in selected_set]
+        random.shuffle(remaining_candidates)
+        for num in remaining_candidates:
+            if num in selected_set:
+                continue
+            selected.append(num)
+            selected_set.add(num)
+            if len(selected) >= target:
+                break
+
     def _handle_basic_prediction(self, args, acceleration_config) -> list:
         """
         处理基础预测方法（频率分析、冷热号、遗漏值）
@@ -1117,7 +1354,11 @@ class DLTPredictorSystem:
         
         elif args.method == 'missing':
             print(f"{OutputStatus.INFO} 遗漏值分析预测 (分析{args.periods}期数据)...")
-            results = self.predictors['traditional'].missing_predict(count=args.count, periods=args.periods)
+            results = self.predictors['traditional'].missing_predict(
+                count=args.count,
+                periods=args.periods,
+                mode=getattr(args, 'missing_mode', 'auto')
+            )
         
         return [{'front_balls': r[0], 'back_balls': r[1], 'method': args.method} for r in results]
 
@@ -1174,7 +1415,17 @@ class DLTPredictorSystem:
         accel_config = self._apply_acceleration_config('bayesian', acceleration_config)
         
         # 获取贝叶斯分析结果
-        from analyzer_modules import advanced_analyzer
+        from analyzer_modules import advanced_analyzer, load_bayesian_config
+
+        # 应用配置并解析模式
+        bayes_cfg = load_bayesian_config()
+        resolved_mode = getattr(args, 'bayes_mode', None) or bayes_cfg.get('mode') or 'legacy'
+        print(f"{OutputStatus.INFO} 贝叶斯模式: {resolved_mode}")
+        print(f"{OutputStatus.INFO} Bayes参数: mix={bayes_cfg.get('dirichlet_mix_weight', 'n/a')}, "
+              f"conc={bayes_cfg.get('dirichlet_concentration', 'n/a')}, "
+              f"decay={bayes_cfg.get('decay_enabled', 'n/a')}, "
+              f"half_life={bayes_cfg.get('decay_half_life', 'n/a')}, "
+              f"min_weight={bayes_cfg.get('decay_min_weight', 'n/a')}")
         if accel_config and 'n_jobs' in accel_config:
             print(f"{OutputStatus.INFO} 使用 {accel_config['n_jobs']} 个CPU线程并行计算")
             bayesian_analysis = advanced_analyzer.bayesian_analysis(args.periods, n_jobs=accel_config['n_jobs'])
@@ -1203,10 +1454,15 @@ class DLTPredictorSystem:
         print(f"{OutputStatus.INFO} 基于贝叶斯推理进行概率预测...")
         
         # 应用加速配置到预测
+        use_enhanced = resolved_mode == 'enhanced'
         if accel_config and 'n_jobs' in accel_config:
-            return self.predictors['traditional'].bayesian_predict(count=args.count, periods=args.periods, n_jobs=accel_config['n_jobs'])
+            return self.predictors['traditional'].bayesian_predict(
+                count=args.count, periods=args.periods, n_jobs=accel_config['n_jobs'], use_enhanced=use_enhanced
+            )
         else:
-            return self.predictors['traditional'].bayesian_predict(count=args.count, periods=args.periods)
+            return self.predictors['traditional'].bayesian_predict(
+                count=args.count, periods=args.periods, use_enhanced=use_enhanced
+            )
 
     def _handle_super_prediction(self, args) -> list:
         """
@@ -1280,15 +1536,15 @@ class DLTPredictorSystem:
             integrator = get_integrator()
             
             if args.method == 'transformer':
-                return integrator.transformer_predict(args.count)
+                return integrator.transformer_predict(args.count, args.periods)
             elif args.method == 'gan':
-                return integrator.gan_predict(args.count)
+                return integrator.gan_predict(args.count, args.periods)
             elif args.method == 'stacking':
-                return integrator.stacking_predict(args.count)
+                return integrator.stacking_predict(args.count, args.periods)
             elif args.method == 'adaptive_ensemble':
-                return integrator.adaptive_ensemble_predict(args.count)
+                return integrator.adaptive_ensemble_predict(args.count, args.periods)
             elif args.method == 'ultimate_ensemble':
-                return integrator.ultimate_ensemble_predict(args.count)
+                return integrator.ultimate_ensemble_predict(args.count, args.periods)
         except ImportError:
             print(f"{OutputStatus.ERROR} 增强预测模块未找到，请确保improvements目录存在且包含所需文件")
         except Exception as e:
@@ -2220,7 +2476,10 @@ class DLTPredictorSystem:
                         elif args.method == 'hot_cold':
                             result = self.predictors['traditional'].hot_cold_predict(1)
                         elif args.method == 'missing':
-                            result = self.predictors['traditional'].missing_predict(1)
+                            result = self.predictors['traditional'].missing_predict(
+                                1,
+                                mode=getattr(args, 'missing_mode', 'auto')
+                            )
 
                         predicted_front, predicted_back = result[0]
 
@@ -2780,12 +3039,17 @@ def main():
                                        'mixed_strategy', 'highly_integrated', 'advanced_integration',
                                        'nine_models', 'nine_models_compound', 'markov_compound',
                                        'lstm', 'transformer', 'gan', 'stacking', 'adaptive_ensemble', 'ultimate_ensemble',
-                                       'markov_2nd', 'markov_3rd', 'adaptive_markov', 'enhanced', 'clustering'],
+                                       'markov_2nd', 'markov_3rd', 'adaptive_markov', 'enhanced', 'clustering',
+                                       'consensus_halving'],
                                default='ensemble', help='预测方法')
     predict_parser.add_argument('--ensemble-method', choices=['stacking', 'weighted', 'adaptive'],
                                default='stacking', help='高级集成方法类型')
     predict_parser.add_argument('-c', '--count', type=int, default=1, help='生成注数 (1-100)')
     predict_parser.add_argument('-p', '--periods', type=int, default=500, help='分析期数 (50-2748，默认500期)')
+    predict_parser.add_argument('--missing-mode', choices=['auto', 'legacy', 'enhanced'],
+                               default='auto', help='遗漏预测模式 (auto/legacy/enhanced)')
+    predict_parser.add_argument('--bayes-mode', choices=['legacy', 'enhanced'],
+                               default=None, help='贝叶斯预测模式 (legacy/enhanced，默认读取配置)')
     predict_parser.add_argument('--front-count', type=int, default=8, help='复式投注前区号码数量')
     predict_parser.add_argument('--back-count', type=int, default=4, help='复式投注后区号码数量')
     predict_parser.add_argument('--strategy', choices=['conservative', 'aggressive', 'balanced'],
@@ -2859,6 +3123,8 @@ def main():
     backtest_parser.add_argument('-m', '--method',
                                 choices=['frequency', 'hot_cold', 'missing', 'markov', 'bayesian', 'ensemble'],
                                 default='ensemble', help='预测方法')
+    backtest_parser.add_argument('--missing-mode', choices=['auto', 'legacy', 'enhanced'],
+                                default='auto', help='遗漏预测模式 (auto/legacy/enhanced)')
 
     # ==================== 系统管理命令 ====================
     system_parser = subparsers.add_parser('system', help='系统管理')

@@ -96,11 +96,38 @@ prediction_methods:
       supports_compound: true
       max_order: 3
       parallel_jobs: -1
+      # 转移概率平滑与回退混合（用于一阶马尔可夫预测）
+      smoothing_alpha: 0.05
+      global_mix: 0.15
+      force_dense: true
+      # 时间衰减（用于构建转移概率）
+      decay_enabled: true
+      decay_half_life: 200
+      decay_min_weight: 0.2
+      # 后验融合（与频率分布混合）
+      posterior_mix: 0.15
     
     bayesian:
       supports_compound: true
       prior_type: "uniform"
       parallel_jobs: -1
+      mode: "legacy"
+      dirichlet_mix_weight: 0.5
+      dirichlet_concentration: 5.0
+      decay_enabled: true
+      decay_half_life: 200
+      decay_min_weight: 0.2
+      decay_mode: "segmented"
+      recent_window: 100
+      mid_window: 300
+      recent_weight: 1.0
+      mid_weight: 0.7
+      old_weight: 0.4
+      prior_hot_bonus: 0.2
+      prior_warm_bonus: 0.1
+      prior_cold_penalty: 0.15
+      prior_missing_bias: 0.3
+      prior_min_factor: 0.2
     
     clustering:
       supports_compound: true
@@ -117,6 +144,55 @@ prediction_methods:
       supports_compound: true
       hot_threshold: 0.7
       cold_threshold: 0.3
+
+    missing:
+      supports_compound: true
+      # 遗漏预测模式: auto(按配置), enhanced(增强), legacy(传统)
+      mode: "enhanced"
+      # 权重策略: log(对数压缩), linear(线性), auto(根据期数自适应)
+      weight_strategy: "auto"
+      # 预测权重因子 (0-1)
+      pred_weight_factor: 0.5
+      # 紧迫度因子 (0-1)
+      urgency_weight_factor: 0.5
+      # 权重下限
+      weight_floor: 1.0e-6
+      # 去重开关
+      dedupe: true
+      # 策略阈值 (按分析期数比例)
+      extreme_front_ratio: 0.10
+      extreme_back_ratio: 0.15
+      mid_front_ratio: [0.05, 0.15]
+      mid_back_ratio: [0.08, 0.20]
+      # 自适应权重（仅在 missing_mode=auto 时生效）
+      adaptive_weights:
+        enabled: true
+        min_periods: 200
+        max_periods: 1200
+        pred_weight_range: [0.20, 0.90]
+        urgency_weight_range: [0.20, 0.90]
+        strategy_short: "linear"
+        strategy_long: "log"
+        thresholds:
+          extreme_front_range: [0.18, 0.05]
+          extreme_back_range: [0.28, 0.10]
+          mid_front_range_low: [0.10, 0.02]
+          mid_front_range_high: [0.26, 0.08]
+          mid_back_range_low: [0.14, 0.04]
+          mid_back_range_high: [0.30, 0.12]
+        concentration_penalty:
+          enabled: true
+          max_adjacent_pairs_front: 2
+          max_consecutive_run_front: 2
+          min_span_front: 12
+          sum_front_range: [60, 125]
+          sum_back_range: [5, 20]
+          max_resample: 12
+          weights:
+            adjacent_pairs: 1.0
+            consecutive_run: 1.5
+            span: 1.0
+            sum: 1.0
 
 # 复式选择策略
 compound_strategies:

@@ -198,47 +198,22 @@ class EnhancedFeatureAnalyzer:
         pca = PCA(n_components=min(5, features.shape[1]))
         features_pca = pca.fit_transform(features_scaled)
         
-        # K-Means聚类（并行化，添加智能早停）
-        from enhanced_deep_learning.utils.intelligent_early_stopping import GeneralIntelligentEarlyStopping
-
-        # 使用智能早停的K-Means
-        early_stopping = GeneralIntelligentEarlyStopping(patience=20, min_delta=1e-6, verbose=1)
-        early_stopping.reset()
-
-        # 自定义K-Means训练循环以支持智能早停
+        # K-Means聚类
+        # 关键改进：使用PCA降维后的数据进行聚类，而不是原始标准化数据
+        # 这可以减少噪声影响，提高聚类质量
         # 注意：新版scikit-learn已移除n_jobs参数，默认使用所有CPU核心
-        kmeans = KMeans(n_clusters=n_clusters, random_state=42, max_iter=1)
+        # 使用tol参数控制收敛精度，n_init='auto'自动选择初始化次数
+        kmeans = KMeans(n_clusters=n_clusters, random_state=42, n_init='auto', tol=1e-4)
+        clusters = kmeans.fit_predict(features_pca)
+        logger_manager.info(f"K-Means聚类完成，迭代次数: {kmeans.n_iter_}，惯性: {kmeans.inertia_:.4f}")
 
-        # 迭代训练直到收敛或早停
-        max_iterations = 300
-        for iteration in range(max_iterations):
-            kmeans.max_iter = iteration + 1
-            clusters = kmeans.fit_predict(features_scaled)
-
-            # 使用惯性作为收敛指标
-            inertia = kmeans.inertia_
-
-            # 检查智能早停
-            if early_stopping.update(inertia):
-                logger_manager.info(f"K-Means聚类智能早停，迭代次数: {iteration + 1}")
-                break
-
-            # 检查传统收敛
-            if hasattr(kmeans, 'n_iter_') and kmeans.n_iter_ < iteration + 1:
-                logger_manager.info(f"K-Means聚类传统收敛，迭代次数: {iteration + 1}")
-                break
-
-        # 最终训练（新版scikit-learn已移除n_jobs参数）
-        kmeans = KMeans(n_clusters=n_clusters, random_state=42)
-        clusters = kmeans.fit_predict(features_scaled)
-
-        # 高斯混合模型（并行化）
+        # 高斯混合模型（使用PCA降维后的数据）
         gmm = GaussianMixture(n_components=n_clusters, random_state=42)
-        gmm_clusters = gmm.fit_predict(features_scaled)
+        gmm_clusters = gmm.fit_predict(features_pca)  # 关键改进：使用features_pca
 
-        # DBSCAN聚类（新版scikit-learn已移除n_jobs参数）
+        # DBSCAN聚类（使用PCA降维后的数据）
         dbscan = DBSCAN(eps=1.0, min_samples=5)
-        dbscan_clusters = dbscan.fit_predict(features_scaled)
+        dbscan_clusters = dbscan.fit_predict(features_pca)  # 关键改进：使用features_pca
         
         # 分析聚类结果
         cluster_stats = {}
@@ -292,7 +267,7 @@ class EnhancedFeatureAnalyzer:
         
         return result
     
-    def predict_with_patterns(self, count: int = 5) -> List[Tuple[List[int], List[int]]]:
+    def predict_with_patterns(self, count: int = 5, periods: int = 500) -> List[Tuple[List[int], List[int]]]:
         """基于模式分析进行预测
         
         Args:
@@ -302,29 +277,32 @@ class EnhancedFeatureAnalyzer:
             List[Tuple[List[int], List[int]]]: 预测结果列表
         """
         # 分析号码模式
-        patterns = self.analyze_number_patterns(500)
+        patterns = self.analyze_number_patterns(periods)
         
         # 获取和值分布
         front_sum_dist = patterns.get('sum_patterns', {}).get('front_sum', {}).get('distribution', {})
         back_sum_dist = patterns.get('sum_patterns', {}).get('back_sum', {}).get('distribution', {})
         
-        # 转换为概率分布
+        # 转换为概率分布（带除零保护）
         front_sum_probs = {}
         total_front = sum(front_sum_dist.values())
-        for sum_val, count in front_sum_dist.items():
-            front_sum_probs[sum_val] = count / total_front
-        
+        if total_front > 0:
+            for sum_val, count in front_sum_dist.items():
+                front_sum_probs[sum_val] = count / total_front
+
         back_sum_probs = {}
         total_back = sum(back_sum_dist.values())
-        for sum_val, count in back_sum_dist.items():
-            back_sum_probs[sum_val] = count / total_back
-        
+        if total_back > 0:
+            for sum_val, count in back_sum_dist.items():
+                back_sum_probs[sum_val] = count / total_back
+
         # 获取连号分布
         consecutive_dist = patterns.get('consecutive_patterns', {}).get('counts', {})
         consecutive_probs = {}
         total_consecutive = sum(consecutive_dist.values())
-        for cons_val, count in consecutive_dist.items():
-            consecutive_probs[cons_val] = count / total_consecutive
+        if total_consecutive > 0:
+            for cons_val, count in consecutive_dist.items():
+                consecutive_probs[cons_val] = count / total_consecutive
         
         # 生成预测
         predictions = []
@@ -473,7 +451,7 @@ class EnhancedFeaturePredictor:
         if self.df is None:
             logger_manager.error("数据未加载")
     
-    def pattern_based_predict(self, count: int = 5) -> List[Tuple[List[int], List[int]]]:
+    def pattern_based_predict(self, count: int = 5, periods: int = 500) -> List[Tuple[List[int], List[int]]]:
         """基于模式的预测
         
         Args:
@@ -482,9 +460,9 @@ class EnhancedFeaturePredictor:
         Returns:
             List[Tuple[List[int], List[int]]]: 预测结果列表
         """
-        return self.analyzer.predict_with_patterns(count)
+        return self.analyzer.predict_with_patterns(count, periods)
     
-    def cluster_based_predict(self, count: int = 5) -> List[Tuple[List[int], List[int]]]:
+    def cluster_based_predict(self, count: int = 5, periods: int = 500) -> List[Tuple[List[int], List[int]]]:
         """基于聚类的预测
         
         Args:
@@ -498,7 +476,7 @@ class EnhancedFeaturePredictor:
             return []
         
         # 进行聚类分析
-        cluster_result = self.analyzer.cluster_analysis(500, 5)
+        cluster_result = self.analyzer.cluster_analysis(periods, 5)
         
         # 获取最大的聚类
         kmeans_stats = cluster_result.get('kmeans', {}).get('stats', {})

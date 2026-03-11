@@ -221,6 +221,10 @@ class GeneralIntelligentEarlyStopping:
             return True
             
         return False
+
+    def check(self, metric_value: float) -> bool:
+        """update() 方法的别名，用于兼容 GAN 预测器调用"""
+        return self.update(metric_value)
     
     def get_best_metric(self) -> Optional[float]:
         """获取最佳指标值"""

@@ -119,10 +119,12 @@ class AdvancedLSTMPredictor:
             
             # 使用指定期数的最新数据
             if len(historical_data) > periods:
-                historical_data = historical_data.tail(periods)
-            
+                historical_data = historical_data.head(periods).iloc[::-1].reset_index(drop=True)
+            else:
+                historical_data = historical_data.iloc[::-1].reset_index(drop=True)
+
             logger_manager.info(f"使用{len(historical_data)}期历史数据进行LSTM训练和预测")
-            
+
             # 使用enhanced LSTM预测器进行预测
             if self.lstm_predictor is not None:
                 predictions = self.lstm_predictor.predict(historical_data, count=count)
@@ -168,8 +170,10 @@ class AdvancedLSTMPredictor:
             
             # 使用指定期数的数据
             if len(historical_data) > periods:
-                historical_data = historical_data.tail(periods)
-            
+                historical_data = historical_data.head(periods).iloc[::-1].reset_index(drop=True)
+            else:
+                historical_data = historical_data.iloc[::-1].reset_index(drop=True)
+
             # 使用enhanced LSTM预测器进行训练
             if self.lstm_predictor is not None:
                 training_result = self.lstm_predictor.train(historical_data)

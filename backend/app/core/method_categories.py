@@ -38,6 +38,7 @@ MARKOV_METHODS = [
 ADVANCED_METHODS = [
     'ensemble',     # 集成预测（加权平均）
     'clustering',   # 聚类预测
+    'consensus_halving',  # 交集递减融合预测
     'nine_models',  # 九模型融合
 ]
 

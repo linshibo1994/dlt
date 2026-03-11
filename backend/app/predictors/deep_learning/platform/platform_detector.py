@@ -247,7 +247,7 @@ class PlatformDetector:
         """检测硬件信息"""
         try:
             # CPU信息
-            cpu_count = psutil.cpu_count(logical=True)
+            cpu_count = psutil.cpu_count(logical=True) or 1
             cpu_freq = psutil.cpu_freq().current if psutil.cpu_freq() else 0.0
             
             # 内存信息
@@ -511,7 +511,23 @@ class PlatformDetector:
         """检查MKL可用性"""
         try:
             import numpy as np
-            return 'mkl' in np.__config__.show().lower()
+            import io
+            import sys
+            
+            # 捕获stdout，因为np.__config__.show()在某些numpy版本中会打印到stdout
+            old_stdout = sys.stdout
+            sys.stdout = captured_output = io.StringIO()
+            try:
+                result = np.__config__.show()
+                # numpy 2.0+ 返回字符串，旧版本打印到stdout并返回None
+                if result is None:
+                    config_str = captured_output.getvalue()
+                else:
+                    config_str = str(result)
+            finally:
+                sys.stdout = old_stdout
+            
+            return 'mkl' in config_str.lower()
         except Exception:
             return False
     

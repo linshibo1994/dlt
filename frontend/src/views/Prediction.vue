@@ -65,6 +65,15 @@
             />
           </div>
 
+          <div v-if="selectedMethods.includes('missing')" class="param-item">
+            <label>遗漏模式</label>
+            <n-select
+              v-model:value="params.missingMode"
+              :options="missingModeOptions"
+              placeholder="选择遗漏预测模式"
+            />
+          </div>
+
           <div v-if="params.betType === 'compound'" class="param-item">
             <label>复式配置</label>
             <div class="compound-config">
@@ -415,6 +424,14 @@ const availableMethods = ref([
     gradient: 'linear-gradient(135deg, #00b894 0%, #009276 100%)'
   },
   {
+    id: 'consensus_halving',
+    name: '交集递减融合',
+    description: '四算法交集提取并对半期数补齐',
+    category: 'markov',
+    icon: GitNetworkOutline,
+    gradient: 'linear-gradient(135deg, #2ed573 0%, #24ad5c 100%)'
+  },
+  {
     id: 'markov_3rd',
     name: '三阶马尔可夫',
     description: '多阶链综合判断趋势',
@@ -545,13 +562,23 @@ const availableMethods = ref([
 // 选中的算法
 const selectedMethods = ref<string[]>(['ensemble', 'lstm'])
 
+interface PredictFormParams {
+  periods: number
+  count: number
+  betType: string
+  frontCount: number
+  backCount: number
+  missingMode: 'auto' | 'legacy' | 'enhanced'
+}
+
 // 参数配置
-const params = ref({
+const params = ref<PredictFormParams>({
   periods: 200,
   count: 5,
   betType: 'single',
   frontCount: 6,
-  backCount: 3
+  backCount: 3,
+  missingMode: 'auto'
 })
 
 // 期数标记
@@ -568,6 +595,12 @@ const betTypeOptions = [
   { label: '单式投注', value: 'single' },
   { label: '复式投注', value: 'compound' },
   { label: '胆拖投注', value: 'dantuo' }
+]
+
+const missingModeOptions = [
+  { label: '自动（按配置）', value: 'auto' },
+  { label: '增强模式（推荐）', value: 'enhanced' },
+  { label: '传统模式（兼容旧策略）', value: 'legacy' }
 ]
 
 // 预测状态
@@ -726,6 +759,10 @@ const startPredict = async () => {
         front_count: params.value.frontCount,
         back_count: params.value.backCount,
         compound_mode: params.value.betType === 'compound'
+      }
+
+      if (methodId === 'missing') {
+        requestData.missing_mode = params.value.missingMode
       }
 
       // 调用后端API

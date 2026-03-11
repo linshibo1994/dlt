@@ -110,10 +110,25 @@ class EnhancedHardwareAccelerator:
             pass
         
         try:
-            # 检测OpenBLAS
+            # 检测OpenBLAS - 使用静默方式获取numpy配置
             import numpy as np
-            config = np.__config__.show()
-            libraries['openblas'] = 'openblas' in str(config).lower()
+            import io
+            import sys
+            
+            # 捕获stdout，因为np.__config__.show()在某些numpy版本中会打印到stdout
+            old_stdout = sys.stdout
+            sys.stdout = captured_output = io.StringIO()
+            try:
+                result = np.__config__.show()
+                # numpy 2.0+ 返回字符串，旧版本打印到stdout并返回None
+                if result is None:
+                    config_str = captured_output.getvalue()
+                else:
+                    config_str = str(result)
+            finally:
+                sys.stdout = old_stdout
+            
+            libraries['openblas'] = 'openblas' in config_str.lower()
         except:
             pass
         

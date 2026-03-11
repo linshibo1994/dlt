@@ -278,7 +278,9 @@ DEFAULT_GAN_CONFIG = {
     "beta1": 0.5,
     "batch_size": 64,
     "epochs": 200,
-    "noise_std": 0.1
+    "noise_std": 1.0,
+    "diversity_threshold": 0.02,
+    "diversity_jitter": 0.05
 }
 
 # 集成管理器默认配置

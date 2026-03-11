@@ -4,15 +4,28 @@
 """
 增强马尔可夫链模块
 提供多阶马尔可夫链和自适应马尔可夫链预测
+
+优化内容:
+- 单球级别状态建模，解决状态空间爆炸问题
+- 拉普拉斯平滑，消除零概率转移
+- 时间衰减加权，近期数据权重更高
+- 多步转移概率融合（1阶+2阶+全局先验）
+- 共现关系矩阵，考虑号码间关联
+- 区间分布约束，确保号码分布合理
 """
 
 import os
 import sys
+import time
+import random
+import math
 import numpy as np
 import pandas as pd
-from typing import List, Dict, Tuple, Any
+import yaml
+from typing import List, Dict, Tuple, Any, Optional
 from collections import defaultdict, Counter
 from datetime import datetime
+from itertools import combinations
 
 # 尝试导入核心模块
 try:
@@ -25,116 +38,301 @@ except ImportError:
     from smart_cache_system import smart_cache_manager
 
 
+def _load_markov_config() -> Dict:
+    """加载马尔可夫链配置"""
+    try:
+        config_path = os.path.join(
+            os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))),
+            'config', 'prediction.yaml'
+        )
+        with open(config_path, 'r', encoding='utf-8') as f:
+            config = yaml.safe_load(f)
+        return config.get('prediction_methods', {}).get('traditional_ml', {}).get('markov', {})
+    except Exception:
+        # 返回默认配置
+        return {
+            'smoothing_alpha': 0.05,
+            'global_mix': 0.15,
+            'decay_enabled': True,
+            'decay_half_life': 200,
+            'decay_min_weight': 0.2,
+            'posterior_mix': 0.15,
+        }
+
+
 class EnhancedMarkovAnalyzer:
     """增强马尔可夫链分析器"""
-    
+
     def __init__(self):
         self.df = data_manager.get_data()
         if self.df is None:
             logger_manager.error("数据未加载")
-    
+        self._config = _load_markov_config()
+
     def multi_order_markov_analysis(self, periods=500, max_order=3) -> Dict:
         """多阶马尔可夫链分析
-        
+
         Args:
             periods: 分析期数
             max_order: 最大马尔可夫链阶数 (1-3)
-        
+
         Returns:
             Dict: 包含各阶马尔可夫链分析结果的字典
         """
         if self.df is None:
             return {}
-        
+
         # 检查参数有效性
         max_order = min(max(1, max_order), 3)  # 限制在1-3之间
-        
-        method_name = "multi_order_markov_analysis"
+
+        method_name = "multi_order_markov_analysis_v2"
         cached_result = smart_cache_manager.load_cache("analysis", method_name, periods, max_order=max_order)
         if cached_result:
             return cached_result
-        
-        df_subset = self.df.tail(periods)
-        
+
+        df_subset = self.df.head(periods)
+
         result = {
             'orders': {},
             'analysis_periods': periods,
             'max_order': max_order
         }
-        
+
         # 对每个阶数进行分析
         for order in range(1, max_order + 1):
             order_result = self._analyze_nth_order_markov(df_subset, order)
             result['orders'][order] = order_result
-        
-        smart_cache_manager.save_cache("analysis", method_name, result, periods, max_order=max_order)
+
+        # 缓存前去除 _raw 键（包含 tuple/int 键，无法 JSON 序列化）
+        raw_keys = [k for k in list(result['orders'].get(1, {}).keys()) if k.endswith('_raw')]
+        cache_result = {
+            'orders': {},
+            'analysis_periods': periods,
+            'max_order': max_order
+        }
+        for o, o_result in result['orders'].items():
+            cache_result['orders'][o] = {k: v for k, v in o_result.items() if not k.endswith('_raw')}
+
+        smart_cache_manager.save_cache("analysis", method_name, cache_result, periods, max_order=max_order)
         return result
-    
+
     def _analyze_nth_order_markov(self, df_subset, order=1) -> Dict:
-        """分析n阶马尔可夫链
-        
+        """分析n阶马尔可夫链 - 使用单球级别状态建模
+
         Args:
             df_subset: 数据子集
             order: 马尔可夫链阶数
-        
+
         Returns:
-            Dict: n阶马尔可夫链分析结果
+            Dict: n阶马尔可夫链分析结果，包含单球转移矩阵和共现矩阵
         """
-        # 前区和后区的转移矩阵
-        front_transitions = defaultdict(lambda: defaultdict(int))
-        back_transitions = defaultdict(lambda: defaultdict(int))
-        
-        # 对于n阶马尔可夫链，我们需要n个连续的状态作为条件
+        alpha = self._config.get('smoothing_alpha', 0.05)
+        decay_enabled = self._config.get('decay_enabled', True)
+        decay_half_life = self._config.get('decay_half_life', 200)
+        decay_min_weight = self._config.get('decay_min_weight', 0.2)
+
+        num_front_balls = 35
+        num_back_balls = 12
+
+        # 解析所有期的号码
+        all_fronts = []
+        all_backs = []
+        for i in range(len(df_subset)):
+            front, back = data_manager.parse_balls(df_subset.iloc[i])
+            all_fronts.append(front)
+            all_backs.append(back)
+
+        # 反转列表，使 index=0 为最早数据，index[-1] 为最新数据
+        # 这样 all_data[i] -> all_data[i+1] 表示从过去到未来的转移方向
+        all_fronts = list(reversed(all_fronts))
+        all_backs = list(reversed(all_backs))
+        data_len = len(all_fronts)
+
+        # --- 单球转移矩阵（所有阶数都构建，用于融合） ---
+        front_ball_trans = defaultdict(lambda: defaultdict(float))
+        back_ball_trans = defaultdict(lambda: defaultdict(float))
+
+        for i in range(data_len - 1):
+            # 衰减权重: data_len-2-i 使得最新数据(靠近末尾)权重最高
+            w = self._decay_weight(data_len - 2 - i, decay_enabled, decay_half_life, decay_min_weight)
+            for a in all_fronts[i]:
+                for b in all_fronts[i + 1]:
+                    front_ball_trans[a][b] += w
+            for a in all_backs[i]:
+                for b in all_backs[i + 1]:
+                    back_ball_trans[a][b] += w
+
+        # --- 二阶球对转移矩阵（order >= 2 时构建） ---
+        front_pair_trans = defaultdict(lambda: defaultdict(float))
+        back_pair_trans = defaultdict(lambda: defaultdict(float))
+
+        if order >= 2:
+            for i in range(data_len - 2):
+                w = self._decay_weight(data_len - 3 - i, decay_enabled, decay_half_life, decay_min_weight)
+                # 前区: 第i期(较早)和第i+1期(较新)的球对 -> 第i+2期(最新)的每个球
+                # 保留时序方向: pair_key = (较早期球, 较新期球)
+                for a in all_fronts[i]:
+                    for b in all_fronts[i + 1]:
+                        pair_key = (a, b)
+                        for c in all_fronts[i + 2]:
+                            front_pair_trans[pair_key][c] += w
+
+                for a in all_backs[i]:
+                    for b in all_backs[i + 1]:
+                        pair_key = (a, b)
+                        for c in all_backs[i + 2]:
+                            back_pair_trans[pair_key][c] += w
+
+        # --- 共现矩阵 ---
+        front_cooccur = defaultdict(lambda: defaultdict(float))
+        back_cooccur = defaultdict(lambda: defaultdict(float))
+
+        for i in range(data_len):
+            w = self._decay_weight(data_len - 1 - i, decay_enabled, decay_half_life, decay_min_weight)
+            for a, b in combinations(all_fronts[i], 2):
+                front_cooccur[a][b] += w
+                front_cooccur[b][a] += w
+            for a, b in combinations(all_backs[i], 2):
+                back_cooccur[a][b] += w
+                back_cooccur[b][a] += w
+
+        # --- 全局频率统计 ---
+        front_freq = defaultdict(float)
+        back_freq = defaultdict(float)
+        for i in range(data_len):
+            w = self._decay_weight(data_len - 1 - i, decay_enabled, decay_half_life, decay_min_weight)
+            for ball in all_fronts[i]:
+                front_freq[ball] += w
+            for ball in all_backs[i]:
+                back_freq[ball] += w
+
+        # --- 转换为概率（带拉普拉斯平滑） ---
+        front_ball_probs = self._transitions_to_probs(front_ball_trans, alpha, num_front_balls)
+        back_ball_probs = self._transitions_to_probs(back_ball_trans, alpha, num_back_balls)
+
+        front_pair_probs_raw = self._transitions_to_probs(front_pair_trans, alpha, num_front_balls)
+        back_pair_probs_raw = self._transitions_to_probs(back_pair_trans, alpha, num_back_balls)
+
+        # 将 tuple 键转为字符串以支持 JSON 缓存序列化，运行时使用 _pair_probs_raw
+        front_pair_probs = {str(k): {str(bk): bv for bk, bv in v.items()} for k, v in front_pair_probs_raw.items()}
+        back_pair_probs = {str(k): {str(bk): bv for bk, bv in v.items()} for k, v in back_pair_probs_raw.items()}
+
+        # 单球转移概率也转换键为字符串（缓存序列化需要）
+        front_ball_probs_ser = {str(k): {str(bk): bv for bk, bv in v.items()} for k, v in front_ball_probs.items()}
+        back_ball_probs_ser = {str(k): {str(bk): bv for bk, bv in v.items()} for k, v in back_ball_probs.items()}
+
+        # 共现矩阵也转换键为字符串
+        front_cooccur_serializable = {str(k): {str(ck): cv for ck, cv in v.items()} for k, v in front_cooccur.items()}
+        back_cooccur_serializable = {str(k): {str(ck): cv for ck, cv in v.items()} for k, v in back_cooccur.items()}
+
+        # 全局频率归一化（序列化版本键转为字符串，raw版本保留int键）
+        front_total = sum(front_freq.values()) or 1.0
+        back_total = sum(back_freq.values()) or 1.0
+        front_freq_probs = {str(b): c / front_total for b, c in front_freq.items()}
+        back_freq_probs = {str(b): c / back_total for b, c in back_freq.items()}
+        front_freq_probs_raw = {b: c / front_total for b, c in front_freq.items()}
+        back_freq_probs_raw = {b: c / back_total for b, c in back_freq.items()}
+        back_freq_probs = {str(b): c / back_total for b, c in back_freq.items()}
+
+        # --- 兼容旧格式的转移概率（字符串键） ---
+        # 保持原有格式供其他方法（如1阶、3阶）使用
+        front_transitions_compat = defaultdict(lambda: defaultdict(int))
+        back_transitions_compat = defaultdict(lambda: defaultdict(int))
+
         for i in range(len(df_subset) - order):
-            # 构建条件状态（前n期的号码）
             condition_front = []
             condition_back = []
-            
             for j in range(order):
-                front, back = data_manager.parse_balls(df_subset.iloc[i + j])
-                condition_front.extend(front)
-                condition_back.extend(back)
-            
-            # 获取下一期的号码（要预测的状态）
-            next_front, next_back = data_manager.parse_balls(df_subset.iloc[i + order])
-            
-            # 将条件状态转换为元组（作为字典键）
+                condition_front.extend(all_fronts[i + j])
+                condition_back.extend(all_backs[i + j])
+
+            next_front = all_fronts[i + order]
+            next_back = all_backs[i + order]
+
             condition_front_tuple = tuple(sorted(condition_front))
             condition_back_tuple = tuple(sorted(condition_back))
-            
-            # 更新转移计数
+
             for next_ball in next_front:
-                front_transitions[condition_front_tuple][next_ball] += 1
-            
+                front_transitions_compat[condition_front_tuple][next_ball] += 1
             for next_ball in next_back:
-                back_transitions[condition_back_tuple][next_ball] += 1
-        
-        # 转换为概率
-        front_probs = {}
-        for condition, to_dict in front_transitions.items():
+                back_transitions_compat[condition_back_tuple][next_ball] += 1
+
+        front_probs_compat = {}
+        for condition, to_dict in front_transitions_compat.items():
             total = sum(to_dict.values())
             if total > 0:
-                # 使用字符串作为键，因为字典键需要可哈希
-                front_probs[str(condition)] = {to_ball: count/total for to_ball, count in to_dict.items()}
-        
-        back_probs = {}
-        for condition, to_dict in back_transitions.items():
+                front_probs_compat[str(condition)] = {
+                    to_ball: count / total for to_ball, count in to_dict.items()
+                }
+
+        back_probs_compat = {}
+        for condition, to_dict in back_transitions_compat.items():
             total = sum(to_dict.values())
             if total > 0:
-                back_probs[str(condition)] = {to_ball: count/total for to_ball, count in to_dict.items()}
-        
-        # 计算状态转移矩阵的统计信息
-        front_stats = self._calculate_transition_stats(front_transitions)
-        back_stats = self._calculate_transition_stats(back_transitions)
-        
+                back_probs_compat[str(condition)] = {
+                    to_ball: count / total for to_ball, count in to_dict.items()
+                }
+
+        front_stats = self._calculate_transition_stats(front_transitions_compat)
+        back_stats = self._calculate_transition_stats(back_transitions_compat)
+
         return {
-            'front_transition_probs': front_probs,
-            'back_transition_probs': back_probs,
+            # 兼容旧格式
+            'front_transition_probs': front_probs_compat,
+            'back_transition_probs': back_probs_compat,
             'front_stats': front_stats,
             'back_stats': back_stats,
-            'order': order
+            'order': order,
+            # 新增: 单球转移概率（序列化版本用于缓存，raw版本用于预测）
+            'front_ball_probs': front_ball_probs_ser,
+            'back_ball_probs': back_ball_probs_ser,
+            'front_ball_probs_raw': front_ball_probs,
+            'back_ball_probs_raw': back_ball_probs,
+            # 新增: 球对转移概率（二阶，tuple键原始版本供预测使用）
+            'front_pair_probs': front_pair_probs,
+            'back_pair_probs': back_pair_probs,
+            'front_pair_probs_raw': front_pair_probs_raw,
+            'back_pair_probs_raw': back_pair_probs_raw,
+            # 新增: 共现矩阵（原始dict版本供预测使用）
+            'front_cooccurrence': front_cooccur_serializable,
+            'back_cooccurrence': back_cooccur_serializable,
+            'front_cooccurrence_raw': dict(front_cooccur),
+            'back_cooccurrence_raw': dict(back_cooccur),
+            # 新增: 全局频率
+            'front_freq_probs': front_freq_probs,
+            'back_freq_probs': back_freq_probs,
+            'front_freq_probs_raw': front_freq_probs_raw,
+            'back_freq_probs_raw': back_freq_probs_raw,
         }
-    
+
+    @staticmethod
+    def _decay_weight(index: int, enabled: bool, half_life: float, min_weight: float) -> float:
+        """计算时间衰减权重
+
+        index=0 表示最新数据（权重最高），index 越大表示越早的数据
+        """
+        if not enabled:
+            return 1.0
+        return max(min_weight, 0.5 ** (index / max(half_life, 1.0)))
+
+    @staticmethod
+    def _transitions_to_probs(transitions: dict, alpha: float, num_possible: int) -> Dict:
+        """将转移计数转换为带拉普拉斯平滑的概率分布
+
+        prob(ball|state) = (count + alpha) / (total + alpha * num_possible)
+        """
+        probs = {}
+        for state, to_dict in transitions.items():
+            total = sum(to_dict.values())
+            denominator = total + alpha * num_possible
+            if denominator > 0:
+                state_probs = {}
+                for ball in range(1, num_possible + 1):
+                    count = to_dict.get(ball, 0)
+                    state_probs[ball] = (count + alpha) / denominator
+                probs[state] = state_probs
+        return probs
+
     def _calculate_transition_stats(self, transitions):
         """计算转移矩阵的统计信息"""
         stats = {
@@ -144,271 +342,484 @@ class EnhancedMarkovAnalyzer:
             'max_probability': 0,
             'min_probability': 1.0 if transitions else 0.0
         }
-        
+
         for from_state, to_dict in transitions.items():
             total = sum(to_dict.values())
             stats['total_transitions'] += total
-            
+
             if total > 0:
                 max_prob = max(to_dict.values()) / total
                 min_prob = min(to_dict.values()) / total
-                
+
                 stats['max_probability'] = max(stats['max_probability'], max_prob)
                 stats['min_probability'] = min(stats['min_probability'], min_prob)
-        
+
         if stats['unique_states'] > 0:
             stats['avg_transitions_per_state'] = stats['total_transitions'] / stats['unique_states']
-        
+
         return stats
 
 
 class EnhancedMarkovPredictor:
     """增强马尔可夫链预测器"""
-    
+
     def __init__(self):
         self.df = data_manager.get_data()
         self.analyzer = EnhancedMarkovAnalyzer()
         if self.df is None:
             logger_manager.error("数据未加载")
-    
+        self._config = _load_markov_config()
+
     def multi_order_markov_predict(self, count=1, periods=500, order=1) -> List[Tuple[List[int], List[int]]]:
         """多阶马尔可夫链预测
-        
+
+        对于 order=2，使用优化的单球级别建模+多步融合+共现加成+区间约束
+        对于 order=1 和 order=3，保持原有逻辑兼容
+
         Args:
             count: 预测注数
             periods: 分析期数
             order: 马尔可夫链阶数 (1-3)
-        
+
         Returns:
-            List[Tuple[List[int], List[int]]]: 预测结果列表，每个元素为(前区号码, 后区号码)
+            List[Tuple[List[int], List[int]]]: 预测结果列表
         """
-        # 检查参数有效性
-        order = min(max(1, order), 3)  # 限制在1-3之间
-        
-        # 获取马尔可夫分析结果
+        order = min(max(1, order), 3)
+
         markov_result = self.analyzer.multi_order_markov_analysis(periods, max_order=order)
-        
+
         if not markov_result or 'orders' not in markov_result or order not in markov_result['orders']:
             logger_manager.error(f"{order}阶马尔可夫分析结果不可用")
             return []
 
         order_result = markov_result['orders'][order]
-        front_transitions = order_result.get('front_transition_probs', {})
-        back_transitions = order_result.get('back_transition_probs', {})
-        
-        predictions = []
-        
-        # 获取最近n期的号码作为条件状态
-        condition_front = []
-        condition_back = []
 
-        for i in range(min(order, len(self.df))):
-            # 从最新的数据开始取，而不是从最早的数据开始
-            front, back = data_manager.parse_balls(self.df.iloc[-(i+1)])
-            condition_front.extend(front)
-            condition_back.extend(back)
-        
-        # 如果数据不足，使用默认值
-        if not condition_front:
-            condition_front = list(range(1, 6))
-        if not condition_back:
-            condition_back = [1, 2]
-        
-        # 将条件状态转换为字符串（作为字典键）
-        condition_front_str = str(tuple(sorted(condition_front)))
-        condition_back_str = str(tuple(sorted(condition_back)))
-        
+        # order=2 时使用优化路径
+        if order == 2:
+            return self._predict_2nd_order_optimized(count, periods, order_result, markov_result)
+
+        # order=1 或 order=3 保持原有逻辑
+        return self._predict_legacy(count, periods, order, order_result)
+
+    def _predict_2nd_order_optimized(self, count: int, periods: int,
+                                      order_result: Dict, full_result: Dict) -> List[Tuple[List[int], List[int]]]:
+        """二阶马尔可夫优化预测
+
+        融合一步转移+二阶球对转移+全局频率先验，并加入共现加成和区间约束
+        """
+        posterior_mix = self._config.get('posterior_mix', 0.15)
+
+        # 获取分析数据（优先使用 raw 版本，即原始 tuple/int 键）
+        front_ball_probs = order_result.get('front_ball_probs_raw', order_result.get('front_ball_probs', {}))
+        back_ball_probs = order_result.get('back_ball_probs_raw', order_result.get('back_ball_probs', {}))
+        front_pair_probs = order_result.get('front_pair_probs_raw', order_result.get('front_pair_probs', {}))
+        back_pair_probs = order_result.get('back_pair_probs_raw', order_result.get('back_pair_probs', {}))
+        front_cooccur = order_result.get('front_cooccurrence_raw', order_result.get('front_cooccurrence', {}))
+        back_cooccur = order_result.get('back_cooccurrence_raw', order_result.get('back_cooccurrence', {}))
+        front_freq = order_result.get('front_freq_probs_raw', order_result.get('front_freq_probs', {}))
+        back_freq = order_result.get('back_freq_probs_raw', order_result.get('back_freq_probs', {}))
+
+        # 同时获取一阶分析结果用于融合
+        order1_result = full_result.get('orders', {}).get(1, {})
+        front_ball_probs_1st = order1_result.get('front_ball_probs_raw', order1_result.get('front_ball_probs', front_ball_probs))
+        back_ball_probs_1st = order1_result.get('back_ball_probs_raw', order1_result.get('back_ball_probs', back_ball_probs))
+
+        # 获取最近2期号码作为条件
+        recent_fronts = []
+        recent_backs = []
+        for i in range(min(2, len(self.df))):
+            front, back = data_manager.parse_balls(self.df.iloc[i])
+            recent_fronts.append(front)
+            recent_backs.append(back)
+
+        if len(recent_fronts) < 2:
+            recent_fronts = [[1, 2, 3, 4, 5], [6, 7, 8, 9, 10]]
+        if len(recent_backs) < 2:
+            recent_backs = [[1, 2], [3, 4]]
+
+        predictions = []
         for i in range(count):
-            # 为每注使用不同的马尔可夫策略，添加时间戳确保随机性
-            import time
             strategy_seed = int(time.time() * 1000000) + i * 1000
 
-            # 预测前区号码
-            front_balls = self._predict_balls_with_condition_diverse(
-                front_transitions, condition_front_str, 5, 35, i, strategy_seed
+            # 构建前区融合概率分布
+            front_dist = self._build_fused_distribution(
+                recent_fronts, front_ball_probs_1st, front_pair_probs,
+                front_freq, front_cooccur, 35, posterior_mix
             )
 
-            # 预测后区号码
-            back_balls = self._predict_balls_with_condition_diverse(
-                back_transitions, condition_back_str, 2, 12, i, strategy_seed + 500
+            # 构建后区融合概率分布
+            back_dist = self._build_fused_distribution(
+                recent_backs, back_ball_probs_1st, back_pair_probs,
+                back_freq, back_cooccur, 12, posterior_mix
             )
 
-
+            # 根据策略选择号码
+            front_balls = self._select_balls_with_strategy(
+                front_dist, 5, 35, i, strategy_seed, front_cooccur, apply_zone_constraint=True
+            )
+            back_balls = self._select_balls_with_strategy(
+                back_dist, 2, 12, i, strategy_seed + 500, back_cooccur, apply_zone_constraint=False
+            )
 
             predictions.append((sorted(front_balls), sorted(back_balls)))
 
         return predictions
 
-    def _predict_balls_with_condition_diverse(self, transitions, condition_str, num_balls, max_ball, strategy_index, seed=None):
+    def _build_fused_distribution(self, recent_periods: List[List[int]],
+                                   ball_probs_1st: Dict, pair_probs: Dict,
+                                   freq_probs: Dict, cooccur: Dict,
+                                   max_ball: int, posterior_mix: float) -> Dict[int, float]:
+        """构建多步融合概率分布
+
+        融合权重:
+        - 一步转移概率（最近1期 -> 下期）: 0.40
+        - 二阶球对转移概率（最近2期球对 -> 下期）: 0.45
+        - 全局频率先验: posterior_mix (0.15)
+        """
+        w_1st = 0.40
+        w_2nd = 0.45
+        w_prior = posterior_mix
+
+        # 归一化权重
+        w_total = w_1st + w_2nd + w_prior
+        w_1st /= w_total
+        w_2nd /= w_total
+        w_prior /= w_total
+
+        dist = defaultdict(float)
+
+        # 1. 一步转移概率: 基于最近1期的每个球
+        last_period = recent_periods[0] if recent_periods else []
+        step1_dist = defaultdict(float)
+        for ball in last_period:
+            if ball in ball_probs_1st:
+                for target, prob in ball_probs_1st[ball].items():
+                    step1_dist[target] += prob
+        # 归一化
+        s1_total = sum(step1_dist.values()) or 1.0
+        for ball in range(1, max_ball + 1):
+            dist[ball] += w_1st * (step1_dist.get(ball, 0) / s1_total)
+
+        # 2. 二阶球对转移概率: 基于最近2期的跨期球对
+        # 保留时序方向: pair_key = (较早期球, 较新期球)
+        step2_dist = defaultdict(float)
+        if len(recent_periods) >= 2:
+            for a in recent_periods[1]:  # 较早一期
+                for b in recent_periods[0]:  # 最近一期
+                    pair_key = (a, b)
+                    if pair_key in pair_probs:
+                        for target, prob in pair_probs[pair_key].items():
+                            step2_dist[target] += prob
+        s2_total = sum(step2_dist.values()) or 1.0
+        for ball in range(1, max_ball + 1):
+            dist[ball] += w_2nd * (step2_dist.get(ball, 0) / s2_total)
+
+        # 3. 全局频率先验
+        f_total = sum(freq_probs.values()) or 1.0
+        for ball in range(1, max_ball + 1):
+            dist[ball] += w_prior * (freq_probs.get(ball, 0) / f_total)
+
+        # 最终归一化
+        total = sum(dist.values()) or 1.0
+        return {b: p / total for b, p in dist.items()}
+
+    def _select_balls_with_strategy(self, dist: Dict[int, float], num_balls: int,
+                                     max_ball: int, strategy_index: int, seed: int,
+                                     cooccur: Dict, apply_zone_constraint: bool) -> List[int]:
+        """基于融合概率分布选择号码，使用多样性策略
+
+        策略0: 概率最优 - 按概率排序选top N
+        策略1: 加权采样 - 按概率做加权随机采样
+        策略2: 多样化 - top 3N中随机采样，满足区间约束
+        策略3: 全局混合 - 50%概率分布 + 50%均匀分布
+        """
+        random.seed(seed)
+        np.random.seed(seed % (2**32))
+
+        balls_list = sorted(dist.keys())
+        probs_list = np.array([dist.get(b, 0) for b in balls_list])
+
+        # 确保概率和为1
+        prob_sum = probs_list.sum()
+        if prob_sum > 0:
+            probs_list = probs_list / prob_sum
+        else:
+            probs_list = np.ones(len(balls_list)) / len(balls_list)
+
+        strategy = strategy_index % 4
+        selected = []
+
+        if strategy == 0:
+            # 概率最优: 按概率排序选top N
+            sorted_indices = np.argsort(probs_list)[::-1]
+            selected = [balls_list[idx] for idx in sorted_indices[:num_balls]]
+
+        elif strategy == 1:
+            # 加权采样
+            if len(balls_list) >= num_balls:
+                chosen_indices = np.random.choice(
+                    len(balls_list), size=num_balls, replace=False, p=probs_list
+                )
+                selected = [balls_list[idx] for idx in chosen_indices]
+
+        elif strategy == 2:
+            # 多样化: 从top 3N中随机采样N个
+            sorted_indices = np.argsort(probs_list)[::-1]
+            pool_size = min(num_balls * 3, len(balls_list))
+            candidate_pool = [balls_list[idx] for idx in sorted_indices[:pool_size]]
+            if len(candidate_pool) >= num_balls:
+                selected = random.sample(candidate_pool, num_balls)
+            else:
+                selected = candidate_pool
+
+        else:
+            # 全局混合: 50%概率分布 + 50%均匀分布
+            uniform = np.ones(len(balls_list)) / len(balls_list)
+            mixed_probs = 0.5 * probs_list + 0.5 * uniform
+            mixed_probs = mixed_probs / mixed_probs.sum()
+            if len(balls_list) >= num_balls:
+                chosen_indices = np.random.choice(
+                    len(balls_list), size=num_balls, replace=False, p=mixed_probs
+                )
+                selected = [balls_list[idx] for idx in chosen_indices]
+
+        # 共现关系加成: 如果已选球之间共现分数低，替换低概率球
+        if len(selected) >= 2 and cooccur:
+            selected = self._apply_cooccurrence_boost(selected, dist, cooccur, num_balls, max_ball)
+
+        # 区间分布约束（仅前区）
+        if apply_zone_constraint and max_ball == 35:
+            selected = self._apply_zone_constraint(selected, dist, num_balls)
+
+        # 兜底: 确保号码数量足够
+        if len(selected) < num_balls:
+            remaining = [b for b in range(1, max_ball + 1) if b not in selected]
+            remaining_probs = [dist.get(b, 0) for b in remaining]
+            total_rp = sum(remaining_probs) or 1.0
+            remaining_probs = [p / total_rp for p in remaining_probs]
+            needed = num_balls - len(selected)
+            if remaining:
+                try:
+                    extra = list(np.random.choice(
+                        remaining, size=min(needed, len(remaining)),
+                        replace=False, p=remaining_probs
+                    ))
+                    selected.extend(extra)
+                except Exception:
+                    selected.extend(random.sample(remaining, min(needed, len(remaining))))
+
+        return selected[:num_balls]
+
+    def _apply_cooccurrence_boost(self, selected: List[int], dist: Dict[int, float],
+                                    cooccur: Dict, num_balls: int, max_ball: int) -> List[int]:
+        """共现关系加成: 检查已选球之间的共现强度，尝试提升"""
+        def cooccur_score(balls):
+            score = 0.0
+            for a, b in combinations(balls, 2):
+                score += cooccur.get(a, {}).get(b, 0)
+            return score
+
+        best = list(selected)
+        best_score = cooccur_score(selected)
+
+        # 尝试替换每个球，看是否能提升共现分数同时保持概率
+        for idx in range(len(selected)):
+            original_ball = selected[idx]
+            candidates = sorted(
+                [b for b in range(1, max_ball + 1)
+                 if b not in selected and dist.get(b, 0) >= dist.get(original_ball, 0) * 0.7],
+                key=lambda b: dist.get(b, 0), reverse=True
+            )
+            for candidate in candidates[:5]:
+                trial = list(selected)
+                trial[idx] = candidate
+                trial_score = cooccur_score(trial)
+                if trial_score > best_score:
+                    best_score = trial_score
+                    best = list(trial)
+
+        return best
+
+    @staticmethod
+    def _apply_zone_constraint(selected: List[int], dist: Dict[int, float],
+                                num_balls: int) -> List[int]:
+        """区间分布约束（前区）
+
+        将1-35分为7个区间，确保至少覆盖3个不同区间
+        """
+        def get_zone(ball):
+            return (ball - 1) // 5
+
+        zones = [get_zone(b) for b in selected]
+        unique_zones = len(set(zones))
+
+        if unique_zones >= 3:
+            return selected
+
+        result = list(selected)
+
+        for _ in range(num_balls):
+            zones_now = [get_zone(b) for b in result]
+            if len(set(zones_now)) >= 3:
+                break
+
+            # 找到出现次数最多的区间
+            zone_counts = Counter(zones_now)
+            most_common_zone = zone_counts.most_common(1)[0][0]
+
+            # 在该区间中找概率最低的球
+            balls_in_zone = [(b, dist.get(b, 0)) for b in result if get_zone(b) == most_common_zone]
+            balls_in_zone.sort(key=lambda x: x[1])
+            ball_to_replace = balls_in_zone[0][0]
+
+            # 从未覆盖的区间中选概率最高的球
+            covered_zones = set(zones_now)
+            uncovered_zones = set(range(7)) - covered_zones
+
+            best_replacement = None
+            best_prob = -1
+            for zone in uncovered_zones:
+                zone_start = zone * 5 + 1
+                zone_end = min(zone * 5 + 5, 35)
+                for b in range(zone_start, zone_end + 1):
+                    if b not in result and dist.get(b, 0) > best_prob:
+                        best_prob = dist.get(b, 0)
+                        best_replacement = b
+
+            if best_replacement is not None:
+                idx = result.index(ball_to_replace)
+                result[idx] = best_replacement
+
+        return result
+
+    def _predict_legacy(self, count: int, periods: int, order: int,
+                         order_result: Dict) -> List[Tuple[List[int], List[int]]]:
+        """保持原有预测逻辑（供 order=1 和 order=3 使用）"""
+        front_transitions = order_result.get('front_transition_probs', {})
+        back_transitions = order_result.get('back_transition_probs', {})
+
+        predictions = []
+
+        condition_front = []
+        condition_back = []
+        for i in range(min(order, len(self.df))):
+            front, back = data_manager.parse_balls(self.df.iloc[i])
+            condition_front.extend(front)
+            condition_back.extend(back)
+
+        if not condition_front:
+            condition_front = list(range(1, 6))
+        if not condition_back:
+            condition_back = [1, 2]
+
+        condition_front_str = str(tuple(sorted(condition_front)))
+        condition_back_str = str(tuple(sorted(condition_back)))
+
+        for i in range(count):
+            strategy_seed = int(time.time() * 1000000) + i * 1000
+
+            front_balls = self._predict_balls_with_condition_diverse(
+                front_transitions, condition_front_str, 5, 35, i, periods, strategy_seed
+            )
+            back_balls = self._predict_balls_with_condition_diverse(
+                back_transitions, condition_back_str, 2, 12, i, periods, strategy_seed + 500
+            )
+
+            predictions.append((sorted(front_balls), sorted(back_balls)))
+
+        return predictions
+
+    def _predict_balls_with_condition_diverse(self, transitions, condition_str, num_balls, max_ball, strategy_index, periods, seed=None):
         """基于条件状态预测号码 - 多样性策略版本"""
-        import random
-        import numpy as np
 
         # 设置随机种子确保每注不同
         if seed is not None:
             random.seed(seed)
             np.random.seed(seed % 2**32)
         else:
-            # 如果没有提供种子，使用strategy_index生成唯一种子
             unique_seed = (strategy_index * 999983 + hash(condition_str) % 100000) % (2**31)
             random.seed(unique_seed)
             np.random.seed(unique_seed % (2**32))
 
         balls = []
-        
-        # 先检查条件状态是否在转移矩阵中
-        use_global_probs = condition_str not in transitions
-        
-        if use_global_probs:
-            # 如果条件不在转移矩阵中，使用全局概率分布
-            all_probs = {}
-            for cond, trans_probs in transitions.items():
-                for ball, prob in trans_probs.items():
-                    ball_int = int(ball)
-                    all_probs[ball_int] = all_probs.get(ball_int, 0) + prob
-            
-            if all_probs:
-                ball_list = list(all_probs.keys())
-                prob_list = list(all_probs.values())
-                total_prob = sum(prob_list)
-                
-                if total_prob > 0:
-                    normalized_probs = [p/total_prob for p in prob_list]
-                    
-                    # 根据策略索引使用不同的选择方式
-                    if strategy_index % 3 == 0:
-                        # 高概率
-                        sorted_balls = sorted(zip(ball_list, normalized_probs), key=lambda x: x[1], reverse=True)
-                        high_prob_balls = [ball for ball, _ in sorted_balls[:num_balls*2]]
-                        if len(high_prob_balls) >= num_balls:
-                            balls = random.sample(high_prob_balls, num_balls)
-                    elif strategy_index % 3 == 1:
-                        # 中等概率
-                        sorted_balls = sorted(zip(ball_list, normalized_probs), key=lambda x: x[1], reverse=True)
-                        mid_start = len(sorted_balls) // 4
-                        mid_end = len(sorted_balls) * 3 // 4
-                        mid_prob_balls = [ball for ball, _ in sorted_balls[mid_start:mid_end]]
-                        if len(mid_prob_balls) >= num_balls:
-                            balls = random.sample(mid_prob_balls, num_balls)
-                    else:
-                        # 加权随机
-                        if len(ball_list) >= num_balls:
-                            balls = list(np.random.choice(ball_list, size=num_balls, replace=False, p=normalized_probs))
-        
-        # 如果已经有结果，直接返回
-        if len(balls) >= num_balls:
-            return balls[:num_balls]
 
-        # 策略1: 最高概率策略 (第1注)
-        if strategy_index % 5 == 0:
-            # 如果条件状态存在于转移矩阵中
+        # 策略1: 最高概率策略
+        if strategy_index % 4 == 0:
             if condition_str in transitions:
                 trans_probs = transitions[condition_str]
-
-                # 按概率排序，选择前几个高概率号码
                 sorted_probs = sorted(trans_probs.items(), key=lambda x: x[1], reverse=True)
                 high_prob_balls = [int(ball) for ball, _ in sorted_probs[:num_balls*2]]
-
                 if len(high_prob_balls) >= num_balls:
                     balls = random.sample(high_prob_balls, num_balls)
                 else:
                     balls = high_prob_balls
 
-        # 策略2: 中等概率策略 (第2注)
-        elif strategy_index % 5 == 1:
+        # 策略2: 中等概率策略
+        elif strategy_index % 4 == 1:
             if condition_str in transitions:
                 trans_probs = transitions[condition_str]
                 sorted_probs = sorted(trans_probs.items(), key=lambda x: x[1], reverse=True)
-
-                # 选择中等概率的号码
                 mid_start = len(sorted_probs) // 4
                 mid_end = len(sorted_probs) * 3 // 4
                 mid_prob_balls = [int(ball) for ball, _ in sorted_probs[mid_start:mid_end]]
-
                 if len(mid_prob_balls) >= num_balls:
                     balls = random.sample(mid_prob_balls, num_balls)
                 else:
                     balls = mid_prob_balls
 
-        # 策略3: 概率加权随机选择 (第3注)
-        elif strategy_index % 5 == 2:
+        # 策略3: 概率加权随机选择
+        elif strategy_index % 4 == 2:
             if condition_str in transitions:
                 trans_probs = transitions[condition_str]
-
                 if trans_probs:
                     ball_list = [int(ball) for ball in trans_probs.keys()]
                     prob_list = list(trans_probs.values())
-
-                    # 归一化概率
                     total_prob = sum(prob_list)
                     if total_prob > 0:
                         normalized_probs = [p/total_prob for p in prob_list]
-
-                        # 概率加权随机选择
                         if len(ball_list) >= num_balls:
                             balls = list(np.random.choice(ball_list, size=num_balls, replace=False, p=normalized_probs))
                         else:
                             balls = ball_list
-        
-        # 策略4: 低概率号码策略 (第4注)
-        elif strategy_index % 5 == 3:
-            if condition_str in transitions:
-                trans_probs = transitions[condition_str]
-                sorted_probs = sorted(trans_probs.items(), key=lambda x: x[1], reverse=True)
-                
-                # 选择低概率号码
-                low_prob_start = len(sorted_probs) // 2
-                low_prob_balls = [int(ball) for ball, _ in sorted_probs[low_prob_start:]]
-                
-                if len(low_prob_balls) >= num_balls:
-                    balls = random.sample(low_prob_balls, num_balls)
-                elif low_prob_balls:
-                    balls = low_prob_balls
-        
-        # 策略5: 全局概率分布策略 (第5注及以后)
-        else:
-            # 从所有转移概率中选择
-            all_probs = {}
 
+        # 策略4: 全局概率分布策略
+        else:
+            all_probs = {}
             for cond, trans_probs in transitions.items():
                 for ball, prob in trans_probs.items():
                     ball_int = int(ball)
                     all_probs[ball_int] = all_probs.get(ball_int, 0) + prob
-
             if all_probs:
-                # 概率加权随机选择
                 ball_list = list(all_probs.keys())
                 prob_list = list(all_probs.values())
-
                 total_prob = sum(prob_list)
                 if total_prob > 0:
                     normalized_probs = [p/total_prob for p in prob_list]
-
                     if len(ball_list) >= num_balls:
                         balls = list(np.random.choice(ball_list, size=num_balls, replace=False, p=normalized_probs))
                     else:
                         balls = ball_list
 
-        # 如果号码不足，使用频率分析补充
+        # 号码不足时，使用频率分析补充
         if len(balls) < num_balls:
-            from analyzer_modules import basic_analyzer
-            freq_analysis = basic_analyzer.frequency_analysis()
+            try:
+                from analyzer_modules import basic_analyzer
+                freq_analysis = basic_analyzer.frequency_analysis(periods)
+                if max_ball == 35:
+                    freq_dict = freq_analysis.get('front_frequency', {})
+                else:
+                    freq_dict = freq_analysis.get('back_frequency', {})
+                sorted_freq = sorted(freq_dict.items(), key=lambda x: x[1], reverse=True)
+                for ball, _ in sorted_freq:
+                    if len(balls) >= num_balls:
+                        break
+                    ball_int = int(ball)
+                    if ball_int not in balls:
+                        balls.append(ball_int)
+            except Exception:
+                pass
 
-            if max_ball == 35:  # 前区
-                freq_dict = freq_analysis.get('front_frequency', {})
-            else:  # 后区
-                freq_dict = freq_analysis.get('back_frequency', {})
-
-            sorted_freq = sorted(freq_dict.items(), key=lambda x: x[1], reverse=True)
-            for ball, _ in sorted_freq:
-                if len(balls) >= num_balls:
-                    break
-
-                ball_int = int(ball)
-                if ball_int not in balls:
-                    balls.append(ball_int)
-
-        # 如果仍然不足，随机补充
+        # 仍然不足，随机补充
         if len(balls) < num_balls:
             remaining = [i for i in range(1, max_ball + 1) if i not in balls]
             if remaining:
@@ -417,99 +828,28 @@ class EnhancedMarkovPredictor:
 
         return balls[:num_balls]
 
-    def _predict_balls_with_condition(self, transitions, condition_str, num_balls, max_ball):
-        """基于条件状态预测号码"""
-        balls = []
-        
-        # 如果条件状态存在于转移矩阵中
-        if condition_str in transitions:
-            trans_probs = transitions[condition_str]
-            
-            # 按概率排序
-            sorted_probs = sorted(trans_probs.items(), key=lambda x: x[1], reverse=True)
-            
-            # 选择概率最高的号码
-            for ball, _ in sorted_probs:
-                if len(balls) >= num_balls:
-                    break
-                
-                ball_int = int(ball)
-                if ball_int not in balls:
-                    balls.append(ball_int)
-        
-        # 如果号码不足，从所有转移概率中选择
-        if len(balls) < num_balls:
-            all_probs = {}
-            
-            for cond, trans_probs in transitions.items():
-                for ball, prob in trans_probs.items():
-                    ball_int = int(ball)
-                    if ball_int not in balls:
-                        all_probs[ball_int] = all_probs.get(ball_int, 0) + prob
-            
-            # 按概率排序
-            sorted_probs = sorted(all_probs.items(), key=lambda x: x[1], reverse=True)
-            
-            # 选择概率最高的号码
-            for ball, _ in sorted_probs:
-                if len(balls) >= num_balls:
-                    break
-                
-                if ball not in balls:
-                    balls.append(ball)
-        
-        # 如果仍然不足，使用频率分析补充
-        if len(balls) < num_balls:
-            from analyzer_modules import basic_analyzer
-            freq_analysis = basic_analyzer.frequency_analysis()
-
-            if max_ball == 35:  # 前区
-                freq_dict = freq_analysis.get('front_frequency', {})
-            else:  # 后区
-                freq_dict = freq_analysis.get('back_frequency', {})
-
-            # 按频率排序
-            sorted_freq = sorted(freq_dict.items(), key=lambda x: x[1], reverse=True)
-
-            for ball_str, _ in sorted_freq:
-                if len(balls) >= num_balls:
-                    break
-                ball_int = int(ball_str) if isinstance(ball_str, str) else ball_str
-                if ball_int not in balls and 1 <= ball_int <= max_ball:
-                    balls.append(ball_int)
-
-        # 如果还是不足，使用默认序列
-        while len(balls) < num_balls:
-            for i in range(1, max_ball + 1):
-                if len(balls) >= num_balls:
-                    break
-                if i not in balls:
-                    balls.append(i)
-        
-        return balls
-    
     def adaptive_order_markov_predict(self, count=1, periods=500) -> List[Dict]:
         """自适应阶数马尔可夫链预测
-        
+
         结合1-3阶马尔可夫链的预测结果，根据各阶的统计特性自适应选择最佳结果
-        
+
         Args:
             count: 预测注数
             periods: 分析期数
-        
+
         Returns:
             List[Dict]: 预测结果列表，包含详细信息
         """
         # 获取1-3阶马尔可夫分析结果
         markov_result = self.analyzer.multi_order_markov_analysis(periods, max_order=3)
-        
+
         if not markov_result or 'orders' not in markov_result:
             logger_manager.error("马尔可夫分析结果不可用")
             return []
-        
+
         # 计算各阶的权重
         order_weights = self._calculate_order_weights(markov_result)
-        
+
         # 获取各阶的预测结果
         order_predictions = {}
         for order in range(1, 4):
@@ -517,43 +857,66 @@ class EnhancedMarkovPredictor:
                 preds = self.multi_order_markov_predict(count, periods, order)
                 order_predictions[order] = preds
 
-        
+
         # 融合各阶预测结果
         predictions = []
         for i in range(count):
             # 收集各阶对应的第i注预测
             front_candidates = []
             back_candidates = []
-            
+
             for order, preds in order_predictions.items():
                 if i < len(preds):
                     front, back = preds[i]
-                    
+
                     # 根据权重添加多次（权重越高，添加次数越多）
                     weight = order_weights.get(order, 0.1)
                     repeat = max(1, int(weight * 10))
-                    
+
                     for _ in range(repeat):
                         front_candidates.extend(front)
                         back_candidates.extend(back)
-            
+
             # 统计各号码出现频率
             front_counter = Counter(front_candidates)
             back_counter = Counter(back_candidates)
 
-            # 为每注使用不同的选择策略，确保多样性
-            front_balls = self._select_balls_with_diversity(front_counter, 5, i, periods)
-            back_balls = self._select_balls_with_diversity(back_counter, 2, i, periods)
+            # 选择出现频率最高的号码
+            front_balls = [ball for ball, _ in front_counter.most_common(5)]
+            back_balls = [ball for ball, _ in back_counter.most_common(2)]
 
 
-            
-            # 如果号码不足，使用多样化的回退策略
+            # 如果号码不足，使用简单的频率分析回退
             if len(front_balls) < 5:
-                front_balls = self._fallback_ball_selection(front_balls, 5, 35, i, 'front')
+                try:
+                    from analyzer_modules import basic_analyzer
+                    freq_analysis = basic_analyzer.frequency_analysis(periods)
+                    front_freq = freq_analysis.get('front_frequency', {})
+                    sorted_freq = sorted(front_freq.items(), key=lambda x: x[1], reverse=True)
+                    for ball_str, _ in sorted_freq:
+                        if len(front_balls) >= 5:
+                            break
+                        ball_int = int(ball_str) if isinstance(ball_str, str) else ball_str
+                        if ball_int not in front_balls and 1 <= ball_int <= 35:
+                            front_balls.append(ball_int)
+                except Exception:
+                    pass
 
             if len(back_balls) < 2:
-                back_balls = self._fallback_ball_selection(back_balls, 2, 12, i, 'back')
-            
+                try:
+                    from analyzer_modules import basic_analyzer
+                    freq_analysis = basic_analyzer.frequency_analysis(periods)
+                    back_freq = freq_analysis.get('back_frequency', {})
+                    sorted_freq = sorted(back_freq.items(), key=lambda x: x[1], reverse=True)
+                    for ball_str, _ in sorted_freq:
+                        if len(back_balls) >= 2:
+                            break
+                        ball_int = int(ball_str) if isinstance(ball_str, str) else ball_str
+                        if ball_int not in back_balls and 1 <= ball_int <= 12:
+                            back_balls.append(ball_int)
+                except Exception:
+                    pass
+
             # 构建预测结果
             prediction = {
                 'index': i + 1,
@@ -564,265 +927,43 @@ class EnhancedMarkovPredictor:
                 'order_weights': order_weights,
                 'used_orders': list(order_predictions.keys())
             }
-            
+
             predictions.append(prediction)
-        
+
         return predictions
-
-    def _select_balls_with_diversity(self, counter, target_count, prediction_index, periods=500):
-        """根据预测索引使用不同策略选择号码，确保多样性"""
-        import random
-        import numpy as np
-        import time
-
-        # 为每注设置不同的随机种子，确保多样性
-        # 使用更稳定的种子生成方式，避免时间相关的重复
-        seed_base = (prediction_index * 7919 + periods * 31 + hash(str(counter)) % 10000) % (2**31)
-        random.seed(seed_base)
-        np.random.seed(seed_base % (2**32))
-
-        if not counter:
-            return []
-
-        # 获取所有候选号码和频率
-        all_balls = list(counter.keys())
-        all_counts = list(counter.values())
-
-        if len(all_balls) <= target_count:
-            return all_balls
-
-        selected_balls = []
-
-        # 策略1：第1注 - 期数敏感的频率策略（增加多样性）
-        if prediction_index == 0:
-            # 根据分析期数调整选择策略，增加随机性
-            if periods <= 300:
-                # 短期分析：60%高频 + 40%随机（增加多样性）
-                high_freq_count = max(1, int(target_count * 0.6))
-                high_freq_balls = [ball for ball, _ in counter.most_common(high_freq_count)]
-                selected_balls.extend(high_freq_balls)
-
-                remaining_balls = [ball for ball in all_balls if ball not in high_freq_balls]
-                if remaining_balls and len(selected_balls) < target_count:
-                    random_count = target_count - len(selected_balls)
-                    random_balls = random.sample(remaining_balls, min(random_count, len(remaining_balls)))
-                    selected_balls.extend(random_balls)
-            elif periods <= 800:
-                # 中期分析：50%高频 + 50%随机（增加多样性）
-                high_freq_count = max(1, int(target_count * 0.5))
-                high_freq_balls = [ball for ball, _ in counter.most_common(high_freq_count)]
-                selected_balls.extend(high_freq_balls)
-
-                remaining_balls = [ball for ball in all_balls if ball not in high_freq_balls]
-                if remaining_balls and len(selected_balls) < target_count:
-                    random_count = target_count - len(selected_balls)
-                    random_balls = random.sample(remaining_balls, min(random_count, len(remaining_balls)))
-                    selected_balls.extend(random_balls)
-            else:
-                # 长期分析：40%高频 + 60%加权随机（增加多样性）
-                high_freq_count = max(1, int(target_count * 0.4))
-                high_freq_balls = [ball for ball, _ in counter.most_common(high_freq_count)]
-                selected_balls.extend(high_freq_balls)
-
-                # 剩余位置用加权随机填充
-                remaining_balls = [ball for ball in all_balls if ball not in high_freq_balls]
-                remaining_counts = [counter[ball] for ball in remaining_balls]
-
-                if remaining_balls and len(selected_balls) < target_count:
-                    random_count = target_count - len(selected_balls)
-                    if sum(remaining_counts) > 0:
-                        probabilities = [count / sum(remaining_counts) for count in remaining_counts]
-                        weighted_balls = list(np.random.choice(
-                            remaining_balls, size=min(random_count, len(remaining_balls)),
-                            replace=False, p=probabilities
-                        ))
-                        selected_balls.extend(weighted_balls)
-                    else:
-                        random_balls = random.sample(remaining_balls, min(random_count, len(remaining_balls)))
-                        selected_balls.extend(random_balls)
-
-        # 策略2：第2注 - 反向频率策略（偏向中低频号码）
-        elif prediction_index == 1:
-            # 将号码按频率分为三档，偏向选择中低频号码
-            sorted_balls = [ball for ball, _ in counter.most_common()]
-            total_balls = len(sorted_balls)
-
-            if total_balls >= 3:
-                tier1_end = max(1, total_balls // 3)
-                tier2_end = max(2, total_balls * 2 // 3)
-
-                tier1_balls = sorted_balls[:tier1_end]  # 高频
-                tier2_balls = sorted_balls[tier1_end:tier2_end]  # 中频
-                tier3_balls = sorted_balls[tier2_end:]  # 低频
-
-                # 反向权重：20%高频，40%中频，40%低频
-                tier1_count = max(0, int(target_count * 0.2))
-                tier2_count = max(1, int(target_count * 0.4))
-                tier3_count = target_count - tier1_count - tier2_count
-
-                # 从各档随机选择
-                if tier1_balls and tier1_count > 0:
-                    selected_balls.extend(random.sample(tier1_balls, min(tier1_count, len(tier1_balls))))
-                if tier2_balls and tier2_count > 0:
-                    selected_balls.extend(random.sample(tier2_balls, min(tier2_count, len(tier2_balls))))
-                if tier3_balls and tier3_count > 0:
-                    selected_balls.extend(random.sample(tier3_balls, min(tier3_count, len(tier3_balls))))
-            else:
-                # 如果号码太少，使用加权随机
-                total_count = sum(all_counts)
-                probabilities = [count / total_count for count in all_counts]
-                selected_balls = list(np.random.choice(
-                    all_balls, size=min(target_count, len(all_balls)),
-                    replace=False, p=probabilities
-                ))
-
-        # 策略3：第3注 - 完全随机策略
-        elif prediction_index == 2:
-            # 完全随机选择，不考虑频率
-            selected_balls = random.sample(all_balls, min(target_count, len(all_balls)))
-
-        # 策略4：第4注及以后 - 平衡策略
-        else:
-            # 将号码按频率分为三档
-            sorted_balls = [ball for ball, _ in counter.most_common()]
-            total_balls = len(sorted_balls)
-
-            tier1_end = max(1, total_balls // 3)
-            tier2_end = max(2, total_balls * 2 // 3)
-
-            tier1_balls = sorted_balls[:tier1_end]  # 高频
-            tier2_balls = sorted_balls[tier1_end:tier2_end]  # 中频
-            tier3_balls = sorted_balls[tier2_end:]  # 低频
-
-            # 按比例从各档选择：60%高频，30%中频，10%低频
-            tier1_count = max(1, int(target_count * 0.6))
-            tier2_count = max(0, int(target_count * 0.3))
-            tier3_count = target_count - tier1_count - tier2_count
-
-            # 从各档随机选择
-            if tier1_balls:
-                selected_balls.extend(random.sample(tier1_balls, min(tier1_count, len(tier1_balls))))
-            if tier2_balls and tier2_count > 0:
-                selected_balls.extend(random.sample(tier2_balls, min(tier2_count, len(tier2_balls))))
-            if tier3_balls and tier3_count > 0:
-                selected_balls.extend(random.sample(tier3_balls, min(tier3_count, len(tier3_balls))))
-
-        # 确保返回正确数量的号码
-        if len(selected_balls) < target_count:
-            # 从剩余号码中补充
-            remaining = [ball for ball in all_balls if ball not in selected_balls]
-            if remaining:
-                need_count = target_count - len(selected_balls)
-                additional = random.sample(remaining, min(need_count, len(remaining)))
-                selected_balls.extend(additional)
-
-        return selected_balls[:target_count]
-
-    def _fallback_ball_selection(self, existing_balls, target_count, max_ball, prediction_index, ball_type):
-        """多样化的回退号码选择策略"""
-        import random
-        import time
-
-        # 为每注设置不同的随机种子，确保多样性
-        seed_base = (prediction_index * 8191 + max_ball * 17 + hash(ball_type) % 1000) % (2**31)
-        random.seed(seed_base)
-
-        # 获取频率分析结果
-        from analyzer_modules import basic_analyzer
-        freq_analysis = basic_analyzer.frequency_analysis()
-
-        if ball_type == 'front':
-            freq_data = freq_analysis.get('front_frequency', {})
-        else:
-            freq_data = freq_analysis.get('back_frequency', {})
-
-        # 转换为整数并排序
-        freq_balls = []
-        for ball_str, freq in freq_data.items():
-            try:
-                ball_int = int(ball_str) if isinstance(ball_str, str) else ball_str
-                if 1 <= ball_int <= max_ball:
-                    freq_balls.append((ball_int, freq))
-            except (ValueError, TypeError):
-                continue
-
-        freq_balls.sort(key=lambda x: x[1], reverse=True)
-
-        # 为每注使用不同的选择策略
-        need_count = target_count - len(existing_balls)
-        selected_balls = list(existing_balls)
-
-        if prediction_index == 0:
-            # 第1注：高频优先
-            for ball, _ in freq_balls:
-                if len(selected_balls) >= target_count:
-                    break
-                if ball not in selected_balls:
-                    selected_balls.append(ball)
-
-        elif prediction_index == 1:
-            # 第2注：随机选择
-            available_balls = [ball for ball, _ in freq_balls if ball not in selected_balls]
-            if available_balls and need_count > 0:
-                random_balls = random.sample(available_balls, min(need_count, len(available_balls)))
-                selected_balls.extend(random_balls)
-
-        else:
-            # 第3注及以后：混合策略
-            high_freq_balls = [ball for ball, _ in freq_balls[:len(freq_balls)//2] if ball not in selected_balls]
-            low_freq_balls = [ball for ball, _ in freq_balls[len(freq_balls)//2:] if ball not in selected_balls]
-
-            # 50%高频，50%低频
-            high_count = need_count // 2
-            low_count = need_count - high_count
-
-            if high_freq_balls and high_count > 0:
-                selected_balls.extend(random.sample(high_freq_balls, min(high_count, len(high_freq_balls))))
-
-            if low_freq_balls and low_count > 0:
-                selected_balls.extend(random.sample(low_freq_balls, min(low_count, len(low_freq_balls))))
-
-        # 如果还不够，随机补充
-        if len(selected_balls) < target_count:
-            remaining_balls = [i for i in range(1, max_ball + 1) if i not in selected_balls]
-            if remaining_balls:
-                need_more = target_count - len(selected_balls)
-                selected_balls.extend(random.sample(remaining_balls, min(need_more, len(remaining_balls))))
-
-        return selected_balls[:target_count]
 
     def _calculate_order_weights(self, markov_result):
         """计算各阶马尔可夫链的权重"""
         weights = {}
-        
+
         for order, result in markov_result['orders'].items():
             # 确保order是整数类型
             order_int = int(order)
-            
+
             # 获取前区和后区的统计信息
             front_stats = result.get('front_stats', {})
             back_stats = result.get('back_stats', {})
-            
+
             # 计算权重因子
             # 1. 转移概率的最大值（越高越好）
             max_prob_factor = (front_stats.get('max_probability', 0) + back_stats.get('max_probability', 0)) / 2
-            
+
             # 2. 状态数量（越多越好，表示覆盖更多情况）
             states_factor = (front_stats.get('unique_states', 0) + back_stats.get('unique_states', 0)) / 2
             states_factor = min(1.0, states_factor / 1000)  # 归一化
-            
+
             # 3. 阶数因子（高阶更精确但样本更少，需要平衡）
             order_factor = 1.0 / order_int
-            
+
             # 综合权重
             weight = 0.5 * max_prob_factor + 0.3 * states_factor + 0.2 * order_factor
             weights[order_int] = weight
-        
+
         # 归一化权重
         total_weight = sum(weights.values())
         if total_weight > 0:
             weights = {k: v/total_weight for k, v in weights.items()}
-        
+
         return weights
 
 
@@ -848,42 +989,42 @@ def get_markov_predictor() -> EnhancedMarkovPredictor:
 if __name__ == "__main__":
     # 测试增强版马尔可夫链
     print("🔄 测试增强版马尔可夫链...")
-    
+
     # 测试多阶马尔可夫分析
     analyzer = get_markov_analyzer()
     for order in range(1, 4):
         print(f"\n📊 {order}阶马尔可夫链分析...")
         result = analyzer.multi_order_markov_analysis(periods=300, max_order=order)
-        
+
         if result and 'orders' in result and order in result['orders']:
             order_result = result['orders'][order]
             front_stats = order_result.get('front_stats', {})
             back_stats = order_result.get('back_stats', {})
-            
+
             print(f"  前区状态数: {front_stats.get('unique_states', 0)}")
             print(f"  前区最大概率: {front_stats.get('max_probability', 0):.4f}")
             print(f"  后区状态数: {back_stats.get('unique_states', 0)}")
             print(f"  后区最大概率: {back_stats.get('max_probability', 0):.4f}")
-    
+
     # 测试多阶马尔可夫预测
     predictor = get_markov_predictor()
     for order in range(1, 4):
         print(f"\n🎯 {order}阶马尔可夫链预测...")
         predictions = predictor.multi_order_markov_predict(count=2, periods=300, order=order)
-        
+
         for i, (front, back) in enumerate(predictions):
             front_str = ' '.join([str(b).zfill(2) for b in front])
             back_str = ' '.join([str(b).zfill(2) for b in back])
             print(f"  第 {i+1} 注: {front_str} + {back_str}")
-    
+
     # 测试自适应阶数马尔可夫预测
     print("\n🌟 自适应阶数马尔可夫链预测...")
     adaptive_predictions = predictor.adaptive_order_markov_predict(count=3, periods=300)
-    
+
     for i, pred in enumerate(adaptive_predictions):
         front_str = ' '.join([str(b).zfill(2) for b in pred['front_balls']])
         back_str = ' '.join([str(b).zfill(2) for b in pred['back_balls']])
         print(f"  第 {i+1} 注: {front_str} + {back_str}")
         print(f"  阶数权重: {pred['order_weights']}")
-    
+
     print("\n✅ 测试完成")

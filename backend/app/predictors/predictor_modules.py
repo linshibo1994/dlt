@@ -17,10 +17,51 @@ import copy
 import math
 
 from backend.app.core.core_modules import cache_manager, logger_manager, data_manager, task_manager
-from backend.app.analyzers.analyzer_modules import basic_analyzer, advanced_analyzer, comprehensive_analyzer
+from backend.app.analyzers.analyzer_modules import basic_analyzer, advanced_analyzer, comprehensive_analyzer, BayesianConfig
 from backend.app.core.smart_cache_system import smart_cache_manager
 from concurrent.futures import ThreadPoolExecutor, TimeoutError as FutureTimeoutError
 import hashlib
+
+# 预测配置缓存（用于读取 prediction.yaml）
+_PREDICTION_CONFIG_CACHE = None
+_PREDICTION_CONFIG_MTIME = None
+
+
+def _load_prediction_config() -> Dict[str, Any]:
+    """加载 prediction.yaml（带简易缓存）"""
+    global _PREDICTION_CONFIG_CACHE, _PREDICTION_CONFIG_MTIME
+    try:
+        from backend.app.core.path_config import PREDICTION_CONFIG_FILE
+        config_path = PREDICTION_CONFIG_FILE
+        mtime = os.path.getmtime(config_path)
+        if _PREDICTION_CONFIG_CACHE is not None and _PREDICTION_CONFIG_MTIME == mtime:
+            return _PREDICTION_CONFIG_CACHE
+        import yaml
+        with open(config_path, 'r', encoding='utf-8') as f:
+            _PREDICTION_CONFIG_CACHE = yaml.safe_load(f) or {}
+            _PREDICTION_CONFIG_MTIME = mtime
+        return _PREDICTION_CONFIG_CACHE
+    except Exception:
+        return {}
+
+
+def _get_missing_config() -> Dict[str, Any]:
+    """获取遗漏值预测配置"""
+    cfg = _load_prediction_config()
+    return cfg.get('prediction_methods', {}).get('statistical', {}).get('missing', {}) or {}
+
+def _get_markov_config() -> Dict[str, Any]:
+    """获取马尔可夫预测配置"""
+    cfg = _load_prediction_config()
+    return cfg.get('prediction_methods', {}).get('traditional_ml', {}).get('markov', {}) or {}
+
+
+def _resolve_missing_mode(mode: Optional[str], cfg: Dict[str, Any], override: Optional[str]) -> str:
+    """解析遗漏预测模式"""
+    for candidate in (mode, override, cfg.get('mode')):
+        if candidate in {'legacy', 'enhanced'}:
+            return candidate
+    return 'enhanced'
 
 # 导入增强深度学习模块
 try:
@@ -43,6 +84,16 @@ except ImportError:
         CompoundConfig = None
         CompoundResult = None
 
+# 导入统一的多臂老虎机实现（从自适应学习模块）
+try:
+    from learning.adaptive_learning_modules import MultiArmedBandit as UnifiedMultiArmedBandit
+    from core.adaptive_config import get_adaptive_config, MultiArmedBanditConfig
+    UNIFIED_BANDIT_AVAILABLE = True
+except ImportError:
+    UNIFIED_BANDIT_AVAILABLE = False
+    UnifiedMultiArmedBandit = None
+    MultiArmedBanditConfig = None
+
 
 # ==================== 数据转换工具函数 ====================
 def convert_dataframe_to_numeric_array(df, periods=None):
@@ -63,7 +114,7 @@ def convert_dataframe_to_numeric_array(df, periods=None):
 
     # 确定使用的数据范围
     if periods is not None:
-        df_subset = df.tail(periods)
+        df_subset = df.head(periods)
     else:
         df_subset = df
 
@@ -125,9 +176,15 @@ class TraditionalPredictor:
     def __init__(self, data_file="data/dlt_data_all.csv"):
         self.data_file = data_file
         self.df = data_manager.get_data()
+        self._missing_mode_override = None
         
         if self.df is None:
             logger_manager.error("数据未加载")
+
+    def set_missing_mode_override(self, mode: Optional[str]) -> None:
+        """设置遗漏预测模式覆盖（auto/legacy/enhanced）"""
+        if mode in {'auto', 'legacy', 'enhanced'}:
+            self._missing_mode_override = mode
     
     def frequency_predict(self, count=1, periods=500) -> List[Tuple[List[int], List[int]]]:
         """基于频率的预测 - 真正的多样性统计分析"""
@@ -138,12 +195,91 @@ class TraditionalPredictor:
 
         front_freq = freq_result.get('front_frequency', {})
         back_freq = freq_result.get('back_frequency', {})
+        front_enhanced = freq_result.get('front_enhanced', {})
+        back_enhanced = freq_result.get('back_enhanced', {})
+        analysis_periods = freq_result.get('analysis_periods', periods or 0) or 0
 
         predictions = []
 
-        # 获取频率排序的候选号码
-        front_candidates = sorted(front_freq.items(), key=lambda x: x[1], reverse=True)
-        back_candidates = sorted(back_freq.items(), key=lambda x: x[1], reverse=True)
+        # 获取频率排序的候选号码（补齐未出现的号码，避免候选池缺失）
+        def _build_candidates(max_num, freq_dict):
+            return [(num, int(freq_dict.get(num, 0))) for num in range(1, max_num + 1)]
+
+        front_candidates = sorted(_build_candidates(35, front_freq), key=lambda x: x[1], reverse=True)
+        back_candidates = sorted(_build_candidates(12, back_freq), key=lambda x: x[1], reverse=True)
+
+        def _chisquare_pvalue(candidates, max_num, numbers_per_draw):
+            if analysis_periods <= 0:
+                return None
+            try:
+                from scipy import stats
+            except Exception:
+                return None
+
+            expected = (analysis_periods * numbers_per_draw) / max_num
+            if expected <= 0:
+                return None
+
+            observed = [cnt for _, cnt in candidates]
+            expected_list = [expected] * max_num
+            try:
+                _, p_value = stats.chisquare(f_obs=observed, f_exp=expected_list)
+                return p_value
+            except Exception:
+                return None
+
+        front_p_value = _chisquare_pvalue(front_candidates, 35, 5)
+        back_p_value = _chisquare_pvalue(back_candidates, 12, 2)
+
+        # 频率平滑与增强权重（用于加权随机策略）
+        def _build_weights(candidates, enhanced_dict, max_num, numbers_per_draw, p_value):
+            alpha = 1.0  # 拉普拉斯平滑，降低小样本波动
+            if analysis_periods > 0:
+                denom = analysis_periods * numbers_per_draw + alpha * max_num
+            else:
+                denom = max_num
+
+            weights = []
+            for num, cnt in candidates:
+                prob = (cnt + alpha) / denom if denom > 0 else 1.0 / max_num
+                enhanced = enhanced_dict.get(num, {})
+                pred_weight = enhanced.get('prediction_weight', 1.0)
+                weight = prob * max(0.0, pred_weight)
+                weights.append(weight)
+
+            total = sum(weights)
+            if total <= 0:
+                return [1.0 / len(weights)] * len(weights)
+
+            weights = [w / total for w in weights]
+
+            # 卡方检验门控：当分布与均匀差异不显著时，降低频率偏置
+            if p_value is not None:
+                bias_strength = max(0.0, min(1.0, (0.05 - p_value) / 0.05))
+                if bias_strength < 1.0:
+                    uniform = 1.0 / len(weights)
+                    weights = [bias_strength * w + (1.0 - bias_strength) * uniform for w in weights]
+                    total = sum(weights)
+                    if total > 0:
+                        weights = [w / total for w in weights]
+
+            return weights
+
+        front_weights = _build_weights(front_candidates, front_enhanced, 35, 5, front_p_value)
+        back_weights = _build_weights(back_candidates, back_enhanced, 12, 2, back_p_value)
+
+        def _weighted_sample(nums, probs, k):
+            if len(nums) <= k:
+                return nums.copy()
+            return list(np.random.choice(nums, size=k, replace=False, p=probs))
+
+        def _fill_to_target(current, pool, target):
+            for num in pool:
+                if num not in current:
+                    current.append(num)
+                if len(current) >= target:
+                    break
+            return current
 
         # 为每注生成不同的预测策略
         for i in range(count):
@@ -153,35 +289,41 @@ class TraditionalPredictor:
             # 策略1: 高频号码为主 (第1注)
             if i % 4 == 0:
                 # 选择频率最高的号码，但加入随机性
-                high_freq_front = [int(ball) for ball, freq in front_candidates[:8]]
-                front_balls = random.sample(high_freq_front, min(5, len(high_freq_front)))
+                high_freq_front = [int(ball) for ball, _ in front_candidates[:8]]
+                if len(high_freq_front) >= 5:
+                    front_balls = random.sample(high_freq_front, 5)
+                else:
+                    front_balls = high_freq_front.copy()
 
-                high_freq_back = [int(ball) for ball, freq in back_candidates[:4]]
-                back_balls = random.sample(high_freq_back, min(2, len(high_freq_back)))
+                high_freq_back = [int(ball) for ball, _ in back_candidates[:4]]
+                if len(high_freq_back) >= 2:
+                    back_balls = random.sample(high_freq_back, 2)
+                else:
+                    back_balls = high_freq_back.copy()
 
             # 策略2: 中频号码为主 (第2注)
             elif i % 4 == 1:
                 # 选择中等频率的号码
                 mid_start = len(front_candidates) // 4
                 mid_end = len(front_candidates) * 3 // 4
-                mid_freq_front = [int(ball) for ball, freq in front_candidates[mid_start:mid_end]]
+                mid_freq_front = [int(ball) for ball, _ in front_candidates[mid_start:mid_end]]
                 if len(mid_freq_front) >= 5:
                     front_balls = random.sample(mid_freq_front, 5)
                 else:
-                    front_balls = mid_freq_front + random.sample([int(ball) for ball, freq in front_candidates[:8]], 5 - len(mid_freq_front))
+                    front_balls = mid_freq_front + random.sample([int(ball) for ball, _ in front_candidates[:8]], 5 - len(mid_freq_front))
 
-                mid_freq_back = [int(ball) for ball, freq in back_candidates[1:5]]
+                mid_freq_back = [int(ball) for ball, _ in back_candidates[1:5]]
                 if len(mid_freq_back) >= 2:
                     back_balls = random.sample(mid_freq_back, 2)
                 else:
-                    back_balls = mid_freq_back + random.sample([int(ball) for ball, freq in back_candidates[:4]], 2 - len(mid_freq_back))
+                    back_balls = mid_freq_back + random.sample([int(ball) for ball, _ in back_candidates[:4]], 2 - len(mid_freq_back))
 
             # 策略3: 混合频率策略 (第3注)
             elif i % 4 == 2:
                 # 2个高频 + 2个中频 + 1个低频
-                high_freq = [int(ball) for ball, freq in front_candidates[:6]]
-                mid_freq = [int(ball) for ball, freq in front_candidates[6:15]]
-                low_freq = [int(ball) for ball, freq in front_candidates[15:25]]
+                high_freq = [int(ball) for ball, _ in front_candidates[:6]]
+                mid_freq = [int(ball) for ball, _ in front_candidates[6:15]]
+                low_freq = [int(ball) for ball, _ in front_candidates[15:25]]
 
                 front_balls = []
                 front_balls.extend(random.sample(high_freq, min(2, len(high_freq))))
@@ -198,8 +340,8 @@ class TraditionalPredictor:
                         break
 
                 # 后区混合策略
-                back_high = [int(ball) for ball, freq in back_candidates[:3]]
-                back_mid = [int(ball) for ball, freq in back_candidates[3:8]]
+                back_high = [int(ball) for ball, _ in back_candidates[:3]]
+                back_mid = [int(ball) for ball, _ in back_candidates[3:8]]
 
                 back_balls = []
                 if len(back_high) > 0:
@@ -217,247 +359,398 @@ class TraditionalPredictor:
 
             # 策略4: 概率加权随机选择 (第4注及以后)
             else:
-                # 基于频率的加权随机选择
-                front_weights = [freq for ball, freq in front_candidates]
-                front_balls_list = [int(ball) for ball, freq in front_candidates]
+                # 基于频率+增强权重的加权随机选择
+                front_balls_list = [int(ball) for ball, _ in front_candidates]
+                back_balls_list = [int(ball) for ball, _ in back_candidates]
 
-                if len(front_weights) > 0:
-                    # 归一化权重（防止除零）
-                    total_weight = sum(front_weights)
-                    if total_weight > 0:
-                        front_probs = [w/total_weight for w in front_weights]
-                    else:
-                        front_probs = [1/len(front_weights)] * len(front_weights)
-
-                    # 加权随机选择（确保候选数量足够）
-                    if len(front_balls_list) >= 5:
-                        front_balls = list(np.random.choice(front_balls_list, size=5, replace=False, p=front_probs))
-                    else:
-                        front_balls = front_balls_list.copy()
-                        remaining = [i for i in range(1, 36) if i not in front_balls]
-                        front_balls.extend(random.sample(remaining, 5 - len(front_balls)))
-
-                back_weights = [freq for ball, freq in back_candidates]
-                back_balls_list = [int(ball) for ball, freq in back_candidates]
-
-                if len(back_weights) > 0:
-                    total_weight = sum(back_weights)
-                    if total_weight > 0:
-                        back_probs = [w/total_weight for w in back_weights]
-                    else:
-                        back_probs = [1/len(back_weights)] * len(back_weights)
-
-                    # 加权随机选择（确保候选数量足够）
-                    if len(back_balls_list) >= 2:
-                        back_balls = list(np.random.choice(back_balls_list, size=2, replace=False, p=back_probs))
-                    else:
-                        back_balls = back_balls_list.copy()
-                        remaining = [i for i in range(1, 13) if i not in back_balls]
-                        back_balls.extend(random.sample(remaining, 2 - len(back_balls)))
+                if front_balls_list:
+                    front_balls = _weighted_sample(front_balls_list, front_weights, 5)
+                if back_balls_list:
+                    back_balls = _weighted_sample(back_balls_list, back_weights, 2)
 
             # 确保号码数量正确
             if len(front_balls) < 5:
-                remaining = [int(ball) for ball, freq in front_candidates[:10] if int(ball) not in front_balls]
-                front_balls.extend(remaining[:5-len(front_balls)])
+                front_weighted_pool = [int(ball) for ball, _ in sorted(front_candidates, key=lambda x: x[1], reverse=True)]
+                front_balls = _fill_to_target(front_balls, front_weighted_pool, 5)
 
             if len(back_balls) < 2:
-                remaining = [int(ball) for ball, freq in back_candidates[:6] if int(ball) not in back_balls]
-                back_balls.extend(remaining[:2-len(back_balls)])
+                back_weighted_pool = [int(ball) for ball, _ in sorted(back_candidates, key=lambda x: x[1], reverse=True)]
+                back_balls = _fill_to_target(back_balls, back_weighted_pool, 2)
 
             predictions.append((sorted(front_balls[:5]), sorted(back_balls[:2])))
 
         return predictions
     
     def hot_cold_predict(self, count=1, periods=500) -> List[Tuple[List[int], List[int]]]:
-        """基于冷热号的预测 - 真正的冷热号分析和多样性策略"""
+        """基于冷热号的预测 - 增强版：使用温号和prediction_weight加权选择"""
         import random
 
         hot_cold_result = basic_analyzer.hot_cold_analysis(periods)
-        
+
         front_hot = hot_cold_result.get('front_hot', [])
+        front_warm = hot_cold_result.get('front_warm', [])
         front_cold = hot_cold_result.get('front_cold', [])
         back_hot = hot_cold_result.get('back_hot', [])
+        back_warm = hot_cold_result.get('back_warm', [])
         back_cold = hot_cold_result.get('back_cold', [])
-        
+
+        # 获取增强分析数据（包含prediction_weight）
+        front_enhanced = hot_cold_result.get('front_enhanced', {})
+        back_enhanced = hot_cold_result.get('back_enhanced', {})
+
         predictions = []
-        
-        # 冷热号预测（确定性选择，3个热号+2个冷号）
-        front_balls = []
-        back_balls = []
 
-        # 前区：选择3个热号和2个冷号
-        hot_count = 3
-        cold_count = 2
-
-        if len(front_hot) >= hot_count:
-            front_balls.extend([int(ball) for ball in front_hot[:hot_count]])
-        else:
-            front_balls.extend([int(ball) for ball in front_hot])
-
-        if len(front_cold) >= cold_count:
-            front_balls.extend([int(ball) for ball in front_cold[:cold_count]])
-        else:
-            front_balls.extend([int(ball) for ball in front_cold])
-
-        # 如果前区号码不足，用频率分析补充
-        if len(front_balls) < 5:
-            freq_analysis = basic_analyzer.frequency_analysis()
-            front_freq = freq_analysis.get('front_frequency', {})
-            sorted_freq = sorted(front_freq.items(), key=lambda x: x[1], reverse=True)
-            for ball, freq in sorted_freq:
-                if len(front_balls) >= 5:
-                    break
-                if ball not in front_balls:
-                    front_balls.append(ball)
-
-        # 后区：选择1个热号和1个冷号
-        if len(back_hot) > 0:
-            back_balls.append(int(back_hot[0]))
-
-        if len(back_cold) > 0:
-            # 选择不与热号重复的冷号
-            for cold_ball in back_cold:
-                if int(cold_ball) not in back_balls:
-                    back_balls.append(int(cold_ball))
-                    break
-
-        # 如果后区号码不足，用频率分析补充
-        if len(back_balls) < 2:
-            freq_analysis = basic_analyzer.frequency_analysis()
-            back_freq = freq_analysis.get('back_frequency', {})
-            sorted_freq = sorted(back_freq.items(), key=lambda x: x[1], reverse=True)
-            for ball, freq in sorted_freq:
-                if len(back_balls) >= 2:
-                    break
-                if ball not in back_balls:
-                    back_balls.append(ball)
-
-        # 为每注生成不同的冷热号策略
+        # 7种策略轮换（新增温号相关策略）
         for i in range(count):
             current_front = []
             current_back = []
+            strategy_idx = i % 7
 
-            # 策略1: 热号为主策略 (第1注)
-            if i % 5 == 0:
-                # 4个热号 + 1个冷号
-                if len(front_hot) >= 4:
-                    current_front.extend(random.sample([int(ball) for ball in front_hot], 4))
-                else:
-                    current_front.extend([int(ball) for ball in front_hot])
+            # 策略1: 热号为主策略（4热+1冷）
+            if strategy_idx == 0:
+                current_front = self._select_balls_by_category(
+                    front_hot, front_cold, front_warm, front_enhanced,
+                    hot_count=4, cold_count=1, warm_count=0, target=5
+                )
+                current_back = self._select_balls_by_category(
+                    back_hot, back_cold, back_warm, back_enhanced,
+                    hot_count=2, cold_count=0, warm_count=0, target=2
+                )
 
-                if len(front_cold) >= 1:
-                    remaining_cold = [int(ball) for ball in front_cold if int(ball) not in current_front]
-                    if remaining_cold:
-                        current_front.append(random.choice(remaining_cold))
+            # 策略2: 冷号回补策略（2热+3冷）
+            elif strategy_idx == 1:
+                current_front = self._select_balls_by_category(
+                    front_hot, front_cold, front_warm, front_enhanced,
+                    hot_count=2, cold_count=3, warm_count=0, target=5
+                )
+                current_back = self._select_balls_by_category(
+                    back_hot, back_cold, back_warm, back_enhanced,
+                    hot_count=1, cold_count=1, warm_count=0, target=2
+                )
 
-                # 后区：2个热号
-                if len(back_hot) >= 2:
-                    current_back = random.sample([int(ball) for ball in back_hot], 2)
-                else:
-                    current_back.extend([int(ball) for ball in back_hot])
+            # 策略3: 平衡策略（3热+2冷）
+            elif strategy_idx == 2:
+                current_front = self._select_balls_by_category(
+                    front_hot, front_cold, front_warm, front_enhanced,
+                    hot_count=3, cold_count=2, warm_count=0, target=5
+                )
+                current_back = self._select_balls_by_category(
+                    back_hot, back_cold, back_warm, back_enhanced,
+                    hot_count=1, cold_count=1, warm_count=0, target=2
+                )
 
-            # 策略2: 冷号回补策略 (第2注)
-            elif i % 5 == 1:
-                # 2个热号 + 3个冷号
-                if len(front_hot) >= 2:
-                    current_front.extend(random.sample([int(ball) for ball in front_hot], 2))
-                else:
-                    current_front.extend([int(ball) for ball in front_hot])
+            # 策略4: 极端热号策略（5热）
+            elif strategy_idx == 3:
+                current_front = self._select_balls_by_category(
+                    front_hot, front_cold, front_warm, front_enhanced,
+                    hot_count=5, cold_count=0, warm_count=0, target=5
+                )
+                current_back = self._select_balls_by_category(
+                    back_hot, back_cold, back_warm, back_enhanced,
+                    hot_count=2, cold_count=0, warm_count=0, target=2
+                )
 
-                if len(front_cold) >= 3:
-                    remaining_cold = [int(ball) for ball in front_cold if int(ball) not in current_front]
-                    if len(remaining_cold) >= 3:
-                        current_front.extend(random.sample(remaining_cold, 3))
-                    else:
-                        current_front.extend(remaining_cold)
+            # 策略5: 极端冷号策略（5冷）
+            elif strategy_idx == 4:
+                current_front = self._select_balls_by_category(
+                    front_hot, front_cold, front_warm, front_enhanced,
+                    hot_count=0, cold_count=5, warm_count=0, target=5
+                )
+                current_back = self._select_balls_by_category(
+                    back_hot, back_cold, back_warm, back_enhanced,
+                    hot_count=0, cold_count=2, warm_count=0, target=2
+                )
 
-                # 后区：1个热号 + 1个冷号
-                if len(back_hot) >= 1:
-                    current_back.append(random.choice([int(ball) for ball in back_hot]))
-                if len(back_cold) >= 1:
-                    remaining_cold = [int(ball) for ball in back_cold if int(ball) not in current_back]
-                    if remaining_cold:
-                        current_back.append(random.choice(remaining_cold))
+            # 策略6: 温号过渡策略（2热+2温+1冷）- 新增
+            elif strategy_idx == 5:
+                current_front = self._select_balls_by_category(
+                    front_hot, front_cold, front_warm, front_enhanced,
+                    hot_count=2, cold_count=1, warm_count=2, target=5
+                )
+                current_back = self._select_balls_by_category(
+                    back_hot, back_cold, back_warm, back_enhanced,
+                    hot_count=1, cold_count=0, warm_count=1, target=2
+                )
 
-            # 策略3: 平衡策略 (第3注)
-            elif i % 5 == 2:
-                # 3个热号 + 2个冷号
-                if len(front_hot) >= 3:
-                    current_front.extend(random.sample([int(ball) for ball in front_hot], 3))
-                else:
-                    current_front.extend([int(ball) for ball in front_hot])
-
-                if len(front_cold) >= 2:
-                    remaining_cold = [int(ball) for ball in front_cold if int(ball) not in current_front]
-                    if len(remaining_cold) >= 2:
-                        current_front.extend(random.sample(remaining_cold, 2))
-                    else:
-                        current_front.extend(remaining_cold)
-
-                # 后区：随机选择热号或冷号
-                back_candidates = []
-                if len(back_hot) > 0:
-                    back_candidates.extend([int(ball) for ball in back_hot])
-                if len(back_cold) > 0:
-                    back_candidates.extend([int(ball) for ball in back_cold])
-
-                if len(back_candidates) >= 2:
-                    current_back = random.sample(back_candidates, 2)
-                else:
-                    current_back = back_candidates
-
-            # 策略4: 极端热号策略 (第4注)
-            elif i % 5 == 3:
-                # 全部选择热号
-                if len(front_hot) >= 5:
-                    current_front = random.sample([int(ball) for ball in front_hot], 5)
-                else:
-                    current_front.extend([int(ball) for ball in front_hot])
-
-                if len(back_hot) >= 2:
-                    current_back = random.sample([int(ball) for ball in back_hot], 2)
-                else:
-                    current_back.extend([int(ball) for ball in back_hot])
-
-            # 策略5: 极端冷号策略 (第5注)
+            # 策略7: 权重智能策略（基于prediction_weight选择） - 新增
             else:
-                # 全部选择冷号
-                if len(front_cold) >= 5:
-                    current_front = random.sample([int(ball) for ball in front_cold], 5)
-                else:
-                    current_front.extend([int(ball) for ball in front_cold])
+                current_front = self._select_balls_by_weight(front_enhanced, target=5)
+                current_back = self._select_balls_by_weight(back_enhanced, target=2)
 
-                if len(back_cold) >= 2:
-                    current_back = random.sample([int(ball) for ball in back_cold], 2)
-                else:
-                    current_back.extend([int(ball) for ball in back_cold])
-
-            # 如果号码不足，用频率分析补充
-            if len(current_front) < 5:
-                freq_analysis = basic_analyzer.frequency_analysis(periods)
-                front_freq = freq_analysis.get('front_frequency', {})
-                sorted_freq = sorted(front_freq.items(), key=lambda x: x[1], reverse=True)
-                for ball, freq in sorted_freq:
-                    if len(current_front) >= 5:
-                        break
-                    if int(ball) not in current_front:
-                        current_front.append(int(ball))
-
-            if len(current_back) < 2:
-                freq_analysis = basic_analyzer.frequency_analysis(periods)
-                back_freq = freq_analysis.get('back_frequency', {})
-                sorted_freq = sorted(back_freq.items(), key=lambda x: x[1], reverse=True)
-                for ball, freq in sorted_freq:
-                    if len(current_back) >= 2:
-                        break
-                    if int(ball) not in current_back:
-                        current_back.append(int(ball))
+            # 补充不足的号码（优先使用冷热/遗漏融合权重）
+            current_front = self._fill_missing_balls_by_weight(
+                current_front, 5, front_enhanced, 'front', periods
+            )
+            current_back = self._fill_missing_balls_by_weight(
+                current_back, 2, back_enhanced, 'back', periods
+            )
 
             predictions.append((sorted(current_front[:5]), sorted(current_back[:2])))
 
         return predictions
+
+    def _fill_missing_balls_by_weight(self, current: List[int], target: int,
+                                      enhanced: Dict, ball_type: str,
+                                      periods: int) -> List[int]:
+        """按预测权重补足号码（仅用于冷热号预测）"""
+        if len(current) >= target:
+            return current[:target]
+
+        if not enhanced:
+            return self._fill_missing_balls(current, target, ball_type, periods)
+
+        result = list(current)
+        sorted_candidates = sorted(
+            enhanced.items(),
+            key=lambda x: x[1].get('prediction_weight', 0.5),
+            reverse=True
+        )
+
+        for ball, _info in sorted_candidates:
+            if len(result) >= target:
+                break
+            ball_int = int(ball)
+            if ball_int not in result:
+                result.append(ball_int)
+
+        return result[:target]
+
+    def _select_balls_by_category(self, hot: List, cold: List, warm: List,
+                                   enhanced: Dict, hot_count: int, cold_count: int,
+                                   warm_count: int, target: int) -> List[int]:
+        """按类别选择号码（辅助函数，消除重复代码）"""
+        import random
+        selected = []
+
+        # 选择热号
+        hot_int = [int(ball) for ball in hot]
+        if len(hot_int) >= hot_count:
+            selected.extend(random.sample(hot_int, hot_count))
+        else:
+            selected.extend(hot_int)
+
+        # 选择温号
+        warm_int = [int(ball) for ball in warm if int(ball) not in selected]
+        if len(warm_int) >= warm_count:
+            selected.extend(random.sample(warm_int, warm_count))
+        else:
+            selected.extend(warm_int)
+
+        # 选择冷号
+        cold_int = [int(ball) for ball in cold if int(ball) not in selected]
+        if len(cold_int) >= cold_count:
+            selected.extend(random.sample(cold_int, cold_count))
+        else:
+            selected.extend(cold_int)
+
+        return selected
+
+    def _select_balls_by_weight(self, enhanced: Dict, target: int) -> List[int]:
+        """基于prediction_weight加权选择号码（智能策略）"""
+        import random
+
+        if not enhanced:
+            return []
+
+        # 获取所有号码的权重
+        weighted_balls = []
+        for ball, info in enhanced.items():
+            weight = info.get('prediction_weight', 0.5)
+            weighted_balls.append((int(ball), weight))
+
+        # 按权重排序
+        weighted_balls.sort(key=lambda x: x[1], reverse=True)
+
+        # 使用加权随机选择
+        selected = []
+        candidates = weighted_balls.copy()
+
+        while len(selected) < target and candidates:
+            # 计算总权重
+            total_weight = sum(w for _, w in candidates)
+            if total_weight <= 0:
+                # 如果总权重为0，随机选择
+                ball, _ = random.choice(candidates)
+            else:
+                # 加权随机选择
+                r = random.uniform(0, total_weight)
+                cumulative = 0
+                ball = candidates[0][0]
+                for b, w in candidates:
+                    cumulative += w
+                    if cumulative >= r:
+                        ball = b
+                        break
+
+            if ball not in selected:
+                selected.append(ball)
+            candidates = [(b, w) for b, w in candidates if b != ball]
+
+        return selected
+
+    def _fill_missing_balls(self, current: List[int], target: int,
+                            ball_type: str, periods: int) -> List[int]:
+        """补充不足的号码（辅助函数，消除重复代码）"""
+        if len(current) >= target:
+            return current[:target]
+
+        freq_analysis = basic_analyzer.frequency_analysis(periods)
+        freq_key = f'{ball_type}_frequency'
+        freq_dict = freq_analysis.get(freq_key, {})
+
+        sorted_freq = sorted(freq_dict.items(), key=lambda x: x[1], reverse=True)
+        result = list(current)
+
+        for ball, freq in sorted_freq:
+            if len(result) >= target:
+                break
+            ball_int = int(ball)
+            if ball_int not in result:
+                result.append(ball_int)
+
+        return result
+
+    def _missing_predict_legacy(self, count: int, periods: int,
+                                front_sorted: List[Tuple[int, int]],
+                                back_sorted: List[Tuple[int, int]]) -> List[Tuple[List[int], List[int]]]:
+        """传统遗漏预测逻辑（用于兼容旧行为）"""
+        import random
+        import numpy as np
+        predictions = []
+
+        for i in range(count):
+            import time
+            strategy_seed = int(time.time() * 1000000) + i * 1000
+            random.seed(strategy_seed)
+            np.random.seed(strategy_seed % 2**32)
+
+            front_balls = []
+            back_balls = []
+
+            # 策略1: 极度超期回补策略 (第1注)
+            if i == 0:
+                extreme_missing_front = [int(ball) for ball, missing in front_sorted[:8] if missing > periods * 0.1]
+                if len(extreme_missing_front) >= 5:
+                    front_balls = random.sample(extreme_missing_front, 5)
+                else:
+                    front_balls = extreme_missing_front + [int(ball) for ball, missing in front_sorted[:5-len(extreme_missing_front)]]
+
+                extreme_missing_back = [int(ball) for ball, missing in back_sorted[:4] if missing > periods * 0.15]
+                if len(extreme_missing_back) >= 2:
+                    back_balls = random.sample(extreme_missing_back, 2)
+                else:
+                    back_balls = extreme_missing_back[:]
+                    for ball, _ in back_sorted:
+                        if len(back_balls) >= 2:
+                            break
+                        ball_int = int(ball)
+                        if ball_int not in back_balls:
+                            back_balls.append(ball_int)
+
+            # 策略2: 中期遗漏策略 (第2注)
+            elif i == 1:
+                mid_missing_front = []
+                for ball, missing in front_sorted:
+                    if periods * 0.05 <= missing <= periods * 0.15:
+                        mid_missing_front.append(int(ball))
+
+                if len(mid_missing_front) >= 5:
+                    front_balls = random.sample(mid_missing_front, 5)
+                else:
+                    front_balls = mid_missing_front + [int(ball) for ball, _ in front_sorted[:5-len(mid_missing_front)]]
+
+                mid_missing_back = []
+                for ball, missing in back_sorted:
+                    if periods * 0.08 <= missing <= periods * 0.2:
+                        mid_missing_back.append(int(ball))
+
+                if len(mid_missing_back) >= 2:
+                    back_balls = random.sample(mid_missing_back, 2)
+                else:
+                    back_balls = mid_missing_back[:]
+                    for ball, _ in back_sorted:
+                        if len(back_balls) >= 2:
+                            break
+                        ball_int = int(ball)
+                        if ball_int not in back_balls:
+                            back_balls.append(ball_int)
+
+            # 策略3: 混合遗漏策略 (第3注)
+            elif i == 2:
+                high_missing = [int(ball) for ball, _ in front_sorted[:8]]
+                mid_missing = [int(ball) for ball, _ in front_sorted[8:20]]
+                low_missing = [int(ball) for ball, _ in front_sorted[20:30]]
+
+                front_balls = []
+                front_balls.extend(random.sample(high_missing, min(2, len(high_missing))))
+                front_balls.extend(random.sample(mid_missing, min(2, len(mid_missing))))
+                if len(low_missing) > 0:
+                    front_balls.extend(random.sample(low_missing, min(1, len(low_missing))))
+
+                while len(front_balls) < 5:
+                    remaining = [ball for ball in high_missing if ball not in front_balls]
+                    if remaining:
+                        front_balls.append(random.choice(remaining))
+                    else:
+                        break
+
+                back_high = [int(ball) for ball, _ in back_sorted[:4]]
+                back_mid = [int(ball) for ball, _ in back_sorted[4:8]]
+
+                back_balls = []
+                if len(back_high) > 0:
+                    back_balls.append(random.choice(back_high))
+                if len(back_mid) > 0:
+                    back_balls.append(random.choice(back_mid))
+
+                while len(back_balls) < 2:
+                    remaining = [ball for ball in back_high if ball not in back_balls]
+                    if remaining:
+                        back_balls.append(random.choice(remaining))
+                    else:
+                        break
+
+            # 策略4: 遗漏值加权随机选择 (第4注及以后)
+            else:
+                front_weights = []
+                front_balls_list = []
+
+                for ball, missing in front_sorted:
+                    weight = missing + 1
+                    front_weights.append(weight)
+                    front_balls_list.append(int(ball))
+
+                if len(front_weights) > 0:
+                    total_weight = sum(front_weights)
+                    front_probs = [w / total_weight for w in front_weights]
+                    front_balls = list(np.random.choice(front_balls_list, size=5, replace=False, p=front_probs))
+
+                back_weights = []
+                back_balls_list = []
+
+                for ball, missing in back_sorted:
+                    weight = missing + 1
+                    back_weights.append(weight)
+                    back_balls_list.append(int(ball))
+
+                if len(back_weights) > 0:
+                    total_weight = sum(back_weights)
+                    back_probs = [w / total_weight for w in back_weights]
+                    back_balls = list(np.random.choice(back_balls_list, size=2, replace=False, p=back_probs))
+
+            if len(front_balls) < 5:
+                remaining = [int(ball) for ball, _ in front_sorted[:10] if int(ball) not in front_balls]
+                front_balls.extend(remaining[:5-len(front_balls)])
+
+            if len(back_balls) < 2:
+                remaining = [int(ball) for ball, _ in back_sorted[:6] if int(ball) not in back_balls]
+                back_balls.extend(remaining[:2-len(back_balls)])
+
+            predictions.append((sorted(front_balls[:5]), sorted(back_balls[:2])))
+
+        return predictions
     
-    def missing_predict(self, count=1, periods=500) -> List[Tuple[List[int], List[int]]]:
+    def missing_predict(self, count=1, periods=500, mode: Optional[str] = None) -> List[Tuple[List[int], List[int]]]:
         """基于遗漏的预测 - 真正的遗漏值分析和回补概率计算"""
         import random
         import numpy as np
@@ -466,14 +759,253 @@ class TraditionalPredictor:
 
         front_missing = missing_result.get('front_missing', {})
         back_missing = missing_result.get('back_missing', {})
+        front_enhanced = missing_result.get('front_enhanced', {})
+        back_enhanced = missing_result.get('back_enhanced', {})
 
         predictions = []
 
-        # 按遗漏值排序
-        front_sorted = sorted(front_missing.items(), key=lambda x: x[1], reverse=True)
-        back_sorted = sorted(back_missing.items(), key=lambda x: x[1], reverse=True)
+        # 按遗漏值排序（确保候选池完整）
+        def _build_candidates(max_num, missing_dict):
+            return [(num, int(missing_dict.get(num, 0))) for num in range(1, max_num + 1)]
+
+        front_sorted = sorted(_build_candidates(35, front_missing), key=lambda x: x[1], reverse=True)
+        back_sorted = sorted(_build_candidates(12, back_missing), key=lambda x: x[1], reverse=True)
+
+        cfg = _get_missing_config()
+        resolved_mode = _resolve_missing_mode(mode, cfg, getattr(self, '_missing_mode_override', None))
+        if resolved_mode == 'legacy':
+            return self._missing_predict_legacy(count, periods, front_sorted, back_sorted)
+
+        weight_strategy = cfg.get('weight_strategy', 'log')
+        pred_weight_factor = float(cfg.get('pred_weight_factor', 0.5))
+        urgency_weight_factor = float(cfg.get('urgency_weight_factor', 0.5))
+        weight_floor = float(cfg.get('weight_floor', 1.0e-6))
+        dedupe_enabled = bool(cfg.get('dedupe', True))
+
+        extreme_front_ratio = float(cfg.get('extreme_front_ratio', 0.10))
+        extreme_back_ratio = float(cfg.get('extreme_back_ratio', 0.15))
+
+        mid_front_ratio = cfg.get('mid_front_ratio', [0.05, 0.15])
+        mid_back_ratio = cfg.get('mid_back_ratio', [0.08, 0.20])
+        if not isinstance(mid_front_ratio, (list, tuple)) or len(mid_front_ratio) != 2:
+            mid_front_ratio = [0.05, 0.15]
+        if not isinstance(mid_back_ratio, (list, tuple)) or len(mid_back_ratio) != 2:
+            mid_back_ratio = [0.08, 0.20]
+
+        pred_weight_factor = min(max(pred_weight_factor, 0.0), 1.0)
+        urgency_weight_factor = min(max(urgency_weight_factor, 0.0), 1.0)
+
+        auto_mode = (mode == 'auto') or (getattr(self, '_missing_mode_override', None) == 'auto')
+        adaptive_cfg = cfg.get('adaptive_weights', {}) if auto_mode else {}
+        concentration_cfg = {}
+        concentration_enabled = False
+
+        if auto_mode and adaptive_cfg.get('enabled', False):
+            min_periods = int(adaptive_cfg.get('min_periods', 200))
+            max_periods = int(adaptive_cfg.get('max_periods', 1200))
+            if max_periods <= min_periods:
+                scale = 1.0
+            else:
+                scale = (periods - min_periods) / float(max_periods - min_periods)
+                scale = max(0.0, min(1.0, scale))
+
+            pred_range = adaptive_cfg.get('pred_weight_range', [0.3, 0.7])
+            urg_range = adaptive_cfg.get('urgency_weight_range', [0.3, 0.7])
+            if not isinstance(pred_range, (list, tuple)) or len(pred_range) != 2:
+                pred_range = [0.3, 0.7]
+            if not isinstance(urg_range, (list, tuple)) or len(urg_range) != 2:
+                urg_range = [0.3, 0.7]
+
+            pred_weight_factor = pred_range[0] + scale * (pred_range[1] - pred_range[0])
+            urgency_weight_factor = urg_range[0] + scale * (urg_range[1] - urg_range[0])
+            pred_weight_factor = min(max(pred_weight_factor, 0.0), 1.0)
+            urgency_weight_factor = min(max(urgency_weight_factor, 0.0), 1.0)
+
+            if weight_strategy == 'auto':
+                strategy_short = adaptive_cfg.get('strategy_short', 'log')
+                strategy_long = adaptive_cfg.get('strategy_long', 'linear')
+                weight_strategy = strategy_short if scale < 0.5 else strategy_long
+
+            thresholds = adaptive_cfg.get('thresholds', {})
+            extreme_front_range = thresholds.get('extreme_front_range')
+            extreme_back_range = thresholds.get('extreme_back_range')
+            mid_front_low_range = thresholds.get('mid_front_range_low')
+            mid_front_high_range = thresholds.get('mid_front_range_high')
+            mid_back_low_range = thresholds.get('mid_back_range_low')
+            mid_back_high_range = thresholds.get('mid_back_range_high')
+
+            def _interp_range(rng, default_val):
+                if not isinstance(rng, (list, tuple)) or len(rng) != 2:
+                    return default_val
+                return rng[0] + scale * (rng[1] - rng[0])
+
+            extreme_front_ratio = _interp_range(extreme_front_range, extreme_front_ratio)
+            extreme_back_ratio = _interp_range(extreme_back_range, extreme_back_ratio)
+
+            mid_front_low = _interp_range(mid_front_low_range, mid_front_ratio[0])
+            mid_front_high = _interp_range(mid_front_high_range, mid_front_ratio[1])
+            if 0 < mid_front_low < mid_front_high:
+                mid_front_ratio = [mid_front_low, mid_front_high]
+
+            mid_back_low = _interp_range(mid_back_low_range, mid_back_ratio[0])
+            mid_back_high = _interp_range(mid_back_high_range, mid_back_ratio[1])
+            if 0 < mid_back_low < mid_back_high:
+                mid_back_ratio = [mid_back_low, mid_back_high]
+
+            concentration_cfg = adaptive_cfg.get('concentration_penalty', {}) or {}
+            concentration_enabled = bool(concentration_cfg.get('enabled', False))
+
+        if not auto_mode and weight_strategy == 'auto':
+            weight_strategy = 'log'
+
+        def _build_weights(candidates, enhanced_dict):
+            weights = []
+            for num, missing in candidates:
+                enhanced = enhanced_dict.get(num, {})
+                pred_weight = enhanced.get('prediction_weight', 1.0)
+                urgency = enhanced.get('urgency_score', 5.0) / 10.0
+
+                if weight_strategy == 'linear':
+                    base = missing + 1.0
+                else:
+                    base = np.log1p(missing)
+
+                weight = base * ((1 - pred_weight_factor) + pred_weight_factor * pred_weight) * \
+                    ((1 - urgency_weight_factor) + urgency_weight_factor * urgency)
+                weight = max(weight_floor, weight)
+                weights.append(weight)
+
+            total = sum(weights)
+            if total <= 0:
+                return [1.0 / len(weights)] * len(weights)
+            return [w / total for w in weights]
+
+        front_weights = _build_weights(front_sorted, front_enhanced)
+        back_weights = _build_weights(back_sorted, back_enhanced)
+        front_pool_all = [int(ball) for ball, _ in front_sorted]
+        back_pool_all = [int(ball) for ball, _ in back_sorted]
+
+        def _weighted_sample(nums, probs, k):
+            if len(nums) <= k:
+                return nums.copy()
+            return list(np.random.choice(nums, size=k, replace=False, p=probs))
+
+        def _fill_to_target(current, pool, target):
+            for num in pool:
+                if num not in current:
+                    current.append(num)
+                if len(current) >= target:
+                    break
+            return current
+
+        def _numbers_by_level(enhanced_dict, level_set):
+            return [num for num, info in enhanced_dict.items() if info.get('missing_level') in level_set]
+
+        def _dedupe_keep_order(nums):
+            seen_nums = set()
+            result = []
+            for num in nums:
+                if num not in seen_nums:
+                    result.append(num)
+                    seen_nums.add(num)
+            return result
+
+        def _count_adjacent_pairs(nums):
+            pairs = 0
+            for i in range(1, len(nums)):
+                if nums[i] - nums[i - 1] == 1:
+                    pairs += 1
+            return pairs
+
+        def _max_consecutive_run(nums):
+            if not nums:
+                return 0
+            max_run = 1
+            current = 1
+            for i in range(1, len(nums)):
+                if nums[i] - nums[i - 1] == 1:
+                    current += 1
+                    max_run = max(max_run, current)
+                else:
+                    current = 1
+            return max_run
+
+        def _concentration_score(front_nums, back_nums):
+            if not concentration_enabled:
+                return 0.0
+
+            if len(front_nums) < 5 or len(back_nums) < 2:
+                return 0.0
+
+            cfg_max_pairs = int(concentration_cfg.get('max_adjacent_pairs_front', 2))
+            cfg_max_run = int(concentration_cfg.get('max_consecutive_run_front', 2))
+            cfg_min_span = int(concentration_cfg.get('min_span_front', 12))
+            sum_front_range = concentration_cfg.get('sum_front_range', [60, 125])
+            sum_back_range = concentration_cfg.get('sum_back_range', [5, 20])
+            weight_cfg = concentration_cfg.get('weights', {}) or {}
+
+            w_pairs = float(weight_cfg.get('adjacent_pairs', 1.0))
+            w_run = float(weight_cfg.get('consecutive_run', 1.5))
+            w_span = float(weight_cfg.get('span', 1.0))
+            w_sum = float(weight_cfg.get('sum', 1.0))
+
+            front_sorted_nums = sorted(front_nums)
+            back_sorted_nums = sorted(back_nums)
+
+            adjacent_pairs = _count_adjacent_pairs(front_sorted_nums)
+            max_run = _max_consecutive_run(front_sorted_nums)
+            span = front_sorted_nums[-1] - front_sorted_nums[0]
+            front_sum = sum(front_sorted_nums)
+            back_sum = sum(back_sorted_nums)
+
+            score = 0.0
+            if adjacent_pairs > cfg_max_pairs:
+                score += (adjacent_pairs - cfg_max_pairs) * w_pairs
+            if max_run > cfg_max_run:
+                score += (max_run - cfg_max_run) * w_run
+            if span < cfg_min_span:
+                score += ((cfg_min_span - span) / max(cfg_min_span, 1)) * w_span
+
+            if isinstance(sum_front_range, (list, tuple)) and len(sum_front_range) == 2:
+                if front_sum < sum_front_range[0]:
+                    score += ((sum_front_range[0] - front_sum) / max(sum_front_range[0], 1)) * w_sum
+                elif front_sum > sum_front_range[1]:
+                    score += ((front_sum - sum_front_range[1]) / max(sum_front_range[1], 1)) * w_sum
+
+            if isinstance(sum_back_range, (list, tuple)) and len(sum_back_range) == 2:
+                if back_sum < sum_back_range[0]:
+                    score += ((sum_back_range[0] - back_sum) / max(sum_back_range[0], 1)) * w_sum
+                elif back_sum > sum_back_range[1]:
+                    score += ((back_sum - sum_back_range[1]) / max(sum_back_range[1], 1)) * w_sum
+
+            return score
+
+        def _apply_concentration_penalty(front_nums, back_nums):
+            if not concentration_enabled:
+                return front_nums, back_nums
+
+            max_resample = int(concentration_cfg.get('max_resample', 12))
+            best_front = front_nums[:]
+            best_back = back_nums[:]
+            best_score = _concentration_score(best_front, best_back)
+            if best_score <= 0:
+                return best_front, best_back
+
+            for _ in range(max_resample):
+                candidate_front = _weighted_sample(front_pool_all, front_weights, 5)
+                candidate_back = _weighted_sample(back_pool_all, back_weights, 2)
+                score = _concentration_score(candidate_front, candidate_back)
+                if score < best_score:
+                    best_front = candidate_front
+                    best_back = candidate_back
+                    best_score = score
+                    if best_score <= 0:
+                        break
+
+            return best_front, best_back
 
         # 为每注生成不同的遗漏值策略
+        seen = set()
         for i in range(count):
             import time
             strategy_seed = int(time.time() * 1000000) + i * 1000
@@ -486,13 +1018,19 @@ class TraditionalPredictor:
             # 策略1: 极度超期回补策略 (第1注)
             if i == 0:
                 # 选择遗漏值最大的号码（极度超期）
-                extreme_missing_front = [int(ball) for ball, missing in front_sorted[:8] if missing > periods * 0.1]
+                extreme_missing_front = _numbers_by_level(front_enhanced, {'extremely_overdue', 'very_overdue'})
+                if not extreme_missing_front:
+                    extreme_missing_front = [int(ball) for ball, missing in front_sorted[:8]
+                                            if missing > periods * extreme_front_ratio]
                 if len(extreme_missing_front) >= 5:
                     front_balls = random.sample(extreme_missing_front, 5)
                 else:
                     front_balls = extreme_missing_front + [int(ball) for ball, missing in front_sorted[:5-len(extreme_missing_front)]]
 
-                extreme_missing_back = [int(ball) for ball, missing in back_sorted[:4] if missing > periods * 0.15]
+                extreme_missing_back = _numbers_by_level(back_enhanced, {'extremely_overdue', 'very_overdue'})
+                if not extreme_missing_back:
+                    extreme_missing_back = [int(ball) for ball, missing in back_sorted[:4]
+                                           if missing > periods * extreme_back_ratio]
                 if len(extreme_missing_back) >= 2:
                     back_balls = random.sample(extreme_missing_back, 2)
                 else:
@@ -509,20 +1047,24 @@ class TraditionalPredictor:
             # 策略2: 中期遗漏策略 (第2注)
             elif i == 1:
                 # 选择中等遗漏值的号码
-                mid_missing_front = []
-                for ball, missing in front_sorted:
-                    if periods * 0.05 <= missing <= periods * 0.15:
-                        mid_missing_front.append(int(ball))
+                mid_missing_front = _numbers_by_level(front_enhanced, {'overdue', 'normal'})
+                if not mid_missing_front:
+                    mid_missing_front = []
+                    for ball, missing in front_sorted:
+                        if periods * mid_front_ratio[0] <= missing <= periods * mid_front_ratio[1]:
+                            mid_missing_front.append(int(ball))
 
                 if len(mid_missing_front) >= 5:
                     front_balls = random.sample(mid_missing_front, 5)
                 else:
                     front_balls = mid_missing_front + [int(ball) for ball, missing in front_sorted[:5-len(mid_missing_front)]]
 
-                mid_missing_back = []
-                for ball, missing in back_sorted:
-                    if periods * 0.08 <= missing <= periods * 0.2:
-                        mid_missing_back.append(int(ball))
+                mid_missing_back = _numbers_by_level(back_enhanced, {'overdue', 'normal'})
+                if not mid_missing_back:
+                    mid_missing_back = []
+                    for ball, missing in back_sorted:
+                        if periods * mid_back_ratio[0] <= missing <= periods * mid_back_ratio[1]:
+                            mid_missing_back.append(int(ball))
 
                 if len(mid_missing_back) >= 2:
                     back_balls = random.sample(mid_missing_back, 2)
@@ -540,9 +1082,15 @@ class TraditionalPredictor:
             # 策略3: 混合遗漏策略 (第3注)
             elif i == 2:
                 # 2个高遗漏 + 2个中遗漏 + 1个低遗漏
-                high_missing = [int(ball) for ball, missing in front_sorted[:8]]
-                mid_missing = [int(ball) for ball, missing in front_sorted[8:20]]
-                low_missing = [int(ball) for ball, missing in front_sorted[20:30]]
+                high_missing = _numbers_by_level(front_enhanced, {'extremely_overdue', 'very_overdue'})
+                mid_missing = _numbers_by_level(front_enhanced, {'overdue', 'normal'})
+                low_missing = _numbers_by_level(front_enhanced, {'recent'})
+                if not high_missing:
+                    high_missing = [int(ball) for ball, missing in front_sorted[:8]]
+                if not mid_missing:
+                    mid_missing = [int(ball) for ball, missing in front_sorted[8:20]]
+                if not low_missing:
+                    low_missing = [int(ball) for ball, missing in front_sorted[20:30]]
 
                 front_balls = []
                 front_balls.extend(random.sample(high_missing, min(2, len(high_missing))))
@@ -559,8 +1107,12 @@ class TraditionalPredictor:
                         break
 
                 # 后区混合策略
-                back_high = [int(ball) for ball, missing in back_sorted[:4]]
-                back_mid = [int(ball) for ball, missing in back_sorted[4:8]]
+                back_high = _numbers_by_level(back_enhanced, {'extremely_overdue', 'very_overdue'})
+                back_mid = _numbers_by_level(back_enhanced, {'overdue', 'normal'})
+                if not back_high:
+                    back_high = [int(ball) for ball, missing in back_sorted[:4]]
+                if not back_mid:
+                    back_mid = [int(ball) for ball, missing in back_sorted[4:8]]
 
                 back_balls = []
                 if len(back_high) > 0:
@@ -578,51 +1130,42 @@ class TraditionalPredictor:
 
             # 策略4: 遗漏值加权随机选择 (第4注及以后)
             else:
-                # 基于遗漏值的加权随机选择
-                front_weights = []
-                front_balls_list = []
+                # 基于遗漏值+增强权重的加权随机选择
+                if front_pool_all:
+                    front_balls = _weighted_sample(front_pool_all, front_weights, 5)
+                if back_pool_all:
+                    back_balls = _weighted_sample(back_pool_all, back_weights, 2)
 
-                for ball, missing in front_sorted:
-                    # 遗漏值越大，权重越高
-                    weight = missing + 1  # 避免权重为0
-                    front_weights.append(weight)
-                    front_balls_list.append(int(ball))
-
-                if len(front_weights) > 0:
-                    # 归一化权重
-                    total_weight = sum(front_weights)
-                    front_probs = [w/total_weight for w in front_weights]
-
-                    # 加权随机选择
-                    front_balls = list(np.random.choice(front_balls_list, size=5, replace=False, p=front_probs))
-
-                back_weights = []
-                back_balls_list = []
-
-                for ball, missing in back_sorted:
-                    weight = missing + 1
-                    back_weights.append(weight)
-                    back_balls_list.append(int(ball))
-
-                if len(back_weights) > 0:
-                    total_weight = sum(back_weights)
-                    back_probs = [w/total_weight for w in back_weights]
-                    back_balls = list(np.random.choice(back_balls_list, size=2, replace=False, p=back_probs))
+            # 去重，避免出现重复号码导致数量判断失真
+            if dedupe_enabled:
+                front_balls = _dedupe_keep_order(front_balls)
+                back_balls = _dedupe_keep_order(back_balls)
 
             # 确保号码数量正确
             if len(front_balls) < 5:
-                remaining = [int(ball) for ball, missing in front_sorted[:10] if int(ball) not in front_balls]
-                front_balls.extend(remaining[:5-len(front_balls)])
+                front_weighted_pool = [int(ball) for ball, _ in front_sorted]
+                front_balls = _fill_to_target(front_balls, front_weighted_pool, 5)
 
             if len(back_balls) < 2:
-                remaining = [int(ball) for ball, missing in back_sorted[:6] if int(ball) not in back_balls]
-                back_balls.extend(remaining[:2-len(back_balls)])
+                back_weighted_pool = [int(ball) for ball, _ in back_sorted]
+                back_balls = _fill_to_target(back_balls, back_weighted_pool, 2)
 
-            predictions.append((sorted(front_balls[:5]), sorted(back_balls[:2])))
+            if auto_mode and concentration_enabled:
+                front_balls, back_balls = _apply_concentration_penalty(front_balls, back_balls)
+
+            current = (tuple(sorted(front_balls[:5])), tuple(sorted(back_balls[:2])))
+            if current in seen:
+                # 轻量去重：用加权随机替换一次
+                front_balls = _weighted_sample([int(ball) for ball, _ in front_sorted], front_weights, 5)
+                back_balls = _weighted_sample([int(ball) for ball, _ in back_sorted], back_weights, 2)
+                current = (tuple(sorted(front_balls[:5])), tuple(sorted(back_balls[:2])))
+
+            seen.add(current)
+            predictions.append((list(current[0]), list(current[1])))
 
         return predictions
 
-    def bayesian_predict(self, count=1, periods=500, n_jobs=1) -> List[Tuple[List[int], List[int]]]:
+    def bayesian_predict(self, count=1, periods=500, n_jobs=1, use_enhanced: bool = False) -> List[Tuple[List[int], List[int]]]:
         """贝叶斯预测 - 真正的贝叶斯推理和概率采样"""
         import random
         import numpy as np
@@ -630,10 +1173,39 @@ class TraditionalPredictor:
         # 使用n_jobs参数进行贝叶斯分析
         bayesian_result = advanced_analyzer.bayesian_analysis(periods, n_jobs=n_jobs)
 
-        front_posterior = bayesian_result.get('front_posterior', {})
-        back_posterior = bayesian_result.get('back_posterior', {})
+        if use_enhanced:
+            front_posterior = self._build_posterior_from_enhanced(
+                bayesian_result.get('front_enhanced', {}),
+                bayesian_result.get('front_dirichlet_posterior', {})
+            )
+            back_posterior = self._build_posterior_from_enhanced(
+                bayesian_result.get('back_enhanced', {}),
+                bayesian_result.get('back_dirichlet_posterior', {})
+            )
+        else:
+            front_posterior = bayesian_result.get('front_posterior', {})
+            back_posterior = bayesian_result.get('back_posterior', {})
 
         predictions = []
+
+        def _weighted_sample_no_replace(items, weights, k):
+            if not items:
+                return []
+            weights = [max(0.0, float(w)) for w in weights]
+            total = sum(weights)
+            if total <= 0:
+                return items if len(items) <= k else random.sample(items, k)
+            probs = [w / total for w in weights]
+            if len(items) <= k:
+                return list(items)
+            return list(np.random.choice(items, size=k, replace=False, p=probs))
+
+        def _sample(items, weights, k):
+            if not items or k <= 0:
+                return []
+            if not use_enhanced:
+                return random.sample(items, k) if len(items) >= k else list(items)
+            return _weighted_sample_no_replace(items, weights, k)
 
         # 为每注生成不同的贝叶斯策略
         for i in range(count):
@@ -645,13 +1217,15 @@ class TraditionalPredictor:
                 if front_posterior:
                     # 选择后验概率最高的号码，但加入随机性
                     sorted_front = sorted(front_posterior.items(), key=lambda x: x[1], reverse=True)
-                    high_prob_front = [int(ball) for ball, prob in sorted_front[:8]]
-                    front_balls = random.sample(high_prob_front, min(5, len(high_prob_front)))
+                    high_prob_front = [int(ball) for ball, _ in sorted_front[:8]]
+                    high_prob_weights = [prob for _, prob in sorted_front[:8]]
+                    front_balls = _sample(high_prob_front, high_prob_weights, min(5, len(high_prob_front)))
 
                 if back_posterior:
                     sorted_back = sorted(back_posterior.items(), key=lambda x: x[1], reverse=True)
-                    high_prob_back = [int(ball) for ball, prob in sorted_back[:4]]
-                    back_balls = random.sample(high_prob_back, min(2, len(high_prob_back)))
+                    high_prob_back = [int(ball) for ball, _ in sorted_back[:4]]
+                    high_prob_weights = [prob for _, prob in sorted_back[:4]]
+                    back_balls = _sample(high_prob_back, high_prob_weights, min(2, len(high_prob_back)))
 
             # 策略2: 中等概率策略 (第2注)
             elif i % 4 == 1:
@@ -660,34 +1234,52 @@ class TraditionalPredictor:
                     sorted_front = sorted(front_posterior.items(), key=lambda x: x[1], reverse=True)
                     mid_start = len(sorted_front) // 4
                     mid_end = len(sorted_front) * 3 // 4
-                    mid_prob_front = [int(ball) for ball, prob in sorted_front[mid_start:mid_end]]
+                    mid_slice = sorted_front[mid_start:mid_end]
+                    mid_prob_front = [int(ball) for ball, _ in mid_slice]
+                    mid_prob_weights = [prob for _, prob in mid_slice]
                     if len(mid_prob_front) >= 5:
-                        front_balls = random.sample(mid_prob_front, 5)
+                        front_balls = _sample(mid_prob_front, mid_prob_weights, 5)
                     else:
-                        front_balls = mid_prob_front + [int(ball) for ball, prob in sorted_front[:5-len(mid_prob_front)]]
+                        front_balls = mid_prob_front.copy()
+                        fill_slice = sorted_front[:5 - len(mid_prob_front)]
+                        fill_candidates = [int(ball) for ball, _ in fill_slice if int(ball) not in front_balls]
+                        fill_weights = [prob for ball, prob in fill_slice if int(ball) not in front_balls]
+                        front_balls.extend(_sample(fill_candidates, fill_weights, 5 - len(front_balls)))
 
                 if back_posterior:
                     sorted_back = sorted(back_posterior.items(), key=lambda x: x[1], reverse=True)
-                    mid_prob_back = [int(ball) for ball, prob in sorted_back[1:5]]
+                    mid_slice = sorted_back[1:5]
+                    mid_prob_back = [int(ball) for ball, _ in mid_slice]
+                    mid_prob_weights = [prob for _, prob in mid_slice]
                     if len(mid_prob_back) >= 2:
-                        back_balls = random.sample(mid_prob_back, 2)
+                        back_balls = _sample(mid_prob_back, mid_prob_weights, 2)
                     else:
-                        back_balls = mid_prob_back + [int(ball) for ball, prob in sorted_back[:2-len(mid_prob_back)]]
+                        back_balls = mid_prob_back.copy()
+                        fill_slice = sorted_back[:2 - len(mid_prob_back)]
+                        fill_candidates = [int(ball) for ball, _ in fill_slice if int(ball) not in back_balls]
+                        fill_weights = [prob for ball, prob in fill_slice if int(ball) not in back_balls]
+                        back_balls.extend(_sample(fill_candidates, fill_weights, 2 - len(back_balls)))
 
             # 策略3: 混合概率策略 (第3注)
             elif i % 4 == 2:
                 if front_posterior:
                     # 2个高概率 + 2个中概率 + 1个低概率
                     sorted_front = sorted(front_posterior.items(), key=lambda x: x[1], reverse=True)
-                    high_prob = [int(ball) for ball, prob in sorted_front[:6]]
-                    mid_prob = [int(ball) for ball, prob in sorted_front[6:15]]
-                    low_prob = [int(ball) for ball, prob in sorted_front[15:25]]
+                    high_slice = sorted_front[:6]
+                    mid_slice = sorted_front[6:15]
+                    low_slice = sorted_front[15:25]
+                    high_prob = [int(ball) for ball, _ in high_slice]
+                    mid_prob = [int(ball) for ball, _ in mid_slice]
+                    low_prob = [int(ball) for ball, _ in low_slice]
+                    high_weights = [prob for _, prob in high_slice]
+                    mid_weights = [prob for _, prob in mid_slice]
+                    low_weights = [prob for _, prob in low_slice]
 
                     front_balls = []
-                    front_balls.extend(random.sample(high_prob, min(2, len(high_prob))))
-                    front_balls.extend(random.sample(mid_prob, min(2, len(mid_prob))))
+                    front_balls.extend(_sample(high_prob, high_weights, min(2, len(high_prob))))
+                    front_balls.extend(_sample(mid_prob, mid_weights, min(2, len(mid_prob))))
                     if len(low_prob) > 0:
-                        front_balls.extend(random.sample(low_prob, min(1, len(low_prob))))
+                        front_balls.extend(_sample(low_prob, low_weights, min(1, len(low_prob))))
 
                     # 如果不足5个，用高概率补充
                     while len(front_balls) < 5:
@@ -699,14 +1291,18 @@ class TraditionalPredictor:
 
                 if back_posterior:
                     sorted_back = sorted(back_posterior.items(), key=lambda x: x[1], reverse=True)
-                    back_high = [int(ball) for ball, prob in sorted_back[:3]]
-                    back_mid = [int(ball) for ball, prob in sorted_back[3:8]]
+                    back_high_slice = sorted_back[:3]
+                    back_mid_slice = sorted_back[3:8]
+                    back_high = [int(ball) for ball, _ in back_high_slice]
+                    back_mid = [int(ball) for ball, _ in back_mid_slice]
+                    back_high_weights = [prob for _, prob in back_high_slice]
+                    back_mid_weights = [prob for _, prob in back_mid_slice]
 
                     back_balls = []
                     if len(back_high) > 0:
-                        back_balls.append(random.choice(back_high))
+                        back_balls.extend(_sample(back_high, back_high_weights, 1))
                     if len(back_mid) > 0:
-                        back_balls.append(random.choice(back_mid))
+                        back_balls.extend(_sample(back_mid, back_mid_weights, 1))
 
                     # 如果不足2个，用高概率补充
                     while len(back_balls) < 2:
@@ -783,6 +1379,54 @@ class TraditionalPredictor:
 
         return predictions
 
+    def _build_posterior_from_enhanced(self, enhanced: Dict, dirichlet_posterior: Dict) -> Dict[int, float]:
+        """从增强贝叶斯结果构建后验概率分布"""
+        if not enhanced and not dirichlet_posterior:
+            return {}
+
+        def _normalize(dist: Dict[int, float]) -> Dict[int, float]:
+            if not dist:
+                return {}
+            total = sum(dist.values())
+            if total <= 0:
+                uniform = 1 / len(dist)
+                return {k: uniform for k in dist}
+            return {k: v / total for k, v in dist.items()}
+
+        # 解析增强后验均值
+        posterior_mean = {}
+        for ball, info in enhanced.items():
+            ball_int = int(ball)
+            posterior = info.get('posterior_distribution', {})
+            posterior_mean[ball_int] = posterior.get('mean', 0.0)
+
+        posterior_mean = _normalize(posterior_mean)
+
+        # Dirichlet-多项式后验预测
+        dirichlet_norm = {}
+        for ball, prob in dirichlet_posterior.items():
+            dirichlet_norm[int(ball)] = float(prob)
+        dirichlet_norm = _normalize(dirichlet_norm)
+
+        # 混合分布
+        if posterior_mean and dirichlet_norm:
+            mix_w = BayesianConfig.DIRICHLET_MIX_WEIGHT
+            keys = set(posterior_mean.keys()) | set(dirichlet_norm.keys())
+            combined = {k: (1 - mix_w) * posterior_mean.get(k, 0.0) + mix_w * dirichlet_norm.get(k, 0.0) for k in keys}
+        else:
+            combined = posterior_mean or dirichlet_norm
+
+        # 使用预测权重微调
+        if enhanced and combined:
+            adjusted = {}
+            for ball, prob in combined.items():
+                info = enhanced.get(ball, enhanced.get(str(ball), {})) or {}
+                weight = info.get('prediction_weight', 0.5)
+                adjusted[ball] = prob * (0.5 + 0.5 * weight)
+            combined = _normalize(adjusted)
+
+        return combined
+
 
 # ==================== 高级预测器 ====================
 class AdvancedPredictor:
@@ -795,6 +1439,10 @@ class AdvancedPredictor:
 
         if self.df is None:
             logger_manager.error("数据未加载")
+
+    def set_missing_mode_override(self, mode: Optional[str]) -> None:
+        """设置遗漏预测模式覆盖"""
+        self.traditional_predictor.set_missing_mode_override(mode)
 
     def _get_traditional_predictor(self):
         """获取传统预测器实例"""
@@ -814,6 +1462,116 @@ class AdvancedPredictor:
             if not front_transitions or not back_transitions:
                 logger_manager.warning("马尔可夫转移概率为空，使用频率分析回退")
                 return self._markov_fallback_predict(count, periods)
+
+            markov_cfg = _get_markov_config()
+            smoothing_alpha = float(markov_cfg.get('smoothing_alpha', 0.0))
+            global_mix = float(markov_cfg.get('global_mix', 0.0))
+            force_dense = bool(markov_cfg.get('force_dense', False))
+            posterior_mix = float(markov_cfg.get('posterior_mix', 0.0))
+
+            smoothing_alpha = max(0.0, smoothing_alpha)
+            global_mix = min(max(global_mix, 0.0), 1.0)
+            posterior_mix = min(max(posterior_mix, 0.0), 1.0)
+
+            def _smooth_transitions(transitions: Dict, min_num: int, max_num: int) -> Dict:
+                if not transitions:
+                    return transitions
+
+                states = list(range(min_num, max_num + 1))
+
+                # 计算全局转移分布（作为回退先验）
+                global_probs = {state: 0.0 for state in states}
+                for trans in transitions.values():
+                    if not isinstance(trans, dict):
+                        continue
+                    for next_state, prob in trans.items():
+                        try:
+                            next_int = int(next_state)
+                        except (TypeError, ValueError):
+                            continue
+                        if min_num <= next_int <= max_num:
+                            global_probs[next_int] += float(prob)
+
+                total_global = sum(global_probs.values())
+                if total_global > 0:
+                    for state in global_probs:
+                        global_probs[state] /= total_global
+                else:
+                    uniform = 1.0 / len(states)
+                    for state in global_probs:
+                        global_probs[state] = uniform
+
+                smoothed = {}
+                source_states = states if force_dense else transitions.keys()
+                for state in source_states:
+                    row = transitions.get(state, {})
+                    row_probs = []
+                    for next_state in states:
+                        base = float(row.get(next_state, 0.0))
+                        mixed = (1.0 - global_mix) * base + global_mix * global_probs[next_state]
+                        row_probs.append(mixed + smoothing_alpha)
+
+                    total = sum(row_probs)
+                    if total <= 0:
+                        normalized = [1.0 / len(states)] * len(states)
+                    else:
+                        normalized = [p / total for p in row_probs]
+
+                    smoothed[state] = {states[i]: normalized[i] for i in range(len(states))}
+
+                return smoothed
+
+            def _freq_to_probs(freq_dict: Dict, max_num: int) -> Dict[int, float]:
+                probs = {}
+                total = 0.0
+                for num in range(1, max_num + 1):
+                    val = float(freq_dict.get(num, 0.0))
+                    probs[num] = val
+                    total += val
+                if total <= 0:
+                    uniform = 1.0 / max_num
+                    return {num: uniform for num in range(1, max_num + 1)}
+                return {num: probs[num] / total for num in range(1, max_num + 1)}
+
+            def _mix_with_prior(transitions: Dict, prior_probs: Dict[int, float],
+                                min_num: int, max_num: int, mix_weight: float) -> Dict:
+                if not transitions or mix_weight <= 0:
+                    return transitions
+
+                states = list(range(min_num, max_num + 1))
+                mixed = {}
+                source_states = states if force_dense else transitions.keys()
+
+                for state in source_states:
+                    row = transitions.get(state, {})
+                    row_probs = []
+                    for next_state in states:
+                        base = float(row.get(next_state, 0.0))
+                        blended = (1.0 - mix_weight) * base + mix_weight * prior_probs.get(next_state, 0.0)
+                        row_probs.append(blended)
+
+                    total = sum(row_probs)
+                    if total <= 0:
+                        normalized = [1.0 / len(states)] * len(states)
+                    else:
+                        normalized = [p / total for p in row_probs]
+
+                    mixed[state] = {states[i]: normalized[i] for i in range(len(states))}
+
+                return mixed
+
+            if smoothing_alpha > 0.0 or global_mix > 0.0 or force_dense:
+                front_transitions = _smooth_transitions(front_transitions, 1, 35)
+                back_transitions = _smooth_transitions(back_transitions, 1, 12)
+
+            if posterior_mix > 0.0:
+                freq_result = basic_analyzer.frequency_analysis(periods)
+                front_freq = freq_result.get('front_frequency', {})
+                back_freq = freq_result.get('back_frequency', {})
+                front_prior = _freq_to_probs(front_freq, 35)
+                back_prior = _freq_to_probs(back_freq, 12)
+                front_transitions = _mix_with_prior(front_transitions, front_prior, 1, 35, posterior_mix)
+                back_transitions = _mix_with_prior(back_transitions, back_prior, 1, 12, posterior_mix)
 
             predictions = []
 
@@ -855,38 +1613,6 @@ class AdvancedPredictor:
             logger_manager.error(f"马尔可夫链预测失败: {e}")
             return self._markov_fallback_predict(count, periods)
 
-    def _generate_diverse_markov_sequence(self, transitions: Dict, target_count: int, 
-                                        min_num: int, max_num: int, sequence_index: int) -> List[int]:
-        """
-        生成多样化的马尔可夫序列，用于增加预测多样性
-        """
-        try:
-            import numpy as np
-            import random
-            
-            # 使用不同的策略生成多样化序列
-            if sequence_index % 3 == 0:
-                # 策略1：基于高频转移
-                return self._generate_high_frequency_markov_sequence(
-                    transitions, target_count, min_num, max_num
-                )
-            elif sequence_index % 3 == 1:
-                # 策略2：基于低频探索
-                return self._generate_exploratory_markov_sequence(
-                    transitions, target_count, min_num, max_num
-                )
-            else:
-                # 策略3：混合策略
-                return self._generate_mixed_markov_sequence(
-                    transitions, target_count, min_num, max_num
-                )
-                
-        except Exception as e:
-            logger_manager.error(f"生成多样化马尔可夫序列失败: {e}")
-            # 回退到随机选择
-            import random
-            return random.sample(range(min_num, max_num + 1), target_count)
-    
     def _generate_high_frequency_markov_sequence(self, transitions: Dict, target_count: int,
                                                min_num: int, max_num: int) -> List[int]:
         """生成基于高频转移的序列"""
@@ -1247,16 +1973,19 @@ class AdvancedPredictor:
             # 构建马尔可夫转移矩阵
             transitions = self._build_markov_transitions(analysis_periods)
 
-            if not transitions:
+            front_transitions = transitions.get('front', {}) if isinstance(transitions, dict) else {}
+            back_transitions = transitions.get('back', {}) if isinstance(transitions, dict) else {}
+
+            if not front_transitions or not back_transitions:
                 logger_manager.warning("马尔可夫转移矩阵为空，使用备选方案")
                 return self._fallback_markov_compound_prediction(front_count, back_count)
 
             # 基于马尔可夫链的复式号码选择
             front_balls = self._markov_compound_selection(
-                transitions, front_count, True, analysis_periods
+                front_transitions, front_count, True, analysis_periods
             )
             back_balls = self._markov_compound_selection(
-                transitions, back_count, False, analysis_periods
+                back_transitions, back_count, False, analysis_periods
             )
 
             # 计算复式投注信息
@@ -1269,6 +1998,24 @@ class AdvancedPredictor:
                 transitions, front_count, back_count
             )
 
+            def _state_coverage(trans_dict):
+                if not isinstance(trans_dict, dict) or not trans_dict:
+                    return 0
+                states = set()
+                to_states = set()
+                for from_state, trans in trans_dict.items():
+                    try:
+                        states.add(int(from_state))
+                    except (TypeError, ValueError):
+                        continue
+                    if isinstance(trans, dict):
+                        for next_state in trans.keys():
+                            try:
+                                to_states.add(int(next_state))
+                            except (TypeError, ValueError):
+                                continue
+                return len(states | to_states)
+
             result = {
                 'front_balls': front_balls,
                 'back_balls': back_balls,
@@ -1280,9 +2027,14 @@ class AdvancedPredictor:
                 'confidence': confidence,
                 'analysis_periods': analysis_periods,
                 'markov_details': {
-                    'transition_count': len(transitions),
-                    'state_coverage': len(set().union(*[t.keys() for t in transitions.values()])),
-                    'avg_transition_prob': sum(sum(t.values()) for t in transitions.values()) / max(1, len(transitions))
+                    'transition_count': len(front_transitions) + len(back_transitions),
+                    'front_state_coverage': _state_coverage(front_transitions),
+                    'back_state_coverage': _state_coverage(back_transitions),
+                    'avg_transition_prob': (
+                        (sum(sum(t.values()) for t in front_transitions.values() if isinstance(t, dict)) +
+                         sum(sum(t.values()) for t in back_transitions.values() if isinstance(t, dict)))
+                        / max(1, len(front_transitions) + len(back_transitions))
+                    )
                 },
                 'timestamp': datetime.now().isoformat()
             }
@@ -1433,7 +2185,7 @@ class AdvancedPredictor:
             if sequence_index == 0:
                 # 第一注：使用最近一期的号码作为初始状态
                 if len(self.df) > 0:
-                    last_row = self.df.iloc[-1]
+                    last_row = self.df.iloc[0]
                     last_front, last_back = data_manager.parse_balls(last_row)
 
                     if max_num == 35:  # 前区
@@ -1446,7 +2198,7 @@ class AdvancedPredictor:
                 # 其他注：使用不同的历史期数或随机状态
                 if len(self.df) > sequence_index:
                     # 使用不同历史期数的号码
-                    history_row = self.df.iloc[-(sequence_index + 1)]
+                    history_row = self.df.iloc[sequence_index]
                     history_front, history_back = data_manager.parse_balls(history_row)
 
                     if max_num == 35:  # 前区
@@ -1589,8 +2341,8 @@ class AdvancedPredictor:
 
             for i in range(count):
                 # 使用改进的马尔可夫预测算法
-                front_balls = self._markov_predict_balls(front_transitions, 5, 35)
-                back_balls = self._markov_predict_balls(back_transitions, 2, 12)
+                front_balls = self._markov_predict_balls(front_transitions, 5, 35, analysis_periods)
+                back_balls = self._markov_predict_balls(back_transitions, 2, 12, analysis_periods)
 
                 # 计算稳定性得分
                 front_stability = self._calculate_stability_score(front_transitions, front_balls)
@@ -1617,11 +2369,11 @@ class AdvancedPredictor:
 
         return predictions
 
-    def _markov_predict_balls(self, transitions: Dict, num_balls: int, max_ball: int) -> List[int]:
+    def _markov_predict_balls(self, transitions: Dict, num_balls: int, max_ball: int, periods: int = None) -> List[int]:
         """基于马尔可夫转移概率预测号码"""
         if not transitions:
             # 如果没有转移概率，使用频率分析
-            freq_analysis = basic_analyzer.frequency_analysis()
+            freq_analysis = basic_analyzer.frequency_analysis(periods)
             if max_ball == 35:  # 前区
                 freq_dict = freq_analysis.get('front_frequency', {})
             else:  # 后区
@@ -1657,7 +2409,7 @@ class AdvancedPredictor:
                             break
                     else:
                         # 如果没有找到未选号码，使用频率分析补充
-                        freq_analysis = basic_analyzer.frequency_analysis()
+                        freq_analysis = basic_analyzer.frequency_analysis(periods)
                         if max_ball == 35:  # 前区
                             freq_dict = freq_analysis.get('front_frequency', {})
                         else:  # 后区
@@ -1671,7 +2423,7 @@ class AdvancedPredictor:
                                 break
                 else:
                     # 使用频率分析选择
-                    freq_analysis = basic_analyzer.frequency_analysis()
+                    freq_analysis = basic_analyzer.frequency_analysis(periods)
                     if max_ball == 35:  # 前区
                         freq_dict = freq_analysis.get('front_frequency', {})
                     else:  # 后区
@@ -1685,7 +2437,7 @@ class AdvancedPredictor:
                             break
             else:
                 # 使用频率分析选择
-                freq_analysis = basic_analyzer.frequency_analysis()
+                freq_analysis = basic_analyzer.frequency_analysis(periods)
                 if max_ball == 35:  # 前区
                     freq_dict = freq_analysis.get('front_frequency', {})
                 else:  # 后区
@@ -1723,6 +2475,9 @@ class AdvancedPredictor:
 
     def ensemble_predict(self, count=1, periods=500, weights=None) -> List[Tuple[List[int], List[int]]]:
         """集成预测"""
+        import random
+        import time
+
         if weights is None:
             weights = {
                 'markov': 0.30,
@@ -1762,52 +2517,77 @@ class AdvancedPredictor:
             # 根据权重重复添加候选号码
             repeat_count = max(1, int(weight * 10))
             for _ in range(repeat_count):
-                all_front_candidates.extend(pred[0])
-                all_back_candidates.extend(pred[1])
+                all_front_candidates.extend(int(ball) for ball in pred[0])
+                all_back_candidates.extend(int(ball) for ball in pred[1])
 
-        # 统计频率并选择最高频率的号码
+        # 统计频率作为加权采样的基础
         front_counter = Counter(all_front_candidates)
         back_counter = Counter(all_back_candidates)
 
-        # 选择频率最高的号码（去重）
-        front_balls = []
-        for ball, freq_count in front_counter.most_common():
-            if len(front_balls) >= 5:
-                break
-            if int(ball) not in front_balls:
-                front_balls.append(int(ball))
+        freq_analysis_cache = None
 
-        back_balls = []
-        for ball, freq_count in back_counter.most_common():
-            if len(back_balls) >= 2:
-                break
-            if int(ball) not in back_balls:
-                back_balls.append(int(ball))
-
-        # 如果数量不足，使用频率分析补充
-        if len(front_balls) < 5:
-            freq_analysis = basic_analyzer.frequency_analysis()
-            front_freq = freq_analysis.get('front_frequency', {})
-            sorted_freq = sorted(front_freq.items(), key=lambda x: x[1], reverse=True)
+        def _ensure_pool_size(counter, freq_key, target_size):
+            nonlocal freq_analysis_cache
+            if len(counter) >= target_size:
+                return
+            if freq_analysis_cache is None:
+                freq_analysis_cache = basic_analyzer.frequency_analysis(periods)
+            freq_map = freq_analysis_cache.get(freq_key, {})
+            sorted_freq = sorted(freq_map.items(), key=lambda x: x[1], reverse=True)
             for ball, freq in sorted_freq:
-                if len(front_balls) >= 5:
+                ball_int = int(ball)
+                if ball_int not in counter:
+                    counter[ball_int] = 1
+                if len(counter) >= target_size:
                     break
-                if ball not in front_balls:
-                    front_balls.append(ball)
 
-        if len(back_balls) < 2:
-            freq_analysis = basic_analyzer.frequency_analysis()
-            back_freq = freq_analysis.get('back_frequency', {})
-            sorted_freq = sorted(back_freq.items(), key=lambda x: x[1], reverse=True)
-            for ball, freq in sorted_freq:
-                if len(back_balls) >= 2:
+        def _weighted_sample_unique(rng, counter, size):
+            if not counter:
+                return []
+            items = [(int(ball), float(weight)) for ball, weight in counter.items() if float(weight) > 0]
+            selected = []
+            while items and len(selected) < size:
+                balls, weights = zip(*items)
+                chosen = rng.choices(balls, weights=weights, k=1)[0]
+                selected.append(int(chosen))
+                items = [(b, w) for b, w in items if b != chosen]
+            return selected
+
+        _ensure_pool_size(front_counter, 'front_frequency', 8)
+        _ensure_pool_size(back_counter, 'back_frequency', 4)
+
+        used_predictions = set()
+        base_seed = time.time_ns()
+        max_attempts = 20
+
+        for i in range(count):
+            last_front = []
+            last_back = []
+            for attempt in range(max_attempts):
+                seed = base_seed + i * 1000003 + attempt * 97
+                rng = random.Random(seed)
+
+                front_balls = _weighted_sample_unique(rng, front_counter, 5)
+                back_balls = _weighted_sample_unique(rng, back_counter, 2)
+
+                if len(front_balls) < 5 or len(back_balls) < 2:
+                    _ensure_pool_size(front_counter, 'front_frequency', 8)
+                    _ensure_pool_size(back_counter, 'back_frequency', 4)
+                    front_balls = _weighted_sample_unique(rng, front_counter, 5)
+                    back_balls = _weighted_sample_unique(rng, back_counter, 2)
+
+                front_sorted = tuple(sorted(front_balls[:5]))
+                back_sorted = tuple(sorted(back_balls[:2]))
+                last_front = list(front_sorted)
+                last_back = list(back_sorted)
+                prediction_key = (front_sorted, back_sorted)
+
+                if prediction_key not in used_predictions:
+                    used_predictions.add(prediction_key)
+                    predictions.append((last_front, last_back))
                     break
-                if ball not in back_balls:
-                    back_balls.append(ball)
-
-        # 生成多注相同的预测（基于集成的确定性预测）
-        for _ in range(count):
-            predictions.append((sorted(front_balls[:5]), sorted(back_balls[:2])))
+            else:
+                predictions.append((last_front, last_back))
         
         return predictions
     
@@ -1817,7 +2597,7 @@ class AdvancedPredictor:
         pass
 
     def clustering_predict(self, count=1, periods=500, method="kmeans") -> List[Tuple[List[int], List[int]]]:
-        """聚类分析预测"""
+        """聚类分析预测（增强版：支持数据标准化和最优k值选择）"""
         try:
             logger_manager.info(f"开始聚类分析预测: 注数={count}, 分析期数={periods}, 方法={method}")
 
@@ -1826,7 +2606,7 @@ class AdvancedPredictor:
                 logger_manager.warning("数据不足，使用频率分析作为回退")
                 return self.traditional_predictor.frequency_predict(count, periods)
 
-            recent_data = self.df.tail(periods)
+            recent_data = self.df.head(periods)
 
             # 准备聚类数据
             features = []
@@ -1845,7 +2625,8 @@ class AdvancedPredictor:
                             max(back_balls) - min(back_balls),  # 后区跨度
                         ]
                         features.append(feature_vector)
-                except:
+                except (ValueError, TypeError, KeyError) as e:
+                    logger_manager.debug(f"聚类特征提取跳过行: {e}")
                     continue
 
             if len(features) < 10:
@@ -1854,20 +2635,60 @@ class AdvancedPredictor:
 
             # 进行聚类分析
             from sklearn.cluster import KMeans
+            from sklearn.preprocessing import StandardScaler
+            from sklearn.metrics import silhouette_score
             import numpy as np
 
             features_array = np.array(features)
-            n_clusters = min(8, len(features) // 10)  # 动态确定聚类数
+
+            # 数据标准化（关键改进：聚类算法对特征尺度敏感）
+            scaler = StandardScaler()
+            features_scaled = scaler.fit_transform(features_array)
+
+            # 使用Silhouette分析选择最优聚类数（关键改进）
+            max_clusters = min(8, len(features) // 10)
+            min_clusters = 2
+
+            if max_clusters < min_clusters:
+                max_clusters = min_clusters
+
+            best_k = min_clusters
+            best_score = -1
+
+            # 只在数据量足够时进行Silhouette分析
+            if len(features) >= 20 and max_clusters > min_clusters:
+                for k in range(min_clusters, max_clusters + 1):
+                    try:
+                        kmeans_temp = KMeans(n_clusters=k, random_state=42, n_init='auto')
+                        labels_temp = kmeans_temp.fit_predict(features_scaled)
+                        score = silhouette_score(features_scaled, labels_temp)
+                        if score > best_score:
+                            best_score = score
+                            best_k = k
+                    except (ValueError, RuntimeError) as e:
+                        # ValueError: 聚类数不合理或数据问题
+                        # RuntimeError: 聚类算法收敛失败
+                        logger_manager.debug(f"Silhouette分析跳过k={k}: {e}")
+                        continue
+
+                logger_manager.info(f"Silhouette分析选择最优聚类数: k={best_k}, score={best_score:.4f}")
+            else:
+                best_k = max(min_clusters, max_clusters)
+
+            n_clusters = best_k
 
             kmeans = KMeans(n_clusters=n_clusters, random_state=42, n_init='auto')
-            cluster_labels = kmeans.fit_predict(features_array)
+            cluster_labels = kmeans.fit_predict(features_scaled)
 
             # 分析每个聚类的特征
-            cluster_centers = kmeans.cluster_centers_
+            # 聚类中心在标准化空间，需要逆变换回原始空间
+            cluster_centers_scaled = kmeans.cluster_centers_
+            cluster_centers = scaler.inverse_transform(cluster_centers_scaled)
 
             # 选择最有潜力的聚类（基于最近数据的分布）
-            recent_features = features_array[-20:]  # 最近20期
-            recent_clusters = kmeans.predict(recent_features)
+            # 使用标准化后的数据进行预测（关键改进：保持数据一致性）
+            recent_features_scaled = features_scaled[:20]  # 最近20期（标准化后）
+            recent_clusters = kmeans.predict(recent_features_scaled)
 
             # 统计最近期数中各聚类的出现频率
             from collections import Counter
@@ -1878,13 +2699,13 @@ class AdvancedPredictor:
                 try:
                     # 选择出现频率较高的聚类作为预测基础
                     target_cluster = cluster_freq.most_common(1)[0][0] if cluster_freq else 0
-                    target_center = cluster_centers[target_cluster]
+                    target_center = cluster_centers[target_cluster]  # 已逆变换回原始空间
 
-                    # 基于聚类中心生成预测
-                    front_sum_target = int(target_center[0])
-                    front_span_target = int(target_center[1])
-                    front_small_count = int(target_center[2])
-                    back_sum_target = int(target_center[3])
+                    # 基于聚类中心生成预测（使用原始空间的值）
+                    front_sum_target = int(round(target_center[0]))
+                    front_span_target = int(round(target_center[1]))
+                    front_small_count = int(round(target_center[2]))
+                    back_sum_target = int(round(target_center[3]))
 
                     # 生成符合聚类特征的号码
                     front_balls = self._generate_balls_by_cluster_features(
@@ -1911,12 +2732,22 @@ class AdvancedPredictor:
             return self.traditional_predictor.frequency_predict(count, periods)
 
     def _generate_balls_by_cluster_features(self, target_sum, target_span, small_count, num_balls, max_ball):
-        """根据聚类特征生成号码"""
+        """根据聚类特征生成号码（增强版：使用自适应相对阈值）"""
         import random
         import numpy as np
 
         attempts = 0
         max_attempts = 1000
+
+        # 计算理论期望值用于设置相对阈值（增强改进）
+        # 前区5个号码，均匀分布情况下：和值期望 = 5 * 18 = 90，跨度期望 ≈ 28
+        theoretical_sum = num_balls * (max_ball + 1) / 2
+        theoretical_span = max_ball * (num_balls - 1) / num_balls
+
+        # 使用相对阈值（基于理论期望的百分比）
+        sum_tolerance = max(15, int(theoretical_sum * 0.15))  # 和值容忍度：15% 或最小15
+        span_tolerance = max(8, int(theoretical_span * 0.25))  # 跨度容忍度：25% 或最小8
+        small_tolerance = max(1, num_balls // 3)  # 小号容忍度：号码数量的1/3 或最小1
 
         while attempts < max_attempts:
             # 生成候选号码
@@ -1924,15 +2755,17 @@ class AdvancedPredictor:
 
             current_sum = sum(balls)
             current_span = max(balls) - min(balls)
-            current_small = len([x for x in balls if x <= max_ball // 2])
+            # 使用与特征提取一致的阈值：(max_ball + 1) // 2，前区为18
+            small_threshold = (max_ball + 1) // 2
+            current_small = len([x for x in balls if x <= small_threshold])
 
-            # 检查是否接近目标特征
+            # 检查是否接近目标特征（使用自适应阈值）
             sum_diff = abs(current_sum - target_sum)
             span_diff = abs(current_span - target_span)
             small_diff = abs(current_small - small_count)
 
             # 如果特征接近，返回结果
-            if sum_diff <= 20 and span_diff <= 10 and small_diff <= 2:
+            if sum_diff <= sum_tolerance and span_diff <= span_tolerance and small_diff <= small_tolerance:
                 return balls
 
             attempts += 1
@@ -1957,91 +2790,21 @@ class AdvancedPredictor:
         return sorted(random.sample(range(1, max_ball + 1), num_balls))
 
     def markov_2nd_predict(self, count=1, periods=500) -> List[Tuple[List[int], List[int]]]:
-        """二阶马尔可夫链预测"""
+        """二阶马尔可夫链预测 - 委托给优化后的 EnhancedMarkovPredictor"""
         try:
             logger_manager.info(f"开始二阶马尔可夫链预测: 注数={count}, 分析期数={periods}")
 
-            # 获取历史数据
-            if self.df is None or len(self.df) < periods:
-                logger_manager.warning("数据不足，使用一阶马尔可夫链作为回退")
-                return self.markov_predict(count, periods)
+            from improvements.enhanced_markov import get_markov_predictor
+            markov_predictor = get_markov_predictor()
+            predictions = markov_predictor.multi_order_markov_predict(count, periods, order=2)
 
-            recent_data = self.df.tail(periods)
+            if predictions:
+                logger_manager.info(f"二阶马尔可夫链预测完成，生成{len(predictions)}注")
+                return predictions
 
-            # 构建二阶转移矩阵
-            front_transitions_2nd = {}
-            back_transitions_2nd = {}
-
-            for i in range(len(recent_data) - 2):
-                try:
-                    # 获取连续三期的数据
-                    period1 = recent_data.iloc[i]
-                    period2 = recent_data.iloc[i + 1]
-                    period3 = recent_data.iloc[i + 2]
-
-                    front1 = [int(x) for x in str(period1.get('front_balls', '')).split(',') if x.strip().isdigit()]
-                    front2 = [int(x) for x in str(period2.get('front_balls', '')).split(',') if x.strip().isdigit()]
-                    front3 = [int(x) for x in str(period3.get('front_balls', '')).split(',') if x.strip().isdigit()]
-
-                    back1 = [int(x) for x in str(period1.get('back_balls', '')).split(',') if x.strip().isdigit()]
-                    back2 = [int(x) for x in str(period2.get('back_balls', '')).split(',') if x.strip().isdigit()]
-                    back3 = [int(x) for x in str(period3.get('back_balls', '')).split(',') if x.strip().isdigit()]
-
-                    if len(front1) == 5 and len(front2) == 5 and len(front3) == 5:
-                        # 二阶状态：前两期的状态组合
-                        state_key = (tuple(sorted(front1)), tuple(sorted(front2)))
-                        next_state = tuple(sorted(front3))
-
-                        if state_key not in front_transitions_2nd:
-                            front_transitions_2nd[state_key] = {}
-                        if next_state not in front_transitions_2nd[state_key]:
-                            front_transitions_2nd[state_key][next_state] = 0
-                        front_transitions_2nd[state_key][next_state] += 1
-
-                    if len(back1) == 2 and len(back2) == 2 and len(back3) == 2:
-                        state_key = (tuple(sorted(back1)), tuple(sorted(back2)))
-                        next_state = tuple(sorted(back3))
-
-                        if state_key not in back_transitions_2nd:
-                            back_transitions_2nd[state_key] = {}
-                        if next_state not in back_transitions_2nd[state_key]:
-                            back_transitions_2nd[state_key][next_state] = 0
-                        back_transitions_2nd[state_key][next_state] += 1
-
-                except:
-                    continue
-
-            if not front_transitions_2nd or not back_transitions_2nd:
-                logger_manager.warning("二阶转移矩阵构建失败，使用一阶马尔可夫链")
-                return self.markov_predict(count, periods)
-
-            # 获取最近两期作为当前状态
-            last_two_periods = recent_data.tail(2)
-
-            predictions = []
-            for i in range(count):
-                try:
-                    # 预测前区
-                    front_balls = self._predict_with_2nd_order_markov(
-                        last_two_periods, front_transitions_2nd, 'front_balls', 5, 35
-                    )
-
-                    # 预测后区
-                    back_balls = self._predict_with_2nd_order_markov(
-                        last_two_periods, back_transitions_2nd, 'back_balls', 2, 12
-                    )
-
-                    predictions.append((sorted(front_balls), sorted(back_balls)))
-
-                except Exception as e:
-                    logger_manager.error(f"二阶马尔可夫预测第{i+1}注失败: {e}")
-                    # 使用一阶马尔可夫作为回退
-                    fallback = self.markov_predict(1, periods)
-                    if fallback:
-                        predictions.append(fallback[0])
-
-            logger_manager.info(f"二阶马尔可夫链预测完成，生成{len(predictions)}注")
-            return predictions
+            # 优化版本返回空结果时，回退到一阶马尔可夫
+            logger_manager.warning("优化版二阶马尔可夫无结果，回退到一阶马尔可夫")
+            return self.markov_predict(count, periods)
 
         except Exception as e:
             logger_manager.error(f"二阶马尔可夫链预测失败: {e}")
@@ -2057,7 +2820,7 @@ class AdvancedPredictor:
                 logger_manager.warning("数据不足，使用二阶马尔可夫链作为回退")
                 return self.markov_2nd_predict(count, periods)
 
-            recent_data = self.df.tail(periods)
+            recent_data = self.df.head(periods)
 
             # 构建三阶转移矩阵
             front_transitions_3rd = {}
@@ -2110,7 +2873,7 @@ class AdvancedPredictor:
                 return self.markov_2nd_predict(count, periods)
 
             # 获取最近三期作为当前状态
-            last_three_periods = recent_data.tail(3)
+            last_three_periods = recent_data.head(3)
 
             predictions = []
             for i in range(count):
@@ -2142,51 +2905,233 @@ class AdvancedPredictor:
             return self.markov_2nd_predict(count, periods)
 
     def adaptive_markov_predict(self, count=1, periods=500) -> List[Tuple[List[int], List[int]]]:
-        """自适应马尔可夫链预测
+        """自适应马尔可夫链预测（增强版）
         
         真正的自适应马尔可夫链实现，包含：
         - 多阶并行计算 (1-3阶并行计算)
         - 自适应权重计算 (基于各阶统计特性)
         - 智能阶数选择 (动态优化)
         - 权重融合策略 (加权平均)
+        - C-K方程：k步转移概率计算
+        - 自适应时间窗口选择
+        - 转移矩阵熵分析
         
         Args:
             count: 预测注数
-            periods: 分析期数
+            periods: 分析期数（如果为0则自动选择）
             
         Returns:
             List[Tuple[List[int], List[int]]]: 预测结果列表
         """
         try:
-            logger_manager.info(f"开始自适应马尔可夫链预测: 注数={count}, 分析期数={periods}")
+            logger_manager.info(f"开始增强自适应马尔可夫链预测: 注数={count}, 分析期数={periods}")
             
             # 获取数据
             df = data_manager.get_data()
-            if df is None or len(df) < periods:
+            if df is None or len(df) < 100:
                 logger_manager.error("数据不足以进行自适应马尔可夫预测")
                 return self.markov_predict(count, periods)
             
-            df_subset = df.tail(periods)
+            # 自适应时间窗口选择（如果periods为默认值或0，则自动选择）
+            if periods == 500 or periods == 0:
+                optimal_periods = self._adaptive_window_selection(df)
+                logger_manager.info(f"自适应选择窗口大小: {optimal_periods}")
+            else:
+                optimal_periods = periods
             
-            # 1. 多阶并行计算 - 同时计算1-3阶马尔可夫链
-            order_predictions = self._parallel_multi_order_markov_compute(df_subset, count)
+            df_subset = df.head(optimal_periods)
             
-            # 2. 自适应权重计算 - 基于各阶统计特性
-            order_weights = self._calculate_adaptive_order_weights(df_subset, order_predictions)
+            # 1. 多阶并行计算 - 同时计算1-3阶马尔可夫链（增强版）
+            order_predictions, order_transitions = self._enhanced_parallel_multi_order_compute(df_subset, count)
             
-            # 3. 智能阶数选择 - 基于数据特征和历史表现
+            # 2. 计算转移矩阵熵（评估预测不确定性）
+            order_entropy = {}
+            for order, (trans_f, trans_b) in order_transitions.items():
+                front_entropy = self._calculate_transition_entropy(trans_f)
+                back_entropy = self._calculate_transition_entropy(trans_b)
+                order_entropy[order] = (front_entropy + back_entropy) / 2
+            
+            # 3. 自适应权重计算 - 结合熵信息
+            order_weights = self._calculate_enhanced_order_weights(df_subset, order_predictions, order_entropy)
+            
+            # 4. 智能阶数选择 - 基于数据特征和历史表现
             optimal_orders = self._intelligent_order_selection(df_subset, order_weights)
             
-            # 4. 权重融合策略 - 加权平均生成最终预测
-            final_predictions = self._weighted_fusion_strategy(order_predictions, order_weights, optimal_orders, count)
+            # 5. 计算最优k步数
+            k_steps = {order: self._calculate_optimal_k_step(df_subset, order) for order in optimal_orders}
             
-            logger_manager.info(f"自适应马尔可夫预测完成，使用阶数权重: {order_weights}")
+            # 6. C-K方程增强预测
+            ck_enhanced_predictions = self._generate_ck_enhanced_predictions(
+                df_subset, order_transitions, optimal_orders, k_steps, count
+            )
+            
+            # 7. 权重融合策略 - 结合原始预测和C-K增强预测
+            final_predictions = self._enhanced_weighted_fusion(
+                order_predictions, ck_enhanced_predictions, order_weights, optimal_orders, count
+            )
+            
+            logger_manager.info(f"增强自适应马尔可夫预测完成，阶数权重: {order_weights}, 熵: {order_entropy}")
             return final_predictions
             
         except Exception as e:
-            logger_manager.error(f"自适应马尔可夫链预测失败: {e}")
+            logger_manager.error(f"增强自适应马尔可夫链预测失败: {e}")
             return self.markov_predict(count, periods)
     
+
+    def _enhanced_parallel_multi_order_compute(self, df_subset, count) -> Tuple[Dict[int, List[Tuple[List[int], List[int]]]], Dict[int, Tuple[Dict, Dict]]]:
+        """增强版多阶并行计算（返回预测结果和转移矩阵）"""
+        order_predictions = {}
+        order_transitions = {}
+        
+        for order in [1, 2, 3]:
+            try:
+                if order == 1:
+                    transitions_front, transitions_back = self._build_first_order_transitions(df_subset)
+                elif order == 2:
+                    transitions_front, transitions_back = self._build_second_order_transitions(df_subset)
+                else:
+                    transitions_front, transitions_back = self._build_third_order_transitions(df_subset)
+                
+                # 保存转移矩阵
+                order_transitions[order] = (transitions_front, transitions_back)
+                
+                # 生成预测
+                predictions = []
+                for i in range(count):
+                    front_balls = self._predict_with_transitions(transitions_front, 5, 35, order, df_subset, 'front')
+                    back_balls = self._predict_with_transitions(transitions_back, 2, 12, order, df_subset, 'back')
+                    predictions.append((front_balls, back_balls))
+                
+                order_predictions[order] = predictions
+                
+            except Exception as e:
+                logger_manager.warning(f"{order}阶马尔可夫计算失败: {e}")
+                order_predictions[order] = []
+                order_transitions[order] = ({}, {})
+        
+        return order_predictions, order_transitions
+    
+    def _calculate_enhanced_order_weights(self, df_subset, order_predictions, order_entropy) -> Dict[int, float]:
+        """增强版权重计算（结合熵信息）"""
+        weights = {}
+        
+        for order in [1, 2, 3]:
+            try:
+                data_sufficiency = self._calculate_data_sufficiency(df_subset, order)
+                prediction_diversity = self._calculate_prediction_diversity(order_predictions.get(order, []))
+                transition_stability = self._calculate_transition_stability(df_subset, order)
+                historical_performance = self._estimate_historical_performance(order, len(df_subset))
+                
+                # 熵越低（越确定），权重越高
+                entropy = order_entropy.get(order, 0.5)
+                entropy_factor = 1.0 - entropy * 0.3  # 熵对权重的影响
+                
+                # 综合评分（加入熵因子）
+                weight = (
+                    data_sufficiency * 0.25 +
+                    prediction_diversity * 0.15 +
+                    transition_stability * 0.25 +
+                    historical_performance * 0.15 +
+                    entropy_factor * 0.20
+                )
+                
+                weights[order] = max(0.1, min(1.0, weight))
+                
+            except Exception as e:
+                logger_manager.warning(f"计算{order}阶增强权重失败: {e}")
+                weights[order] = 0.1
+        
+        # 归一化权重
+        total_weight = sum(weights.values())
+        if total_weight > 0:
+            weights = {order: weight / total_weight for order, weight in weights.items()}
+        
+        return weights
+    
+    def _generate_ck_enhanced_predictions(self, df_subset, order_transitions, optimal_orders, k_steps, count) -> Dict[int, List[Tuple[List[int], List[int]]]]:
+        """使用C-K方程生成增强预测"""
+        ck_predictions = {}
+        
+        for order in optimal_orders:
+            if order not in order_transitions:
+                continue
+            
+            trans_front, trans_back = order_transitions[order]
+            k = k_steps.get(order, 1)
+            
+            predictions = []
+            for i in range(count):
+                front_balls = self._enhanced_predict_with_ck_equation(
+                    trans_front, 5, 35, order, df_subset, 'front', k
+                )
+                back_balls = self._enhanced_predict_with_ck_equation(
+                    trans_back, 2, 12, order, df_subset, 'back', k
+                )
+                predictions.append((front_balls, back_balls))
+            
+            ck_predictions[order] = predictions
+        
+        return ck_predictions
+    
+    def _enhanced_weighted_fusion(self, order_predictions, ck_predictions, order_weights, optimal_orders, count) -> List[Tuple[List[int], List[int]]]:
+        """增强版权重融合（结合原始预测和C-K预测，确保多样性）"""
+        from collections import Counter
+        import random
+        import time
+        
+        final_predictions = []
+        used_front_combinations = set()  # 跟踪已使用的前区组合
+        used_back_combinations = set()   # 跟踪已使用的后区组合
+        
+        for i in range(count):
+            # 为每注设置不同的随机种子
+            seed = int(time.time() * 1000000) + i * 12345
+            random.seed(seed)
+            
+            front_candidates = Counter()
+            back_candidates = Counter()
+            
+            # 收集原始预测结果
+            for order in optimal_orders:
+                if order in order_predictions and i < len(order_predictions[order]):
+                    front_balls, back_balls = order_predictions[order][i]
+                    weight = order_weights.get(order, 0.1)
+                    
+                    # 根据注数调整权重，增加多样性
+                    diversity_factor = 1.0 + (i * 0.15)  # 后续注数增加随机性
+                    weight_count = max(1, int(weight * 15 / diversity_factor))
+                    for _ in range(weight_count):
+                        front_candidates.update(front_balls)
+                        back_candidates.update(back_balls)
+            
+            # 收集C-K增强预测结果
+            for order in optimal_orders:
+                if order in ck_predictions and i < len(ck_predictions[order]):
+                    front_balls, back_balls = ck_predictions[order][i]
+                    weight = order_weights.get(order, 0.1) * 1.2
+                    
+                    diversity_factor = 1.0 + (i * 0.15)
+                    weight_count = max(1, int(weight * 15 / diversity_factor))
+                    for _ in range(weight_count):
+                        front_candidates.update(front_balls)
+                        back_candidates.update(back_balls)
+            
+            # 选择最终号码（带多样性保证）
+            front_balls = self._select_diverse_balls_with_history(
+                front_candidates, 5, i, used_front_combinations, 35
+            )
+            back_balls = self._select_diverse_balls_with_history(
+                back_candidates, 2, i, used_back_combinations, 12
+            )
+            
+            # 记录已使用的组合
+            used_front_combinations.add(tuple(sorted(front_balls)))
+            used_back_combinations.add(tuple(sorted(back_balls)))
+            
+            final_predictions.append((sorted(front_balls), sorted(back_balls)))
+        
+        return final_predictions
+
     def _parallel_multi_order_markov_compute(self, df_subset, count) -> Dict[int, List[Tuple[List[int], List[int]]]]:
         """多阶并行计算马尔可夫链预测"""
         order_predictions = {}
@@ -2359,6 +3304,292 @@ class AdvancedPredictor:
         length_factor = min(1.0, data_length / 500)
         
         return base_performance[order] * length_factor
+
+    def _compute_k_step_transition_matrix(self, transitions: Dict, k: int = 2) -> Dict:
+        """计算k步转移概率矩阵（C-K方程实现）
+        
+        Chapman-Kolmogorov方程：P^(k) = P^1 * P^1 * ... * P^1 (k次)
+        用于计算从当前状态经过k步后到达各状态的概率
+        
+        Args:
+            transitions: 一步转移字典 {from_state: {to_state: count}}
+            k: 步数
+            
+        Returns:
+            Dict: k步转移概率字典
+        """
+        if k <= 1 or not transitions:
+            return transitions
+        
+        try:
+            import numpy as np
+            
+            # 收集所有状态
+            all_states = set(transitions.keys())
+            for from_state in transitions:
+                all_states.update(transitions[from_state].keys())
+            
+            if len(all_states) == 0:
+                return transitions
+            
+            # 状态索引映射
+            state_list = list(all_states)
+            state_to_idx = {state: idx for idx, state in enumerate(state_list)}
+            n_states = len(state_list)
+            
+            # 构建一步转移概率矩阵
+            P = np.zeros((n_states, n_states))
+            for from_state, to_dict in transitions.items():
+                if from_state in state_to_idx:
+                    from_idx = state_to_idx[from_state]
+                    total = sum(to_dict.values())
+                    if total > 0:
+                        for to_state, count in to_dict.items():
+                            if to_state in state_to_idx:
+                                to_idx = state_to_idx[to_state]
+                                P[from_idx, to_idx] = count / total
+            
+            # 计算k步转移矩阵：P^k
+            Pk = np.linalg.matrix_power(P, k)
+            
+            # 转换回字典格式
+            k_step_transitions = {}
+            for from_idx, from_state in enumerate(state_list):
+                if from_state in transitions:
+                    k_step_transitions[from_state] = {}
+                    for to_idx, to_state in enumerate(state_list):
+                        if Pk[from_idx, to_idx] > 1e-6:  # 过滤极小概率
+                            k_step_transitions[from_state][to_state] = Pk[from_idx, to_idx]
+            
+            return k_step_transitions
+            
+        except Exception as e:
+            logger_manager.warning(f"C-K方程计算失败: {e}")
+            return transitions
+    
+    def _calculate_optimal_k_step(self, df_subset, order: int) -> int:
+        """计算最优的k步数
+        
+        基于数据特征自动选择最佳的预测步数
+        """
+        try:
+            data_length = len(df_subset)
+            
+            # 基于数据量和阶数确定最优k
+            if data_length < 100:
+                optimal_k = 1
+            elif data_length < 300:
+                optimal_k = min(2, 4 - order)
+            else:
+                optimal_k = min(3, 5 - order)
+            
+            return max(1, optimal_k)
+            
+        except Exception:
+            return 1
+    
+    def _adaptive_window_selection(self, df, min_window: int = 100, max_window: int = 800) -> int:
+        """自适应时间窗口选择
+        
+        根据数据的统计特性动态选择最佳分析窗口大小
+        
+        Args:
+            df: 完整数据
+            min_window: 最小窗口大小
+            max_window: 最大窗口大小
+            
+        Returns:
+            int: 最优窗口大小
+        """
+        try:
+            import numpy as np
+            
+            data_length = len(df)
+            if data_length < min_window:
+                return data_length
+            
+            # 计算不同窗口大小下的稳定性指标
+            window_scores = {}
+            test_windows = [100, 200, 300, 500, 800]
+            
+            for window in test_windows:
+                if window > data_length:
+                    continue
+                
+                # 计算该窗口下的统计特性
+                df_window = df.head(window)
+                
+                # 1. 计算号码出现频率的方差（稳定性）
+                front_freq = {}
+                for _, row in df_window.iterrows():
+                    balls = self._parse_balls_from_row(row, 'front')
+                    for ball in balls:
+                        front_freq[ball] = front_freq.get(ball, 0) + 1
+                
+                if front_freq:
+                    freq_values = list(front_freq.values())
+                    freq_variance = np.var(freq_values) if len(freq_values) > 1 else 0
+                    freq_stability = 1.0 / (1.0 + freq_variance / max(freq_values) if max(freq_values) > 0 else 1)
+                else:
+                    freq_stability = 0.5
+                
+                # 2. 数据充足性分数
+                sufficiency_score = min(1.0, window / 300)
+                
+                # 3. 时效性分数（窗口越小越注重近期趋势）
+                recency_score = 1.0 - (window / max_window) * 0.3
+                
+                # 综合评分
+                total_score = freq_stability * 0.4 + sufficiency_score * 0.3 + recency_score * 0.3
+                window_scores[window] = total_score
+            
+            # 选择得分最高的窗口
+            if window_scores:
+                optimal_window = max(window_scores.items(), key=lambda x: x[1])[0]
+                return optimal_window
+            
+            return min(500, data_length)
+            
+        except Exception as e:
+            logger_manager.warning(f"自适应窗口选择失败: {e}")
+            return min(500, len(df))
+    
+    def _incremental_transition_update(self, existing_transitions: Dict, new_row, prev_row, ball_type: str) -> Dict:
+        """增量更新转移矩阵（在线学习）
+        
+        不重建整个转移矩阵，只更新新数据带来的变化
+        
+        Args:
+            existing_transitions: 现有转移矩阵
+            new_row: 新数据行
+            prev_row: 前一期数据行
+            ball_type: 'front' 或 'back'
+            
+        Returns:
+            Dict: 更新后的转移矩阵
+        """
+        try:
+            from collections import defaultdict
+            
+            # 如果没有现有矩阵，创建新的
+            if not existing_transitions:
+                existing_transitions = defaultdict(lambda: defaultdict(int))
+            
+            # 解析号码
+            prev_balls = self._parse_balls_from_row(prev_row, ball_type)
+            new_balls = self._parse_balls_from_row(new_row, ball_type)
+            
+            if prev_balls and new_balls:
+                prev_state = tuple(sorted(prev_balls))
+                new_state = tuple(sorted(new_balls))
+                
+                # 增量更新
+                if prev_state not in existing_transitions:
+                    existing_transitions[prev_state] = defaultdict(int)
+                existing_transitions[prev_state][new_state] += 1
+            
+            return dict(existing_transitions)
+            
+        except Exception as e:
+            logger_manager.warning(f"增量更新失败: {e}")
+            return existing_transitions
+    
+    def _calculate_transition_entropy(self, transitions: Dict) -> float:
+        """计算转移矩阵的熵（用于评估预测不确定性）
+        
+        熵越高表示预测越不确定，熵越低表示转移模式越明确
+        
+        Returns:
+            float: 归一化熵值 (0-1)
+        """
+        try:
+            import numpy as np
+            
+            if not transitions:
+                return 1.0  # 无数据时返回最大不确定性
+            
+            entropies = []
+            for from_state, to_dict in transitions.items():
+                if to_dict:
+                    total = sum(to_dict.values())
+                    if total > 0:
+                        probs = [count / total for count in to_dict.values()]
+                        # 计算该状态的熵
+                        entropy = -sum(p * np.log2(p + 1e-10) for p in probs if p > 0)
+                        # 归一化（最大熵 = log2(状态数)）
+                        max_entropy = np.log2(len(to_dict)) if len(to_dict) > 1 else 1
+                        normalized_entropy = entropy / max_entropy if max_entropy > 0 else 0
+                        entropies.append(normalized_entropy)
+            
+            return np.mean(entropies) if entropies else 1.0
+            
+        except Exception:
+            return 0.5
+    
+    def _enhanced_predict_with_ck_equation(self, transitions: Dict, num_balls: int, max_ball: int, 
+                                           order: int, df_subset, ball_type: str, k_step: int = 1) -> List[int]:
+        """使用C-K方程增强的预测方法
+        
+        结合k步转移概率进行更精确的预测
+        """
+        try:
+            import random
+            import numpy as np
+            
+            # 计算k步转移矩阵
+            k_transitions = self._compute_k_step_transition_matrix(transitions, k_step) if k_step > 1 else transitions
+            
+            # 获取当前状态
+            recent_data = df_subset.head(order)
+            current_state = self._build_current_state(recent_data, order, ball_type)
+            
+            # 收集候选号码及其概率
+            ball_probs = {}
+            
+            if current_state in k_transitions and k_transitions[current_state]:
+                candidates = k_transitions[current_state]
+                
+                # 根据是概率值还是计数值处理
+                if isinstance(list(candidates.values())[0], float):
+                    # 已经是概率
+                    for next_state, prob in candidates.items():
+                        if isinstance(next_state, tuple):
+                            for ball in next_state:
+                                ball_probs[ball] = ball_probs.get(ball, 0) + prob
+                else:
+                    # 是计数值
+                    total_count = sum(candidates.values())
+                    if total_count > 0:
+                        for next_state, count in candidates.items():
+                            prob = count / total_count
+                            if isinstance(next_state, tuple):
+                                for ball in next_state:
+                                    ball_probs[ball] = ball_probs.get(ball, 0) + prob
+            
+            # 如果有候选号码，按概率选择
+            if ball_probs:
+                # 归一化概率
+                total_prob = sum(ball_probs.values())
+                if total_prob > 0:
+                    balls_list = list(ball_probs.keys())
+                    probs = [ball_probs[b] / total_prob for b in balls_list]
+                    
+                    # 确保号码在有效范围内
+                    valid_balls = [b for b in balls_list if 1 <= b <= max_ball]
+                    valid_probs = [ball_probs[b] / total_prob for b in valid_balls]
+                    
+                    if len(valid_balls) >= num_balls:
+                        # 按概率加权选择
+                        selected = list(np.random.choice(valid_balls, size=num_balls, 
+                                                        replace=False, p=np.array(valid_probs)/sum(valid_probs)))
+                        return sorted(selected)
+            
+            # 回退到基础方法
+            return self._fallback_frequency_selection(df_subset, num_balls, max_ball, ball_type)
+            
+        except Exception as e:
+            logger_manager.warning(f"C-K增强预测失败: {e}")
+            return self._fallback_frequency_selection(df_subset, num_balls, max_ball, ball_type)
     
     def _select_diverse_balls(self, candidates, count, seed) -> List[int]:
         """选择多样化的号码"""
@@ -2390,11 +3621,66 @@ class AdvancedPredictor:
                 selected.append(ball)
         
         return selected[:count]
+
+    def _select_diverse_balls_with_history(self, candidates, count, seed, used_combinations, max_ball) -> List[int]:
+        """选择多样化的号码（避免与已使用组合重复）"""
+        import random
+        import time
+        
+        # 设置随机种子
+        random.seed(int(time.time() * 1000000) + seed * 7919)
+        
+        if not candidates:
+            # 生成随机号码
+            return sorted(random.sample(range(1, max_ball + 1), count))
+        
+        # 尝试多次生成不同的组合
+        max_attempts = 10
+        for attempt in range(max_attempts):
+            selected = []
+            sorted_candidates = candidates.most_common()
+            
+            # 根据尝试次数调整选择策略
+            if attempt < 3:
+                # 前几次：按频率选择，但引入随机性
+                available = [ball for ball, _ in sorted_candidates if 1 <= ball <= max_ball]
+                if len(available) >= count:
+                    # 加权随机选择
+                    weights = [candidates[ball] + random.random() * (attempt + 1) * 5 for ball in available]
+                    total_weight = sum(weights)
+                    probs = [w / total_weight for w in weights]
+                    
+                    import numpy as np
+                    selected = list(np.random.choice(available, size=count, replace=False, p=probs))
+            elif attempt < 6:
+                # 中间尝试：混合高频和随机
+                available = [ball for ball, _ in sorted_candidates if 1 <= ball <= max_ball]
+                if len(available) >= count:
+                    # 选择部分高频号码
+                    high_freq_count = max(1, count - attempt + 3)
+                    selected = available[:high_freq_count]
+                    # 随机补充
+                    remaining = [b for b in range(1, max_ball + 1) if b not in selected]
+                    if remaining and len(selected) < count:
+                        selected.extend(random.sample(remaining, count - len(selected)))
+            else:
+                # 后几次：完全随机
+                selected = random.sample(range(1, max_ball + 1), count)
+            
+            # 检查是否与已使用组合重复
+            if tuple(sorted(selected)) not in used_combinations:
+                return sorted(selected)
+            
+            # 调整随机种子继续尝试
+            random.seed(int(time.time() * 1000000) + seed * 7919 + attempt * 1000)
+        
+        # 如果所有尝试都失败，生成一个随机组合
+        return sorted(random.sample(range(1, max_ball + 1), count))
     
     def _predict_with_transitions(self, transitions, num_balls, max_ball, order, df_subset, ball_type) -> List[int]:
         """基于转移矩阵进行预测"""
         try:
-            recent_data = df_subset.tail(order)
+            recent_data = df_subset.head(order)
 
             # 构建当前状态
             current_state = self._build_current_state(recent_data, order, ball_type)
@@ -2440,7 +3726,7 @@ class AdvancedPredictor:
         states = []
         for i in range(order):
             if i < len(recent_data):
-                row = recent_data.iloc[-(i+1)]
+                row = recent_data.iloc[i]
                 balls = self._parse_balls_from_row(row, ball_type)
                 if balls:
                     states.append(tuple(sorted(balls)))
@@ -2717,7 +4003,9 @@ class AdvancedPredictor:
             return _fallback_mixed_strategy_predict(count, strategy, periods)
 
     def advanced_integration_predict(self, count=1, integration_type="comprehensive", periods=500) -> List[Tuple[List[int], List[int]]]:
-        """基于高级集成分析的预测
+        """基于高级集成分析的预测 (增强版)
+        
+        集成了动态权重学习、Stacking元学习器、模型多样性检测和不确定性估计。
 
         Args:
             count: 生成注数
@@ -2727,9 +4015,10 @@ class AdvancedPredictor:
         Returns:
             预测结果列表
         """
-        logger_manager.info(f"高级集成预测: {integration_type}, 注数: {count}, 分析期数: {periods}")
+        logger_manager.info(f"高级集成预测(增强版): {integration_type}, 注数: {count}, 分析期数: {periods}")
 
         predictions = []
+        base_predictions = {}  # 收集各方法的预测结果用于元学习
 
         try:
             # 获取高级集成分析结果
@@ -2739,16 +4028,56 @@ class AdvancedPredictor:
                                   for ball, data in analysis_result['comprehensive_scores']['front_scores'].items()]
                 back_candidates = [(int(ball) if isinstance(ball, str) else ball, data['total_score'])
                                  for ball, data in analysis_result['comprehensive_scores']['back_scores'].items()]
+                
+                # 收集各子方法的独立预测用于元学习
+                try:
+                    freq_pred = self.traditional_predictor.frequency_predict(count, periods)
+                    if freq_pred:
+                        base_predictions['frequency'] = freq_pred
+                except:
+                    pass
+                try:
+                    markov_pred = self.markov_predict(count, periods)
+                    if markov_pred:
+                        base_predictions['markov'] = markov_pred
+                except:
+                    pass
+                try:
+                    bayesian_pred = self.traditional_predictor.bayesian_predict(count, periods)
+                    if bayesian_pred:
+                        base_predictions['bayesian'] = bayesian_pred
+                except:
+                    pass
 
             elif integration_type == "markov_bayesian":
                 analysis_result = advanced_analyzer.markov_bayesian_fusion_analysis(periods)
                 front_candidates = analysis_result.get('front_recommendations', [])
                 back_candidates = analysis_result.get('back_recommendations', [])
+                
+                # 收集子方法预测
+                try:
+                    base_predictions['markov'] = self.markov_predict(count, periods)
+                except:
+                    pass
+                try:
+                    base_predictions['bayesian'] = self.traditional_predictor.bayesian_predict(count, periods)
+                except:
+                    pass
 
             elif integration_type == "hot_cold_markov":
                 analysis_result = advanced_analyzer.hot_cold_markov_integration(periods)
                 front_candidates = analysis_result.get('front_integrated', [])
                 back_candidates = analysis_result.get('back_integrated', [])
+                
+                # 收集子方法预测
+                try:
+                    base_predictions['hot_cold'] = self.traditional_predictor.hot_cold_predict(count, periods)
+                except:
+                    pass
+                try:
+                    base_predictions['markov'] = self.markov_predict(count, periods)
+                except:
+                    pass
 
             elif integration_type == "multi_dimensional":
                 analysis_result = advanced_analyzer.multi_dimensional_probability_analysis(periods)
@@ -2759,6 +4088,20 @@ class AdvancedPredictor:
                                   for ball, data in front_ranked]
                 back_candidates = [(int(ball) if isinstance(ball, str) else ball, data['total_prob'])
                                  for ball, data in back_ranked]
+                
+                # 收集子方法预测
+                try:
+                    base_predictions['frequency'] = self.traditional_predictor.frequency_predict(count, periods)
+                except:
+                    pass
+                try:
+                    base_predictions['markov'] = self.markov_predict(count, periods)
+                except:
+                    pass
+                try:
+                    base_predictions['bayesian'] = self.traditional_predictor.bayesian_predict(count, periods)
+                except:
+                    pass
 
             else:
                 # 默认使用综合权重评分
@@ -2766,106 +4109,156 @@ class AdvancedPredictor:
                 front_candidates = [(ball, data['total_score']) for ball, data in analysis_result['comprehensive_scores']['front_scores'].items()]
                 back_candidates = [(ball, data['total_score']) for ball, data in analysis_result['comprehensive_scores']['back_scores'].items()]
 
+            # 获取动态权重（增强功能）
+            dynamic_weights = self._calculate_integration_dynamic_weights(integration_type, periods)
+            
+            # 如果有足够的基础预测，使用元学习器增强
+            use_meta_learner = len(base_predictions) >= 2
+            meta_predictions = []
+            
+            if use_meta_learner:
+                try:
+                    meta_predictions = self._integration_stacking_meta_learner(base_predictions, integration_type)
+                    # 计算模型多样性
+                    diversity_metrics = self._calculate_integration_model_diversity(base_predictions)
+                    logger_manager.debug(f"模型多样性: {diversity_metrics['average_diversity']:.3f}, 评级: {diversity_metrics['diversity_rating']}")
+                    
+                    # 计算不确定性
+                    uncertainty_metrics = self._estimate_integration_uncertainty(base_predictions, dynamic_weights)
+                    logger_manager.debug(f"预测不确定性: {uncertainty_metrics['overall_uncertainty']:.3f}, 置信度: {uncertainty_metrics['confidence_level']}")
+                except Exception as e:
+                    logger_manager.warning(f"元学习器处理异常: {e}")
+                    use_meta_learner = False
+
             # 排序候选号码
             front_sorted = sorted(front_candidates, key=lambda x: x[1], reverse=True)
             back_sorted = sorted(back_candidates, key=lambda x: x[1], reverse=True)
 
             for i in range(count):
-                # 改进的智能选择策略：加权随机选择
-                import random
-                import numpy as np
-
-                # 选择前区号码
-                front_balls = []
-
-                # 检查是否有有效的得分
-                valid_front_scores = [score for _, score in front_sorted if score > 0]
-
-                if len(valid_front_scores) >= 5:
-                    # 有足够的有效得分，使用加权随机选择
-                    weights = [max(0.1, score) for _, score in front_sorted[:15]]  # 取前15个候选
-                    candidates = [ball for ball, _ in front_sorted[:15]]
-
-                    # 确保候选号码是整数
-                    candidates = [int(ball) if isinstance(ball, str) else ball for ball in candidates]
-
-                    # 加权随机选择5个号码
-                    selected_indices = np.random.choice(
-                        len(candidates),
-                        size=min(5, len(candidates)),
-                        replace=False,
-                        p=np.array(weights) / np.sum(weights)
-                    )
-                    front_balls = [candidates[idx] for idx in selected_indices]
+                # 如果有元学习器预测且该索引有效，融合使用
+                if use_meta_learner and i < len(meta_predictions):
+                    meta_front, meta_back = meta_predictions[i]
+                    
+                    # 融合原始分析结果和元学习器结果
+                    # 创建融合得分
+                    front_fusion_scores = {}
+                    for ball, score in front_candidates:
+                        ball = int(ball) if isinstance(ball, str) else ball
+                        front_fusion_scores[ball] = score * 0.6  # 原始分析权重60%
+                        if ball in meta_front:
+                            front_fusion_scores[ball] += 0.4  # 元学习器权重40%
+                    
+                    back_fusion_scores = {}
+                    for ball, score in back_candidates:
+                        ball = int(ball) if isinstance(ball, str) else ball
+                        back_fusion_scores[ball] = score * 0.6
+                        if ball in meta_back:
+                            back_fusion_scores[ball] += 0.4
+                    
+                    # 基于融合得分选择
+                    front_fused_sorted = sorted(front_fusion_scores.items(), key=lambda x: x[1], reverse=True)
+                    back_fused_sorted = sorted(back_fusion_scores.items(), key=lambda x: x[1], reverse=True)
+                    
+                    front_balls = [ball for ball, _ in front_fused_sorted[:5]]
+                    back_balls = [ball for ball, _ in back_fused_sorted[:2]]
                 else:
-                    # 得分都很低，使用混合策略
-                    # 50%高分 + 50%随机分布选择
-                    high_count = min(2, len(front_sorted))
-                    for j in range(high_count):
-                        ball = front_sorted[j][0]
-                        if isinstance(ball, str):
-                            ball = int(ball)
-                        front_balls.append(ball)
+                    # 原始智能选择策略：加权随机选择
+                    import random
 
-                    # 从不同区间随机选择剩余号码
-                    remaining_needed = 5 - len(front_balls)
-                    ranges = [(6, 15), (16, 25), (26, 35)]
-                    for start, end in ranges:
-                        if remaining_needed <= 0:
-                            break
-                        available = [x for x in range(start, end+1) if x not in front_balls]
-                        if available:
-                            selected = random.choice(available)
-                            front_balls.append(selected)
-                            remaining_needed -= 1
+                    # 选择前区号码
+                    front_balls = []
 
-                # 如果前区号码不足，用频率分析补充
-                if len(front_balls) < 5:
-                    freq_analysis = basic_analyzer.frequency_analysis()
-                    front_freq = freq_analysis.get('front_frequency', {})
-                    sorted_freq = sorted(front_freq.items(), key=lambda x: x[1], reverse=True)
-                    for ball, freq in sorted_freq:
-                        if len(front_balls) >= 5:
-                            break
-                        if ball not in front_balls:
+                    # 检查是否有有效的得分
+                    valid_front_scores = [score for _, score in front_sorted if score > 0]
+
+                    if len(valid_front_scores) >= 5:
+                        # 有足够的有效得分，使用加权随机选择
+                        weights = [max(0.1, score) for _, score in front_sorted[:15]]  # 取前15个候选
+                        candidates = [ball for ball, _ in front_sorted[:15]]
+
+                        # 确保候选号码是整数
+                        candidates = [int(ball) if isinstance(ball, str) else ball for ball in candidates]
+
+                        # 应用动态权重调整概率
+                        adjusted_weights = weights[:]
+                        
+                        # 加权随机选择5个号码
+                        selected_indices = np.random.choice(
+                            len(candidates),
+                            size=min(5, len(candidates)),
+                            replace=False,
+                            p=np.array(adjusted_weights) / np.sum(adjusted_weights)
+                        )
+                        front_balls = [candidates[idx] for idx in selected_indices]
+                    else:
+                        # 得分都很低，使用混合策略
+                        # 50%高分 + 50%随机分布选择
+                        high_count = min(2, len(front_sorted))
+                        for j in range(high_count):
+                            ball = front_sorted[j][0]
+                            if isinstance(ball, str):
+                                ball = int(ball)
                             front_balls.append(ball)
 
-                # 选择后区号码
-                back_balls = []
-                back_high_count = 1
-                back_random_count = 1
+                        # 从不同区间随机选择剩余号码
+                        remaining_needed = 5 - len(front_balls)
+                        ranges = [(6, 15), (16, 25), (26, 35)]
+                        for start, end in ranges:
+                            if remaining_needed <= 0:
+                                break
+                            available = [x for x in range(start, end+1) if x not in front_balls]
+                            if available:
+                                selected = random.choice(available)
+                                front_balls.append(selected)
+                                remaining_needed -= 1
 
-                for j in range(min(back_high_count, len(back_sorted))):
-                    ball = back_sorted[j][0]
-                    if isinstance(ball, str):
-                        ball = int(ball)
-                    back_balls.append(ball)
+                    # 如果前区号码不足，用频率分析补充
+                    if len(front_balls) < 5:
+                        freq_analysis = basic_analyzer.frequency_analysis(periods)
+                        front_freq = freq_analysis.get('front_frequency', {})
+                        sorted_freq = sorted(front_freq.items(), key=lambda x: x[1], reverse=True)
+                        for ball, freq in sorted_freq:
+                            if len(front_balls) >= 5:
+                                break
+                            if ball not in front_balls:
+                                front_balls.append(ball)
 
-                if len(back_sorted) > back_high_count:
-                    remaining_back = []
-                    for x in back_sorted[back_high_count:back_high_count+5]:
-                        ball = x[0]
+                    # 选择后区号码
+                    back_balls = []
+                    back_high_count = 1
+                    back_random_count = 1
+
+                    for j in range(min(back_high_count, len(back_sorted))):
+                        ball = back_sorted[j][0]
                         if isinstance(ball, str):
                             ball = int(ball)
-                        remaining_back.append(ball)
-                    if remaining_back:
-                        # 确保数组是整数类型
-                        remaining_back = np.array(remaining_back, dtype=int)
-                        random_back = np.random.choice(
-                            remaining_back,
-                            min(back_random_count, len(remaining_back)),
-                            replace=False
-                        )
-                        back_balls.extend(random_back.tolist())
+                        back_balls.append(ball)
 
-                while len(back_balls) < 2:
-                    candidate = np.random.randint(1, 13)
-                    if candidate not in back_balls:
-                        back_balls.append(candidate)
+                    if len(back_sorted) > back_high_count:
+                        remaining_back = []
+                        for x in back_sorted[back_high_count:back_high_count+5]:
+                            ball = x[0]
+                            if isinstance(ball, str):
+                                ball = int(ball)
+                            remaining_back.append(ball)
+                        if remaining_back:
+                            # 确保数组是整数类型
+                            remaining_back = np.array(remaining_back, dtype=int)
+                            random_back = np.random.choice(
+                                remaining_back,
+                                min(back_random_count, len(remaining_back)),
+                                replace=False
+                            )
+                            back_balls.extend(random_back.tolist())
+
+                    while len(back_balls) < 2:
+                        candidate = np.random.randint(1, 13)
+                        if candidate not in back_balls:
+                            back_balls.append(candidate)
 
                 # 确保数据类型正确
-                front_balls = sorted([int(x) for x in front_balls])
-                back_balls = sorted([int(x) for x in back_balls])
+                front_balls = sorted([int(x) for x in front_balls[:5]])
+                back_balls = sorted([int(x) for x in back_balls[:2]])
 
                 # 返回标准元组格式
                 predictions.append((front_balls, back_balls))
@@ -2873,7 +4266,7 @@ class AdvancedPredictor:
         except Exception as e:
             logger_manager.error(f"高级集成预测失败: {e}")
             # 使用频率分析作为备选方案
-            freq_analysis = basic_analyzer.frequency_analysis()
+            freq_analysis = basic_analyzer.frequency_analysis(periods)
             front_freq = freq_analysis.get('front_frequency', {})
             back_freq = freq_analysis.get('back_frequency', {})
 
@@ -2939,7 +4332,7 @@ class AdvancedPredictor:
                     historical_data = data_manager.get_data()
                     if historical_data is not None and len(historical_data) >= periods:
                         # 使用最新的periods期数据
-                        recent_data = historical_data.tail(periods)
+                        recent_data = historical_data.head(periods)
 
                         # GPU加速的高度集成方法组合 (分层架构)
                         if integration_level == "ultimate":
@@ -3357,7 +4750,7 @@ class AdvancedPredictor:
         """交叉验证分割数据"""
         # 使用时间序列分割：80%训练，20%验证
         total_periods = periods + 50  # 额外的验证数据
-        available_data = historical_data.tail(total_periods)
+        available_data = historical_data.head(total_periods)
         
         split_point = int(len(available_data) * 0.8)
         train_data = available_data.iloc[:split_point]
@@ -3663,7 +5056,7 @@ class AdvancedPredictor:
                     historical_data = data_manager.get_data()
                     if historical_data is not None and len(historical_data) >= periods:
                         # 使用最新的periods期数据
-                        recent_data = historical_data.tail(periods)
+                        recent_data = historical_data.head(periods)
 
                         # GPU加速的多方法集成预测
                         gpu_methods = ['lstm', 'correlation_analysis', 'pattern_matching']
@@ -3807,7 +5200,7 @@ class AdvancedPredictor:
         if performance_tracker['predictor_scores']:
             for predictor, scores in performance_tracker['predictor_scores'].items():
                 if predictor in base_predictors and scores:
-                    avg_score = np.mean(scores[-10:])  # 最近10次表现
+                    avg_score = np.mean(scores[:10])  # 最近10次表现
                     # 基于性能调整权重
                     performance_factor = min(2.0, max(0.5, avg_score / 0.5))
                     base_predictors[predictor] *= performance_factor
@@ -3818,6 +5211,448 @@ class AdvancedPredictor:
             base_predictors = {name: weight / total_weight for name, weight in base_predictors.items()}
         
         return base_predictors
+
+    # ==================== 高级集成预测增强方法 ====================
+    
+    def _calculate_integration_dynamic_weights(self, integration_type: str, periods: int, 
+                                                historical_accuracy: Dict[str, List[float]] = None) -> Dict[str, float]:
+        """高级集成预测的动态权重计算
+        
+        基于历史预测准确率动态调整各分析方法的权重，替代静态权重分配。
+        使用指数移动平均(EMA)平滑历史性能，避免权重剧烈波动。
+        
+        Args:
+            integration_type: 集成类型 ('comprehensive', 'markov_bayesian', 'hot_cold_markov', 'multi_dimensional')
+            periods: 分析期数
+            historical_accuracy: 各方法的历史准确率记录 {method_name: [accuracy_list]}
+            
+        Returns:
+            动态调整后的权重字典
+        """
+        # 各集成类型的基础权重配置
+        base_weights_config = {
+            'comprehensive': {
+                'frequency': 0.20,
+                'hot_cold': 0.15,
+                'missing': 0.15,
+                'markov': 0.20,
+                'bayesian': 0.15,
+                'pattern': 0.15
+            },
+            'markov_bayesian': {
+                'markov': 0.55,
+                'bayesian': 0.45
+            },
+            'hot_cold_markov': {
+                'hot_cold': 0.40,
+                'markov': 0.60
+            },
+            'multi_dimensional': {
+                'frequency': 0.25,
+                'markov': 0.25,
+                'bayesian': 0.25,
+                'pattern': 0.25
+            }
+        }
+        
+        # 获取对应集成类型的基础权重
+        base_weights = base_weights_config.get(integration_type, base_weights_config['comprehensive']).copy()
+        
+        # 如果没有历史数据，根据期数进行初始调整
+        if historical_accuracy is None or not historical_accuracy:
+            # 数据量越大，马尔可夫类方法效果越好
+            if periods >= 500:
+                if 'markov' in base_weights:
+                    base_weights['markov'] *= 1.15
+                if 'bayesian' in base_weights:
+                    base_weights['bayesian'] *= 1.10
+            elif periods < 200:
+                # 数据量小时，频率类方法更稳定
+                if 'frequency' in base_weights:
+                    base_weights['frequency'] *= 1.20
+                if 'hot_cold' in base_weights:
+                    base_weights['hot_cold'] *= 1.15
+        else:
+            # 基于历史准确率动态调整权重
+            # 使用指数移动平均(EMA)计算性能分数
+            ema_alpha = 0.3  # EMA平滑系数，越大越重视近期表现
+            
+            for method, accuracies in historical_accuracy.items():
+                if method in base_weights and len(accuracies) > 0:
+                    # 计算EMA性能分数
+                    ema_score = accuracies[0]
+                    for acc in accuracies[1:]:
+                        ema_score = ema_alpha * acc + (1 - ema_alpha) * ema_score
+                    
+                    # 性能因子：以0.15为基准，性能好则放大，性能差则缩小
+                    # 限制因子在[0.5, 2.0]范围内，避免极端调整
+                    performance_factor = min(2.0, max(0.5, ema_score / 0.15))
+                    base_weights[method] *= performance_factor
+        
+        # 归一化权重，确保总和为1
+        total_weight = sum(base_weights.values())
+        if total_weight > 0:
+            base_weights = {name: weight / total_weight for name, weight in base_weights.items()}
+        
+        return base_weights
+    
+    def _integration_stacking_meta_learner(self, base_predictions: Dict[str, List[Tuple]], 
+                                           integration_type: str) -> List[Tuple[List[int], List[int]]]:
+        """简化版Stacking元学习器
+        
+        使用基础学习器的输出作为特征，通过加权投票和置信度融合生成最终预测。
+        相比传统Stacking，这是一个轻量级实现，避免过拟合风险。
+        
+        Args:
+            base_predictions: 各基础方法的预测结果 {method_name: [(front_balls, back_balls), ...]}
+            integration_type: 集成类型
+            
+        Returns:
+            元学习器融合后的预测结果
+        """
+        if not base_predictions:
+            return []
+        
+        # 统计前区号码出现频次和置信度
+        front_ball_scores = {}  # {ball: (count, confidence_sum)}
+        back_ball_scores = {}
+        
+        # 获取动态权重
+        method_names = list(base_predictions.keys())
+        # 构建简化的历史准确率（基于预测一致性）
+        historical_accuracy = {}
+        
+        for method_name, preds in base_predictions.items():
+            if not preds:
+                continue
+            
+            # 计算该方法的预测一致性作为准确率估计
+            if len(preds) > 1:
+                # 多注预测时，检查号码重复率
+                all_fronts = [set(p[0]) for p in preds]
+                all_backs = [set(p[1]) for p in preds]
+                
+                # 计算平均交集比例
+                front_consistency = 0
+                back_consistency = 0
+                pair_count = 0
+                
+                for i in range(len(preds)):
+                    for j in range(i + 1, len(preds)):
+                        front_overlap = len(all_fronts[i] & all_fronts[j]) / 5
+                        back_overlap = len(all_backs[i] & all_backs[j]) / 2
+                        front_consistency += front_overlap
+                        back_consistency += back_overlap
+                        pair_count += 1
+                
+                if pair_count > 0:
+                    consistency = (front_consistency + back_consistency) / (2 * pair_count)
+                    historical_accuracy[method_name] = [consistency]
+            else:
+                historical_accuracy[method_name] = [0.5]  # 单注预测默认中等置信度
+        
+        # 获取动态权重
+        weights = self._calculate_integration_dynamic_weights(
+            integration_type, 500, historical_accuracy
+        )
+        
+        # 遍历所有预测，累计号码得分
+        for method_name, preds in base_predictions.items():
+            method_weight = weights.get(method_name, 1.0 / len(base_predictions))
+            
+            for front_balls, back_balls in preds:
+                # 前区号码评分
+                for i, ball in enumerate(front_balls):
+                    position_weight = 1.0 - (i * 0.1)  # 位置越靠前权重越高
+                    score = method_weight * position_weight
+                    
+                    if ball not in front_ball_scores:
+                        front_ball_scores[ball] = [0, 0]
+                    front_ball_scores[ball][0] += 1
+                    front_ball_scores[ball][1] += score
+                
+                # 后区号码评分
+                for i, ball in enumerate(back_balls):
+                    position_weight = 1.0 - (i * 0.15)
+                    score = method_weight * position_weight
+                    
+                    if ball not in back_ball_scores:
+                        back_ball_scores[ball] = [0, 0]
+                    back_ball_scores[ball][0] += 1
+                    back_ball_scores[ball][1] += score
+        
+        # 计算综合得分（频次 * 置信度加权）
+        front_final_scores = {
+            ball: count * confidence_sum 
+            for ball, (count, confidence_sum) in front_ball_scores.items()
+        }
+        back_final_scores = {
+            ball: count * confidence_sum 
+            for ball, (count, confidence_sum) in back_ball_scores.items()
+        }
+        
+        # 排序选择
+        front_sorted = sorted(front_final_scores.items(), key=lambda x: x[1], reverse=True)
+        back_sorted = sorted(back_final_scores.items(), key=lambda x: x[1], reverse=True)
+        
+        # 生成预测结果
+        predictions = []
+        num_predictions = max(len(preds) for preds in base_predictions.values())
+        
+        for i in range(num_predictions):
+            # 选择前区号码：高分优先 + 适度随机
+            front_balls = []
+            front_candidates = [ball for ball, _ in front_sorted[:12]]
+            
+            # 确保选择5个不同的号码
+            if len(front_candidates) >= 5:
+                # 前3个选高分，后2个带随机性
+                front_balls = front_candidates[:3]
+                remaining = [b for b in front_candidates[3:] if b not in front_balls]
+                if len(remaining) >= 2:
+                    import random
+                    random.shuffle(remaining)
+                    front_balls.extend(remaining[:2])
+                else:
+                    # 补充随机号码
+                    all_front = list(range(1, 36))
+                    random.shuffle(all_front)
+                    for b in all_front:
+                        if b not in front_balls and len(front_balls) < 5:
+                            front_balls.append(b)
+            else:
+                # 候选不足，直接使用并补充
+                front_balls = front_candidates[:]
+                all_front = list(range(1, 36))
+                import random
+                random.shuffle(all_front)
+                for b in all_front:
+                    if b not in front_balls and len(front_balls) < 5:
+                        front_balls.append(b)
+            
+            # 选择后区号码
+            back_balls = []
+            back_candidates = [ball for ball, _ in back_sorted[:6]]
+            
+            if len(back_candidates) >= 2:
+                back_balls = back_candidates[:2]
+            else:
+                back_balls = back_candidates[:]
+                all_back = list(range(1, 13))
+                import random
+                random.shuffle(all_back)
+                for b in all_back:
+                    if b not in back_balls and len(back_balls) < 2:
+                        back_balls.append(b)
+            
+            predictions.append((sorted(front_balls[:5]), sorted(back_balls[:2])))
+        
+        return predictions
+    
+    def _calculate_integration_model_diversity(self, base_predictions: Dict[str, List[Tuple]]) -> Dict[str, float]:
+        """计算集成模型的多样性指标
+        
+        检测各基础模型预测结果之间的相关性，多样性越高表示模型间互补性越强。
+        高多样性通常能提升集成效果。
+        
+        Args:
+            base_predictions: 各基础方法的预测结果
+            
+        Returns:
+            多样性指标字典，包含各种多样性度量
+        """
+        if len(base_predictions) < 2:
+            return {
+                'average_diversity': 0.0,
+                'pairwise_diversity': {},
+                'overall_uniqueness': 0.0
+            }
+        
+        methods = list(base_predictions.keys())
+        pairwise_diversity = {}
+        
+        # 计算两两模型之间的Jaccard距离（1 - Jaccard相似度）
+        for i in range(len(methods)):
+            for j in range(i + 1, len(methods)):
+                method_a, method_b = methods[i], methods[j]
+                preds_a = base_predictions[method_a]
+                preds_b = base_predictions[method_b]
+                
+                if not preds_a or not preds_b:
+                    continue
+                
+                # 收集所有预测的号码集合
+                set_a_front = set()
+                set_a_back = set()
+                for front, back in preds_a:
+                    set_a_front.update(front)
+                    set_a_back.update(back)
+                
+                set_b_front = set()
+                set_b_back = set()
+                for front, back in preds_b:
+                    set_b_front.update(front)
+                    set_b_back.update(back)
+                
+                # 计算Jaccard距离
+                if set_a_front or set_b_front:
+                    jaccard_front = 1 - len(set_a_front & set_b_front) / len(set_a_front | set_b_front)
+                else:
+                    jaccard_front = 0
+                
+                if set_a_back or set_b_back:
+                    jaccard_back = 1 - len(set_a_back & set_b_back) / len(set_a_back | set_b_back)
+                else:
+                    jaccard_back = 0
+                
+                diversity = (jaccard_front * 0.7 + jaccard_back * 0.3)  # 前区权重更高
+                pair_key = f"{method_a}_vs_{method_b}"
+                pairwise_diversity[pair_key] = diversity
+        
+        # 计算平均多样性
+        avg_diversity = np.mean(list(pairwise_diversity.values())) if pairwise_diversity else 0.0
+        
+        # 计算整体唯一性：统计所有独特号码组合的比例
+        all_combinations = set()
+        for method_name, preds in base_predictions.items():
+            for front, back in preds:
+                combo = (tuple(sorted(front)), tuple(sorted(back)))
+                all_combinations.add(combo)
+        
+        total_predictions = sum(len(preds) for preds in base_predictions.values())
+        overall_uniqueness = len(all_combinations) / total_predictions if total_predictions > 0 else 0.0
+        
+        return {
+            'average_diversity': avg_diversity,
+            'pairwise_diversity': pairwise_diversity,
+            'overall_uniqueness': overall_uniqueness,
+            'diversity_rating': 'high' if avg_diversity > 0.5 else ('medium' if avg_diversity > 0.3 else 'low')
+        }
+    
+    def _estimate_integration_uncertainty(self, base_predictions: Dict[str, List[Tuple]], 
+                                           weights: Dict[str, float]) -> Dict[str, Any]:
+        """估计集成预测的不确定性
+        
+        通过分析各基础模型预测的一致性程度来估计不确定性，
+        一致性越高表示预测越确定。
+        
+        Args:
+            base_predictions: 各基础方法的预测结果
+            weights: 各方法的权重
+            
+        Returns:
+            不确定性估计结果
+        """
+        if not base_predictions:
+            return {
+                'overall_uncertainty': 1.0,
+                'confidence_level': 'very_low',
+                'front_uncertainty': 1.0,
+                'back_uncertainty': 1.0,
+                'ball_confidence': {}
+            }
+        
+        # 统计各号码的出现频次和加权得分
+        front_stats = {}  # {ball: {'count': n, 'weighted_score': s, 'methods': [...]}}
+        back_stats = {}
+        
+        total_predictions = 0
+        for method_name, preds in base_predictions.items():
+            weight = weights.get(method_name, 1.0 / len(base_predictions))
+            
+            for front, back in preds:
+                total_predictions += 1
+                
+                for ball in front:
+                    if ball not in front_stats:
+                        front_stats[ball] = {'count': 0, 'weighted_score': 0, 'methods': set()}
+                    front_stats[ball]['count'] += 1
+                    front_stats[ball]['weighted_score'] += weight
+                    front_stats[ball]['methods'].add(method_name)
+                
+                for ball in back:
+                    if ball not in back_stats:
+                        back_stats[ball] = {'count': 0, 'weighted_score': 0, 'methods': set()}
+                    back_stats[ball]['count'] += 1
+                    back_stats[ball]['weighted_score'] += weight
+                    back_stats[ball]['methods'].add(method_name)
+        
+        # 计算前区不确定性
+        # 不确定性 = 1 - (最高得分号码的一致性)
+        if front_stats:
+            max_front_score = max(s['weighted_score'] for s in front_stats.values())
+            max_possible_front = sum(weights.values()) * total_predictions / len(base_predictions)
+            front_uncertainty = 1 - (max_front_score / max_possible_front) if max_possible_front > 0 else 1.0
+            front_uncertainty = min(1.0, max(0.0, front_uncertainty))
+        else:
+            front_uncertainty = 1.0
+        
+        # 计算后区不确定性
+        if back_stats:
+            max_back_score = max(s['weighted_score'] for s in back_stats.values())
+            max_possible_back = sum(weights.values()) * total_predictions / len(base_predictions)
+            back_uncertainty = 1 - (max_back_score / max_possible_back) if max_possible_back > 0 else 1.0
+            back_uncertainty = min(1.0, max(0.0, back_uncertainty))
+        else:
+            back_uncertainty = 1.0
+        
+        # 综合不确定性
+        overall_uncertainty = front_uncertainty * 0.7 + back_uncertainty * 0.3
+        
+        # 计算各号码的置信度
+        ball_confidence = {
+            'front': {},
+            'back': {}
+        }
+        
+        for ball, stats in front_stats.items():
+            # 置信度考虑出现频次和方法覆盖度
+            method_coverage = len(stats['methods']) / len(base_predictions)
+            freq_score = stats['count'] / total_predictions
+            ball_confidence['front'][ball] = {
+                'confidence': min(1.0, freq_score * method_coverage * 2),
+                'frequency': stats['count'],
+                'method_coverage': method_coverage
+            }
+        
+        for ball, stats in back_stats.items():
+            method_coverage = len(stats['methods']) / len(base_predictions)
+            freq_score = stats['count'] / total_predictions
+            ball_confidence['back'][ball] = {
+                'confidence': min(1.0, freq_score * method_coverage * 2),
+                'frequency': stats['count'],
+                'method_coverage': method_coverage
+            }
+        
+        # 确定置信度级别
+        if overall_uncertainty < 0.3:
+            confidence_level = 'high'
+        elif overall_uncertainty < 0.5:
+            confidence_level = 'medium'
+        elif overall_uncertainty < 0.7:
+            confidence_level = 'low'
+        else:
+            confidence_level = 'very_low'
+        
+        return {
+            'overall_uncertainty': round(overall_uncertainty, 4),
+            'confidence_level': confidence_level,
+            'front_uncertainty': round(front_uncertainty, 4),
+            'back_uncertainty': round(back_uncertainty, 4),
+            'ball_confidence': ball_confidence,
+            'recommendation': self._generate_uncertainty_recommendation(overall_uncertainty)
+        }
+    
+    def _generate_uncertainty_recommendation(self, uncertainty: float) -> str:
+        """根据不确定性生成建议"""
+        if uncertainty < 0.3:
+            return "预测一致性高，各模型结果较为统一"
+        elif uncertainty < 0.5:
+            return "预测一致性中等，建议参考多个高置信度号码"
+        elif uncertainty < 0.7:
+            return "预测一致性较低，建议谨慎参考或增加分析期数"
+        else:
+            return "预测一致性很低，模型间分歧较大，建议结合其他分析方法"
     
     def _collect_base_predictions(self, count, periods, weights) -> Dict[str, List]:
         """收集基础预测器结果"""
@@ -3947,7 +5782,7 @@ class AdvancedPredictor:
                     # 准备历史数据
                     df = data_manager.get_data()
                     if df is not None and len(df) >= periods:
-                        historical_data = df.tail(periods)
+                        historical_data = df.head(periods)
 
                         # 使用GPU加速的深度学习模型组合
                         dl_results = []
@@ -4322,12 +6157,12 @@ class AdvancedPredictor:
             
         except Exception as e:
             logger_manager.error(f"9种数学模型预测失败: {e}")
-            return self._fallback_nine_models_prediction(count)
+            return self._fallback_nine_models_prediction(count, periods)
 
     def _prepare_nine_models_features(self, periods) -> Dict:
         """为9种数学模型准备特征数据"""
         try:
-            df_subset = self.df.tail(periods)
+            df_subset = self.df.head(periods)
             
             # 提取历史号码数据
             historical_data = {
@@ -4396,21 +6231,21 @@ class AdvancedPredictor:
             trends = {'front': {}, 'back': {}}
             
             # 前区趋势
-            recent_front = historical_data['front_numbers'][-window_size*5:] if len(historical_data['front_numbers']) >= window_size*5 else historical_data['front_numbers']
+            recent_front = historical_data['front_numbers'][:window_size*5] if len(historical_data['front_numbers']) >= window_size*5 else historical_data['front_numbers']
             front_freq = Counter(recent_front)
             trends['front'] = {
                 'hot_numbers': [num for num, freq in front_freq.most_common(8)],
                 'cold_numbers': [num for num in range(1, 36) if num not in recent_front],
-                'trend_direction': 'increasing' if len(set(recent_front[-10:])) > len(set(recent_front[-20:-10])) else 'decreasing'
+                'trend_direction': 'increasing' if len(set(recent_front[:10])) > len(set(recent_front[10:20])) else 'decreasing'
             }
             
             # 后区趋势
-            recent_back = historical_data['back_numbers'][-window_size*2:] if len(historical_data['back_numbers']) >= window_size*2 else historical_data['back_numbers']
+            recent_back = historical_data['back_numbers'][:window_size*2] if len(historical_data['back_numbers']) >= window_size*2 else historical_data['back_numbers']
             back_freq = Counter(recent_back)
             trends['back'] = {
                 'hot_numbers': [num for num, freq in back_freq.most_common(4)],
                 'cold_numbers': [num for num in range(1, 13) if num not in recent_back],
-                'trend_direction': 'increasing' if len(set(recent_back[-4:])) > len(set(recent_back[-8:-4])) else 'decreasing'
+                'trend_direction': 'increasing' if len(set(recent_back[:4])) > len(set(recent_back[4:8])) else 'decreasing'
             }
             
             return trends
@@ -4683,37 +6518,63 @@ class AdvancedPredictor:
             return self._generate_random_predictions(count)
     
     def _clustering_model_predict(self, features_data, count) -> List[Tuple[List[int], List[int]]]:
-        """聚类分析模型预测 - K-Means、层次聚类"""
+        """聚类分析模型预测 - K-Means（增强版：支持数据标准化和最优k值选择）"""
         try:
             import random
             import numpy as np
             from sklearn.cluster import KMeans
-            
+            from sklearn.preprocessing import StandardScaler
+            from sklearn.metrics import silhouette_score
+
             predictions = []
             historical_data = features_data['historical_data']
-            
+
             # 准备聚类数据
             front_sequences = historical_data['front_sequences']
             back_sequences = historical_data['back_sequences']
-            
+
             if len(front_sequences) < 10:
                 return self._generate_random_predictions(count)
-            
+
             for i in range(count):
-                # 前区 K-Means 聚类
-                front_data = np.array([seq + [0] * (5 - len(seq)) for seq in front_sequences[-20:]])
-                
+                # 前区 K-Means 聚类（增强版）
+                front_data = np.array([seq + [0] * (5 - len(seq)) for seq in front_sequences[:20]])
+
                 try:
-                    # 使用 3 个类别进行聚类
-                    kmeans_front = KMeans(n_clusters=3, random_state=42, n_init='auto')
-                    cluster_labels = kmeans_front.fit_predict(front_data)
-                    
+                    # 数据标准化（关键改进）
+                    front_scaler = StandardScaler()
+                    front_data_scaled = front_scaler.fit_transform(front_data)
+
+                    # 使用Silhouette分析选择最优聚类数（如果数据足够）
+                    n_samples = len(front_data_scaled)
+                    if n_samples >= 6:
+                        max_k = min(5, n_samples // 2)
+                        best_k = 2
+                        best_score = -1
+                        for k in range(2, max_k + 1):
+                            try:
+                                kmeans_temp = KMeans(n_clusters=k, random_state=42, n_init='auto')
+                                labels_temp = kmeans_temp.fit_predict(front_data_scaled)
+                                score = silhouette_score(front_data_scaled, labels_temp)
+                                if score > best_score:
+                                    best_score = score
+                                    best_k = k
+                            except:
+                                continue
+                        n_clusters_front = best_k
+                    else:
+                        n_clusters_front = min(3, n_samples - 1) if n_samples > 2 else 2
+
+                    kmeans_front = KMeans(n_clusters=n_clusters_front, random_state=42, n_init='auto')
+                    cluster_labels = kmeans_front.fit_predict(front_data_scaled)
+
                     # 找到最大类别
                     cluster_counts = Counter(cluster_labels)
                     main_cluster = cluster_counts.most_common(1)[0][0]
 
-                    # 获取主要类别的中心
-                    cluster_center = kmeans_front.cluster_centers_[main_cluster]
+                    # 获取主要类别的中心并逆变换回原始空间
+                    cluster_center_scaled = kmeans_front.cluster_centers_[main_cluster]
+                    cluster_center = front_scaler.inverse_transform(cluster_center_scaled.reshape(1, -1))[0]
 
                     # 根据中心生成预测（改进的重复值处理）
                     front_balls = []
@@ -4759,18 +6620,25 @@ class AdvancedPredictor:
                     # 聚类失败，使用随机选择
                     front_balls = sorted(random.sample(range(1, 36), 5))
                 
-                # 后区聚类
-                back_data = np.array([seq + [0] * (2 - len(seq)) for seq in back_sequences[-20:]])
-                
+                # 后区聚类（增强版：添加数据标准化）
+                back_data = np.array([seq + [0] * (2 - len(seq)) for seq in back_sequences[:20]])
+
                 try:
-                    # 使用 2 个类别
-                    kmeans_back = KMeans(n_clusters=2, random_state=42, n_init='auto')
-                    back_cluster_labels = kmeans_back.fit_predict(back_data)
+                    # 数据标准化（关键改进）
+                    back_scaler = StandardScaler()
+                    back_data_scaled = back_scaler.fit_transform(back_data)
+
+                    # 后区数据量较小，使用固定2个类别
+                    n_clusters_back = 2
+                    kmeans_back = KMeans(n_clusters=n_clusters_back, random_state=42, n_init='auto')
+                    back_cluster_labels = kmeans_back.fit_predict(back_data_scaled)
 
                     back_cluster_counts = Counter(back_cluster_labels)
                     back_main_cluster = back_cluster_counts.most_common(1)[0][0]
 
-                    back_cluster_center = kmeans_back.cluster_centers_[back_main_cluster]
+                    # 获取后区聚类中心并逆变换回原始空间
+                    back_cluster_center_scaled = kmeans_back.cluster_centers_[back_main_cluster]
+                    back_cluster_center = back_scaler.inverse_transform(back_cluster_center_scaled.reshape(1, -1))[0]
 
                     # 后区改进的重复值处理
                     back_balls = []
@@ -4841,7 +6709,7 @@ class AdvancedPredictor:
                 
                 # 简化的ARIMA模型：移动平均 + 趋势
                 if len(front_sequences) >= 5:
-                    recent_sequences = front_sequences[-5:]
+                    recent_sequences = front_sequences[:5]
                     
                     # 计算每个位置的平均值
                     position_averages = []
@@ -4852,7 +6720,7 @@ class AdvancedPredictor:
                     # 计算趋势
                     trends = []
                     for pos in range(5):
-                        pos_values = [seq[pos] if pos < len(seq) else 0 for seq in recent_sequences[-3:]]
+                        pos_values = [seq[pos] if pos < len(seq) else 0 for seq in recent_sequences[:3]]
                         if len(pos_values) >= 2:
                             trend = pos_values[-1] - pos_values[0]
                             trends.append(trend)
@@ -4877,7 +6745,7 @@ class AdvancedPredictor:
                 # 补充不足的号码
                 while len(front_balls) < 5:
                     # 使用最近的趋势数据
-                    recent_front_nums = [num for seq in front_sequences[-3:] for num in seq]
+                    recent_front_nums = [num for seq in front_sequences[:3] for num in seq]
                     if recent_front_nums:
                         candidates = [num for num in set(recent_front_nums) if num not in front_balls]
                         if candidates:
@@ -4893,7 +6761,7 @@ class AdvancedPredictor:
                 back_balls = []
                 
                 if len(back_sequences) >= 3:
-                    recent_back_sequences = back_sequences[-3:]
+                    recent_back_sequences = back_sequences[:3]
                     
                     # 计算后区平均值
                     back_position_averages = []
@@ -4910,7 +6778,7 @@ class AdvancedPredictor:
                 
                 # 补充后区
                 while len(back_balls) < 2:
-                    recent_back_nums = [num for seq in back_sequences[-3:] for num in seq]
+                    recent_back_nums = [num for seq in back_sequences[:3] for num in seq]
                     if recent_back_nums:
                         candidates = [num for num in set(recent_back_nums) if num not in back_balls]
                         if candidates:
@@ -4983,7 +6851,7 @@ class AdvancedPredictor:
                 
                 # 添加一些随机性和历史数据影响
                 if len(front_balls) < 5:
-                    recent_front = [num for seq in historical_data['front_sequences'][-2:] for num in seq]
+                    recent_front = [num for seq in historical_data['front_sequences'][:2] for num in seq]
                     freq_candidates = list(features_data['front_frequency'].keys())
                     
                     # 混合策略
@@ -5027,7 +6895,7 @@ class AdvancedPredictor:
                 
                 # 补充后区
                 while len(back_balls) < 2:
-                    recent_back = [num for seq in historical_data['back_sequences'][-2:] for num in seq]
+                    recent_back = [num for seq in historical_data['back_sequences'][:2] for num in seq]
                     if recent_back:
                         candidates = [num for num in set(recent_back) if num not in back_balls]
                         if candidates:
@@ -5073,7 +6941,7 @@ class AdvancedPredictor:
                     X_front = []
                     y_front = []
                     
-                    for idx, seq in enumerate(front_sequences[-15:]):
+                    for idx, seq in enumerate(front_sequences[:15]):
                         if idx < len(front_sequences) - 1:
                             # 特征：当前序列的统计特征
                             features = [
@@ -5105,7 +6973,7 @@ class AdvancedPredictor:
                         svm_model.fit(X_front_scaled, y_front)
                         
                         # 预测新的数字
-                        current_seq = front_sequences[-1]
+                        current_seq = front_sequences[0]
                         current_features = [
                             np.mean(current_seq),
                             np.std(current_seq),
@@ -5142,7 +7010,7 @@ class AdvancedPredictor:
                 
                 # 补充前区号码
                 while len(front_balls) < 5:
-                    recent_nums = [num for seq in front_sequences[-3:] for num in seq]
+                    recent_nums = [num for seq in front_sequences[:3] for num in seq]
                     candidates = [num for num in set(recent_nums) if num not in front_balls]
                     if candidates:
                         front_balls.append(random.choice(candidates))
@@ -5159,7 +7027,7 @@ class AdvancedPredictor:
                         X_back = []
                         y_back = []
                         
-                        for idx, seq in enumerate(back_sequences[-10:]):
+                        for idx, seq in enumerate(back_sequences[:10]):
                             if idx < len(back_sequences) - 1:
                                 features = [np.mean(seq), max(seq), min(seq)]
                                 X_back.append(features)
@@ -5180,7 +7048,7 @@ class AdvancedPredictor:
                             svm_back = SVC(kernel='rbf', C=1.0, gamma='scale')
                             svm_back.fit(X_back_scaled, y_back)
                             
-                            current_back_seq = back_sequences[-1]
+                            current_back_seq = back_sequences[0]
                             current_back_features = [np.mean(current_back_seq), max(current_back_seq), min(current_back_seq)]
                             current_back_scaled = scaler_back.transform([current_back_features])
                             
@@ -5201,7 +7069,7 @@ class AdvancedPredictor:
                 
                 # 补充后区号码
                 while len(back_balls) < 2:
-                    recent_back_nums = [num for seq in back_sequences[-3:] for num in seq]
+                    recent_back_nums = [num for seq in back_sequences[:3] for num in seq]
                     candidates = [num for num in set(recent_back_nums) if num not in back_balls]
                     if candidates:
                         back_balls.append(random.choice(candidates))
@@ -5279,8 +7147,8 @@ class AdvancedPredictor:
                         rf_model.fit(X_front, y_front)
                         
                         # 预测
-                        current_seq = front_sequences[-1]
-                        prev_seq = front_sequences[-2] if len(front_sequences) > 1 else front_sequences[-1]
+                        current_seq = front_sequences[0]
+                        prev_seq = front_sequences[1] if len(front_sequences) > 1 else front_sequences[0]
                         
                         pred_features = [
                             np.mean(current_seq), np.std(current_seq), max(current_seq), min(current_seq),
@@ -5330,7 +7198,7 @@ class AdvancedPredictor:
                 back_balls = []
                 
                 if len(back_sequences) >= 5:
-                    recent_back_nums = [num for seq in back_sequences[-5:] for num in seq]
+                    recent_back_nums = [num for seq in back_sequences[:5] for num in seq]
                     back_freq = Counter(recent_back_nums)
                     
                     # 使用频率加权随机选择
@@ -5419,7 +7287,7 @@ class AdvancedPredictor:
                         gb_model.fit(X_front, y_front)
                         
                         # 预测下一期
-                        recent_seqs = front_sequences[-3:]
+                        recent_seqs = front_sequences[:3]
                         if len(recent_seqs) >= 3:
                             pred_features = [
                                 np.mean(recent_seqs[0]), np.mean(recent_seqs[1]), np.mean(recent_seqs[2]),
@@ -5462,7 +7330,7 @@ class AdvancedPredictor:
                 # 补充前区号码
                 while len(front_balls) < 5:
                     # 使用近期数据加权选择
-                    recent_front_nums = [num for seq in front_sequences[-3:] for num in seq]
+                    recent_front_nums = [num for seq in front_sequences[:3] for num in seq]
                     if recent_front_nums:
                         candidates = [num for num in set(recent_front_nums) if num not in front_balls]
                         if candidates:
@@ -5483,7 +7351,7 @@ class AdvancedPredictor:
                 if len(back_sequences) >= 5:
                     try:
                         # 简化的后区梯度提升
-                        recent_back_nums = [num for seq in back_sequences[-5:] for num in seq]
+                        recent_back_nums = [num for seq in back_sequences[:5] for num in seq]
                         back_mean = np.mean(recent_back_nums)
                         
                         # 在平均值附近选择
@@ -5660,7 +7528,7 @@ class AdvancedPredictor:
             logger_manager.error(f"验证预测结果失败: {e}")
             return predictions if predictions else self._generate_random_predictions(1)
     
-    def _generate_random_predictions(self, count) -> List[Tuple[List[int], List[int]]]:
+    def _generate_random_predictions(self, count, periods: int = None) -> List[Tuple[List[int], List[int]]]:
         """生成随机预测结果（回退方案）"""
         import random
         predictions = []
@@ -5672,7 +7540,7 @@ class AdvancedPredictor:
         """基于9种数学模型的智能号码选择"""
         if not recommendations:
             # 如果没有推荐，使用频率分析
-            freq_analysis = basic_analyzer.frequency_analysis()
+            freq_analysis = basic_analyzer.frequency_analysis(periods)
             if is_front:
                 freq_dict = freq_analysis.get('front_frequency', {})
             else:
@@ -5701,7 +7569,7 @@ class AdvancedPredictor:
 
         # 如果数量不足，用频率分析补充
         if len(selected) < target_count:
-            freq_analysis = basic_analyzer.frequency_analysis()
+            freq_analysis = basic_analyzer.frequency_analysis(periods)
             if is_front:
                 freq_dict = freq_analysis.get('front_frequency', {})
             else:
@@ -5747,10 +7615,10 @@ class AdvancedPredictor:
         except Exception:
             return 0.75
 
-    def _fallback_nine_models_prediction(self, count):
+    def _fallback_nine_models_prediction(self, count, periods: int = None):
         """9种数学模型的备选预测方案"""
         # 使用频率分析作为备选方案
-        freq_analysis = basic_analyzer.frequency_analysis()
+        freq_analysis = basic_analyzer.frequency_analysis(periods)
         front_freq = freq_analysis.get('front_frequency', {})
         back_freq = freq_analysis.get('back_frequency', {})
 
@@ -5798,8 +7666,8 @@ class AdvancedPredictor:
                 return self._fallback_compound_prediction(front_count, back_count)
 
             # 基于9种数学模型的智能复式选择
-            front_balls = self._nine_models_compound_selection(front_scores, front_count, True)
-            back_balls = self._nine_models_compound_selection(back_scores, back_count, False)
+            front_balls = self._nine_models_compound_selection(front_scores, front_count, True, analysis_periods)
+            back_balls = self._nine_models_compound_selection(back_scores, back_count, False, analysis_periods)
 
             # 计算组合数和投注金额
             from math import comb
@@ -5835,11 +7703,11 @@ class AdvancedPredictor:
             logger_manager.error(f"9种数学模型复式预测失败: {e}")
             return self._fallback_compound_prediction(front_count, back_count)
 
-    def _nine_models_compound_selection(self, scores_dict, target_count, is_front=True):
+    def _nine_models_compound_selection(self, scores_dict, target_count, is_front=True, analysis_periods: int = None):
         """基于9种数学模型的复式号码选择"""
         if not scores_dict:
             # 如果没有评分，使用频率分析
-            freq_analysis = basic_analyzer.frequency_analysis()
+            freq_analysis = basic_analyzer.frequency_analysis(analysis_periods)
             if is_front:
                 freq_dict = freq_analysis.get('front_frequency', {})
             else:
@@ -5885,7 +7753,7 @@ class AdvancedPredictor:
 
         # 如果数量不足，用频率分析补充
         if len(selected) < target_count:
-            freq_analysis = basic_analyzer.frequency_analysis()
+            freq_analysis = basic_analyzer.frequency_analysis(analysis_periods)
             if is_front:
                 freq_dict = freq_analysis.get('front_frequency', {})
             else:
@@ -6021,7 +7889,7 @@ class AdvancedPredictor:
                     historical_data = data_manager.get_data()
                     if historical_data is not None and len(historical_data) >= periods:
                         # 使用最新的periods期数据
-                        recent_data = historical_data.tail(periods)
+                        recent_data = historical_data.head(periods)
 
                         # 分析数据特征来选择最优GPU方法组合
                         data_characteristics = self._analyze_data_characteristics(periods)
@@ -6356,7 +8224,7 @@ class AdvancedPredictor:
             if df is None or len(df) < periods:
                 return {'high_variance': False, 'strong_pattern': False}
             
-            recent_data = df.tail(periods)
+            recent_data = df.head(periods)
             
             # 分析号码分布的方差
             all_front_balls = []
@@ -6895,36 +8763,54 @@ class AdvancedPredictor:
         return selected_algorithms
     
     def _ucb1_select(self, ucb1_state) -> int:
-        """使用UCB1算法选择臂"""
+        """使用UCB1算法选择臂
+
+        说明: 此方法使用字典状态进行选择，与 adaptive_learning_modules.MultiArmedBandit 类实现相同的算法
+        如需使用统一的类实现，可使用 UNIFIED_BANDIT_AVAILABLE 标志检查并使用 UnifiedMultiArmedBandit 类
+        """
         counts = ucb1_state['counts']
         values = ucb1_state['values']
-        c = ucb1_state['c']
-        
+        # 使用配置常量（如果可用）
+        if UNIFIED_BANDIT_AVAILABLE and MultiArmedBanditConfig:
+            c = ucb1_state.get('c', get_adaptive_config().bandit.ucb_c)
+        else:
+            c = ucb1_state.get('c', 2.0)
+
         # 如果有未尝试的臂，优先选择
         untried_arms = np.where(counts == 0)[0]
         if len(untried_arms) > 0:
             return np.random.choice(untried_arms)
-        
+
         # 计算UCB1值
         total_counts = np.sum(counts)
         ucb_values = values + c * np.sqrt(np.log(total_counts) / counts)
-        
+
         return int(np.argmax(ucb_values))
     
     def _thompson_sampling_select(self, thompson_state) -> int:
-        """使用Thompson Sampling选择臂"""
+        """使用Thompson Sampling选择臂
+
+        说明: 此方法使用字典状态进行选择，与 adaptive_learning_modules.MultiArmedBandit 类实现相同的算法
+        """
         alpha = thompson_state['alpha']
         beta = thompson_state['beta']
-        
+
         # 从贝叶斯后验分布采样
         samples = np.random.beta(alpha, beta)
         return int(np.argmax(samples))
-    
+
     def _epsilon_greedy_select(self, epsilon_state) -> int:
-        """使用Epsilon-Greedy选择臂"""
+        """使用Epsilon-Greedy选择臂
+
+        说明: 此方法使用字典状态进行选择，与 adaptive_learning_modules.MultiArmedBandit 类实现相同的算法
+        """
         values = epsilon_state['values']
-        epsilon = epsilon_state['epsilon']
-        
+        # 使用配置常量（如果可用）
+        if UNIFIED_BANDIT_AVAILABLE and MultiArmedBanditConfig:
+            epsilon = epsilon_state.get('epsilon', get_adaptive_config().bandit.epsilon)
+        else:
+            epsilon = epsilon_state.get('epsilon', 0.1)
+
         # 以epsilon的概率随机探索，否则选择最优臂
         if np.random.random() < epsilon:
             return np.random.randint(len(values))
@@ -7089,7 +8975,7 @@ class AdvancedPredictor:
                     historical_data = data_manager.get_data()
                     if historical_data is not None and len(historical_data) >= periods:
                         # 使用最新的periods期数据
-                        recent_data = historical_data.tail(periods)
+                        recent_data = historical_data.head(periods)
 
                         # GPU加速的终极集成预测 - 使用多种深度学习方法
                         gpu_methods = [
@@ -7438,7 +9324,7 @@ class AdvancedPredictor:
             if df is None or len(df) < periods:
                 return self._fallback_predict(count)
             
-            recent_data = df.tail(periods)
+            recent_data = df.head(periods)
             front_sums = []
             back_sums = []
             
@@ -7674,6 +9560,7 @@ class SuperPredictor:
     def __init__(self, data_file="data/dlt_data_all.csv"):
         self.data_file = data_file
         self.df = data_manager.get_data()
+        self._missing_mode_override = None
 
         # 延迟初始化子预测器
         self.advanced_predictor = None
@@ -7686,6 +9573,15 @@ class SuperPredictor:
 
         if self.df is None:
             logger_manager.error("数据未加载")
+
+    def set_missing_mode_override(self, mode: Optional[str]) -> None:
+        """设置遗漏预测模式覆盖"""
+        if mode in {'auto', 'legacy', 'enhanced'}:
+            self._missing_mode_override = mode
+        if self.traditional_predictor is not None:
+            self.traditional_predictor.set_missing_mode_override(mode)
+        if self.advanced_predictor is not None:
+            self.advanced_predictor.set_missing_mode_override(mode)
     
     def _initialize_sub_predictors(self):
         """初始化子预测器"""
@@ -7697,6 +9593,8 @@ class SuperPredictor:
         # 初始化高级预测器
         if self.advanced_predictor is None:
             self.advanced_predictor = AdvancedPredictor(self.data_file)
+            if self._missing_mode_override in {'auto', 'legacy', 'enhanced'}:
+                self.advanced_predictor.set_missing_mode_override(self._missing_mode_override)
 
         # 增强深度学习预测器
         try:
@@ -7758,7 +9656,7 @@ class SuperPredictor:
                 sub_predictions = self._get_sub_predictions_parallel(periods)
 
                 # 智能融合
-                front_balls, back_balls = self._intelligent_fusion(sub_predictions)
+                front_balls, back_balls = self._intelligent_fusion(sub_predictions, periods)
 
                 prediction = {
                     'index': i + 1,
@@ -8148,7 +10046,7 @@ class SuperPredictor:
                 predictions.append((front, back))
             return predictions
     
-    def _intelligent_fusion(self, sub_predictions: Dict) -> Tuple[List[int], List[int]]:
+    def _intelligent_fusion(self, sub_predictions: Dict, periods: int) -> Tuple[List[int], List[int]]:
         """智能融合预测结果"""
         all_front_candidates = []
         all_back_candidates = []
@@ -8174,16 +10072,16 @@ class SuperPredictor:
         back_balls = [ball for ball, freq_count in back_counter.most_common(4)]
         
         # 智能选择最终号码
-        final_front = self._smart_selection(front_balls, 5)
-        final_back = self._smart_selection(back_balls, 2)
+        final_front = self._smart_selection(front_balls, 5, periods)
+        final_back = self._smart_selection(back_balls, 2, periods)
         
         return final_front, final_back
     
-    def _smart_selection(self, candidates: List[int], num_select: int) -> List[int]:
+    def _smart_selection(self, candidates: List[int], num_select: int, periods: int) -> List[int]:
         """智能选择号码"""
         if len(candidates) <= num_select:
             # 如果候选号码不足，用频率分析补充
-            freq_analysis = basic_analyzer.frequency_analysis()
+            freq_analysis = basic_analyzer.frequency_analysis(periods)
             if num_select == 5:  # 前区
                 freq_dict = freq_analysis.get('front_frequency', {})
             else:  # 后区
@@ -8275,7 +10173,7 @@ class CompoundPredictor:
 
             # 如果候选号码不足，用频率分析补充
             if len(front_candidates) < front_count:
-                freq_analysis = basic_analyzer.frequency_analysis()
+                freq_analysis = basic_analyzer.frequency_analysis(periods)
                 front_freq = freq_analysis.get('front_frequency', {})
                 sorted_freq = sorted(front_freq.items(), key=lambda x: x[1], reverse=True)
                 for ball, freq in sorted_freq:
@@ -8288,7 +10186,7 @@ class CompoundPredictor:
                         front_candidates.add(int(ball))
 
             if len(back_candidates) < back_count:
-                freq_analysis = basic_analyzer.frequency_analysis()
+                freq_analysis = basic_analyzer.frequency_analysis(periods)
                 back_freq = freq_analysis.get('back_frequency', {})
                 sorted_freq = sorted(back_freq.items(), key=lambda x: x[1], reverse=True)
                 for ball, freq in sorted_freq:
@@ -8432,7 +10330,12 @@ class CompoundPredictor:
             all_predictions = {}
 
             # 1. 传统算法预测
-            traditional_pred = TraditionalPredictor(self.data_file)
+            traditional_pred = self.traditional_predictor
+            if traditional_pred is None:
+                traditional_pred = TraditionalPredictor(self.data_file)
+                if self._missing_mode_override in {'auto', 'legacy', 'enhanced'}:
+                    traditional_pred.set_missing_mode_override(self._missing_mode_override)
+                self.traditional_predictor = traditional_pred
             all_predictions['frequency'] = traditional_pred.frequency_predict(5, periods)
             all_predictions['hot_cold'] = traditional_pred.hot_cold_predict(5, periods)
             all_predictions['missing'] = traditional_pred.missing_predict(5, periods)
@@ -8494,8 +10397,8 @@ class CompoundPredictor:
                             back_candidates[ball_int] += score
 
             # 智能选择最终号码
-            front_balls = self._intelligent_compound_selection(front_candidates, front_count)
-            back_balls = self._intelligent_compound_selection(back_candidates, back_count)
+            front_balls = self._intelligent_compound_selection(front_candidates, front_count, periods)
+            back_balls = self._intelligent_compound_selection(back_candidates, back_count, periods)
 
             # 确保所有号码都是整数并去重
             front_balls = sorted(list(set([int(x) for x in front_balls])))
@@ -8504,7 +10407,7 @@ class CompoundPredictor:
             # 补充到目标数量（如果去重后数量不足）
             # 使用频率分析补充，而不是随机数
             if len(front_balls) < front_count:
-                freq_analysis = basic_analyzer.frequency_analysis()
+                freq_analysis = basic_analyzer.frequency_analysis(periods)
                 front_freq = freq_analysis.get('front_frequency', {})
                 sorted_freq = sorted(front_freq.items(), key=lambda x: x[1], reverse=True)
 
@@ -8516,7 +10419,7 @@ class CompoundPredictor:
                         front_balls.append(ball_int)
 
             if len(back_balls) < back_count:
-                freq_analysis = basic_analyzer.frequency_analysis()
+                freq_analysis = basic_analyzer.frequency_analysis(periods)
                 back_freq = freq_analysis.get('back_frequency', {})
                 sorted_freq = sorted(back_freq.items(), key=lambda x: x[1], reverse=True)
 
@@ -8562,11 +10465,11 @@ class CompoundPredictor:
             logger_manager.error("高度集成复式预测失败", e)
             return {}
 
-    def _intelligent_compound_selection(self, candidates: Counter, target_count: int) -> List[int]:
+    def _intelligent_compound_selection(self, candidates: Counter, target_count: int, periods: int) -> List[int]:
         """智能复式号码选择"""
         if len(candidates) == 0:
             # 如果没有候选号码，使用频率分析
-            freq_analysis = basic_analyzer.frequency_analysis()
+            freq_analysis = basic_analyzer.frequency_analysis(periods)
             if target_count > 8:  # 前区
                 freq_dict = freq_analysis.get('front_frequency', {})
             else:  # 后区
@@ -8607,7 +10510,7 @@ class CompoundPredictor:
 
             # 如果数量不足，用频率分析补充
             if len(selected) < target_count:
-                freq_analysis = basic_analyzer.frequency_analysis()
+                freq_analysis = basic_analyzer.frequency_analysis(periods)
                 if target_count > 8:  # 前区
                     freq_dict = freq_analysis.get('front_frequency', {})
                 else:  # 后区
@@ -8627,7 +10530,7 @@ class CompoundPredictor:
 
             # 如果数量不足，用频率分析补充
             while len(selected) < target_count:
-                freq_analysis = basic_analyzer.frequency_analysis()
+                freq_analysis = basic_analyzer.frequency_analysis(periods)
                 if target_count > 8:  # 前区
                     freq_dict = freq_analysis.get('front_frequency', {})
                 else:  # 后区
@@ -8803,7 +10706,7 @@ def _initialize_advanced_integration_system(predictor_instance, periods) -> Dict
         import numpy as np
         
         # 获取历史数据
-        df_subset = predictor_instance.df.tail(periods)
+        df_subset = predictor_instance.df.head(periods)
         
         # 基础数据收集
         system = {
@@ -9000,7 +10903,7 @@ def _calculate_correlation_dimension_weight(integration_system) -> float:
         correlation_count = 0
         total_pairs = 0
         
-        for seq in sequences[-10:]:
+        for seq in sequences[:10]:
             for i in range(len(seq)):
                 for j in range(i+1, len(seq)):
                     # 检查数字对的相关性（简化为距离相关）
@@ -9255,7 +11158,7 @@ def _calculate_simple_pattern_score(num, integration_system, ball_type) -> float
         
         # 计算在最近10期中的出现次数
         recent_count = 0
-        recent_sequences = sequences[-10:] if len(sequences) >= 10 else sequences
+        recent_sequences = sequences[:10] if len(sequences) >= 10 else sequences
         
         for seq in recent_sequences:
             if num in seq:

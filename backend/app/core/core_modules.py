@@ -459,12 +459,15 @@ class DataManager:
 
             if cached_data is not None and not cached_data.empty:
                 self.df = cached_data
+                self._ensure_descending_issue_order()
                 print(f"✅ 从缓存加载数据: {len(self.df)} 期")
             else:
                 # 从文件加载
                 self.df = pd.read_csv(self.data_file)
 
-                # 数据文件已经按期号降序排列（最新的在前面），无需重新排序
+                # 数据文件按期号降序排列（最新在前）；若不满足则自动校正
+                self._ensure_descending_issue_order()
+
                 print(f"[OK] 从文件加载数据: {len(self.df)} 期")
 
                 # 保存到缓存
@@ -474,6 +477,24 @@ class DataManager:
 
         except Exception as e:
             print(f"[ERROR] 加载数据失败: {e}")
+
+    def _ensure_descending_issue_order(self):
+        """确保期号降序（最新在前）"""
+        if self.df is None or 'issue' not in self.df.columns:
+            return
+
+        issue_series = pd.to_numeric(self.df['issue'], errors='coerce')
+        if issue_series.notna().any():
+            if not issue_series.is_monotonic_decreasing:
+                self.df = (
+                    self.df.assign(_issue_num=issue_series)
+                    .sort_values(by='_issue_num', ascending=False)
+                    .drop(columns=['_issue_num'])
+                    .reset_index(drop=True)
+                )
+        else:
+            if not self.df['issue'].is_monotonic_decreasing:
+                self.df = self.df.sort_values(by='issue', ascending=False).reset_index(drop=True)
     
     def _calculate_stats(self):
         """计算数据统计信息"""

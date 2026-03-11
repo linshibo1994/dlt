@@ -30,6 +30,25 @@ if BACKEND_APP_DIR not in sys.path:
 # 设置环境变量
 os.environ['DLT_PROJECT_ROOT'] = PROJECT_ROOT
 
+# 设置 Matplotlib 缓存目录，避免不可写路径警告
+if not os.environ.get('MPLCONFIGDIR'):
+    mpl_cache_dir = os.path.join(PROJECT_ROOT, 'artifacts', 'mplconfig')
+    try:
+        os.makedirs(mpl_cache_dir, exist_ok=True)
+        os.environ['MPLCONFIGDIR'] = mpl_cache_dir
+    except Exception:
+        # 兜底到系统临时目录
+        os.environ['MPLCONFIGDIR'] = '/tmp/matplotlib'
+
+# 设置通用缓存目录，避免 Fontconfig 无可写缓存目录警告
+if not os.environ.get('XDG_CACHE_HOME'):
+    xdg_cache_dir = os.path.join(PROJECT_ROOT, 'artifacts', 'cache')
+    try:
+        os.makedirs(xdg_cache_dir, exist_ok=True)
+        os.environ['XDG_CACHE_HOME'] = xdg_cache_dir
+    except Exception:
+        os.environ['XDG_CACHE_HOME'] = '/tmp'
+
 
 def setup_paths():
     """设置路径配置"""

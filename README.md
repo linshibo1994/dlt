@@ -9,10 +9,10 @@
 
 ## 📖 项目简介
 
-大乐透智能预测系统是一个基于Python的AI预测平台，集成28种算法，使用2756期真实历史数据进行大乐透号码预测。系统支持命令行和图形界面两种使用方式，提供从基础统计到深度学习的完整预测方案。
+大乐透智能预测系统是一个基于Python的AI预测平台，集成29种算法，使用2756期真实历史数据进行大乐透号码预测。系统支持命令行和图形界面两种使用方式，提供从基础统计到深度学习的完整预测方案。
 
 ### ✨ 核心特色
-- **🧠 28种算法** - 涵盖传统统计、马尔可夫链、深度学习、集成学习等
+- **🧠 29种算法** - 涵盖传统统计、马尔可夫链、深度学习、集成学习等
 - **📊 真实数据** - 基于2756期历史开奖数据，支持增量更新
 - **🔧 灵活配置** - 支持自定义分析期数（50-2756期）和生成注数（1-100注）
 - **🎲 多种投注** - 单式、复式、胆拖等投注模式，智能成本控制
@@ -25,12 +25,13 @@
 ### 📊 传统统计算法
 - **frequency** - 频率分析：基于历史出现频率的概率分布建模
 - **hot_cold** - 冷热号分析：动态温度量化计算和阈值调整
-- **missing** - 遗漏值分析：基于回补概率的期望时间模型
+- **missing** - 遗漏值分析：基于回补概率与紧迫度评分（支持增强/传统/自适应三种模式）
 - **bayesian** - 贝叶斯分析：完整贝叶斯推理和似然函数计算
 
 ### 🔗 马尔可夫链算法
 - **markov** - 1阶马尔可夫链：状态转移矩阵和序列生成
 - **markov_2nd** - 2阶马尔可夫链：联合状态概率计算
+- **consensus_halving** - 交集递减融合：冷热号+一阶马尔可夫+频率+二阶马尔可夫交集提取
 - **markov_3rd** - 3阶马尔可夫链：长期依赖性建模
 - **adaptive_markov** - 自适应马尔可夫：动态阶数选择
 
@@ -94,7 +95,7 @@
 │                            ↓                                 │
 │   ┌──────────────────────────────────────────────────┐      │
 │   │               核心预测引擎                        │      │
-│   │  28 种算法 | 数据管理 | 缓存系统 | 分析模块       │      │
+│   │  29 种算法 | 数据管理 | 缓存系统 | 分析模块       │      │
 │   └──────────────────────────────────────────────────┘      │
 └─────────────────────────────────────────────────────────────┘
 ```
@@ -115,7 +116,7 @@
 ### 📊 核心模块
 - **backend/api/server.py** - FastAPI REST API 服务器
 - **backend/app/core/** - 核心模块（数据/缓存/日志/任务管理）
-- **backend/app/predictors/** - 预测算法模块（28种算法实现）
+- **backend/app/predictors/** - 预测算法模块（29种算法实现）
 - **backend/app/analyzers/** - 数据分析模块（统计分析和异常检测）
 - **frontend/src/views/** - Vue 页面组件
 - **frontend/src/stores/** - Pinia 状态管理
@@ -172,6 +173,11 @@ curl -X POST http://localhost:6000/api/predict \
   -H "Content-Type: application/json" \
   -d '{"method": "ensemble", "periods": 500, "count": 3}'
 
+# 遗漏预测（增强/传统模式）
+curl -X POST http://localhost:6000/api/predict \
+  -H "Content-Type: application/json" \
+  -d '{"method": "missing", "periods": 1000, "count": 2, "missing_mode": "enhanced"}'
+
 # 频率分析
 curl -X POST http://localhost:6000/api/analysis/frequency \
   -H "Content-Type: application/json" \
@@ -217,7 +223,7 @@ cd dlt
 pip install -r requirements.txt
 
 # 3. 验证安装
-python3 dlt_main.py data status
+python main.py data status
 ```
 
 ### 🔧 技术栈
@@ -281,41 +287,41 @@ npm run dev
 
 **旧版 Streamlit GUI（已弃用）：**
 ```bash
-# Streamlit 版本已迁移至 frontend-streamlit/ 目录
-cd frontend-streamlit
-python -m streamlit run streamlit/app.py
+# Streamlit 版本已弃用，请使用 Vue 3 前端
+# 原 frontend/streamlit 目录已移除，请使用 frontend/src
 ```
 
 ### 💻 命令行使用
 
 #### 基础语法
 ```bash
-python3 dlt_main.py predict -m <方法名> -p <期数> -c <注数>
+python main.py predict -m <方法名> -p <期数> -c <注数>
 ```
 
 #### 快速开始示例
 ```bash
 # 基础预测
-python3 dlt_main.py predict -m frequency -c 1
-python3 dlt_main.py predict -m markov -c 3
-python3 dlt_main.py predict -m bayesian -p 800 -c 2
+python main.py predict -m frequency -c 1
+python main.py predict -m markov -c 3
+python main.py predict -m consensus_halving -p 1000 -c 1
+python main.py predict -m bayesian -p 800 -c 2
 
 # 复式投注
-python3 dlt_main.py predict -m compound --front-count 8 --back-count 4
-python3 dlt_main.py predict -m duplex --front-dan 2 --back-dan 1
+python main.py predict -m compound --front-count 8 --back-count 4
+python main.py predict -m duplex --front-dan 2 --back-dan 1
 
 # 硬件加速
-python3 dlt_main.py predict -m lstm --acceleration gpu
-python3 dlt_main.py predict -m markov --acceleration cpu_multi
+python main.py predict -m lstm --acceleration gpu
+python main.py predict -m markov --acceleration cpu_multi
 
 # 数据管理
-python3 dlt_main.py data status
-python3 dlt_main.py data update --incremental
-python3 dlt_main.py data check --fix
+python main.py data status
+python main.py data update --incremental
+python main.py data check --fix
 
 # 分析功能
-python3 dlt_main.py analyze --type comprehensive -p 1000
-python3 dlt_main.py backtest -m ensemble -t 100
+python main.py analyze --type comprehensive -p 1000
+python main.py backtest -m ensemble -t 100
 ```
 
 ### 📊 预测方法列表
@@ -324,417 +330,493 @@ python3 dlt_main.py backtest -m ensemble -t 100
 - **frequency** - 频率分析：基于历史出现频率的概率分布建模
 ```bash
 # 基础预测
-python3 dlt_main.py predict -m frequency -c 1
-python3 dlt_main.py predict -m frequency -p 800 -c 3
+python main.py predict -m frequency -c 1
+python main.py predict -m frequency -p 800 -c 3
 
 # CPU多线程加速
-python3 dlt_main.py predict -m frequency --acceleration cpu_multi -c 2
-python3 dlt_main.py predict -m frequency --acceleration cpu_multi --cpu-threads 8 -c 3
+python main.py predict -m frequency --acceleration cpu_multi -c 2
+python main.py predict -m frequency --acceleration cpu_multi --cpu-threads 8 -c 3
 
 # 复式预测
-python3 dlt_main.py predict -m frequency --compound --front-count 8 --back-count 4
-python3 dlt_main.py predict -m frequency --compound --front-count 10 --back-count 5 -p 1000
+python main.py predict -m frequency --compound --front-count 8 --back-count 4
+python main.py predict -m frequency --compound --front-count 10 --back-count 5 -p 1000
 ```
 
 - **hot_cold** - 冷热号分析：动态温度量化计算和阈值调整
 ```bash
 # 基础预测
-python3 dlt_main.py predict -m hot_cold -c 1
-python3 dlt_main.py predict -m hot_cold -p 600 -c 2
+python main.py predict -m hot_cold -c 1
+python main.py predict -m hot_cold -p 600 -c 2
 
 # CPU多线程加速
-python3 dlt_main.py predict -m hot_cold --acceleration cpu_multi -c 3
-python3 dlt_main.py predict -m hot_cold --acceleration cpu_multi --cpu-threads 6 -c 2
+python main.py predict -m hot_cold --acceleration cpu_multi -c 3
+python main.py predict -m hot_cold --acceleration cpu_multi --cpu-threads 6 -c 2
 
 # 复式预测
-python3 dlt_main.py predict -m hot_cold --compound --front-count 9 --back-count 4
-python3 dlt_main.py predict -m hot_cold --compound --front-count 12 --back-count 6 -p 800
+python main.py predict -m hot_cold --compound --front-count 9 --back-count 4
+python main.py predict -m hot_cold --compound --front-count 12 --back-count 6 -p 800
 ```
 
-- **missing** - 遗漏值分析：基于回补概率的期望时间模型
+- **missing** - 遗漏值分析：基于回补概率与紧迫度评分（支持增强/传统/自适应三种模式）
 ```bash
 # 基础预测
-python3 dlt_main.py predict -m missing -c 1
-python3 dlt_main.py predict -m missing -p 1000 -c 2
+python main.py predict -m missing -c 1
+python main.py predict -m missing -p 1000 -c 2
+
+# 模式选择
+python main.py predict -m missing --missing-mode enhanced -p 1000 -c 2
+python main.py predict -m missing --missing-mode legacy -p 1000 -c 2
+python main.py predict -m missing --missing-mode auto -p 300 -c 2
 
 # 自动加速
-python3 dlt_main.py predict -m missing --acceleration auto -c 3
-python3 dlt_main.py predict -m missing --acceleration cpu_multi -c 2
+python main.py predict -m missing --acceleration auto -c 3
+python main.py predict -m missing --acceleration cpu_multi -c 2
 
 # 复式预测
-python3 dlt_main.py predict -m missing --compound --front-count 8 --back-count 3
-python3 dlt_main.py predict -m missing --compound --front-count 11 --back-count 5 -p 1200
+python main.py predict -m missing --compound --front-count 8 --back-count 3
+python main.py predict -m missing --compound --front-count 11 --back-count 5 -p 1200
+```
+
+**遗漏预测配置（`config/prediction.yaml`）**
+```yaml
+prediction_methods:
+  statistical:
+    missing:
+      mode: "enhanced"
+      weight_strategy: "auto"
+      pred_weight_factor: 0.5
+      urgency_weight_factor: 0.5
+      weight_floor: 1.0e-6
+      dedupe: true
+      extreme_front_ratio: 0.10
+      extreme_back_ratio: 0.15
+      mid_front_ratio: [0.05, 0.15]
+      mid_back_ratio: [0.08, 0.20]
+      adaptive_weights:
+        enabled: true
+        min_periods: 200
+        max_periods: 1200
+        pred_weight_range: [0.20, 0.90]
+        urgency_weight_range: [0.20, 0.90]
+        strategy_short: "linear"
+        strategy_long: "log"
+        thresholds:
+          extreme_front_range: [0.18, 0.05]
+          extreme_back_range: [0.28, 0.10]
+          mid_front_range_low: [0.10, 0.02]
+          mid_front_range_high: [0.26, 0.08]
+          mid_back_range_low: [0.14, 0.04]
+          mid_back_range_high: [0.30, 0.12]
+        concentration_penalty:
+          enabled: true
+          max_adjacent_pairs_front: 2
+          max_consecutive_run_front: 2
+          min_span_front: 12
+          sum_front_range: [60, 125]
+          sum_back_range: [5, 20]
+          max_resample: 12
+          weights:
+            adjacent_pairs: 1.0
+            consecutive_run: 1.5
+            span: 1.0
+            sum: 1.0
 ```
 
 - **bayesian** - 贝叶斯分析：完整贝叶斯推理和似然函数计算
 ```bash
 # 基础预测
-python3 dlt_main.py predict -m bayesian -c 1
-python3 dlt_main.py predict -m bayesian -p 500 -c 3
+python main.py predict -m bayesian -c 1
+python main.py predict -m bayesian -p 500 -c 3
 
 # CPU多线程加速
-python3 dlt_main.py predict -m bayesian --acceleration cpu_multi -c 2
-python3 dlt_main.py predict -m bayesian --acceleration cpu_multi --cpu-threads 4 -c 3
+python main.py predict -m bayesian --acceleration cpu_multi -c 2
+python main.py predict -m bayesian --acceleration cpu_multi --cpu-threads 4 -c 3
 
 # 复式预测
-python3 dlt_main.py predict -m bayesian --compound --front-count 10 --back-count 4
-python3 dlt_main.py predict -m bayesian --compound --front-count 13 --back-count 6 -p 600
+python main.py predict -m bayesian --compound --front-count 10 --back-count 4
+python main.py predict -m bayesian --compound --front-count 13 --back-count 6 -p 600
 ```
 
 #### 马尔可夫链方法 (支持CPU多线程加速 + 复式预测)
 - **markov** - 1阶马尔可夫链：状态转移矩阵和序列生成
 ```bash
 # 基础预测
-python3 dlt_main.py predict -m markov -c 1
-python3 dlt_main.py predict -m markov -p 800 -c 3
+python main.py predict -m markov -c 1
+python main.py predict -m markov -p 800 -c 3
 
 # CPU多线程加速
-python3 dlt_main.py predict -m markov --acceleration cpu_multi -c 2
-python3 dlt_main.py predict -m markov --acceleration cpu_multi --cpu-threads 8 -c 4
+python main.py predict -m markov --acceleration cpu_multi -c 2
+python main.py predict -m markov --acceleration cpu_multi --cpu-threads 8 -c 4
 
 # 复式预测
-python3 dlt_main.py predict -m markov --compound --front-count 8 --back-count 4
-python3 dlt_main.py predict -m markov --compound --front-count 12 --back-count 5 -p 1000
+python main.py predict -m markov --compound --front-count 8 --back-count 4
+python main.py predict -m markov --compound --front-count 12 --back-count 5 -p 1000
+```
+
+**马尔可夫预测配置（`config/prediction.yaml`）**
+```yaml
+prediction_methods:
+  traditional_ml:
+    markov:
+      supports_compound: true
+      max_order: 3
+      parallel_jobs: -1
+      smoothing_alpha: 0.05
+      global_mix: 0.15
+      force_dense: true
+      decay_enabled: true
+      decay_half_life: 200
+      decay_min_weight: 0.2
+      posterior_mix: 0.15
 ```
 
 - **markov_2nd** - 2阶马尔可夫链：联合状态概率计算
 ```bash
 # 基础预测
-python3 dlt_main.py predict -m markov_2nd -c 1
-python3 dlt_main.py predict -m markov_2nd -p 600 -c 2
+python main.py predict -m markov_2nd -c 1
+python main.py predict -m markov_2nd -p 600 -c 2
 
 # CPU多线程加速
-python3 dlt_main.py predict -m markov_2nd --acceleration cpu_multi -c 3
-python3 dlt_main.py predict -m markov_2nd --acceleration cpu_multi --cpu-threads 6 -c 2
+python main.py predict -m markov_2nd --acceleration cpu_multi -c 3
+python main.py predict -m markov_2nd --acceleration cpu_multi --cpu-threads 6 -c 2
 
 # 复式预测
-python3 dlt_main.py predict -m markov_2nd --compound --front-count 9 --back-count 4
-python3 dlt_main.py predict -m markov_2nd --compound --front-count 11 --back-count 6 -p 800
+python main.py predict -m markov_2nd --compound --front-count 9 --back-count 4
+python main.py predict -m markov_2nd --compound --front-count 11 --back-count 6 -p 800
 ```
 
 - **markov_3rd** - 3阶马尔可夫链：长期依赖性建模
 ```bash
 # 基础预测
-python3 dlt_main.py predict -m markov_3rd -c 1
-python3 dlt_main.py predict -m markov_3rd -p 1000 -c 3
+python main.py predict -m markov_3rd -c 1
+python main.py predict -m markov_3rd -p 1000 -c 3
 
 # 自动加速
-python3 dlt_main.py predict -m markov_3rd --acceleration auto -c 2
-python3 dlt_main.py predict -m markov_3rd --acceleration cpu_multi -c 3
+python main.py predict -m markov_3rd --acceleration auto -c 2
+python main.py predict -m markov_3rd --acceleration cpu_multi -c 3
 
 # 复式预测
-python3 dlt_main.py predict -m markov_3rd --compound --front-count 10 --back-count 4
-python3 dlt_main.py predict -m markov_3rd --compound --front-count 14 --back-count 5 -p 1200
+python main.py predict -m markov_3rd --compound --front-count 10 --back-count 4
+python main.py predict -m markov_3rd --compound --front-count 14 --back-count 5 -p 1200
 ```
 
 - **adaptive_markov** - 自适应马尔可夫：动态阶数选择
 ```bash
 # 基础预测
-python3 dlt_main.py predict -m adaptive_markov -c 1
-python3 dlt_main.py predict -m adaptive_markov -p 500 -c 2
+python main.py predict -m adaptive_markov -c 1
+python main.py predict -m adaptive_markov -p 500 -c 2
 
 # CPU多线程加速
-python3 dlt_main.py predict -m adaptive_markov --acceleration cpu_multi -c 3
-python3 dlt_main.py predict -m adaptive_markov --acceleration cpu_multi --cpu-threads 4 -c 2
+python main.py predict -m adaptive_markov --acceleration cpu_multi -c 3
+python main.py predict -m adaptive_markov --acceleration cpu_multi --cpu-threads 4 -c 2
 
 # 复式预测
-python3 dlt_main.py predict -m adaptive_markov --compound --front-count 8 --back-count 3
-python3 dlt_main.py predict -m adaptive_markov --compound --front-count 13 --back-count 6 -p 700
+python main.py predict -m adaptive_markov --compound --front-count 8 --back-count 3
+python main.py predict -m adaptive_markov --compound --front-count 13 --back-count 6 -p 700
+```
+
+- **consensus_halving** - 交集递减融合：四算法交集提取 + 期数对半递减 + 高频补齐
+```bash
+# 基础预测
+python main.py predict -m consensus_halving -p 1000 -c 1
+
+# 多注预测
+python main.py predict -m consensus_halving -p 800 -c 3
 ```
 
 #### 深度学习方法 (支持GPU加速 + 复式预测)
 - **lstm** - LSTM时序预测：双向LSTM网络和注意力机制
 ```bash
 # 基础预测
-python3 dlt_main.py predict -m lstm -c 1
-python3 dlt_main.py predict -m lstm -p 1000 -c 2
+python main.py predict -m lstm -c 1
+python main.py predict -m lstm -p 1000 -c 2
 
 # GPU加速
-python3 dlt_main.py predict -m lstm --acceleration gpu -c 3
-python3 dlt_main.py predict -m lstm --acceleration auto -c 2
+python main.py predict -m lstm --acceleration gpu -c 3
+python main.py predict -m lstm --acceleration auto -c 2
 
 # GPU CUDA加速
-python3 dlt_main.py predict -m lstm --acceleration gpu_cuda --mixed-precision -c 2
-python3 dlt_main.py predict -m lstm --acceleration gpu --gpu-memory-limit 4 -c 3
+python main.py predict -m lstm --acceleration gpu_cuda --mixed-precision -c 2
+python main.py predict -m lstm --acceleration gpu --gpu-memory-limit 4 -c 3
 
 # 复式预测
-python3 dlt_main.py predict -m lstm --compound --front-count 8 --back-count 4
-python3 dlt_main.py predict -m lstm --compound --front-count 12 --back-count 5 --acceleration gpu -p 1500
+python main.py predict -m lstm --compound --front-count 8 --back-count 4
+python main.py predict -m lstm --compound --front-count 12 --back-count 5 --acceleration gpu -p 1500
 ```
 
 - **transformer** - Transformer预测：多头注意力和位置编码
 ```bash
 # 基础预测
-python3 dlt_main.py predict -m transformer -c 1
-python3 dlt_main.py predict -m transformer -p 800 -c 2
+python main.py predict -m transformer -c 1
+python main.py predict -m transformer -p 800 -c 2
 
 # GPU CUDA加速
-python3 dlt_main.py predict -m transformer --acceleration gpu_cuda -c 3
-python3 dlt_main.py predict -m transformer --acceleration gpu --mixed-precision -c 2
+python main.py predict -m transformer --acceleration gpu_cuda -c 3
+python main.py predict -m transformer --acceleration gpu --mixed-precision -c 2
 
 # GPU优化
-python3 dlt_main.py predict -m transformer --acceleration gpu --gpu-device 0 -c 2
-python3 dlt_main.py predict -m transformer --acceleration gpu --gpu-memory-limit 6 -c 3
+python main.py predict -m transformer --acceleration gpu --gpu-device 0 -c 2
+python main.py predict -m transformer --acceleration gpu --gpu-memory-limit 6 -c 3
 
 # 复式预测
-python3 dlt_main.py predict -m transformer --compound --front-count 9 --back-count 4
-python3 dlt_main.py predict -m transformer --compound --front-count 11 --back-count 6 --acceleration gpu -p 1000
+python main.py predict -m transformer --compound --front-count 9 --back-count 4
+python main.py predict -m transformer --compound --front-count 11 --back-count 6 --acceleration gpu -p 1000
 ```
 
 - **gan** - GAN生成对抗：生成器判别器对抗训练
 ```bash
 # 基础预测
-python3 dlt_main.py predict -m gan -c 1
-python3 dlt_main.py predict -m gan -p 600 -c 2
+python main.py predict -m gan -c 1
+python main.py predict -m gan -p 600 -c 2
 
 # GPU加速
-python3 dlt_main.py predict -m gan --acceleration gpu -c 3
-python3 dlt_main.py predict -m gan --acceleration auto -c 2
+python main.py predict -m gan --acceleration gpu -c 3
+python main.py predict -m gan --acceleration auto -c 2
 
 # GPU混合精度
-python3 dlt_main.py predict -m gan --acceleration gpu_cuda --mixed-precision -c 2
-python3 dlt_main.py predict -m gan --acceleration gpu --gpu-memory-limit 8 -c 3
+python main.py predict -m gan --acceleration gpu_cuda --mixed-precision -c 2
+python main.py predict -m gan --acceleration gpu --gpu-memory-limit 8 -c 3
 
 # 复式预测
-python3 dlt_main.py predict -m gan --compound --front-count 10 --back-count 4
-python3 dlt_main.py predict -m gan --compound --front-count 13 --back-count 5 --acceleration gpu -p 800
+python main.py predict -m gan --compound --front-count 10 --back-count 4
+python main.py predict -m gan --compound --front-count 13 --back-count 5 --acceleration gpu -p 800
 ```
 
 - **ensemble** - 集成深度学习：多模型智能融合
 ```bash
 # 基础预测
-python3 dlt_main.py predict -m ensemble -c 1
-python3 dlt_main.py predict -m ensemble -p 1200 -c 3
+python main.py predict -m ensemble -c 1
+python main.py predict -m ensemble -p 1200 -c 3
 
 # 自动加速
-python3 dlt_main.py predict -m ensemble --acceleration auto -c 2
-python3 dlt_main.py predict -m ensemble --acceleration gpu -c 3
+python main.py predict -m ensemble --acceleration auto -c 2
+python main.py predict -m ensemble --acceleration gpu -c 3
 
 # 复式预测
-python3 dlt_main.py predict -m ensemble --compound --front-count 8 --back-count 4
-python3 dlt_main.py predict -m ensemble --compound --front-count 15 --back-count 6 --acceleration auto -p 1000
+python main.py predict -m ensemble --compound --front-count 8 --back-count 4
+python main.py predict -m ensemble --compound --front-count 15 --back-count 6 --acceleration auto -p 1000
 ```
 
 #### 聚类算法方法 (支持自动加速 + 复式预测)
 - **clustering** - 聚类预测：基于K-means聚类的智能预测
 ```bash
 # 基础预测
-python3 dlt_main.py predict -m clustering -c 1
-python3 dlt_main.py predict -m clustering -p 800 -c 2
+python main.py predict -m clustering -c 1
+python main.py predict -m clustering -p 800 -c 2
 
 # 自动加速
-python3 dlt_main.py predict -m clustering --acceleration auto -c 3
-python3 dlt_main.py predict -m clustering --acceleration cpu_multi -c 2
+python main.py predict -m clustering --acceleration auto -c 3
+python main.py predict -m clustering --acceleration cpu_multi -c 2
 
 # 复式预测
-python3 dlt_main.py predict -m clustering --compound --front-count 9 --back-count 4
-python3 dlt_main.py predict -m clustering --compound --front-count 12 --back-count 5 --acceleration auto -p 1000
+python main.py predict -m clustering --compound --front-count 9 --back-count 4
+python main.py predict -m clustering --compound --front-count 12 --back-count 5 --acceleration auto -p 1000
 ```
 
 #### 增强预测方法 (支持GPU加速 + 复式预测)  
 - **enhanced** - 增强预测：集成多种增强算法的高级预测系统
 ```bash
 # 基础预测
-python3 dlt_main.py predict -m enhanced -c 1
-python3 dlt_main.py predict -m enhanced -p 1000 -c 2
+python main.py predict -m enhanced -c 1
+python main.py predict -m enhanced -p 1000 -c 2
 
 # GPU加速
-python3 dlt_main.py predict -m enhanced --acceleration gpu -c 3
-python3 dlt_main.py predict -m enhanced --acceleration auto -c 2
+python main.py predict -m enhanced --acceleration gpu -c 3
+python main.py predict -m enhanced --acceleration auto -c 2
 
 # 复式预测
-python3 dlt_main.py predict -m enhanced --compound --front-count 10 --back-count 4
-python3 dlt_main.py predict -m enhanced --compound --front-count 13 --back-count 6 --acceleration gpu -p 1200
+python main.py predict -m enhanced --compound --front-count 10 --back-count 4
+python main.py predict -m enhanced --compound --front-count 13 --back-count 6 --acceleration gpu -p 1200
 ```
 
 #### 智能预测方法 (支持自动加速 + 复式预测)
 - **super** - 超级预测：多算法智能融合系统
 ```bash
 # 基础预测
-python3 dlt_main.py predict -m super -c 1
-python3 dlt_main.py predict -m super -p 1000 -c 3
+python main.py predict -m super -c 1
+python main.py predict -m super -p 1000 -c 3
 
 # 自动加速
-python3 dlt_main.py predict -m super --acceleration auto -c 2
-python3 dlt_main.py predict -m super --acceleration cpu_multi -c 3
+python main.py predict -m super --acceleration auto -c 2
+python main.py predict -m super --acceleration cpu_multi -c 3
 
 # 复式预测
-python3 dlt_main.py predict -m super --compound --front-count 10 --back-count 4
-python3 dlt_main.py predict -m super --compound --front-count 14 --back-count 6 --acceleration auto -p 1500
+python main.py predict -m super --compound --front-count 10 --back-count 4
+python main.py predict -m super --compound --front-count 14 --back-count 6 --acceleration auto -p 1500
 ```
 
 - **adaptive** - 自适应预测：基于多臂老虎机的预测器选择
 ```bash
 # 基础预测
-python3 dlt_main.py predict -m adaptive -c 1
-python3 dlt_main.py predict -m adaptive -p 800 -c 2
+python main.py predict -m adaptive -c 1
+python main.py predict -m adaptive -p 800 -c 2
 
 # 自动加速
-python3 dlt_main.py predict -m adaptive --acceleration auto -c 3
-python3 dlt_main.py predict -m adaptive --acceleration cpu_multi -c 2
+python main.py predict -m adaptive --acceleration auto -c 3
+python main.py predict -m adaptive --acceleration cpu_multi -c 2
 
 # 复式预测
-python3 dlt_main.py predict -m adaptive --compound --front-count 9 --back-count 4
-python3 dlt_main.py predict -m adaptive --compound --front-count 12 --back-count 5 --acceleration auto -p 1200
+python main.py predict -m adaptive --compound --front-count 9 --back-count 4
+python main.py predict -m adaptive --compound --front-count 12 --back-count 5 --acceleration auto -p 1200
 ```
 
 - **nine_models** - 九种数学模型：统计学、概率论综合分析
 ```bash
 # 基础预测
-python3 dlt_main.py predict -m nine_models -c 1
-python3 dlt_main.py predict -m nine_models -p 600 -c 3
+python main.py predict -m nine_models -c 1
+python main.py predict -m nine_models -p 600 -c 3
 
 # CPU多线程加速
-python3 dlt_main.py predict -m nine_models --acceleration cpu_multi -c 2
-python3 dlt_main.py predict -m nine_models --acceleration cpu_multi --cpu-threads 6 -c 3
+python main.py predict -m nine_models --acceleration cpu_multi -c 2
+python main.py predict -m nine_models --acceleration cpu_multi --cpu-threads 6 -c 3
 
 # 复式预测
-python3 dlt_main.py predict -m nine_models --compound --front-count 8 --back-count 4
-python3 dlt_main.py predict -m nine_models --compound --front-count 11 --back-count 6 --acceleration cpu_multi -p 800
+python main.py predict -m nine_models --compound --front-count 8 --back-count 4
+python main.py predict -m nine_models --compound --front-count 11 --back-count 6 --acceleration cpu_multi -p 800
 ```
 
 - **advanced_integration** - 高级集成分析：多维度权重计算
 ```bash
 # 基础预测
-python3 dlt_main.py predict -m advanced_integration -c 1
-python3 dlt_main.py predict -m advanced_integration -p 1000 -c 2
+python main.py predict -m advanced_integration -c 1
+python main.py predict -m advanced_integration -p 1000 -c 2
 
 # 自动加速
-python3 dlt_main.py predict -m advanced_integration --acceleration auto -c 3
-python3 dlt_main.py predict -m advanced_integration --acceleration cpu_multi -c 2
+python main.py predict -m advanced_integration --acceleration auto -c 3
+python main.py predict -m advanced_integration --acceleration cpu_multi -c 2
 
 # 复式预测
-python3 dlt_main.py predict -m advanced_integration --compound --front-count 10 --back-count 4
-python3 dlt_main.py predict -m advanced_integration --compound --front-count 13 --back-count 5 --acceleration auto -p 1200
+python main.py predict -m advanced_integration --compound --front-count 10 --back-count 4
+python main.py predict -m advanced_integration --compound --front-count 13 --back-count 5 --acceleration auto -p 1200
 ```
 
 - **mixed_strategy** - 混合策略：保守/激进/平衡策略选择
 ```bash
 # 基础预测
-python3 dlt_main.py predict -m mixed_strategy -c 1
-python3 dlt_main.py predict -m mixed_strategy -p 500 -c 3
+python main.py predict -m mixed_strategy -c 1
+python main.py predict -m mixed_strategy -p 500 -c 3
 
 # 自动加速
-python3 dlt_main.py predict -m mixed_strategy --acceleration auto -c 2
-python3 dlt_main.py predict -m mixed_strategy --acceleration cpu_multi -c 3
+python main.py predict -m mixed_strategy --acceleration auto -c 2
+python main.py predict -m mixed_strategy --acceleration cpu_multi -c 3
 
 # 复式预测
-python3 dlt_main.py predict -m mixed_strategy --compound --front-count 9 --back-count 4
-python3 dlt_main.py predict -m mixed_strategy --compound --front-count 14 --back-count 6 --acceleration auto -p 700
+python main.py predict -m mixed_strategy --compound --front-count 9 --back-count 4
+python main.py predict -m mixed_strategy --compound --front-count 14 --back-count 6 --acceleration auto -p 700
 ```
 
 - **highly_integrated** - 高度集成：全算法融合系统
 ```bash
 # 基础预测
-python3 dlt_main.py predict -m highly_integrated -c 1
-python3 dlt_main.py predict -m highly_integrated -p 1500 -c 2
+python main.py predict -m highly_integrated -c 1
+python main.py predict -m highly_integrated -p 1500 -c 2
 
 # 自动加速
-python3 dlt_main.py predict -m highly_integrated --acceleration auto -c 3
-python3 dlt_main.py predict -m highly_integrated --acceleration cpu_multi -c 2
+python main.py predict -m highly_integrated --acceleration auto -c 3
+python main.py predict -m highly_integrated --acceleration cpu_multi -c 2
 
 # 复式预测
-python3 dlt_main.py predict -m highly_integrated --compound --front-count 12 --back-count 5
-python3 dlt_main.py predict -m highly_integrated --compound --front-count 15 --back-count 6 --acceleration auto -p 1800
+python main.py predict -m highly_integrated --compound --front-count 12 --back-count 5
+python main.py predict -m highly_integrated --compound --front-count 15 --back-count 6 --acceleration auto -p 1800
 ```
 
 #### 复式投注方法 (原生复式支持 + 自动加速)
 - **compound** - 标准复式：指定前区和后区号码数量
 ```bash
 # 标准复式预测
-python3 dlt_main.py predict -m compound --front-count 8 --back-count 4
-python3 dlt_main.py predict -m compound --front-count 10 --back-count 5 -p 1000
+python main.py predict -m compound --front-count 8 --back-count 4
+python main.py predict -m compound --front-count 10 --back-count 5 -p 1000
 
 # 大复式预测
-python3 dlt_main.py predict -m compound --front-count 12 --back-count 6
-python3 dlt_main.py predict -m compound --front-count 15 --back-count 8 -p 1500
+python main.py predict -m compound --front-count 12 --back-count 6
+python main.py predict -m compound --front-count 15 --back-count 8 -p 1500
 
 # 自动加速复式
-python3 dlt_main.py predict -m compound --front-count 9 --back-count 4 --acceleration auto
-python3 dlt_main.py predict -m compound --front-count 13 --back-count 7 --acceleration cpu_multi
+python main.py predict -m compound --front-count 9 --back-count 4 --acceleration auto
+python main.py predict -m compound --front-count 13 --back-count 7 --acceleration cpu_multi
 ```
 
 - **duplex** - 胆拖投注：胆码+拖码智能投注
 ```bash
 # 胆拖投注
-python3 dlt_main.py predict -m duplex --front-dan 2 --back-dan 1
-python3 dlt_main.py predict -m duplex --front-dan 3 --back-dan 1 --front-tuo 8 -p 800
+python main.py predict -m duplex --front-dan 2 --back-dan 1
+python main.py predict -m duplex --front-dan 3 --back-dan 1 --front-tuo 8 -p 800
 
 # 高级胆拖
-python3 dlt_main.py predict -m duplex --front-dan 2 --back-dan 2 --front-tuo 10
-python3 dlt_main.py predict -m duplex --front-dan 4 --back-dan 1 --front-tuo 12 -p 1200
+python main.py predict -m duplex --front-dan 2 --back-dan 2 --front-tuo 10
+python main.py predict -m duplex --front-dan 4 --back-dan 1 --front-tuo 12 -p 1200
 
 # 自动加速胆拖
-python3 dlt_main.py predict -m duplex --front-dan 2 --back-dan 1 --acceleration auto
-python3 dlt_main.py predict -m duplex --front-dan 3 --back-dan 2 --acceleration cpu_multi
+python main.py predict -m duplex --front-dan 2 --back-dan 1 --acceleration auto
+python main.py predict -m duplex --front-dan 3 --back-dan 2 --acceleration cpu_multi
 ```
 
 - **markov_compound** - 马尔可夫复式：基于马尔可夫链的复式
 ```bash
 # 马尔可夫复式
-python3 dlt_main.py predict -m markov_compound --front-count 8 --back-count 4
-python3 dlt_main.py predict -m markov_compound --front-count 10 --back-count 5 -p 1000
+python main.py predict -m markov_compound --front-count 8 --back-count 4
+python main.py predict -m markov_compound --front-count 10 --back-count 5 -p 1000
 
 # CPU多线程加速
-python3 dlt_main.py predict -m markov_compound --front-count 9 --back-count 4 --acceleration cpu_multi
-python3 dlt_main.py predict -m markov_compound --front-count 12 --back-count 6 --acceleration cpu_multi --cpu-threads 8
+python main.py predict -m markov_compound --front-count 9 --back-count 4 --acceleration cpu_multi
+python main.py predict -m markov_compound --front-count 12 --back-count 6 --acceleration cpu_multi --cpu-threads 8
 ```
 
 - **nine_models_compound** - 九模型复式：多算法融合复式
 ```bash
 # 九模型复式
-python3 dlt_main.py predict -m nine_models_compound --front-count 8 --back-count 4
-python3 dlt_main.py predict -m nine_models_compound --front-count 11 --back-count 5 -p 800
+python main.py predict -m nine_models_compound --front-count 8 --back-count 4
+python main.py predict -m nine_models_compound --front-count 11 --back-count 5 -p 800
 
 # CPU多线程加速
-python3 dlt_main.py predict -m nine_models_compound --front-count 9 --back-count 4 --acceleration cpu_multi
-python3 dlt_main.py predict -m nine_models_compound --front-count 13 --back-count 6 --acceleration cpu_multi --cpu-threads 6
+python main.py predict -m nine_models_compound --front-count 9 --back-count 4 --acceleration cpu_multi
+python main.py predict -m nine_models_compound --front-count 13 --back-count 6 --acceleration cpu_multi --cpu-threads 6
 ```
 
 #### 集成学习方法 (支持自动加速 + 复式预测)
 - **stacking** - Stacking集成：基于元学习器的高级集成
 ```bash
 # 基础预测
-python3 dlt_main.py predict -m stacking -c 1
-python3 dlt_main.py predict -m stacking -p 1000 -c 2
+python main.py predict -m stacking -c 1
+python main.py predict -m stacking -p 1000 -c 2
 
 # 自动加速
-python3 dlt_main.py predict -m stacking --acceleration auto -c 3
-python3 dlt_main.py predict -m stacking --acceleration cpu_multi -c 2
+python main.py predict -m stacking --acceleration auto -c 3
+python main.py predict -m stacking --acceleration cpu_multi -c 2
 
 # 复式预测
-python3 dlt_main.py predict -m stacking --compound --front-count 10 --back-count 4
-python3 dlt_main.py predict -m stacking --compound --front-count 14 --back-count 6 --acceleration auto -p 1200
+python main.py predict -m stacking --compound --front-count 10 --back-count 4
+python main.py predict -m stacking --compound --front-count 14 --back-count 6 --acceleration auto -p 1200
 ```
 
 - **adaptive_ensemble** - 自适应集成：动态权重调整
 ```bash
 # 基础预测
-python3 dlt_main.py predict -m adaptive_ensemble -c 1
-python3 dlt_main.py predict -m adaptive_ensemble -p 800 -c 3
+python main.py predict -m adaptive_ensemble -c 1
+python main.py predict -m adaptive_ensemble -p 800 -c 3
 
 # 自动加速
-python3 dlt_main.py predict -m adaptive_ensemble --acceleration auto -c 2
-python3 dlt_main.py predict -m adaptive_ensemble --acceleration cpu_multi -c 3
+python main.py predict -m adaptive_ensemble --acceleration auto -c 2
+python main.py predict -m adaptive_ensemble --acceleration cpu_multi -c 3
 
 # 复式预测
-python3 dlt_main.py predict -m adaptive_ensemble --compound --front-count 9 --back-count 4
-python3 dlt_main.py predict -m adaptive_ensemble --compound --front-count 12 --back-count 5 --acceleration auto -p 1000
+python main.py predict -m adaptive_ensemble --compound --front-count 9 --back-count 4
+python main.py predict -m adaptive_ensemble --compound --front-count 12 --back-count 5 --acceleration auto -p 1000
 ```
 
 - **ultimate_ensemble** - 终极集成：最高级别集成预测
 ```bash
 # 基础预测
-python3 dlt_main.py predict -m ultimate_ensemble -c 1
-python3 dlt_main.py predict -m ultimate_ensemble -p 1500 -c 2
+python main.py predict -m ultimate_ensemble -c 1
+python main.py predict -m ultimate_ensemble -p 1500 -c 2
 
 # 自动加速
-python3 dlt_main.py predict -m ultimate_ensemble --acceleration auto -c 3
-python3 dlt_main.py predict -m ultimate_ensemble --acceleration cpu_multi -c 2
+python main.py predict -m ultimate_ensemble --acceleration auto -c 3
+python main.py predict -m ultimate_ensemble --acceleration cpu_multi -c 2
 
 # 复式预测
-python3 dlt_main.py predict -m ultimate_ensemble --compound --front-count 11 --back-count 5
-python3 dlt_main.py predict -m ultimate_ensemble --compound --front-count 15 --back-count 7 --acceleration auto -p 1800
+python main.py predict -m ultimate_ensemble --compound --front-count 11 --back-count 5
+python main.py predict -m ultimate_ensemble --compound --front-count 15 --back-count 7 --acceleration auto -p 1800
 ```
 
 ### 🔧 常用参数说明
@@ -787,12 +869,12 @@ python3 dlt_main.py predict -m ultimate_ensemble --compound --front-count 15 --b
 ### 🚀 使用示例
 ```bash
 # 基础语法
-python3 dlt_main.py compare --issue <期号> -m <方法> -p <期数> -t <次数>
+python main.py compare --issue <期号> -m <方法> -p <期数> -t <次数>
 
 # 使用示例
-python3 dlt_main.py compare --issue 25104 -m markov -p 100 -t 50
-python3 dlt_main.py compare --issue 25103 -m frequency -p 200 -t 30
-python3 dlt_main.py compare --issue 25103 -m frequency -p 150 -t 60 --export
+python main.py compare --issue 25104 -m markov -p 100 -t 50
+python main.py compare --issue 25103 -m frequency -p 200 -t 30
+python main.py compare --issue 25103 -m frequency -p 150 -t 60 --export
 ```
 
 ## 🖥️ 图形用户界面 (Vue 3)
@@ -835,40 +917,40 @@ cd frontend && npm run dev
 ### 基础命令
 ```bash
 # 查看数据状态
-python3 dlt_main.py data status
+python main.py data status
 
 # 更新数据
-python3 dlt_main.py data update                    # 全量更新
-python3 dlt_main.py data update --incremental      # 增量更新
+python main.py data update                    # 全量更新
+python main.py data update --incremental      # 增量更新
 
 # 获取最新开奖结果
-python3 dlt_main.py data latest
+python main.py data latest
 
 # 数据完整性检查
-python3 dlt_main.py data check                     # 基础检查
-python3 dlt_main.py data check --fix               # 自动修复
+python main.py data check                     # 基础检查
+python main.py data check --fix               # 自动修复
 ```
 
 ### 高级分析
 ```bash
 # 统计分析
-python3 dlt_main.py analyze --type basic -p 1000
-python3 dlt_main.py analyze --type comprehensive -p 800
+python main.py analyze --type basic -p 1000
+python main.py analyze --type comprehensive -p 800
 
 # 性能回测
-python3 dlt_main.py backtest -m ensemble -t 100
+python main.py backtest -m ensemble -t 100
 ```
 
 ## 🎓 自适应学习
 
 ```bash
 # 学习算法
-python3 dlt_main.py learn --algorithm ucb1 -t 1000
-python3 dlt_main.py learn --algorithm thompson_sampling -t 800
+python main.py learn --algorithm ucb1 -t 1000
+python main.py learn --algorithm thompson_sampling -t 800
 
 # 智能预测（基于学习结果）
-python3 dlt_main.py smart -p 1000
-python3 dlt_main.py smart --compound --front-count 10 --back-count 4
+python main.py smart -p 1000
+python main.py smart --compound --front-count 10 --back-count 4
 ```
 
 ## ⚡ 性能优化
@@ -876,23 +958,23 @@ python3 dlt_main.py smart --compound --front-count 10 --back-count 4
 ### GPU加速
 ```bash
 # 自动选择最优加速模式
-python3 dlt_main.py predict -m lstm --acceleration auto
+python main.py predict -m lstm --acceleration auto
 
 # 使用GPU加速
-python3 dlt_main.py predict -m transformer --acceleration gpu
+python main.py predict -m transformer --acceleration gpu
 
 # 使用CPU多线程
-python3 dlt_main.py predict -m markov --acceleration cpu_multi
+python main.py predict -m markov --acceleration cpu_multi
 ```
 
 ### 缓存管理
 ```bash
 # 查看缓存状态
-python3 dlt_main.py system cache status
+python main.py system cache status
 
 # 缓存清理
-python3 dlt_main.py system cache clear
-python3 dlt_main.py system cache refresh
+python main.py system cache clear
+python main.py system cache refresh
 ```
 
 ## 🔧 常见问题与解决方案
@@ -901,19 +983,19 @@ python3 dlt_main.py system cache refresh
 ```bash
 # 问题：GPU检测不到
 # 解决：运行诊断
-python system_check.py
+python backend/app/utils/system_check.py
 
 # 问题：GPU内存不足
 # 解决：使用CPU多线程模式
-python3 dlt_main.py predict -m lstm --acceleration cpu_multi
+python main.py predict -m lstm --acceleration cpu_multi
 ```
 
 ### 🐛 常见错误
 ```bash
 # 模型加载失败
 # 解决：删除旧模型文件，重新训练
-rm -rf models/
-python3 dlt_main.py predict -m lstm
+rm -rf artifacts/models/
+python main.py predict -m lstm
 
 # 依赖包问题
 # 解决：重新安装依赖
@@ -921,7 +1003,7 @@ pip install -r requirements.txt
 
 # 数据完整性问题
 # 解决：检查和修复数据
-python3 dlt_main.py data check --fix
+python main.py data check --fix
 ```
 
 ### 📊 性能优化建议

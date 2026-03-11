@@ -4,6 +4,12 @@
 """
 自适应学习模块集成
 整合多臂老虎机、强化学习、自适应权重调整等智能学习功能
+
+改进版本:
+- 使用配置常量替代魔法数字
+- 改进 Thompson 采样使用连续奖励值
+- 添加 Regret 后悔值监控
+- 修复 average_score 计算问题
 """
 
 import os
@@ -16,38 +22,184 @@ from collections import defaultdict, Counter, deque
 import copy
 import math
 
-from core_modules import cache_manager, logger_manager, data_manager, task_manager
-from predictor_modules import traditional_predictor, advanced_predictor, super_predictor
-from smart_cache_system import smart_cache_manager
+# 支持多种导入路径
+try:
+    from core.core_modules import cache_manager, logger_manager, data_manager, task_manager
+except ImportError:
+    try:
+        from backend.app.core.core_modules import cache_manager, logger_manager, data_manager, task_manager
+    except ImportError:
+        from core_modules import cache_manager, logger_manager, data_manager, task_manager
+
+try:
+    from core.smart_cache_system import smart_cache_manager
+except ImportError:
+    try:
+        from backend.app.core.smart_cache_system import smart_cache_manager
+    except ImportError:
+        from smart_cache_system import smart_cache_manager
+
+# 导入配置常量
+try:
+    from core.adaptive_config import (
+        get_adaptive_config,
+        DEFAULT_ADAPTIVE_CONFIG,
+        MultiArmedBanditConfig,
+        AdaptiveLearningConfig,
+        RewardConfig,
+        RegretTrackingConfig
+    )
+    _CONFIG_AVAILABLE = True
+except ImportError:
+    try:
+        from backend.app.core.adaptive_config import (
+            get_adaptive_config,
+            DEFAULT_ADAPTIVE_CONFIG,
+            MultiArmedBanditConfig,
+            AdaptiveLearningConfig,
+            RewardConfig,
+            RegretTrackingConfig
+        )
+        _CONFIG_AVAILABLE = True
+    except ImportError:
+        _CONFIG_AVAILABLE = False
+
+
+# ==================== Regret 后悔值跟踪器 ====================
+class RegretTracker:
+    """后悔值跟踪器 - 用于评估多臂老虎机算法的性能"""
+
+    def __init__(self, window_size: int = 100, warning_threshold: float = 50.0):
+        """初始化后悔值跟踪器
+
+        Args:
+            window_size: 滑动窗口大小
+            warning_threshold: 警告阈值
+        """
+        self.window_size = window_size
+        self.warning_threshold = warning_threshold
+
+        # 后悔值历史
+        self.regret_history = deque(maxlen=window_size)
+        self.cumulative_regret = 0.0
+
+        # 最优臂跟踪
+        self.best_arm_rewards = []
+        self.selected_arm_rewards = []
+
+    def update(self, selected_reward: float, best_possible_reward: float):
+        """更新后悔值
+
+        Args:
+            selected_reward: 选中臂获得的奖励
+            best_possible_reward: 最优臂可能获得的奖励
+        """
+        instant_regret = max(0.0, best_possible_reward - selected_reward)
+        self.regret_history.append(instant_regret)
+        self.cumulative_regret += instant_regret
+
+        self.selected_arm_rewards.append(selected_reward)
+        self.best_arm_rewards.append(best_possible_reward)
+
+        # 检查是否超过警告阈值
+        if self.cumulative_regret > self.warning_threshold:
+            logger_manager.warning(
+                f"累积后悔值 {self.cumulative_regret:.2f} 超过阈值 {self.warning_threshold}"
+            )
+
+    def get_average_regret(self) -> float:
+        """获取平均后悔值"""
+        if len(self.regret_history) == 0:
+            return 0.0
+        return np.mean(self.regret_history)
+
+    def get_cumulative_regret(self) -> float:
+        """获取累积后悔值"""
+        return self.cumulative_regret
+
+    def get_regret_stats(self) -> Dict:
+        """获取后悔值统计"""
+        if len(self.regret_history) == 0:
+            return {
+                'cumulative': 0.0,
+                'average': 0.0,
+                'recent_average': 0.0,
+                'max': 0.0,
+                'min': 0.0,
+                'std': 0.0
+            }
+
+        recent_regrets = list(self.regret_history)[-20:] if len(self.regret_history) >= 20 else list(self.regret_history)
+
+        return {
+            'cumulative': self.cumulative_regret,
+            'average': np.mean(self.regret_history),
+            'recent_average': np.mean(recent_regrets) if recent_regrets else 0.0,
+            'max': np.max(self.regret_history),
+            'min': np.min(self.regret_history),
+            'std': np.std(self.regret_history)
+        }
+
+    def reset(self):
+        """重置后悔值跟踪器"""
+        self.regret_history.clear()
+        self.cumulative_regret = 0.0
+        self.best_arm_rewards.clear()
+        self.selected_arm_rewards.clear()
 
 
 # ==================== 多臂老虎机算法 ====================
 class MultiArmedBandit:
-    """多臂老虎机算法"""
-    
-    def __init__(self, n_arms: int, algorithm: str = "ucb1"):
+    """多臂老虎机算法 - 增强版
+
+    改进:
+    - 使用配置常量
+    - Thompson 采样支持连续奖励值更新
+    - 集成 Regret 跟踪
+    """
+
+    def __init__(self, n_arms: int, algorithm: str = "ucb1", config: Optional[MultiArmedBanditConfig] = None):
         """初始化多臂老虎机
-        
+
         Args:
             n_arms: 臂的数量（算法数量）
             algorithm: 算法类型 (epsilon_greedy, ucb1, thompson_sampling)
+            config: 可选的配置对象
         """
         self.n_arms = n_arms
         self.algorithm = algorithm
-        
+
+        # 加载配置
+        if config is not None:
+            self._config = config
+        elif _CONFIG_AVAILABLE:
+            self._config = get_adaptive_config().bandit
+        else:
+            # 使用默认值（向后兼容）
+            self._config = None
+
         # 统计信息
         self.counts = np.zeros(n_arms)  # 每个臂被选择的次数
         self.values = np.zeros(n_arms)  # 每个臂的平均奖励
         self.total_rewards = np.zeros(n_arms)  # 每个臂的总奖励
-        
-        # 算法参数
-        self.epsilon = 0.1  # epsilon-greedy参数
-        self.c = 2.0  # UCB1参数
-        
+
+        # 算法参数（从配置读取或使用默认值）
+        self.epsilon = self._config.epsilon if self._config else 0.1
+        self.c = self._config.ucb_c if self._config else 2.0
+
         # Thompson Sampling参数
-        self.alpha = np.ones(n_arms)  # Beta分布的alpha参数
-        self.beta = np.ones(n_arms)   # Beta分布的beta参数
-    
+        alpha_init = self._config.thompson_alpha_init if self._config else 1.0
+        beta_init = self._config.thompson_beta_init if self._config else 1.0
+        self.alpha = np.full(n_arms, alpha_init)  # Beta分布的alpha参数
+        self.beta = np.full(n_arms, beta_init)    # Beta分布的beta参数
+        self._reward_scale = self._config.thompson_reward_scale if self._config else 1.0
+
+        # Regret 跟踪器
+        self.regret_tracker = RegretTracker()
+
+        # 是否启用连续奖励更新（改进的 Thompson 采样）
+        self._use_continuous_thompson = True
+
     def select_arm(self) -> int:
         """选择一个臂"""
         if self.algorithm == "epsilon_greedy":
@@ -58,39 +210,73 @@ class MultiArmedBandit:
             return self._thompson_sampling()
         else:
             return np.random.randint(self.n_arms)
-    
+
     def update(self, arm: int, reward: float):
-        """更新臂的统计信息"""
+        """更新臂的统计信息
+
+        改进: Thompson 采样使用连续奖励值更新，而非简单的二值化
+        """
         self.counts[arm] += 1
         self.total_rewards[arm] += reward
         self.values[arm] = self.total_rewards[arm] / self.counts[arm]
-        
-        # 更新Thompson Sampling参数
-        if reward > 0:
-            self.alpha[arm] += 1
+
+        # 更新 Thompson Sampling 参数（改进版：使用连续奖励值）
+        if self._use_continuous_thompson:
+            # 连续奖励更新：reward 范围 [0, 1]
+            # alpha += reward * scale, beta += (1 - reward) * scale
+            scaled_reward = min(1.0, max(0.0, reward * self._reward_scale))
+            self.alpha[arm] += scaled_reward
+            self.beta[arm] += (1.0 - scaled_reward)
         else:
-            self.beta[arm] += 1
-    
+            # 原始二值化更新（保持向后兼容）
+            if reward > 0:
+                self.alpha[arm] += 1
+            else:
+                self.beta[arm] += 1
+
+        # 更新 Regret（假设最优臂是当前平均奖励最高的臂）
+        best_possible_reward = np.max(self.values) if np.any(self.counts > 0) else reward
+        self.regret_tracker.update(reward, best_possible_reward)
+
     def _epsilon_greedy(self) -> int:
         """Epsilon-Greedy算法"""
         if np.random.random() < self.epsilon:
             return np.random.randint(self.n_arms)
         else:
-            return np.argmax(self.values)
-    
+            return int(np.argmax(self.values))
+
     def _ucb1(self) -> int:
         """UCB1算法"""
         if 0 in self.counts:
-            return np.where(self.counts == 0)[0][0]
-        
+            return int(np.where(self.counts == 0)[0][0])
+
         total_counts = np.sum(self.counts)
         ucb_values = self.values + self.c * np.sqrt(np.log(total_counts) / self.counts)
-        return np.argmax(ucb_values)
-    
+        return int(np.argmax(ucb_values))
+
     def _thompson_sampling(self) -> int:
         """Thompson Sampling算法"""
         samples = np.random.beta(self.alpha, self.beta)
-        return np.argmax(samples)
+        return int(np.argmax(samples))
+
+    def get_regret_stats(self) -> Dict:
+        """获取 Regret 统计信息"""
+        return self.regret_tracker.get_regret_stats()
+
+    def reset_regret(self):
+        """重置 Regret 跟踪"""
+        self.regret_tracker.reset()
+
+    def get_arm_statistics(self) -> Dict:
+        """获取所有臂的统计信息"""
+        return {
+            'counts': self.counts.tolist(),
+            'values': self.values.tolist(),
+            'total_rewards': self.total_rewards.tolist(),
+            'alpha': self.alpha.tolist(),
+            'beta': self.beta.tolist(),
+            'regret': self.get_regret_stats()
+        }
 
 
 # ==================== 准确率跟踪器 ====================
@@ -194,17 +380,29 @@ class AccuracyTracker:
 
 # ==================== 增强版自适应学习预测器 ====================
 class EnhancedAdaptiveLearningPredictor:
-    """增强版自适应学习预测器"""
-    
+    """增强版自适应学习预测器
+
+    改进:
+    - 使用配置常量替代魔法数字
+    - 修复 average_score 计算问题
+    - 集成 Regret 监控
+    """
+
     def __init__(self, data_file="data/dlt_data_all.csv"):
         """初始化增强版自适应学习预测器"""
         self.data_file = data_file
         self.df = data_manager.get_data()
-        
+
+        # 加载配置
+        if _CONFIG_AVAILABLE:
+            self._config = get_adaptive_config()
+        else:
+            self._config = None
+
         # 预测器配置（延迟初始化）
         self.predictors = {}
         self._predictors_initialized = False
-        
+
         self.predictor_names = [
             'traditional_frequency',
             'traditional_hot_cold',
@@ -214,42 +412,70 @@ class EnhancedAdaptiveLearningPredictor:
             'advanced_ensemble',
             'super_predictor'
         ]
-        
+
         # 多臂老虎机
         self.bandit = MultiArmedBandit(len(self.predictor_names), algorithm="ucb1")
-        
+
         # 准确率跟踪
         self.accuracy_tracker = AccuracyTracker()
-        
+
         # 学习历史
         self.learning_history = []
-        self.performance_window = deque(maxlen=50)
-        
+        # 使用配置常量
+        performance_window_size = self._config.learning.performance_window_size if self._config else 50
+        self.performance_window = deque(maxlen=performance_window_size)
+
         # 动态权重
         self.dynamic_weights = {}
         self.weight_history = []
-        
-        # 强化学习参数
-        self.learning_rate = 0.1
-        self.discount_factor = 0.95
-        self.exploration_rate = 0.2
-        self.exploration_decay = 0.995
-        
+
+        # 强化学习参数（从配置读取）
+        if self._config:
+            self.learning_rate = self._config.learning.learning_rate
+            self.discount_factor = self._config.learning.discount_factor
+            self.exploration_rate = self._config.learning.exploration_rate
+            self.exploration_decay = self._config.learning.exploration_decay
+            self._min_exploration_rate = self._config.learning.min_exploration_rate
+            self._confidence_min = self._config.learning.confidence_min
+            self._confidence_max = self._config.learning.confidence_max
+            self._recent_scores_window = self._config.learning.recent_scores_window
+            self._recent_performance_window = self._config.learning.recent_performance_window
+            self._warmup_multiplier = self._config.learning.warmup_multiplier
+            self._max_warmup_rounds = self._config.learning.max_warmup_rounds
+            self._reward_normalization_factor = self._config.reward.reward_normalization_factor
+            self._max_normalized_reward = self._config.reward.max_normalized_reward
+        else:
+            # 默认值（向后兼容）
+            self.learning_rate = 0.1
+            self.discount_factor = 0.95
+            self.exploration_rate = 0.2
+            self.exploration_decay = 0.995
+            self._min_exploration_rate = 0.05
+            self._confidence_min = 0.1
+            self._confidence_max = 0.9
+            self._recent_scores_window = 20
+            self._recent_performance_window = 10
+            self._warmup_multiplier = 3
+            self._max_warmup_rounds = 20
+            self._reward_normalization_factor = 10.0
+            self._max_normalized_reward = 1.0
+
         # 性能统计
         self.predictor_performance = {}
         self.recent_performance = {}
-        
-        # 初始化性能统计
+
+        # 初始化性能统计（修复：添加 average_score 字段）
         for name in self.predictor_names:
             self.predictor_performance[name] = {
                 'total_predictions': 0,
                 'total_score': 0.0,
+                'average_score': 0.0,  # 修复：添加 average_score 字段
                 'win_count': 0,
-                'recent_scores': deque(maxlen=20),
+                'recent_scores': deque(maxlen=self._recent_scores_window),
                 'confidence': 0.5
             }
-            self.recent_performance[name] = deque(maxlen=10)
-        
+            self.recent_performance[name] = deque(maxlen=self._recent_performance_window)
+
         if self.df is None:
             logger_manager.error("数据未加载")
 
@@ -258,7 +484,14 @@ class EnhancedAdaptiveLearningPredictor:
         if self._predictors_initialized:
             return
 
-        from predictor_modules import get_traditional_predictor, get_advanced_predictor, get_super_predictor
+        # 支持多种导入路径
+        try:
+            from predictors.predictor_modules import get_traditional_predictor, get_advanced_predictor, get_super_predictor
+        except ImportError:
+            try:
+                from backend.app.predictors.predictor_modules import get_traditional_predictor, get_advanced_predictor, get_super_predictor
+            except ImportError:
+                from predictor_modules import get_traditional_predictor, get_advanced_predictor, get_super_predictor
 
         traditional_pred = get_traditional_predictor()
         advanced_pred = get_advanced_predictor()
@@ -340,42 +573,64 @@ class EnhancedAdaptiveLearningPredictor:
         return front_balls, back_balls, 0.1
     
     def _calculate_prize_score(self, prize_level: str) -> float:
-        """计算中奖得分"""
-        prize_scores = {
-            "一等奖": 1000.0,
-            "二等奖": 500.0,
-            "三等奖": 100.0,
-            "四等奖": 50.0,
-            "五等奖": 20.0,
-            "六等奖": 10.0,
-            "七等奖": 5.0,
-            "八等奖": 3.0,
-            "九等奖": 1.0,
-            "未中奖": 0.0
-        }
-        return prize_scores.get(prize_level, 0.0)
+        """计算中奖得分
+
+        改进: 使用配置中的奖励分数映射
+        """
+        if self._config:
+            return self._config.reward.prize_scores.get(prize_level, 0.0)
+        else:
+            # 向后兼容的默认值
+            prize_scores = {
+                "一等奖": 1000.0,
+                "二等奖": 500.0,
+                "三等奖": 100.0,
+                "四等奖": 50.0,
+                "五等奖": 20.0,
+                "六等奖": 10.0,
+                "七等奖": 5.0,
+                "八等奖": 3.0,
+                "九等奖": 1.0,
+                "未中奖": 0.0
+            }
+            return prize_scores.get(prize_level, 0.0)
     
     def _update_predictor_performance(self, predictor_name: str, score: float, prize_level: str):
-        """更新预测器性能"""
+        """更新预测器性能
+
+        修复: 添加 average_score 计算
+        """
         perf = self.predictor_performance[predictor_name]
-        
+
         perf['total_predictions'] += 1
         perf['total_score'] += score
         perf['recent_scores'].append(score)
-        
+
+        # 修复: 正确计算 average_score
+        perf['average_score'] = perf['total_score'] / perf['total_predictions']
+
         if prize_level != "未中奖":
             perf['win_count'] += 1
-        
-        # 更新置信度
+
+        # 更新置信度（使用配置常量）
         if len(perf['recent_scores']) > 0:
             recent_avg = np.mean(perf['recent_scores'])
-            perf['confidence'] = min(0.9, max(0.1, recent_avg / 10.0))
-        
+            confidence_factor = self._config.reward.confidence_to_score_factor if self._config else 10.0
+            perf['confidence'] = min(
+                self._confidence_max,
+                max(self._confidence_min, recent_avg / confidence_factor)
+            )
+
         # 更新最近性能
         self.recent_performance[predictor_name].append(score)
     
     def enhanced_adaptive_learning(self, start_period: int = 100, test_periods: int = 1000) -> Dict:
-        """增强版自适应学习"""
+        """增强版自适应学习
+
+        改进:
+        - 使用配置常量替代魔法数字
+        - 添加 Regret 统计到结果
+        """
         logger_manager.info(f"启动增强版自适应学习，起始期数: {start_period}, 测试期数: {test_periods}")
 
         if self.df is None or len(self.df) == 0:
@@ -396,26 +651,40 @@ class EnhancedAdaptiveLearningPredictor:
         if available_periods < test_periods:
             logger_manager.warning(f"可用期数 {available_periods} 少于请求的测试期数 {test_periods}，将使用可用期数")
             test_periods = available_periods
-        
+
         detailed_results = []
         total_score = 0.0
         win_count = 0
-        
+
         # 创建进度条
         progress_bar = task_manager.create_progress_bar(test_periods, "增强学习进度")
-        
+
         try:
-            # 预热阶段：让每个预测器都被选择几次
-            warmup_rounds = min(20, len(self.predictor_names) * 3)
-            
-            # 初始化智能早停机制
-            from enhanced_deep_learning.utils.intelligent_early_stopping import GeneralIntelligentEarlyStopping
-            early_stopping = GeneralIntelligentEarlyStopping(
-                patience=20,  # 连续20次相同结果时停止
-                min_delta=1e-6,
-                verbose=1
+            # 预热阶段：使用配置常量
+            warmup_rounds = min(
+                self._max_warmup_rounds,
+                len(self.predictor_names) * self._warmup_multiplier
             )
-            early_stopping.reset()
+
+            # 初始化智能早停机制（使用配置常量）
+            early_stopping_patience = self._config.learning.early_stopping_patience if self._config else 20
+            early_stopping_min_delta = self._config.learning.early_stopping_min_delta if self._config else 1e-6
+
+            # 尝试导入智能早停模块（带异常处理）
+            early_stopping = None
+            try:
+                from enhanced_deep_learning.utils.intelligent_early_stopping import GeneralIntelligentEarlyStopping
+                early_stopping = GeneralIntelligentEarlyStopping(
+                    patience=early_stopping_patience,
+                    min_delta=early_stopping_min_delta,
+                    verbose=1
+                )
+                early_stopping.reset()
+            except ImportError:
+                logger_manager.warning("智能早停模块不可用，跳过早停检查")
+
+            # 重置 Regret 跟踪器
+            self.bandit.reset_regret()
 
             for i in range(test_periods):
                 if task_manager.is_interrupted():
@@ -448,21 +717,24 @@ class EnhancedAdaptiveLearningPredictor:
                 prize_level, front_hits, back_hits = self.accuracy_tracker._calculate_prize_level(
                     predicted_front, predicted_back, actual_front, actual_back
                 )
-                
+
                 # 计算得分
                 score = self._calculate_prize_score(prize_level)
                 total_score += score
-                
+
                 if prize_level != "未中奖":
                     win_count += 1
-                
-                # 更新多臂老虎机
-                normalized_reward = min(1.0, score / 10.0)  # 标准化奖励
+
+                # 更新多臂老虎机（使用配置常量标准化奖励）
+                normalized_reward = min(
+                    self._max_normalized_reward,
+                    score / self._reward_normalization_factor
+                )
                 self.bandit.update(selected_arm, normalized_reward)
-                
+
                 # 更新预测器性能
                 self._update_predictor_performance(selected_predictor, score, prize_level)
-                
+
                 # 记录详细结果
                 result = {
                     'period': i + 1,
@@ -483,31 +755,31 @@ class EnhancedAdaptiveLearningPredictor:
                     'bandit_values': self.bandit.values.copy(),
                     'bandit_counts': self.bandit.counts.copy()
                 }
-                
+
                 detailed_results.append(result)
-                
-                # 更新探索率
+
+                # 更新探索率（使用配置常量）
                 self.exploration_rate *= self.exploration_decay
-                self.exploration_rate = max(0.05, self.exploration_rate)
+                self.exploration_rate = max(self._min_exploration_rate, self.exploration_rate)
 
                 # 智能早停检查（使用累积得分作为指标）
-                if i > warmup_rounds and early_stopping.update(-total_score):  # 使用负分数，因为我们要最大化分数
+                if early_stopping and i > warmup_rounds and early_stopping.update(-total_score):
                     logger_manager.info(f"自适应学习智能早停，已学习 {i + 1} 期")
                     break
 
                 # 更新进度条
                 progress_bar.update(1, f"期数: {current_row['issue']}, 预测器: {selected_predictor}, 中奖: {prize_level}")
-            
+
             progress_bar.finish("学习完成")
-            
+
         except KeyboardInterrupt:
             progress_bar.interrupt("用户中断")
             logger_manager.warning("学习被用户中断")
         except Exception as e:
             progress_bar.interrupt(f"错误: {e}")
             logger_manager.error("学习过程出错", e)
-        
-        # 汇总结果
+
+        # 汇总结果（添加 Regret 统计）
         final_results = {
             'total_periods': len(detailed_results),
             'total_wins': win_count,
@@ -517,13 +789,14 @@ class EnhancedAdaptiveLearningPredictor:
             'predictor_performance': copy.deepcopy(self.predictor_performance),
             'bandit_final_values': self.bandit.values.copy(),
             'bandit_final_counts': self.bandit.counts.copy(),
+            'regret_stats': self.bandit.get_regret_stats(),
             'detailed_results': detailed_results,
             'timestamp': datetime.now().isoformat()
         }
-        
+
         self.learning_history.append(final_results)
         logger_manager.info(f"增强学习完成，中奖率: {final_results['win_rate']:.3f}")
-        
+
         return final_results
     
     def generate_enhanced_prediction(self, count: int = 1, periods: int = 500) -> List[Dict]:
@@ -728,7 +1001,7 @@ class EnhancedAdaptiveLearningPredictor:
             # 补充候选号码到所需数量（使用频率分析而不是随机数）
             if len(front_candidates) < front_count:
                 from analyzer_modules import basic_analyzer
-                freq_analysis = basic_analyzer.frequency_analysis()
+                freq_analysis = basic_analyzer.frequency_analysis(periods)
                 front_freq = freq_analysis.get('front_frequency', {})
                 sorted_freq = sorted(front_freq.items(), key=lambda x: x[1], reverse=True)
 
@@ -740,7 +1013,7 @@ class EnhancedAdaptiveLearningPredictor:
 
             if len(back_candidates) < back_count:
                 from analyzer_modules import basic_analyzer
-                freq_analysis = basic_analyzer.frequency_analysis()
+                freq_analysis = basic_analyzer.frequency_analysis(periods)
                 back_freq = freq_analysis.get('back_frequency', {})
                 sorted_freq = sorted(back_freq.items(), key=lambda x: x[1], reverse=True)
 
@@ -836,7 +1109,7 @@ class EnhancedAdaptiveLearningPredictor:
 
                 predictor_name = self.predictor_names[arm]
                 try:
-                    front_balls, back_balls, _ = self._predict_with_predictor(predictor_name)
+                    front_balls, back_balls, _ = self._predict_with_predictor(predictor_name, periods)
                     # 排除胆码
                     front_tuo_candidates.update([b for b in front_balls if b not in front_dan])
                     back_tuo_candidates.update([b for b in back_balls if b not in back_dan])
@@ -847,7 +1120,7 @@ class EnhancedAdaptiveLearningPredictor:
             # 补充拖码到所需数量（使用频率分析而不是随机数）
             if len(front_tuo_candidates) < front_tuo_count:
                 from analyzer_modules import basic_analyzer
-                freq_analysis = basic_analyzer.frequency_analysis()
+                freq_analysis = basic_analyzer.frequency_analysis(periods)
                 front_freq = freq_analysis.get('front_frequency', {})
                 sorted_freq = sorted(front_freq.items(), key=lambda x: x[1], reverse=True)
 
@@ -1004,16 +1277,49 @@ class EnhancedAdaptiveLearningPredictor:
         }
 
 
-# ==================== 全局实例 ====================
-enhanced_adaptive_predictor = EnhancedAdaptiveLearningPredictor()
+# ==================== 兼容性别名和全局实例 ====================
+
+# 创建别名以保持兼容性
+AdaptiveLearningPredictor = EnhancedAdaptiveLearningPredictor
+
+# 全局实例（使用懒加载模式）
+_enhanced_adaptive_predictor = None
+
+
+def get_enhanced_adaptive_predictor():
+    """获取增强版自适应学习预测器实例（单例模式）"""
+    global _enhanced_adaptive_predictor
+    if _enhanced_adaptive_predictor is None:
+        _enhanced_adaptive_predictor = EnhancedAdaptiveLearningPredictor()
+    return _enhanced_adaptive_predictor
+
+
+def get_adaptive_predictor():
+    """获取自适应学习预测器实例（别名）"""
+    return get_enhanced_adaptive_predictor()
+
+
+# 向后兼容：提供 enhanced_adaptive_predictor 属性访问
+# 注意：推荐使用 get_enhanced_adaptive_predictor() 函数
+class _LazyPredictor:
+    """延迟加载代理，保持向后兼容性"""
+    _instance = None
+
+    def __getattr__(self, name):
+        if _LazyPredictor._instance is None:
+            _LazyPredictor._instance = get_enhanced_adaptive_predictor()
+        return getattr(_LazyPredictor._instance, name)
+
+
+enhanced_adaptive_predictor = _LazyPredictor()
 
 
 if __name__ == "__main__":
     # 测试自适应学习模块
-    print("🔧 测试自适应学习模块...")
+    print("测试自适应学习模块...")
 
     # 测试多臂老虎机
-    print("🎰 测试多臂老虎机...")
+    print("测试多臂老虎机...")
     bandit = MultiArmedBandit(3, "ucb1")
     for i in range(10):
         arm = bandit.select_arm()
@@ -1022,35 +1328,16 @@ if __name__ == "__main__":
     print(f"多臂老虎机测试完成，最优臂: {np.argmax(bandit.values)}")
 
     # 测试增强学习
-    print("🚀 测试增强学习...")
-    results = enhanced_adaptive_predictor.enhanced_adaptive_learning(100, 20)
+    print("测试增强学习...")
+    predictor = get_enhanced_adaptive_predictor()
+    results = predictor.enhanced_adaptive_learning(100, 20)
     print(f"增强学习测试完成，中奖率: {results.get('win_rate', 0):.3f}")
 
     # 测试增强预测
-    print("🎯 测试增强预测...")
-    predictions = enhanced_adaptive_predictor.generate_enhanced_prediction(1)
+    print("测试增强预测...")
+    predictions = predictor.generate_enhanced_prediction(1)
     if predictions:
         pred = predictions[0]
         print(f"增强预测: 前区 {pred['front_balls']}, 后区 {pred['back_balls']}")
 
-    print("✅ 自适应学习模块测试完成")
-
-
-# ==================== 兼容性别名和全局实例 ====================
-
-# 创建别名以保持兼容性
-AdaptiveLearningPredictor = EnhancedAdaptiveLearningPredictor
-
-# 全局实例
-enhanced_adaptive_predictor = None
-
-def get_enhanced_adaptive_predictor():
-    """获取增强版自适应学习预测器实例"""
-    global enhanced_adaptive_predictor
-    if enhanced_adaptive_predictor is None:
-        enhanced_adaptive_predictor = EnhancedAdaptiveLearningPredictor()
-    return enhanced_adaptive_predictor
-
-def get_adaptive_predictor():
-    """获取自适应学习预测器实例（别名）"""
-    return get_enhanced_adaptive_predictor()
+    print("自适应学习模块测试完成")

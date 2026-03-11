@@ -565,9 +565,12 @@ class PredictionCache:
             if self.cleanup_thread:
                 self.cleanup_thread.join(timeout=5)
 
-            # 在Python关闭时，logger_manager可能已经被清理，需要检查
-            if hasattr(logger_manager, 'debug') and callable(logger_manager.debug):
-                logger_manager.debug("缓存清理线程已停止")
+            # 在Python关闭时，内置函数可能已被清理，完全跳过日志记录
+            # 检查 open 内置函数是否仍然可用
+            import builtins
+            if hasattr(builtins, 'open') and builtins.open is not None:
+                if hasattr(logger_manager, 'debug') and callable(logger_manager.debug):
+                    logger_manager.debug("缓存清理线程已停止")
         except Exception:
             # 在Python关闭时，某些模块可能已经被清理，忽略错误
             pass
@@ -667,7 +670,7 @@ class PredictionCache:
         try:
             self.stop_cleanup_thread()
         except Exception:
-            # 在Python关闭时，某些模块可能已经被清理，忽略错误
+            # 在Python关闭时，某些模块可能已经被清理，忽略所有错误
             pass
 
 

@@ -25,6 +25,7 @@ export interface PredictionRequest {
   method: string
   count: number
   periods: number
+  missing_mode?: 'auto' | 'legacy' | 'enhanced'
   front_count?: number
   back_count?: number
   compound_mode?: boolean

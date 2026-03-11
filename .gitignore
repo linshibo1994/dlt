@@ -152,3 +152,6 @@ artifacts/cache/
 artifacts/logs/
 artifacts/models/
 artifacts/reports/
+# serena
+.serena
+#

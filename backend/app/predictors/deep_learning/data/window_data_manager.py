@@ -440,7 +440,7 @@ class WindowDataManager:
 
         windows = []
         for size in range(min_size, min(max_size + 1, len(self.df) + 1)):
-            window = self.df.tail(size)  # 取最近的数据
+            window = self.df.head(size).iloc[::-1].reset_index(drop=True)  # 取最近的数据
             windows.append(window)
 
         logger_manager.info(f"创建了 {len(windows)} 个扩展窗口，大小范围: {min_size}-{max_size}")
@@ -477,7 +477,7 @@ class WindowDataManager:
 
         for size in sizes:
             if size <= data_len:
-                window = self.df.tail(size)  # 取最近的数据
+                window = self.df.head(size).iloc[::-1].reset_index(drop=True)  # 取最近的数据
                 windows.append(window)
 
         logger_manager.info(f"创建了 {len(windows)} 个可变窗口，策略: {size_strategy}")

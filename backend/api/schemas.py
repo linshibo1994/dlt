@@ -11,7 +11,7 @@ from pydantic import BaseModel, Field, validator
 AlgorithmLiteral = Literal[
     'frequency', 'hot_cold', 'missing',
     'markov', 'markov_2nd', 'markov_3rd', 'adaptive_markov', 'markov_custom', 'markov_compound',
-    'bayesian', 'ensemble', 'clustering',
+    'bayesian', 'ensemble', 'clustering', 'consensus_halving',
     'super', 'adaptive', 'mixed_strategy', 'highly_integrated', 'advanced_integration',
     'nine_models', 'nine_models_compound',
     'compound', 'duplex',
@@ -41,6 +41,7 @@ class PredictionRequest(BaseModel):
     method: AlgorithmLiteral = Field('ensemble')
     count: int = Field(1, ge=1, le=100)
     periods: int = Field(500, ge=50, le=2748)
+    missing_mode: Optional[Literal['auto', 'legacy', 'enhanced']] = Field('auto')
     front_count: int = Field(8, ge=6, le=15)
     back_count: int = Field(4, ge=3, le=12)
     front_dan: int = Field(2, ge=1, le=5)

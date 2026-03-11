@@ -35,7 +35,7 @@ def fix_enhanced_predict_gpu_support():
                 # 获取历史数据
                 df = data_manager.get_data()
                 if df is not None and len(df) >= periods:
-                    historical_data = df.tail(periods).values
+                    historical_data = df.head(periods).values
 
                     # 使用GPU加速预测
                     predictions, metrics = gpu_accelerator.accelerated_prediction(

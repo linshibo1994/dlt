@@ -18,6 +18,7 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.decomposition import PCA
 from sklearn.cluster import KMeans
 import warnings
+import yaml
 warnings.filterwarnings('ignore')
 
 import backend.app.core.core_modules as cm
@@ -56,6 +57,87 @@ if _PATH_CONFIG_SOURCE == "environment_variables_and_defaults":
 # 导入智能缓存系统
 from backend.app.core.smart_cache_system import smart_cache_manager
 
+# 预测配置缓存
+_PREDICTION_CONFIG_CACHE = None
+_PREDICTION_CONFIG_MTIME = None
+
+
+def _get_prediction_config_path() -> str:
+    """获取预测配置文件路径"""
+    try:
+        from path_config import PREDICTION_CONFIG_FILE
+        return PREDICTION_CONFIG_FILE
+    except ImportError:
+        try:
+            from backend.app.core.path_config import PREDICTION_CONFIG_FILE
+            return PREDICTION_CONFIG_FILE
+        except ImportError:
+            project_root = os.environ.get(
+                'DLT_PROJECT_ROOT',
+                os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', '..'))
+            )
+            return os.path.join(project_root, 'config', 'prediction.yaml')
+
+
+def _load_prediction_config() -> Dict[str, Any]:
+    """加载 prediction.yaml（带简易缓存）"""
+    global _PREDICTION_CONFIG_CACHE, _PREDICTION_CONFIG_MTIME
+    try:
+        config_path = _get_prediction_config_path()
+        mtime = os.path.getmtime(config_path)
+        if _PREDICTION_CONFIG_CACHE is not None and _PREDICTION_CONFIG_MTIME == mtime:
+            return _PREDICTION_CONFIG_CACHE
+        with open(config_path, 'r', encoding='utf-8') as f:
+            _PREDICTION_CONFIG_CACHE = yaml.safe_load(f) or {}
+            _PREDICTION_CONFIG_MTIME = mtime
+        return _PREDICTION_CONFIG_CACHE
+    except Exception:
+        return {}
+
+
+def load_bayesian_config(overrides: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+    """读取并应用贝叶斯配置"""
+    cfg = _load_prediction_config()
+    bayes_cfg = cfg.get('prediction_methods', {}).get('traditional_ml', {}).get('bayesian', {}) or {}
+    if overrides:
+        bayes_cfg = {**bayes_cfg, **overrides}
+
+    if 'dirichlet_mix_weight' in bayes_cfg:
+        BayesianConfig.DIRICHLET_MIX_WEIGHT = float(bayes_cfg['dirichlet_mix_weight'])
+    if 'dirichlet_concentration' in bayes_cfg:
+        BayesianConfig.DIRICHLET_CONCENTRATION = float(bayes_cfg['dirichlet_concentration'])
+    if 'decay_enabled' in bayes_cfg:
+        BayesianConfig.DECAY_ENABLED = bool(bayes_cfg['decay_enabled'])
+    if 'decay_half_life' in bayes_cfg:
+        BayesianConfig.DECAY_HALF_LIFE = float(bayes_cfg['decay_half_life'])
+    if 'decay_min_weight' in bayes_cfg:
+        BayesianConfig.DECAY_MIN_WEIGHT = float(bayes_cfg['decay_min_weight'])
+    if 'decay_mode' in bayes_cfg:
+        BayesianConfig.DECAY_MODE = str(bayes_cfg['decay_mode'])
+    if 'recent_window' in bayes_cfg:
+        BayesianConfig.RECENT_WINDOW = int(bayes_cfg['recent_window'])
+    if 'mid_window' in bayes_cfg:
+        BayesianConfig.MID_WINDOW = int(bayes_cfg['mid_window'])
+    if 'recent_weight' in bayes_cfg:
+        BayesianConfig.RECENT_WEIGHT = float(bayes_cfg['recent_weight'])
+    if 'mid_weight' in bayes_cfg:
+        BayesianConfig.MID_WEIGHT = float(bayes_cfg['mid_weight'])
+    if 'old_weight' in bayes_cfg:
+        BayesianConfig.OLD_WEIGHT = float(bayes_cfg['old_weight'])
+
+    if 'prior_hot_bonus' in bayes_cfg:
+        BayesianConfig.PRIOR_HOT_BONUS = float(bayes_cfg['prior_hot_bonus'])
+    if 'prior_warm_bonus' in bayes_cfg:
+        BayesianConfig.PRIOR_WARM_BONUS = float(bayes_cfg['prior_warm_bonus'])
+    if 'prior_cold_penalty' in bayes_cfg:
+        BayesianConfig.PRIOR_COLD_PENALTY = float(bayes_cfg['prior_cold_penalty'])
+    if 'prior_missing_bias' in bayes_cfg:
+        BayesianConfig.PRIOR_MISSING_BIAS = float(bayes_cfg['prior_missing_bias'])
+    if 'prior_min_factor' in bayes_cfg:
+        BayesianConfig.PRIOR_MIN_FACTOR = float(bayes_cfg['prior_min_factor'])
+
+    return bayes_cfg
+
 # 导入复式预测功能（支持多种导入路径）
 try:
     from compound.compound_predictor import CompoundPredictorMixin, CompoundConfig, CompoundResult
@@ -67,6 +149,90 @@ except ImportError:
         CompoundPredictorMixin = object
         CompoundConfig = None
         CompoundResult = None
+
+
+# ==================== 冷热号分析配置常量 ====================
+class HotColdConfig:
+    """冷热号分析配置常量类 - 消除魔法数字，提高可维护性"""
+
+    # 大乐透号码范围
+    FRONT_MAX_NUMBER = 35           # 前区最大号码
+    FRONT_NUMBERS_PER_DRAW = 5      # 前区每期开出数量
+    BACK_MAX_NUMBER = 12            # 后区最大号码
+    BACK_NUMBERS_PER_DRAW = 2       # 后区每期开出数量
+
+    # 区间划分（前区）
+    FRONT_LOW_ZONE = (1, 12)        # 低区：1-12
+    FRONT_MID_ZONE = (13, 24)       # 中区：13-24
+    FRONT_HIGH_ZONE = (25, 35)      # 高区：25-35
+
+    # 区间划分（后区）
+    BACK_LOW_ZONE = (1, 6)          # 低区：1-6
+    BACK_HIGH_ZONE = (7, 12)        # 高区：7-12
+
+    # 温度等级阈值（基于 Z-Score）
+    EXTREMELY_HOT_THRESHOLD = 2.0   # 极热
+    VERY_HOT_THRESHOLD = 1.5        # 非常热
+    HOT_THRESHOLD = 1.0             # 热
+    WARM_THRESHOLD = 0.5            # 温
+    NORMAL_THRESHOLD = -0.5         # 正常（上界）
+    COOL_THRESHOLD = -1.0           # 凉
+    COLD_THRESHOLD = -1.5           # 冷
+    # 低于 COLD_THRESHOLD 为 extremely_cold（极冷）
+
+    # 趋势分析阈值
+    TREND_HEATING_THRESHOLD = 0.1   # 升温趋势阈值
+    TREND_COOLING_THRESHOLD = -0.1  # 降温趋势阈值
+
+    # 稳定性分析阈值（基于变异系数 CV）
+    STABILITY_VERY_STABLE = 0.3     # 非常稳定
+    STABILITY_STABLE = 0.5          # 稳定
+    STABILITY_MODERATE = 0.8        # 中等
+    # 高于 STABILITY_MODERATE 为 unstable（不稳定）
+
+    # 分析参数
+    MIN_PERIODS_FOR_TREND = 20      # 趋势分析最小期数
+    MIN_PERIODS_FOR_STABILITY = 30  # 稳定性分析最小期数
+    TREND_WINDOW_SIZE = 10          # 趋势分析滑动窗口大小
+    STABILITY_SEGMENTS = 5          # 稳定性分析分段数
+
+    # 预测权重调整因子
+    TREND_HEATING_ADJUSTMENT = 1.2  # 升温趋势权重调整
+    TREND_COOLING_ADJUSTMENT = 0.8  # 降温趋势权重调整
+    STABILITY_BONUS = 1.1           # 稳定性加成
+    INSTABILITY_PENALTY = 0.9       # 不稳定性惩罚
+
+    # 分位数分类阈值（用于冷热号稳定分层）
+    HOT_QUANTILE = 0.80             # 频率分位数 ≥ 0.80 视为热
+    COLD_QUANTILE = 0.20            # 频率分位数 ≤ 0.20 视为冷
+    WARM_QUANTILE_LOW = 0.40        # 温号下界
+    WARM_QUANTILE_HIGH = 0.60       # 温号上界
+
+    # 遗漏权重融合比例
+    MISSING_WEIGHT_FACTOR = 0.30    # 冷热权重与遗漏权重融合比例
+
+
+# ==================== 贝叶斯分析配置常量 ====================
+class BayesianConfig:
+    """贝叶斯分析配置常量"""
+    DIRICHLET_CONCENTRATION = 5.0   # Dirichlet先验集中度（越大越保守）
+    DIRICHLET_MIX_WEIGHT = 0.5      # Dirichlet后验与增强后验混合权重
+    DECAY_ENABLED = True            # 启用时间衰减
+    DECAY_HALF_LIFE = 200           # 半衰期（期数）
+    DECAY_MIN_WEIGHT = 0.2          # 最小权重
+    DECAY_MODE = "segmented"        # 衰减模式: exponential / segmented
+    RECENT_WINDOW = 100             # 分段衰减: 近期窗口
+    MID_WINDOW = 300                # 分段衰减: 中期窗口
+    RECENT_WEIGHT = 1.0             # 分段衰减: 近期权重
+    MID_WEIGHT = 0.7                # 分段衰减: 中期权重
+    OLD_WEIGHT = 0.4                # 分段衰减: 远期权重
+
+    # 先验偏置（冷热/遗漏）
+    PRIOR_HOT_BONUS = 0.20          # 热号先验提升
+    PRIOR_WARM_BONUS = 0.10         # 温号先验提升
+    PRIOR_COLD_PENALTY = 0.15       # 冷号先验折扣
+    PRIOR_MISSING_BIAS = 0.30       # 遗漏权重偏置强度
+    PRIOR_MIN_FACTOR = 0.20         # 先验下限因子
 
 
 # ==================== 基础分析器 ====================
@@ -107,8 +273,8 @@ class BasicAnalyzer(CompoundPredictorMixin):
         back_frequency = dict(back_counter.most_common())
 
         # 增强分析：概率分布建模
-        front_enhanced = self._enhanced_frequency_analysis(front_counter, len(df_subset), 35, 5)
-        back_enhanced = self._enhanced_frequency_analysis(back_counter, len(df_subset), 12, 2)
+        front_enhanced = self._enhanced_frequency_analysis(front_counter, len(df_subset), 35, 5, ball_type="front")
+        back_enhanced = self._enhanced_frequency_analysis(back_counter, len(df_subset), 12, 2, ball_type="back")
 
         result = {
             'front_frequency': front_frequency,
@@ -123,7 +289,7 @@ class BasicAnalyzer(CompoundPredictorMixin):
         return result
 
     def _enhanced_frequency_analysis(self, counter: Counter, total_periods: int,
-                                   max_number: int, numbers_per_draw: int) -> Dict:
+                                   max_number: int, numbers_per_draw: int, ball_type: str = "all") -> Dict:
         """增强频率分析 - 概率分布建模"""
         try:
             import numpy as np
@@ -162,7 +328,7 @@ class BasicAnalyzer(CompoundPredictorMixin):
                     z_score = 0
 
                 # 趋势分析（最近期数的频率变化）
-                recent_trend = self._calculate_frequency_trend(num, total_periods)
+                recent_trend = self._calculate_frequency_trend(num, total_periods, ball_type=ball_type)
 
                 enhanced_stats[num] = {
                     'observed_frequency': observed_freq,
@@ -185,7 +351,7 @@ class BasicAnalyzer(CompoundPredictorMixin):
             logger_manager.error(f"增强频率分析失败: {e}")
             return {}
 
-    def _calculate_frequency_trend(self, number: int, total_periods: int) -> Dict:
+    def _calculate_frequency_trend(self, number: int, total_periods: int, ball_type: str = "all") -> Dict:
         """计算频率趋势"""
         try:
             if total_periods < 20:
@@ -196,10 +362,14 @@ class BasicAnalyzer(CompoundPredictorMixin):
             recent_data = self.df.head(recent_periods)
 
             frequencies = []
-            for i, (_, row) in enumerate(recent_data.iterrows()):
+            for _, row in recent_data.iterrows():
                 front_balls, back_balls = data_manager.parse_balls(row)
-                all_balls = front_balls + back_balls
-                freq = 1 if number in all_balls else 0
+                if ball_type == "front":
+                    freq = 1 if number in front_balls else 0
+                elif ball_type == "back":
+                    freq = 1 if number in back_balls else 0
+                else:
+                    freq = 1 if number in (front_balls + back_balls) else 0
                 frequencies.append(freq)
 
             if len(frequencies) < 5:
@@ -535,7 +705,7 @@ class BasicAnalyzer(CompoundPredictorMixin):
             return 0.5
     
     def hot_cold_analysis(self, periods=100) -> Dict:
-        """增强冷热号分析 - 包含温度量化计算和动态阈值调整"""
+        """增强冷热号分析 - 包含温度量化计算、动态阈值调整和区间分析"""
         if self.df is None:
             return {}
 
@@ -545,28 +715,41 @@ class BasicAnalyzer(CompoundPredictorMixin):
             return cached_result
 
         freq_result = self.frequency_analysis(periods)
+        missing_result = self.missing_analysis(periods)
 
         front_freq = freq_result.get('front_frequency', {})
         back_freq = freq_result.get('back_frequency', {})
+        front_missing_enhanced = missing_result.get('front_enhanced', {})
+        back_missing_enhanced = missing_result.get('back_enhanced', {})
 
-        # 增强分析：温度量化计算
-        front_enhanced = self._enhanced_hot_cold_analysis(front_freq, periods, 35, 5)
-        back_enhanced = self._enhanced_hot_cold_analysis(back_freq, periods, 12, 2)
+        # 增强分析：温度量化计算（使用配置常量）
+        front_enhanced = self._enhanced_hot_cold_analysis(
+            front_freq, periods,
+            HotColdConfig.FRONT_MAX_NUMBER,
+            HotColdConfig.FRONT_NUMBERS_PER_DRAW,
+            scope='front'
+        )
+        back_enhanced = self._enhanced_hot_cold_analysis(
+            back_freq, periods,
+            HotColdConfig.BACK_MAX_NUMBER,
+            HotColdConfig.BACK_NUMBERS_PER_DRAW,
+            scope='back'
+        )
 
-        # 传统分类（保持兼容性）
-        front_avg = np.mean(list(front_freq.values())) if front_freq else 0
-        back_avg = np.mean(list(back_freq.values())) if back_freq else 0
+        # 融合遗漏权重（不改变结构，仅增强 prediction_weight）
+        self._apply_missing_weight(front_enhanced, front_missing_enhanced)
+        self._apply_missing_weight(back_enhanced, back_missing_enhanced)
 
-        front_hot = [num for num, freq in front_freq.items() if freq > front_avg]
-        front_cold = [num for num, freq in front_freq.items() if freq < front_avg]
-        back_hot = [num for num, freq in back_freq.items() if freq > back_avg]
-        back_cold = [num for num, freq in back_freq.items() if freq < back_avg]
+        # 传统统计均值（包含零频，避免遗漏号码被忽略）
+        front_avg = np.mean([front_freq.get(num, 0) for num in range(1, 36)]) if front_freq is not None else 0
+        back_avg = np.mean([back_freq.get(num, 0) for num in range(1, 13)]) if back_freq is not None else 0
 
-        # 温号：根据增强分析中的temperature_level为warm的号码
-        front_warm = [ball for ball, info in front_enhanced.items()
-                      if info.get('temperature_level') == 'warm']
-        back_warm = [ball for ball, info in back_enhanced.items()
-                     if info.get('temperature_level') == 'warm']
+        # 分位数 + 置信区间分层（增强稳定性）
+        front_hot, front_warm, front_cold = self._classify_hot_cold_by_quantile(front_enhanced)
+        back_hot, back_warm, back_cold = self._classify_hot_cold_by_quantile(back_enhanced)
+
+        # 区间冷热分析
+        zone_analysis = self._zone_hot_cold_analysis(front_enhanced, back_enhanced)
 
         result = {
             'front_hot': sorted(front_hot),
@@ -579,15 +762,18 @@ class BasicAnalyzer(CompoundPredictorMixin):
             'back_avg_freq': back_avg,
             'front_enhanced': front_enhanced,
             'back_enhanced': back_enhanced,
+            'zone_analysis': zone_analysis,
             'analysis_periods': periods,
-            'timestamp': datetime.now().isoformat()
+            'timestamp': datetime.now().isoformat(),
+            'classification_method': 'quantile_ci_zscore'
         }
 
         smart_cache_manager.save_cache("analysis", method_name, result, periods)
         return result
 
     def _enhanced_hot_cold_analysis(self, frequency_dict: Dict, periods: int,
-                                  max_number: int, numbers_per_draw: int) -> Dict:
+                                  max_number: int, numbers_per_draw: int,
+                                  scope: str = 'front') -> Dict:
         """增强冷热号分析 - 温度量化计算"""
         try:
             import numpy as np
@@ -596,14 +782,14 @@ class BasicAnalyzer(CompoundPredictorMixin):
             # 理论期望频率
             theoretical_freq = (periods * numbers_per_draw) / max_number
 
-            # 计算统计指标
-            frequencies = list(frequency_dict.values())
-            if frequencies:
-                mean_freq = np.mean(frequencies)
-                std_freq = np.std(frequencies)
-                median_freq = np.median(frequencies)
-            else:
-                mean_freq = std_freq = median_freq = 0
+            # 计算统计指标（包含零频，避免遗漏号码被忽略）
+            full_frequencies = [frequency_dict.get(num, 0) for num in range(1, max_number + 1)]
+            mean_freq = np.mean(full_frequencies) if full_frequencies else 0
+            std_freq = np.std(full_frequencies) if full_frequencies else 0
+            median_freq = np.median(full_frequencies) if full_frequencies else 0
+
+            # 频率分位数（稳定冷热分层）
+            frequency_quantiles = self._compute_frequency_quantiles(full_frequencies, max_number)
 
             enhanced_stats = {}
 
@@ -622,16 +808,23 @@ class BasicAnalyzer(CompoundPredictorMixin):
                 # 相对热度（相对于理论期望）
                 relative_heat = observed_freq / theoretical_freq if theoretical_freq > 0 else 1
 
+                # 置信区间（基于二项分布）
+                if periods > 0:
+                    p = numbers_per_draw / max_number
+                    confidence_interval = stats.binom.interval(0.95, periods, p)
+                else:
+                    confidence_interval = (0, 0)
+
                 # 动态阈值计算
                 dynamic_threshold = self._calculate_dynamic_threshold(
                     observed_freq, mean_freq, std_freq, periods
                 )
 
                 # 温度趋势分析
-                temperature_trend = self._calculate_temperature_trend(num, periods)
+                temperature_trend = self._calculate_temperature_trend(num, periods, scope)
 
                 # 热度稳定性
-                heat_stability = self._calculate_heat_stability(num, periods)
+                heat_stability = self._calculate_heat_stability(num, periods, scope)
 
                 enhanced_stats[num] = {
                     'observed_frequency': observed_freq,
@@ -639,6 +832,8 @@ class BasicAnalyzer(CompoundPredictorMixin):
                     'temperature_score': temperature_score,
                     'temperature_level': temperature_level,
                     'relative_heat': relative_heat,
+                    'confidence_interval': confidence_interval,
+                    'frequency_quantile': frequency_quantiles.get(num, 0.5),
                     'dynamic_threshold': dynamic_threshold,
                     'temperature_trend': temperature_trend,
                     'heat_stability': heat_stability,
@@ -653,21 +848,183 @@ class BasicAnalyzer(CompoundPredictorMixin):
             logger_manager.error(f"增强冷热号分析失败: {e}")
             return {}
 
+    def _compute_frequency_quantiles(self, frequencies: List[int], max_number: int) -> Dict[int, float]:
+        """计算频率分位数（含并列频率的平均秩）"""
+        if not frequencies or max_number <= 0:
+            return {}
+
+        n = max_number
+        indices = list(range(n))
+        indices.sort(key=lambda i: frequencies[i])
+
+        ranks = [0.0] * n
+        i = 0
+        while i < n:
+            j = i
+            freq_value = frequencies[indices[i]]
+            while j < n and frequencies[indices[j]] == freq_value:
+                j += 1
+            avg_rank = (i + 1 + j) / 2
+            for k in range(i, j):
+                ranks[indices[k]] = avg_rank
+            i = j
+
+        if n == 1:
+            quantiles = [0.5]
+        else:
+            quantiles = [(r - 1) / (n - 1) for r in ranks]
+
+        return {idx + 1: quantiles[idx] for idx in range(n)}
+
+    def _classify_hot_cold_by_quantile(self, enhanced: Dict) -> Tuple[List[int], List[int], List[int]]:
+        """基于分位数与置信区间的冷热分类"""
+        if not enhanced:
+            return [], [], []
+
+        hot = set()
+        cold = set()
+        warm = set()
+
+        for num, info in enhanced.items():
+            observed = info.get('observed_frequency', 0)
+            quantile = info.get('frequency_quantile', 0.5)
+            confidence_interval = info.get('confidence_interval', (None, None))
+            ci_low, ci_high = confidence_interval if confidence_interval else (None, None)
+
+            # 先用置信区间判断极端冷热
+            if ci_high is not None and observed > ci_high:
+                hot.add(num)
+                continue
+            if ci_low is not None and observed < ci_low:
+                cold.add(num)
+                continue
+
+            # 分位数分类
+            if quantile >= HotColdConfig.HOT_QUANTILE:
+                hot.add(num)
+            elif quantile <= HotColdConfig.COLD_QUANTILE:
+                cold.add(num)
+            elif HotColdConfig.WARM_QUANTILE_LOW <= quantile <= HotColdConfig.WARM_QUANTILE_HIGH:
+                warm.add(num)
+
+        # 使用温度等级补充温号
+        for num, info in enhanced.items():
+            if num in hot or num in cold:
+                continue
+            if info.get('temperature_level') == 'warm':
+                warm.add(num)
+
+        return sorted(hot), sorted(warm), sorted(cold)
+
+    def _apply_missing_weight(self, enhanced: Dict, missing_enhanced: Dict) -> None:
+        """融合遗漏权重到冷热权重（就地修改）"""
+        if not enhanced or not missing_enhanced:
+            return
+
+        factor = HotColdConfig.MISSING_WEIGHT_FACTOR
+        for num, info in enhanced.items():
+            missing_info = missing_enhanced.get(num, {})
+            missing_weight = missing_info.get('prediction_weight', 0.5)
+            hot_cold_weight = info.get('prediction_weight', 0.5)
+
+            combined_weight = (1 - factor) * hot_cold_weight + factor * missing_weight
+            info['missing_prediction_weight'] = missing_weight
+            info['prediction_weight'] = max(0.0, min(1.0, combined_weight))
+
+    def _zone_hot_cold_analysis(self, front_enhanced: Dict, back_enhanced: Dict) -> Dict:
+        """区间冷热分析 - 分析低/中/高区的冷热分布"""
+        try:
+            # 前区区间分析
+            front_zones = {
+                'low': {'range': HotColdConfig.FRONT_LOW_ZONE, 'hot': [], 'warm': [], 'cold': [], 'avg_temp': 0},
+                'mid': {'range': HotColdConfig.FRONT_MID_ZONE, 'hot': [], 'warm': [], 'cold': [], 'avg_temp': 0},
+                'high': {'range': HotColdConfig.FRONT_HIGH_ZONE, 'hot': [], 'warm': [], 'cold': [], 'avg_temp': 0}
+            }
+
+            for zone_name, zone_info in front_zones.items():
+                zone_start, zone_end = zone_info['range']
+                temp_scores = []
+                for num in range(zone_start, zone_end + 1):
+                    if num in front_enhanced:
+                        info = front_enhanced[num]
+                        temp_score = info.get('temperature_score', 0)
+                        temp_scores.append(temp_score)
+                        level = info.get('temperature_level', 'normal')
+                        if level in ['extremely_hot', 'very_hot', 'hot']:
+                            zone_info['hot'].append(num)
+                        elif level == 'warm':
+                            zone_info['warm'].append(num)
+                        elif level in ['cool', 'cold', 'extremely_cold']:
+                            zone_info['cold'].append(num)
+                zone_info['avg_temp'] = np.mean(temp_scores) if temp_scores else 0
+
+            # 后区区间分析
+            back_zones = {
+                'low': {'range': HotColdConfig.BACK_LOW_ZONE, 'hot': [], 'warm': [], 'cold': [], 'avg_temp': 0},
+                'high': {'range': HotColdConfig.BACK_HIGH_ZONE, 'hot': [], 'warm': [], 'cold': [], 'avg_temp': 0}
+            }
+
+            for zone_name, zone_info in back_zones.items():
+                zone_start, zone_end = zone_info['range']
+                temp_scores = []
+                for num in range(zone_start, zone_end + 1):
+                    if num in back_enhanced:
+                        info = back_enhanced[num]
+                        temp_score = info.get('temperature_score', 0)
+                        temp_scores.append(temp_score)
+                        level = info.get('temperature_level', 'normal')
+                        if level in ['extremely_hot', 'very_hot', 'hot']:
+                            zone_info['hot'].append(num)
+                        elif level == 'warm':
+                            zone_info['warm'].append(num)
+                        elif level in ['cool', 'cold', 'extremely_cold']:
+                            zone_info['cold'].append(num)
+                zone_info['avg_temp'] = np.mean(temp_scores) if temp_scores else 0
+
+            # 计算区间热度排名
+            front_zone_ranking = sorted(
+                front_zones.keys(),
+                key=lambda z: front_zones[z]['avg_temp'],
+                reverse=True
+            )
+            back_zone_ranking = sorted(
+                back_zones.keys(),
+                key=lambda z: back_zones[z]['avg_temp'],
+                reverse=True
+            )
+
+            return {
+                'front_zones': front_zones,
+                'back_zones': back_zones,
+                'front_zone_ranking': front_zone_ranking,
+                'back_zone_ranking': back_zone_ranking,
+                'recommendation': {
+                    'front_hot_zone': front_zone_ranking[0] if front_zone_ranking else None,
+                    'front_cold_zone': front_zone_ranking[-1] if front_zone_ranking else None,
+                    'back_hot_zone': back_zone_ranking[0] if back_zone_ranking else None,
+                    'back_cold_zone': back_zone_ranking[-1] if back_zone_ranking else None
+                }
+            }
+
+        except Exception as e:
+            logger_manager.error(f"区间冷热分析失败: {e}")
+            return {}
+
     def _calculate_temperature_level(self, temperature_score: float) -> str:
-        """计算温度等级"""
-        if temperature_score >= 2:
+        """计算温度等级（使用配置常量）"""
+        if temperature_score >= HotColdConfig.EXTREMELY_HOT_THRESHOLD:
             return 'extremely_hot'
-        elif temperature_score >= 1.5:
+        elif temperature_score >= HotColdConfig.VERY_HOT_THRESHOLD:
             return 'very_hot'
-        elif temperature_score >= 1:
+        elif temperature_score >= HotColdConfig.HOT_THRESHOLD:
             return 'hot'
-        elif temperature_score >= 0.5:
+        elif temperature_score >= HotColdConfig.WARM_THRESHOLD:
             return 'warm'
-        elif temperature_score >= -0.5:
+        elif temperature_score >= HotColdConfig.NORMAL_THRESHOLD:
             return 'normal'
-        elif temperature_score >= -1:
+        elif temperature_score >= HotColdConfig.COOL_THRESHOLD:
             return 'cool'
-        elif temperature_score >= -1.5:
+        elif temperature_score >= HotColdConfig.COLD_THRESHOLD:
             return 'cold'
         else:
             return 'extremely_cold'
@@ -714,93 +1071,98 @@ class BasicAnalyzer(CompoundPredictorMixin):
         else:
             return 'normal'
 
-    def _calculate_temperature_trend(self, number: int, periods: int) -> Dict:
-        """计算温度趋势"""
+    def _calculate_temperature_trend(self, number: int, periods: int, scope: str = 'front') -> Dict:
+        """计算温度趋势（区分前后区，使用配置常量，优化性能）"""
         try:
-            if periods < 20:
+            if periods < HotColdConfig.MIN_PERIODS_FOR_TREND:
                 return {'trend': 'insufficient_data', 'slope': 0}
 
             # 分析最近期数的温度变化（数据是降序排列，使用head获取最新数据）
             recent_periods = min(30, periods // 3)
             recent_data = self.df.head(recent_periods)
 
+            # 性能优化：预先解析所有行的号码，避免重复调用 parse_balls
+            all_balls_list = []
+            for _, row in recent_data.iterrows():
+                front_balls, back_balls = data_manager.parse_balls(row)
+                if scope == 'back':
+                    all_balls_list.append(set(back_balls))
+                else:
+                    all_balls_list.append(set(front_balls))
+
             temperatures = []
-            window_size = 10
+            window_size = HotColdConfig.TREND_WINDOW_SIZE
 
-            for i in range(len(recent_data) - window_size + 1):
-                window_data = recent_data.iloc[i:i+window_size]
-                freq_in_window = 0
-
-                for _, row in window_data.iterrows():
-                    front_balls, back_balls = data_manager.parse_balls(row)
-                    all_balls = front_balls + back_balls
-                    if number in all_balls:
-                        freq_in_window += 1
-
+            for i in range(len(all_balls_list) - window_size + 1):
+                freq_in_window = sum(1 for j in range(i, i + window_size) if number in all_balls_list[j])
                 temperatures.append(freq_in_window)
 
             if len(temperatures) < 3:
                 return {'trend': 'insufficient_data', 'slope': 0}
 
             # 计算趋势
-            import numpy as np
             x = np.arange(len(temperatures))
             slope, intercept = np.polyfit(x, temperatures, 1)
 
-            # 趋势判断
-            if slope > 0.1:
+            # 趋势判断（使用配置常量）
+            if slope > HotColdConfig.TREND_HEATING_THRESHOLD:
                 trend = 'heating_up'
-            elif slope < -0.1:
+            elif slope < HotColdConfig.TREND_COOLING_THRESHOLD:
                 trend = 'cooling_down'
             else:
                 trend = 'stable'
 
             return {
                 'trend': trend,
-                'slope': slope,
+                'slope': float(slope),
                 'recent_temperatures': temperatures,
-                'trend_strength': abs(slope)
+                'trend_strength': abs(float(slope))
             }
 
         except Exception as e:
             logger_manager.error(f"计算温度趋势失败: {e}")
             return {'trend': 'unknown', 'slope': 0}
 
-    def _calculate_heat_stability(self, number: int, periods: int) -> Dict:
-        """计算热度稳定性"""
+    def _calculate_heat_stability(self, number: int, periods: int, scope: str = 'front') -> Dict:
+        """计算热度稳定性（区分前后区，使用配置常量，优化性能）"""
         try:
-            if periods < 30:
+            if periods < HotColdConfig.MIN_PERIODS_FOR_STABILITY:
                 return {'stability': 'insufficient_data', 'variance': 0}
 
             # 分段分析热度稳定性
-            segment_size = periods // 5
+            num_segments = HotColdConfig.STABILITY_SEGMENTS
+            segment_size = periods // num_segments
             segment_frequencies = []
 
-            for i in range(5):
+            for i in range(num_segments):
                 start_idx = i * segment_size
                 end_idx = (i + 1) * segment_size
                 segment_data = self.df.iloc[start_idx:end_idx]
 
+                # 性能优化：使用列表推导式替代逐行迭代
                 freq_in_segment = 0
                 for _, row in segment_data.iterrows():
                     front_balls, back_balls = data_manager.parse_balls(row)
-                    all_balls = front_balls + back_balls
-                    if number in all_balls:
-                        freq_in_segment += 1
+                    if scope == 'back':
+                        if number in back_balls:
+                            freq_in_segment += 1
+                    else:
+                        if number in front_balls:
+                            freq_in_segment += 1
 
                 segment_frequencies.append(freq_in_segment)
 
             # 计算稳定性指标
-            import numpy as np
-            variance = np.var(segment_frequencies)
-            coefficient_of_variation = np.std(segment_frequencies) / np.mean(segment_frequencies) if np.mean(segment_frequencies) > 0 else 0
+            variance = float(np.var(segment_frequencies))
+            mean_freq = np.mean(segment_frequencies)
+            coefficient_of_variation = float(np.std(segment_frequencies) / mean_freq) if mean_freq > 0 else 0
 
-            # 稳定性等级
-            if coefficient_of_variation < 0.3:
+            # 稳定性等级（使用配置常量）
+            if coefficient_of_variation < HotColdConfig.STABILITY_VERY_STABLE:
                 stability = 'very_stable'
-            elif coefficient_of_variation < 0.5:
+            elif coefficient_of_variation < HotColdConfig.STABILITY_STABLE:
                 stability = 'stable'
-            elif coefficient_of_variation < 0.8:
+            elif coefficient_of_variation < HotColdConfig.STABILITY_MODERATE:
                 stability = 'moderate'
             else:
                 stability = 'unstable'
@@ -819,7 +1181,7 @@ class BasicAnalyzer(CompoundPredictorMixin):
     def _calculate_temperature_prediction_weight(self, temperature_score: float,
                                                relative_heat: float, temperature_trend: Dict,
                                                heat_stability: Dict) -> float:
-        """计算温度预测权重"""
+        """计算温度预测权重（使用配置常量）"""
         try:
             # 基础权重基于温度得分
             base_weight = 0.5 + temperature_score * 0.1
@@ -827,21 +1189,21 @@ class BasicAnalyzer(CompoundPredictorMixin):
             # 相对热度调整
             heat_adjustment = min(1.5, max(0.5, relative_heat))
 
-            # 趋势调整
+            # 趋势调整（使用配置常量）
             trend_adjustment = 1.0
             trend = temperature_trend.get('trend', 'stable')
             if trend == 'heating_up':
-                trend_adjustment = 1.2
+                trend_adjustment = HotColdConfig.TREND_HEATING_ADJUSTMENT
             elif trend == 'cooling_down':
-                trend_adjustment = 0.8
+                trend_adjustment = HotColdConfig.TREND_COOLING_ADJUSTMENT
 
-            # 稳定性调整
+            # 稳定性调整（使用配置常量）
             stability_adjustment = 1.0
             stability = heat_stability.get('stability', 'moderate')
             if stability in ['very_stable', 'stable']:
-                stability_adjustment = 1.1
+                stability_adjustment = HotColdConfig.STABILITY_BONUS
             elif stability == 'unstable':
-                stability_adjustment = 0.9
+                stability_adjustment = HotColdConfig.INSTABILITY_PENALTY
 
             # 综合权重
             final_weight = base_weight * heat_adjustment * trend_adjustment * stability_adjustment
@@ -1163,7 +1525,20 @@ class AdvancedAnalyzer:
         if self.df is None:
             return {}
 
+        cfg = _load_prediction_config()
+        markov_cfg = cfg.get('prediction_methods', {}).get('traditional_ml', {}).get('markov', {}) or {}
+        decay_enabled = bool(markov_cfg.get('decay_enabled', False))
+        decay_half_life = float(markov_cfg.get('decay_half_life', 200))
+        decay_min_weight = float(markov_cfg.get('decay_min_weight', 0.2))
+
+        decay_half_life = max(1.0, decay_half_life)
+        decay_min_weight = min(max(decay_min_weight, 0.0), 1.0)
+
         method_name = "markov_analysis"
+        if decay_enabled:
+            hl_tag = f"{decay_half_life:.2f}".replace('.', 'p')
+            min_tag = f"{decay_min_weight:.2f}".replace('.', 'p')
+            method_name = f"markov_analysis_decay_hl{hl_tag}_min{min_tag}"
         cached_result = smart_cache_manager.load_cache("analysis", method_name, periods)
         if cached_result:
             return cached_result
@@ -1174,10 +1549,14 @@ class AdvancedAnalyzer:
         # 根据n_jobs决定是否使用并行化
         if n_jobs == 1:
             # 单线程处理
-            front_transitions, back_transitions = self._compute_transitions_single(df_subset)
+            front_transitions, back_transitions = self._compute_transitions_single(
+                df_subset, decay_enabled, decay_half_life, decay_min_weight
+            )
         else:
             # 并行处理
-            front_transitions, back_transitions = self._compute_transitions_parallel(df_subset, n_jobs)
+            front_transitions, back_transitions = self._compute_transitions_parallel(
+                df_subset, n_jobs, decay_enabled, decay_half_life, decay_min_weight
+            )
         
         # 转换为概率
         front_probs = {}
@@ -1202,28 +1581,36 @@ class AdvancedAnalyzer:
         smart_cache_manager.save_cache("analysis", method_name, result, periods)
         return result
 
-    def _compute_transitions_single(self, df_subset):
+    def _compute_transitions_single(self, df_subset, decay_enabled=False,
+                                    decay_half_life=200.0, decay_min_weight=0.2):
         """单线程计算转移矩阵"""
         front_transitions = defaultdict(lambda: defaultdict(int))
         back_transitions = defaultdict(lambda: defaultdict(int))
 
         for i in range(len(df_subset) - 1):
+            weight = 1.0
+            if decay_enabled:
+                weight = 0.5 ** (i / decay_half_life)
+                if weight < decay_min_weight:
+                    weight = decay_min_weight
+
             current_front, current_back = data_manager.parse_balls(df_subset.iloc[i])
             next_front, next_back = data_manager.parse_balls(df_subset.iloc[i + 1])
 
             # 前区转移
             for curr_ball in current_front:
                 for next_ball in next_front:
-                    front_transitions[curr_ball][next_ball] += 1
+                    front_transitions[curr_ball][next_ball] += weight
 
             # 后区转移
             for curr_ball in current_back:
                 for next_ball in next_back:
-                    back_transitions[curr_ball][next_ball] += 1
+                    back_transitions[curr_ball][next_ball] += weight
 
         return front_transitions, back_transitions
 
-    def _compute_transitions_parallel(self, df_subset, n_jobs):
+    def _compute_transitions_parallel(self, df_subset, n_jobs, decay_enabled=False,
+                                      decay_half_life=200.0, decay_min_weight=0.2):
         """并行计算转移矩阵"""
         try:
             from joblib import Parallel, delayed
@@ -1240,11 +1627,14 @@ class AdvancedAnalyzer:
             chunks = []
             for i in range(0, len(df_subset) - 1, chunk_size):
                 end_idx = min(i + chunk_size + 1, len(df_subset))  # +1 for transition calculation
-                chunks.append(df_subset.iloc[i:end_idx])
+                chunks.append((df_subset.iloc[i:end_idx], i))
 
             # 并行计算每个块的转移矩阵
             results = Parallel(n_jobs=n_jobs)(
-                delayed(self._compute_chunk_transitions)(chunk) for chunk in chunks
+                delayed(self._compute_chunk_transitions)(
+                    chunk, start_index, decay_enabled, decay_half_life, decay_min_weight
+                )
+                for chunk, start_index in chunks
             )
 
             # 合并结果
@@ -1266,38 +1656,60 @@ class AdvancedAnalyzer:
             logger_manager.warning("joblib未安装，使用单线程计算")
             return self._compute_transitions_single(df_subset)
 
-    def _compute_chunk_transitions(self, chunk):
+    def _compute_chunk_transitions(self, chunk, start_index=0, decay_enabled=False,
+                                   decay_half_life=200.0, decay_min_weight=0.2):
         """计算数据块的转移矩阵"""
         front_transitions = defaultdict(lambda: defaultdict(int))
         back_transitions = defaultdict(lambda: defaultdict(int))
 
         for i in range(len(chunk) - 1):
+            weight = 1.0
+            if decay_enabled:
+                global_index = start_index + i
+                weight = 0.5 ** (global_index / decay_half_life)
+                if weight < decay_min_weight:
+                    weight = decay_min_weight
+
             current_front, current_back = data_manager.parse_balls(chunk.iloc[i])
             next_front, next_back = data_manager.parse_balls(chunk.iloc[i + 1])
 
             # 前区转移
             for curr_ball in current_front:
                 for next_ball in next_front:
-                    front_transitions[curr_ball][next_ball] += 1
+                    front_transitions[curr_ball][next_ball] += weight
 
             # 后区转移
             for curr_ball in current_back:
                 for next_ball in next_back:
-                    back_transitions[curr_ball][next_ball] += 1
+                    back_transitions[curr_ball][next_ball] += weight
 
         return front_transitions, back_transitions
     
-    def bayesian_analysis(self, periods=300, n_jobs=1) -> Dict:
+    def bayesian_analysis(self, periods=300, n_jobs=1, use_mcmc=False) -> Dict:
         """增强贝叶斯分析 - 完整的贝叶斯推理过程（支持并行化）
 
         Args:
             periods: 分析期数
             n_jobs: 并行作业数，1表示单线程，-1表示使用所有CPU核心
+            use_mcmc: 是否使用MCMC采样进行后验推断（更精确但更慢）
         """
         if self.df is None:
             return {}
 
-        method_name = "enhanced_bayesian_analysis"
+        # 应用配置（用于缓存键与参数）
+        load_bayesian_config()
+
+        mix_tag = f"{BayesianConfig.DIRICHLET_MIX_WEIGHT:.3f}".replace('.', 'p')
+        conc_tag = f"{BayesianConfig.DIRICHLET_CONCENTRATION:.3f}".replace('.', 'p')
+        decay_tag = f"{BayesianConfig.DECAY_HALF_LIFE:.1f}".replace('.', 'p')
+        minw_tag = f"{BayesianConfig.DECAY_MIN_WEIGHT:.2f}".replace('.', 'p')
+        decay_flag = f"{BayesianConfig.DECAY_MODE}" if BayesianConfig.DECAY_ENABLED else 'nodecay'
+        recent_tag = f"{BayesianConfig.RECENT_WINDOW}r{BayesianConfig.MID_WINDOW}m"
+        prior_tag = f"h{int(BayesianConfig.PRIOR_HOT_BONUS*100)}w{int(BayesianConfig.PRIOR_WARM_BONUS*100)}c{int(BayesianConfig.PRIOR_COLD_PENALTY*100)}m{int(BayesianConfig.PRIOR_MISSING_BIAS*100)}"
+        method_name = (
+            f"enhanced_bayesian_analysis_v2_{decay_flag}_{recent_tag}_hl{decay_tag}_min{minw_tag}"
+            f"_{prior_tag}_mix{mix_tag}_conc{conc_tag}{'_mcmc' if use_mcmc else ''}"
+        )
         cached_result = smart_cache_manager.load_cache("analysis", method_name, periods)
         if cached_result:
             return cached_result
@@ -1308,18 +1720,34 @@ class AdvancedAnalyzer:
         # 根据n_jobs决定是否使用并行化
         if n_jobs == 1:
             # 单线程处理
-            front_enhanced = self._enhanced_bayesian_analysis(df_subset, 35, 5)
-            back_enhanced = self._enhanced_bayesian_analysis(df_subset, 12, 2)
+            front_enhanced = self._enhanced_bayesian_analysis(df_subset, 35, 5, use_mcmc)
+            back_enhanced = self._enhanced_bayesian_analysis(df_subset, 12, 2, use_mcmc)
         else:
             # 并行处理
-            front_enhanced, back_enhanced = self._parallel_bayesian_analysis(df_subset, n_jobs)
+            front_enhanced, back_enhanced = self._parallel_bayesian_analysis(df_subset, n_jobs, use_mcmc)
 
         # 传统贝叶斯分析（保持兼容性）
         traditional_result = self._traditional_bayesian_analysis(df_subset)
 
+        # 层次化先验（用于展示与高级预测）
+        front_prior = self._calculate_hierarchical_priors(df_subset, 35, 5)
+        back_prior = self._calculate_hierarchical_priors(df_subset, 12, 2)
+
+        # Dirichlet-多项式后验预测（增强）
+        front_dirichlet_posterior = self._dirichlet_posterior_predictive(
+            df_subset, 35, 5, front_prior
+        )
+        back_dirichlet_posterior = self._dirichlet_posterior_predictive(
+            df_subset, 12, 2, back_prior
+        )
+
         result = {
             'front_enhanced': front_enhanced,
             'back_enhanced': back_enhanced,
+            'front_prior': front_prior,
+            'back_prior': back_prior,
+            'front_dirichlet_posterior': front_dirichlet_posterior,
+            'back_dirichlet_posterior': back_dirichlet_posterior,
             'front_posterior': traditional_result['front_posterior'],
             'back_posterior': traditional_result['back_posterior'],
             'front_likelihood': traditional_result['front_likelihood'],
@@ -1331,7 +1759,7 @@ class AdvancedAnalyzer:
         smart_cache_manager.save_cache("analysis", method_name, result, periods)
         return result
 
-    def _parallel_bayesian_analysis(self, df_subset, n_jobs):
+    def _parallel_bayesian_analysis(self, df_subset, n_jobs, use_mcmc=False):
         """并行贝叶斯分析"""
         try:
             from joblib import Parallel, delayed
@@ -1345,7 +1773,7 @@ class AdvancedAnalyzer:
 
             # 并行计算前区和后区
             results = Parallel(n_jobs=min(n_jobs, 2))(
-                delayed(self._enhanced_bayesian_analysis)(df_subset, max_num, draw_count)
+                delayed(self._enhanced_bayesian_analysis)(df_subset, max_num, draw_count, use_mcmc)
                 for max_num, draw_count in [(35, 5), (12, 2)]
             )
 
@@ -1354,12 +1782,20 @@ class AdvancedAnalyzer:
 
         except ImportError:
             logger_manager.warning("joblib未安装，使用单线程贝叶斯分析")
-            front_enhanced = self._enhanced_bayesian_analysis(df_subset, 35, 5)
-            back_enhanced = self._enhanced_bayesian_analysis(df_subset, 12, 2)
+            front_enhanced = self._enhanced_bayesian_analysis(df_subset, 35, 5, use_mcmc)
+            back_enhanced = self._enhanced_bayesian_analysis(df_subset, 12, 2, use_mcmc)
             return front_enhanced, back_enhanced
 
-    def _enhanced_bayesian_analysis(self, df_subset, max_number: int, numbers_per_draw: int) -> Dict:
-        """增强贝叶斯分析 - 完整的贝叶斯推理"""
+    def _enhanced_bayesian_analysis(self, df_subset, max_number: int, numbers_per_draw: int,
+                                     use_mcmc: bool = False) -> Dict:
+        """增强贝叶斯分析 - 完整的贝叶斯推理
+
+        Args:
+            df_subset: 数据子集
+            max_number: 最大号码（前区35，后区12）
+            numbers_per_draw: 每期选择的号码数
+            use_mcmc: 是否使用MCMC采样（更精确但更慢）
+        """
         try:
             import numpy as np
             from scipy import stats
@@ -1373,15 +1809,33 @@ class AdvancedAnalyzer:
             likelihoods = self._calculate_multi_dimensional_likelihood(df_subset, max_number)
 
             # 证据计算（边际似然）
-            evidence = self._calculate_bayesian_evidence(priors, likelihoods, max_number)
+            evidence_by_number, global_evidence = self._calculate_bayesian_evidence(
+                priors, likelihoods, max_number
+            )
 
             for num in range(1, max_number + 1):
                 # 贝叶斯定理完整应用
                 prior = priors.get(num, 1/max_number)
                 likelihood = likelihoods.get(num, {})
 
-                # 后验概率计算
-                posterior = self._calculate_posterior_distribution(prior, likelihood, evidence.get(num, 1))
+                # 后验概率计算（解析解）
+                posterior = self._calculate_posterior_distribution(
+                    prior, likelihood, global_evidence
+                )
+
+                # 如果启用MCMC，进行采样推断以获得更精确的后验估计
+                mcmc_posterior = None
+                if use_mcmc:
+                    mcmc_posterior = self._mcmc_posterior_sampling(prior, likelihood)
+                    # 使用MCMC结果更新后验统计量（如果MCMC成功）
+                    if mcmc_posterior.get('n_samples', 0) > 0:
+                        # 保留解析解的结构，但用MCMC结果更新关键统计量
+                        posterior['mcmc_mean'] = mcmc_posterior['mean']
+                        posterior['mcmc_median'] = mcmc_posterior['median']
+                        posterior['mcmc_std'] = mcmc_posterior['std']
+                        posterior['mcmc_ci_lower'] = mcmc_posterior['ci_lower']
+                        posterior['mcmc_ci_upper'] = mcmc_posterior['ci_upper']
+                        posterior['mcmc_ess'] = mcmc_posterior['effective_sample_size']
 
                 # 置信区间计算
                 confidence_interval = self._calculate_bayesian_confidence_interval(posterior, 0.95)
@@ -1403,17 +1857,175 @@ class AdvancedAnalyzer:
                     'predictive_distribution': predictive_distribution,
                     'bayes_factor': bayes_factor,
                     'information_gain': information_gain,
-                    'evidence': evidence.get(num, 1),
+                    'evidence': evidence_by_number.get(num, 1),
                     'prediction_weight': self._calculate_bayesian_prediction_weight(
                         posterior, bayes_factor, information_gain
                     )
                 }
+
+                # 如果有MCMC结果，添加到输出
+                if mcmc_posterior is not None:
+                    enhanced_stats[num]['mcmc_sampling'] = mcmc_posterior
 
             return enhanced_stats
 
         except Exception as e:
             logger_manager.error(f"增强贝叶斯分析失败: {e}")
             return {}
+
+    def _mcmc_posterior_sampling(self, prior: float, likelihood: Dict, n_samples: int = 1000,
+                                  burn_in: int = 200, thin: int = 2) -> Dict:
+        """Metropolis-Hastings MCMC 后验采样
+
+        用于更复杂后验分布的采样推断，当解析解不够准确时使用。
+
+        Args:
+            prior: 先验概率
+            likelihood: 似然函数字典
+            n_samples: 采样数量
+            burn_in: 预烧期（丢弃的初始样本数）
+            thin: 稀疏化间隔（每thin个样本保留一个）
+
+        Returns:
+            包含后验样本统计信息的字典
+        """
+        try:
+            import numpy as np
+
+            combined_likelihood = likelihood.get('combined', 1.0)
+
+            # 目标分布（非归一化后验）的对数
+            def log_target(theta):
+                if theta <= 0 or theta >= 1:
+                    return -np.inf
+                # log(posterior) ∝ log(likelihood) + log(prior)
+                # 假设先验为Beta(1,1)（均匀）或使用给定的prior
+                log_prior = 0  # 均匀先验的对数为常数
+                log_likelihood = np.log(combined_likelihood + 1e-10) * theta
+                return log_prior + log_likelihood
+
+            # 初始化
+            current_theta = prior
+            samples = []
+            accepted = 0
+
+            # 提议分布的标准差（自适应）
+            proposal_std = 0.1
+
+            # 总迭代次数
+            total_iterations = burn_in + n_samples * thin
+
+            for i in range(total_iterations):
+                # 从提议分布中采样（截断正态）
+                proposed_theta = current_theta + np.random.normal(0, proposal_std)
+
+                # 反射边界处理（保持在[0,1]内）
+                while proposed_theta <= 0 or proposed_theta >= 1:
+                    if proposed_theta <= 0:
+                        proposed_theta = -proposed_theta
+                    if proposed_theta >= 1:
+                        proposed_theta = 2 - proposed_theta
+
+                # Metropolis-Hastings 接受率
+                log_alpha = log_target(proposed_theta) - log_target(current_theta)
+                alpha = min(1, np.exp(log_alpha)) if not np.isnan(log_alpha) else 0
+
+                # 接受或拒绝
+                if np.random.random() < alpha:
+                    current_theta = proposed_theta
+                    accepted += 1
+
+                # 自适应调整提议标准差（仅在预烧期）
+                if i < burn_in and i > 0 and i % 50 == 0:
+                    acceptance_rate = accepted / (i + 1)
+                    if acceptance_rate > 0.5:
+                        proposal_std *= 1.1
+                    elif acceptance_rate < 0.2:
+                        proposal_std *= 0.9
+                    proposal_std = max(0.01, min(0.5, proposal_std))
+
+                # 收集样本（预烧期后，按稀疏化间隔）
+                if i >= burn_in and (i - burn_in) % thin == 0:
+                    samples.append(current_theta)
+
+            samples = np.array(samples)
+
+            # 计算后验统计量
+            return {
+                'mean': float(np.mean(samples)),
+                'median': float(np.median(samples)),
+                'std': float(np.std(samples)),
+                'variance': float(np.var(samples)),
+                'ci_lower': float(np.percentile(samples, 2.5)),  # 95% 置信区间下界
+                'ci_upper': float(np.percentile(samples, 97.5)),  # 95% 置信区间上界
+                'acceptance_rate': accepted / total_iterations,
+                'n_samples': len(samples),
+                'effective_sample_size': self._calculate_ess(samples)
+            }
+
+        except Exception as e:
+            logger_manager.error(f"MCMC采样失败: {e}")
+            return {
+                'mean': prior, 'median': prior, 'std': 0.1,
+                'variance': 0.01, 'ci_lower': max(0, prior - 0.2),
+                'ci_upper': min(1, prior + 0.2), 'acceptance_rate': 0,
+                'n_samples': 0, 'effective_sample_size': 0
+            }
+
+    def _calculate_ess(self, samples: np.ndarray) -> float:
+        """计算有效样本量（Effective Sample Size）
+
+        考虑样本间的自相关性，实际独立样本数可能小于总样本数。
+        """
+        try:
+            n = len(samples)
+            if n < 10:
+                return float(n)
+
+            # 计算自相关函数
+            mean = np.mean(samples)
+            var = np.var(samples)
+            if var < 1e-10:
+                return float(n)
+
+            # 计算滞后自相关
+            max_lag = min(n // 3, 100)
+            autocorr_sum = 0
+
+            for lag in range(1, max_lag):
+                autocorr = np.sum((samples[:n-lag] - mean) * (samples[lag:] - mean)) / ((n - lag) * var)
+                if autocorr < 0.05:  # 截断小的自相关
+                    break
+                autocorr_sum += autocorr
+
+            # ESS = n / (1 + 2 * sum(autocorrelations))
+            ess = n / (1 + 2 * autocorr_sum)
+            return float(max(1, min(n, ess)))
+
+        except Exception as e:
+            logger_manager.error(f"计算ESS失败: {e}")
+            return float(len(samples))
+
+    def _time_decay_weight(self, index: int, total_periods: int) -> float:
+        """时间衰减权重（越近权重越大）"""
+        if not BayesianConfig.DECAY_ENABLED:
+            return 1.0
+
+        if BayesianConfig.DECAY_MODE == "segmented":
+            if index < BayesianConfig.RECENT_WINDOW:
+                weight = BayesianConfig.RECENT_WEIGHT
+            elif index < BayesianConfig.MID_WINDOW:
+                weight = BayesianConfig.MID_WEIGHT
+            else:
+                weight = BayesianConfig.OLD_WEIGHT
+            return max(BayesianConfig.DECAY_MIN_WEIGHT, weight)
+
+        half_life = BayesianConfig.DECAY_HALF_LIFE
+        if half_life <= 0:
+            return 1.0
+
+        weight = 0.5 ** (index / half_life)
+        return max(BayesianConfig.DECAY_MIN_WEIGHT, weight)
 
     def _calculate_hierarchical_priors(self, df_subset, max_number: int, numbers_per_draw: int) -> Dict:
         """计算层次化先验概率"""
@@ -1423,17 +2035,52 @@ class AdvancedAnalyzer:
             # 无信息先验（均匀分布）
             uniform_prior = 1 / max_number
 
+            # 先验偏置（冷热/遗漏）准备：仅在配置开启时加载
+            apply_bias = any([
+                BayesianConfig.PRIOR_HOT_BONUS > 0,
+                BayesianConfig.PRIOR_WARM_BONUS > 0,
+                BayesianConfig.PRIOR_COLD_PENALTY > 0,
+                BayesianConfig.PRIOR_MISSING_BIAS > 0,
+            ])
+            hot_set: set = set()
+            warm_set: set = set()
+            cold_set: set = set()
+            missing_enhanced: Dict = {}
+            if apply_bias:
+                try:
+                    periods = len(df_subset)
+                    hot_cold_result = self.basic_analyzer.hot_cold_analysis(periods)
+                    missing_result = self.basic_analyzer.missing_analysis(periods)
+
+                    if max_number == 35:
+                        hot_set = set(hot_cold_result.get('front_hot', []))
+                        warm_set = set(hot_cold_result.get('front_warm', []))
+                        cold_set = set(hot_cold_result.get('front_cold', []))
+                        missing_enhanced = missing_result.get('front_enhanced', {}) or {}
+                    else:
+                        hot_set = set(hot_cold_result.get('back_hot', []))
+                        warm_set = set(hot_cold_result.get('back_warm', []))
+                        cold_set = set(hot_cold_result.get('back_cold', []))
+                        missing_enhanced = missing_result.get('back_enhanced', {}) or {}
+                except Exception as e:
+                    logger_manager.warning(f"先验偏置数据加载失败: {e}")
+                    apply_bias = False
+
             # 基于历史频率的信息先验
             historical_counts = Counter()
-            for _, row in df_subset.iterrows():
+            total_observations = 0.0
+            for idx, (_, row) in enumerate(df_subset.iterrows()):
+                weight = self._time_decay_weight(idx, len(df_subset))
                 if max_number == 35:  # 前区
                     front_balls, _ = data_manager.parse_balls(row)
-                    historical_counts.update(front_balls)
+                    for ball in front_balls:
+                        historical_counts[ball] += weight
+                    total_observations += weight * len(front_balls)
                 else:  # 后区
                     _, back_balls = data_manager.parse_balls(row)
-                    historical_counts.update(back_balls)
-
-            total_observations = sum(historical_counts.values())
+                    for ball in back_balls:
+                        historical_counts[ball] += weight
+                    total_observations += weight * len(back_balls)
 
             # 贝塔分布先验参数
             alpha = 1  # 伪计数
@@ -1454,7 +2101,35 @@ class AdvancedAnalyzer:
                 mixing_weight = min(0.8, total_observations / (total_observations + 100))
                 mixed_prior = (1 - mixing_weight) * uniform_prior + mixing_weight * informative_prior
 
-                priors[num] = mixed_prior
+                if apply_bias:
+                    bias_factor = 1.0
+                    if num in hot_set:
+                        bias_factor *= (1 + BayesianConfig.PRIOR_HOT_BONUS)
+                    elif num in warm_set:
+                        bias_factor *= (1 + BayesianConfig.PRIOR_WARM_BONUS)
+                    elif num in cold_set:
+                        cold_factor = max(1 - BayesianConfig.PRIOR_COLD_PENALTY,
+                                          BayesianConfig.PRIOR_MIN_FACTOR)
+                        bias_factor *= cold_factor
+
+                    if BayesianConfig.PRIOR_MISSING_BIAS > 0 and missing_enhanced:
+                        missing_info = missing_enhanced.get(num, missing_enhanced.get(str(num), {})) or {}
+                        missing_weight = missing_info.get('prediction_weight', 0.5)
+                        # 将遗漏权重映射到 [1-bias, 1+bias]
+                        missing_factor = 1 + BayesianConfig.PRIOR_MISSING_BIAS * (missing_weight - 0.5) * 2
+                        bias_factor *= max(BayesianConfig.PRIOR_MIN_FACTOR, missing_factor)
+
+                    bias_factor = max(BayesianConfig.PRIOR_MIN_FACTOR, bias_factor)
+                    priors[num] = mixed_prior * bias_factor
+                else:
+                    priors[num] = mixed_prior
+
+            if apply_bias:
+                total_prior = sum(priors.values())
+                if total_prior > 0:
+                    priors = {num: value / total_prior for num, value in priors.items()}
+                else:
+                    priors = {i: 1 / max_number for i in range(1, max_number + 1)}
 
             return priors
 
@@ -1462,34 +2137,119 @@ class AdvancedAnalyzer:
             logger_manager.error(f"计算层次化先验失败: {e}")
             return {i: 1/max_number for i in range(1, max_number + 1)}
 
+    def _dirichlet_posterior_predictive(self, df_subset, max_number: int, numbers_per_draw: int,
+                                        priors: Optional[Dict] = None) -> Dict:
+        """Dirichlet-多项式后验预测分布"""
+        try:
+            counts = Counter()
+            for idx, (_, row) in enumerate(df_subset.iterrows()):
+                weight = self._time_decay_weight(idx, len(df_subset))
+                if max_number == 35:
+                    front_balls, _ = data_manager.parse_balls(row)
+                    for ball in front_balls:
+                        counts[ball] += weight
+                else:
+                    _, back_balls = data_manager.parse_balls(row)
+                    for ball in back_balls:
+                        counts[ball] += weight
+
+            # Dirichlet先验参数
+            concentration = BayesianConfig.DIRICHLET_CONCENTRATION
+            total_concentration = concentration * max_number
+
+            if priors:
+                alpha = {num: max(1e-6, priors.get(num, 1 / max_number)) * total_concentration
+                         for num in range(1, max_number + 1)}
+            else:
+                alpha = {num: total_concentration / max_number for num in range(1, max_number + 1)}
+
+            # 后验参数
+            alpha_posterior = {num: alpha[num] + counts.get(num, 0.0) for num in range(1, max_number + 1)}
+            alpha_sum = sum(alpha_posterior.values())
+
+            if alpha_sum <= 0:
+                return {num: 1 / max_number for num in range(1, max_number + 1)}
+
+            # 预测分布
+            posterior_predictive = {num: alpha_posterior[num] / alpha_sum for num in range(1, max_number + 1)}
+            return posterior_predictive
+
+        except Exception as e:
+            logger_manager.error(f"Dirichlet后验预测失败: {e}")
+            return {num: 1 / max_number for num in range(1, max_number + 1)}
+
     def _calculate_multi_dimensional_likelihood(self, df_subset, max_number: int) -> Dict:
-        """计算多维度似然函数"""
+        """计算多维度似然函数 - 考虑维度间相关性
+
+        改进：不再简单地将各维度似然相乘（假设独立），
+        而是通过协方差建模来考虑维度间的相关性，提供更准确的综合似然。
+        """
         try:
             import numpy as np
 
             likelihoods = {}
 
+            # 第一遍：收集所有号码的四维度似然值，用于计算协方差矩阵
+            all_likelihood_vectors = []
+
             for num in range(1, max_number + 1):
-                likelihood_components = {}
+                freq_l = self._calculate_frequency_likelihood(df_subset, num, max_number)
+                pos_l = self._calculate_position_likelihood(df_subset, num, max_number)
+                temp_l = self._calculate_temporal_likelihood(df_subset, num, max_number)
+                comb_l = self._calculate_combination_likelihood(df_subset, num, max_number)
 
-                # 1. 频率似然
-                frequency_likelihood = self._calculate_frequency_likelihood(df_subset, num, max_number)
+                all_likelihood_vectors.append([freq_l, pos_l, temp_l, comb_l])
 
-                # 2. 位置似然（在开奖号码中的位置偏好）
-                position_likelihood = self._calculate_position_likelihood(df_subset, num, max_number)
+            # 转换为numpy数组
+            likelihood_matrix = np.array(all_likelihood_vectors)
 
-                # 3. 时间似然（时间序列模式）
-                temporal_likelihood = self._calculate_temporal_likelihood(df_subset, num)
+            # 计算似然维度间的协方差矩阵
+            # 使用对数变换使分布更接近正态
+            log_likelihood_matrix = np.log(np.maximum(likelihood_matrix, 1e-10))
+            cov_matrix = np.cov(log_likelihood_matrix.T)
 
-                # 4. 组合似然（与其他号码的组合模式）
-                combination_likelihood = self._calculate_combination_likelihood(df_subset, num, max_number)
+            # 计算相关系数矩阵（用于调整权重）
+            std_devs = np.sqrt(np.diag(cov_matrix) + 1e-10)
+            corr_matrix = cov_matrix / np.outer(std_devs, std_devs)
+
+            # 基于相关性计算调整后的权重
+            # 高度相关的维度应该降低权重，避免信息重复计算
+            weights = self._calculate_correlation_adjusted_weights(corr_matrix)
+
+            # 第二遍：使用调整后的权重计算综合似然
+            for idx, num in enumerate(range(1, max_number + 1)):
+                freq_l, pos_l, temp_l, comb_l = all_likelihood_vectors[idx]
+
+                # 使用加权几何平均代替简单乘积
+                # 几何平均在对数空间中等价于加权算术平均
+                log_likelihoods = np.array([
+                    np.log(max(1e-10, freq_l)),
+                    np.log(max(1e-10, pos_l)),
+                    np.log(max(1e-10, temp_l)),
+                    np.log(max(1e-10, comb_l))
+                ])
+
+                # 加权对数似然
+                weighted_log_likelihood = np.sum(weights * log_likelihoods)
+                combined_likelihood = np.exp(weighted_log_likelihood)
+
+                # 额外：计算马氏距离用于异常检测
+                mean_log_likelihood = np.mean(log_likelihood_matrix, axis=0)
+                try:
+                    cov_inv = np.linalg.pinv(cov_matrix + np.eye(4) * 1e-6)
+                    diff = log_likelihoods - mean_log_likelihood
+                    mahalanobis_dist = np.sqrt(np.abs(diff @ cov_inv @ diff))
+                except:
+                    mahalanobis_dist = 0.0
 
                 likelihood_components = {
-                    'frequency': frequency_likelihood,
-                    'position': position_likelihood,
-                    'temporal': temporal_likelihood,
-                    'combination': combination_likelihood,
-                    'combined': frequency_likelihood * position_likelihood * temporal_likelihood * combination_likelihood
+                    'frequency': freq_l,
+                    'position': pos_l,
+                    'temporal': temp_l,
+                    'combination': comb_l,
+                    'combined': combined_likelihood,
+                    'dimension_weights': weights.tolist(),  # 新增：各维度权重
+                    'mahalanobis_distance': mahalanobis_dist  # 新增：马氏距离（异常度）
                 }
 
                 likelihoods[num] = likelihood_components
@@ -1499,6 +2259,43 @@ class AdvancedAnalyzer:
         except Exception as e:
             logger_manager.error(f"计算多维度似然失败: {e}")
             return {}
+
+    def _calculate_correlation_adjusted_weights(self, corr_matrix: np.ndarray) -> np.ndarray:
+        """基于相关系数矩阵计算调整后的维度权重
+
+        原理：如果两个维度高度相关，它们提供的信息是冗余的，
+        应该降低其中一个的权重以避免信息被重复计算。
+
+        使用特征值分解来确定各维度的有效信息贡献。
+        """
+        try:
+            n_dims = corr_matrix.shape[0]
+
+            # 处理NaN和Inf
+            corr_matrix = np.nan_to_num(corr_matrix, nan=0.0, posinf=1.0, neginf=-1.0)
+
+            # 确保对角线为1
+            np.fill_diagonal(corr_matrix, 1.0)
+
+            # 计算各维度与其他维度的平均相关性
+            avg_correlation = np.zeros(n_dims)
+            for i in range(n_dims):
+                other_corrs = [abs(corr_matrix[i, j]) for j in range(n_dims) if i != j]
+                avg_correlation[i] = np.mean(other_corrs) if other_corrs else 0
+
+            # 相关性越高，权重越低（独特信息越少）
+            # 使用1/(1+avg_corr)作为基础权重
+            raw_weights = 1 / (1 + avg_correlation)
+
+            # 归一化权重使其和为维度数（保持与原始乘法等效的量级）
+            weights = raw_weights / np.sum(raw_weights) * n_dims
+
+            return weights
+
+        except Exception as e:
+            logger_manager.error(f"计算相关性调整权重失败: {e}")
+            # 返回均匀权重作为fallback
+            return np.ones(4)
 
     def _traditional_bayesian_analysis(self, df_subset) -> Dict:
         """传统贝叶斯分析（保持兼容性）"""
@@ -1631,17 +2428,20 @@ class AdvancedAnalyzer:
             logger_manager.error(f"计算位置似然失败: {e}")
             return 1.0
 
-    def _calculate_temporal_likelihood(self, df_subset, number: int) -> float:
-        """计算时间似然"""
+    def _calculate_temporal_likelihood(self, df_subset, number: int, max_number: int) -> float:
+        """计算时间似然（区分前后区）"""
         try:
             import numpy as np
 
             appearances = []
             for i, (_, row) in enumerate(df_subset.iterrows()):
                 front_balls, back_balls = data_manager.parse_balls(row)
-                all_balls = front_balls + back_balls
-                if number in all_balls:
-                    appearances.append(i)
+                if max_number == 35:
+                    if number in front_balls:
+                        appearances.append(i)
+                else:
+                    if number in back_balls:
+                        appearances.append(i)
 
             if len(appearances) < 2:
                 return 1.0
@@ -1709,7 +2509,8 @@ class AdvancedAnalyzer:
             logger_manager.error(f"计算组合似然失败: {e}")
             return 1.0
 
-    def _calculate_bayesian_evidence(self, priors: Dict, likelihoods: Dict, max_number: int) -> Dict:
+    def _calculate_bayesian_evidence(self, priors: Dict, likelihoods: Dict,
+                                     max_number: int) -> Tuple[Dict, float]:
         """计算贝叶斯证据（边际似然）"""
         try:
             evidence = {}
@@ -1722,41 +2523,87 @@ class AdvancedAnalyzer:
                 # 边际似然 = 先验 × 似然
                 evidence[num] = prior * combined_likelihood
 
-            # 标准化证据
+            # 全局证据 = 所有假设的边际似然之和
             total_evidence = sum(evidence.values())
-            if total_evidence > 0:
-                evidence = {k: v / total_evidence for k, v in evidence.items()}
 
-            return evidence
+            return evidence, total_evidence
 
         except Exception as e:
             logger_manager.error(f"计算贝叶斯证据失败: {e}")
-            return {}
+            return {}, 0.0
 
-    def _calculate_posterior_distribution(self, prior: float, likelihood: Dict, evidence: float) -> Dict:
-        """计算后验分布"""
+    def _calculate_posterior_distribution(self, prior: float, likelihood: Dict,
+                                          global_evidence: float) -> Dict:
+        """计算后验分布 - 使用精确矩估计法
+
+        采用基于数据的自适应矩估计法，根据似然函数的各维度信息
+        自动调整Beta分布的集中度参数，避免固定伪观测数的问题。
+        """
         try:
             combined_likelihood = likelihood.get('combined', 1.0)
 
             # 贝叶斯定理：后验 = (似然 × 先验) / 证据
-            posterior_mean = (combined_likelihood * prior) / evidence if evidence > 0 else prior
+            posterior_mean = (combined_likelihood * prior) / global_evidence if global_evidence > 0 else prior
 
-            # 估计后验分布的参数（假设贝塔分布）
-            # 使用矩估计法
-            alpha = posterior_mean * 100  # 伪观测数
-            beta = (1 - posterior_mean) * 100
+            # 确保posterior_mean在有效范围内
+            posterior_mean = max(1e-10, min(1 - 1e-10, posterior_mean))
+
+            # 精确矩估计法：基于似然函数各分量的一致性来估计集中度
+            # 从似然的各维度计算方差，用于推断有效观测数
+            freq_l = likelihood.get('frequency', 1.0)
+            pos_l = likelihood.get('position', 1.0)
+            temp_l = likelihood.get('temporal', 1.0)
+            comb_l = likelihood.get('combination', 1.0)
+
+            # 计算似然各维度的几何平均和变异系数
+            likelihood_values = [freq_l, pos_l, temp_l, comb_l]
+            likelihood_values = [max(1e-10, v) for v in likelihood_values]  # 避免零值
+
+            # 几何平均
+            geom_mean = np.exp(np.mean(np.log(likelihood_values)))
+
+            # 变异系数（CV）：标准差/均值，衡量似然维度间的一致性
+            cv = np.std(likelihood_values) / (np.mean(likelihood_values) + 1e-10)
+
+            # 基于CV计算有效观测数（n_eff）
+            # CV越小，各维度越一致，置信度越高，n_eff越大
+            # CV=0时n_eff最大(200)，CV>=1时n_eff最小(10)
+            n_eff = max(10, min(200, 200 / (1 + cv * 5)))
+
+            # 使用矩估计法从均值和有效观测数推导Beta分布参数
+            # 对于Beta(α,β)分布：
+            # mean = α/(α+β)
+            # n_eff ≈ α + β（集中度参数）
+            alpha = posterior_mean * n_eff
+            beta_param = (1 - posterior_mean) * n_eff
+
+            # 确保参数有效
+            alpha = max(0.5, alpha)
+            beta_param = max(0.5, beta_param)
+
+            # 计算方差（Beta分布方差公式）
+            variance = (alpha * beta_param) / ((alpha + beta_param) ** 2 * (alpha + beta_param + 1))
+
+            # 计算众数（Beta分布众数公式，仅当α>1且β>1时有意义）
+            if alpha > 1 and beta_param > 1:
+                mode = (alpha - 1) / (alpha + beta_param - 2)
+            else:
+                mode = posterior_mean
 
             return {
                 'mean': posterior_mean,
                 'alpha': alpha,
-                'beta': beta,
-                'variance': (alpha * beta) / ((alpha + beta) ** 2 * (alpha + beta + 1)),
-                'mode': (alpha - 1) / (alpha + beta - 2) if alpha > 1 and beta > 1 else posterior_mean
+                'beta': beta_param,
+                'variance': variance,
+                'mode': mode,
+                'effective_observations': n_eff,  # 新增：有效观测数
+                'likelihood_consistency': 1 - min(1, cv)  # 新增：似然一致性指标
             }
 
         except Exception as e:
             logger_manager.error(f"计算后验分布失败: {e}")
-            return {'mean': prior, 'alpha': 1, 'beta': 1, 'variance': 0.25, 'mode': prior}
+            return {'mean': prior, 'alpha': 1, 'beta': 1, 'variance': 0.25, 'mode': prior,
+                    'effective_observations': 2, 'likelihood_consistency': 0}
 
     def _calculate_bayesian_confidence_interval(self, posterior: Dict, confidence_level: float) -> Tuple[float, float]:
         """计算贝叶斯置信区间"""

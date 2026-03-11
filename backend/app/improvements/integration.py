@@ -83,13 +83,13 @@ class IntegratedPredictor:
                 super_predictor = get_super_predictor()
                 
                 self.predictors.update({
-                    'frequency': lambda data, count=3: traditional.frequency_predict(count),
-                    'hot_cold': lambda data, count=3: traditional.hot_cold_predict(count),
-                    'missing': lambda data, count=3: traditional.missing_predict(count),
-                    'markov': lambda data, count=3: advanced.markov_predict(count),
-                    'bayesian': lambda data, count=3: traditional.bayesian_predict(count),  # 使用传统预测器
-                    'ensemble': lambda data, count=3: advanced.ensemble_predict(count),
-                    'super': lambda data, count=3: super_predictor.predict_super(count)
+                    'frequency': lambda data, count=3, periods=500: traditional.frequency_predict(count, periods),
+                    'hot_cold': lambda data, count=3, periods=500: traditional.hot_cold_predict(count, periods),
+                    'missing': lambda data, count=3, periods=500: traditional.missing_predict(count, periods),
+                    'markov': lambda data, count=3, periods=500: advanced.markov_predict(count, periods),
+                    'bayesian': lambda data, count=3, periods=500: traditional.bayesian_predict(count, periods),  # 使用传统预测器
+                    'ensemble': lambda data, count=3, periods=500: advanced.ensemble_predict(count, periods),
+                    'super': lambda data, count=3, periods=500: super_predictor.predict_super(count, periods)
                 })
                 
                 logger_manager.info("已加载传统预测器")
@@ -102,11 +102,11 @@ class IntegratedPredictor:
                 markov_predictor = get_markov_predictor()
                 
                 self.predictors.update({
-                    'markov_2nd': lambda data, count=3: markov_predictor.multi_order_markov_predict(count, 300, 2),
-                    'markov_3rd': lambda data, count=3: markov_predictor.multi_order_markov_predict(count, 300, 3),
-                    'adaptive_markov': lambda data, count=3: [
-                        (pred['front_balls'], pred['back_balls']) 
-                        for pred in markov_predictor.adaptive_order_markov_predict(count, 300)
+                    'markov_2nd': lambda data, count=3, periods=500: markov_predictor.multi_order_markov_predict(count, periods, 2),
+                    'markov_3rd': lambda data, count=3, periods=500: markov_predictor.multi_order_markov_predict(count, periods, 3),
+                    'adaptive_markov': lambda data, count=3, periods=500: [
+                        (pred['front_balls'], pred['back_balls'])
+                        for pred in markov_predictor.adaptive_order_markov_predict(count, periods)
                     ]
                 })
                 
@@ -120,8 +120,8 @@ class IntegratedPredictor:
                 feature_predictor = get_enhanced_feature_predictor()
                 
                 self.predictors.update({
-                    'pattern_based': lambda data, count=3: feature_predictor.pattern_based_predict(count),
-                    'cluster_based': lambda data, count=3: feature_predictor.cluster_based_predict(count)
+                    'pattern_based': lambda data, count=3, periods=500: feature_predictor.pattern_based_predict(count, periods),
+                    'cluster_based': lambda data, count=3, periods=500: feature_predictor.cluster_based_predict(count, periods)
                 })
                 
                 logger_manager.info("已加载增强特性预测器")
@@ -134,14 +134,14 @@ class IntegratedPredictor:
                 lstm_predictor = AdvancedLSTMPredictor()
                 
                 self.predictors.update({
-                    'lstm': lambda data, count=3: lstm_predictor.lstm_predict(count)
+                    'lstm': lambda data, count=3, periods=500: lstm_predictor.lstm_predict(count, periods)
                 })
                 
                 logger_manager.info("已加载LSTM预测器")
             except Exception as e:
                 logger_manager.error(f"加载LSTM预测器失败: {e}")
     
-    def stacking_predict(self, count: int = 3) -> List[Dict]:
+    def stacking_predict(self, count: int = 3, periods: int = 500) -> List[Dict]:
         """Stacking集成预测（并行优化版）
 
         Args:
@@ -161,7 +161,7 @@ class IntegratedPredictor:
             """单个预测器执行函数"""
             try:
                 start_time = time.time()
-                predictions = predictor(self.df, count)
+                predictions = predictor(self.df, count, periods)
                 elapsed = time.time() - start_time
                 logger_manager.info(f"预测器 {name} 完成，耗时 {elapsed:.2f}秒")
                 return name, predictions
@@ -212,7 +212,7 @@ class IntegratedPredictor:
             # 如果号码不足，使用频率分析补充
             if len(front_balls) < 5:
                 from analyzer_modules import basic_analyzer
-                freq_analysis = basic_analyzer.frequency_analysis()
+                freq_analysis = basic_analyzer.frequency_analysis(periods)
                 front_freq = freq_analysis.get('front_frequency', {})
                 sorted_freq = sorted(front_freq.items(), key=lambda x: x[1], reverse=True)
 
@@ -225,7 +225,7 @@ class IntegratedPredictor:
 
             if len(back_balls) < 2:
                 from analyzer_modules import basic_analyzer
-                freq_analysis = basic_analyzer.frequency_analysis()
+                freq_analysis = basic_analyzer.frequency_analysis(periods)
                 back_freq = freq_analysis.get('back_frequency', {})
                 sorted_freq = sorted(back_freq.items(), key=lambda x: x[1], reverse=True)
 
@@ -249,7 +249,7 @@ class IntegratedPredictor:
 
         return results
     
-    def weighted_ensemble_predict(self, count: int = 3) -> List[Dict]:
+    def weighted_ensemble_predict(self, count: int = 3, periods: int = 500) -> List[Dict]:
         """加权集成预测（并行优化版）
 
         Args:
@@ -286,7 +286,7 @@ class IntegratedPredictor:
             """单个预测器执行函数"""
             try:
                 start_time = time.time()
-                predictions = predictor(self.df, count)
+                predictions = predictor(self.df, count, periods)
                 elapsed = time.time() - start_time
                 logger_manager.info(f"预测器 {name} 完成，耗时 {elapsed:.2f}秒")
                 return name, predictions
@@ -362,7 +362,7 @@ class IntegratedPredictor:
 
         return results
     
-    def adaptive_ensemble_predict(self, count: int = 3) -> List[Dict]:
+    def adaptive_ensemble_predict(self, count: int = 3, periods: int = 500) -> List[Dict]:
         """自适应集成预测（并行优化版）
 
         Args:
@@ -388,7 +388,7 @@ class IntegratedPredictor:
             """单个预测器执行函数"""
             try:
                 start_time = time.time()
-                predictions = predictor(self.df, count)
+                predictions = predictor(self.df, count, periods)
                 elapsed = time.time() - start_time
                 logger_manager.info(f"预测器 {name} 完成，耗时 {elapsed:.2f}秒")
                 return name, predictions
@@ -553,7 +553,7 @@ class IntegratedPredictor:
 
                 # 使用指定期数的最新数据
                 if len(historical_data) > periods:
-                    historical_data = historical_data.tail(periods)
+                    historical_data = historical_data.head(periods)
 
                 logger_manager.info(f"使用{len(historical_data)}期历史数据进行Transformer训练和预测")
 
@@ -606,15 +606,18 @@ class IntegratedPredictor:
 
             # 使用指定期数的最新数据
             if len(historical_data) > periods:
-                historical_data = historical_data.tail(periods)
+                historical_data = historical_data.head(periods)
 
             # 简化的注意力机制实现
             front_data = []
             back_data = []
 
             for _, row in historical_data.iterrows():
-                front_nums = [int(x) for x in str(row['front']).split(',') if x.strip().isdigit()]
-                back_nums = [int(x) for x in str(row['back']).split(',') if x.strip().isdigit()]
+                # 兼容两种列名格式：front/back 或 front_balls/back_balls
+                front_col = row.get('front_balls', row.get('front', ''))
+                back_col = row.get('back_balls', row.get('back', ''))
+                front_nums = [int(x) for x in str(front_col).split(',') if x.strip().isdigit()]
+                back_nums = [int(x) for x in str(back_col).split(',') if x.strip().isdigit()]
 
                 if len(front_nums) == 5 and len(back_nums) == 2:
                     front_data.append(front_nums)
@@ -785,7 +788,7 @@ class IntegratedPredictor:
 
                 # 使用指定期数的最新数据
                 if len(historical_data) > periods:
-                    historical_data = historical_data.tail(periods)
+                    historical_data = historical_data.head(periods)
 
                 logger_manager.info(f"使用{len(historical_data)}期历史数据进行GAN训练和预测")
 
@@ -838,15 +841,18 @@ class IntegratedPredictor:
 
             # 使用指定期数的最新数据
             if len(historical_data) > periods:
-                historical_data = historical_data.tail(periods)
+                historical_data = historical_data.head(periods)
 
             # 简化的生成模型实现
             front_patterns = []
             back_patterns = []
 
             for _, row in historical_data.iterrows():
-                front_nums = [int(x) for x in str(row['front']).split(',') if x.strip().isdigit()]
-                back_nums = [int(x) for x in str(row['back']).split(',') if x.strip().isdigit()]
+                # 兼容两种列名格式：front/back 或 front_balls/back_balls
+                front_col = row.get('front_balls', row.get('front', ''))
+                back_col = row.get('back_balls', row.get('back', ''))
+                front_nums = [int(x) for x in str(front_col).split(',') if x.strip().isdigit()]
+                back_nums = [int(x) for x in str(back_col).split(',') if x.strip().isdigit()]
 
                 if len(front_nums) == 5 and len(back_nums) == 2:
                     front_patterns.append(front_nums)
@@ -985,7 +991,7 @@ class IntegratedPredictor:
             import random
             return random.randint(min_num, max_num)
     
-    def ultimate_ensemble_predict(self, count: int = 3) -> List[Dict]:
+    def ultimate_ensemble_predict(self, count: int = 3, periods: int = 500) -> List[Dict]:
         """终极集成预测（完全并行优化版）
 
         结合所有预测方法的最佳结果，三个集成方法并行执行
@@ -1008,7 +1014,7 @@ class IntegratedPredictor:
             """执行stacking预测"""
             try:
                 logger_manager.info("开始Stacking集成预测")
-                result = self.stacking_predict(count)
+                result = self.stacking_predict(count, periods)
                 logger_manager.info(f"Stacking预测完成，生成{len(result)}注")
                 return result
             except Exception as e:
@@ -1019,7 +1025,7 @@ class IntegratedPredictor:
             """执行weighted预测"""
             try:
                 logger_manager.info("开始加权集成预测")
-                result = self.weighted_ensemble_predict(count)
+                result = self.weighted_ensemble_predict(count, periods)
                 logger_manager.info(f"加权预测完成，生成{len(result)}注")
                 return result
             except Exception as e:
@@ -1030,7 +1036,7 @@ class IntegratedPredictor:
             """执行adaptive预测"""
             try:
                 logger_manager.info("开始自适应集成预测")
-                result = self.adaptive_ensemble_predict(count)
+                result = self.adaptive_ensemble_predict(count, periods)
                 logger_manager.info(f"自适应预测完成，生成{len(result)}注")
                 return result
             except Exception as e:
@@ -1078,7 +1084,7 @@ class IntegratedPredictor:
             # 如果号码不足，使用频率分析补充
             if len(front_balls) < 5:
                 from analyzer_modules import basic_analyzer
-                freq_analysis = basic_analyzer.frequency_analysis()
+                freq_analysis = basic_analyzer.frequency_analysis(periods)
                 front_freq = freq_analysis.get('front_frequency', {})
                 sorted_freq = sorted(front_freq.items(), key=lambda x: x[1], reverse=True)
 
@@ -1091,7 +1097,7 @@ class IntegratedPredictor:
 
             if len(back_balls) < 2:
                 from analyzer_modules import basic_analyzer
-                freq_analysis = basic_analyzer.frequency_analysis()
+                freq_analysis = basic_analyzer.frequency_analysis(periods)
                 back_freq = freq_analysis.get('back_frequency', {})
                 sorted_freq = sorted(back_freq.items(), key=lambda x: x[1], reverse=True)
 
@@ -1139,7 +1145,7 @@ if __name__ == "__main__":
     
     # 测试Stacking集成预测
     print("\n🎯 Stacking集成预测...")
-    stacking_results = integrator.stacking_predict(3)
+    stacking_results = integrator.stacking_predict(3, 500)
     for i, result in enumerate(stacking_results):
         front_str = ' '.join([str(b).zfill(2) for b in result['front_balls']])
         back_str = ' '.join([str(b).zfill(2) for b in result['back_balls']])
@@ -1148,7 +1154,7 @@ if __name__ == "__main__":
     
     # 测试加权集成预测
     print("\n🎯 加权集成预测...")
-    weighted_results = integrator.weighted_ensemble_predict(3)
+    weighted_results = integrator.weighted_ensemble_predict(3, 500)
     for i, result in enumerate(weighted_results):
         front_str = ' '.join([str(b).zfill(2) for b in result['front_balls']])
         back_str = ' '.join([str(b).zfill(2) for b in result['back_balls']])
@@ -1157,7 +1163,7 @@ if __name__ == "__main__":
     
     # 测试自适应集成预测
     print("\n🎯 自适应集成预测...")
-    adaptive_results = integrator.adaptive_ensemble_predict(3)
+    adaptive_results = integrator.adaptive_ensemble_predict(3, 500)
     for i, result in enumerate(adaptive_results):
         front_str = ' '.join([str(b).zfill(2) for b in result['front_balls']])
         back_str = ' '.join([str(b).zfill(2) for b in result['back_balls']])
@@ -1166,7 +1172,7 @@ if __name__ == "__main__":
     
     # 测试终极集成预测
     print("\n🎯 终极集成预测...")
-    ultimate_results = integrator.ultimate_ensemble_predict(3)
+    ultimate_results = integrator.ultimate_ensemble_predict(3, 500)
     for i, result in enumerate(ultimate_results):
         front_str = ' '.join([str(b).zfill(2) for b in result['front_balls']])
         back_str = ' '.join([str(b).zfill(2) for b in result['back_balls']])
