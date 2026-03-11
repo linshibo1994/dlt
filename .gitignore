@@ -137,10 +137,10 @@ CLAUDE.md
 .cache/
 # 忽略日志
 .log/
-# 忽略模型文件夹
-models
-# 忽略输出文件夹
-output
+# 忽略根目录模型文件夹
+/models
+# 忽略根目录输出文件夹
+/output
 # 忽略serena
 .serena/
 
