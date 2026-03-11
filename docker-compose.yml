@@ -19,7 +19,7 @@ services:
       - ./models:/app/models
       - ./config:/app/config
     environment:
-      - PYTHONPATH=/app
+      - PYTHONPATH=/app:/app/backend/app/core:/app/backend/app
       - ENV=production
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:6000/api/system/health"]
