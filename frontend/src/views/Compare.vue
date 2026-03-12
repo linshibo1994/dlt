@@ -142,6 +142,52 @@
       </GlassCard>
     </div>
 
+    <!-- 中奖记录展示 -->
+    <GlassCard v-if="prizeRecords.length > 0" title="中奖记录" class="prize-records-card">
+      <template #headerExtra>
+        <span class="prize-count-badge">共 {{ prizeRecords.length }} 次中奖</span>
+      </template>
+      <div class="prize-records-list">
+        <div v-for="(record, idx) in prizeRecords" :key="idx" class="prize-record-item">
+          <div class="prize-record-header">
+            <span class="prize-level-tag">{{ record.prizeLevel }}</span>
+            <span class="prize-hit-info">前区命中 {{ record.frontHit }} 个 / 后区命中 {{ record.backHit }} 个</span>
+          </div>
+          <div class="prize-record-balls">
+            <div class="ball-group">
+              <span class="ball-group-label">预测前区</span>
+              <div class="ball-row">
+                <span
+                  v-for="n in record.predicted.front"
+                  :key="'pf'+n"
+                  class="mini-ball front"
+                  :class="{ hit: record.actual.front.includes(n) }"
+                >{{ String(n).padStart(2, '0') }}</span>
+              </div>
+            </div>
+            <span class="ball-sep-lg">+</span>
+            <div class="ball-group">
+              <span class="ball-group-label">预测后区</span>
+              <div class="ball-row">
+                <span
+                  v-for="n in record.predicted.back"
+                  :key="'pb'+n"
+                  class="mini-ball back"
+                  :class="{ hit: record.actual.back.includes(n) }"
+                >{{ String(n).padStart(2, '0') }}</span>
+              </div>
+            </div>
+          </div>
+          <div class="prize-record-actual">
+            <span class="actual-label">开奖号码:</span>
+            <span v-for="n in record.actual.front" :key="'af'+n" class="mini-ball front actual-ball">{{ String(n).padStart(2, '0') }}</span>
+            <span class="ball-sep-sm">+</span>
+            <span v-for="n in record.actual.back" :key="'ab'+n" class="mini-ball back actual-ball">{{ String(n).padStart(2, '0') }}</span>
+          </div>
+        </div>
+      </div>
+    </GlassCard>
+
     <!-- 命中率趋势图 -->
     <GlassCard v-if="compareResults.length > 0" title="命中率趋势">
       <div class="hit-trend-chart" ref="hitTrendChartRef"></div>
@@ -297,6 +343,11 @@ const hitStats = computed(() => {
   }
 })
 
+// 中奖记录
+const prizeRecords = computed(() => {
+  return compareResults.value.filter(r => r.prizeLevel !== '-')
+})
+
 // 算法排名
 const algorithmRanking = computed(() => {
   const algoMap = new Map<string, { hitCount: number; total: number }>()
@@ -326,7 +377,14 @@ const pagination = ref({
   page: 1,
   pageSize: 10,
   showSizePicker: true,
-  pageSizes: [10, 20, 50, 100]
+  pageSizes: [10, 20, 50, 100],
+  onChange: (page: number) => {
+    pagination.value.page = page
+  },
+  onUpdatePageSize: (pageSize: number) => {
+    pagination.value.pageSize = pageSize
+    pagination.value.page = 1
+  }
 })
 
 // 表格列定义
@@ -968,5 +1026,106 @@ onUnmounted(() => {
   .results-stats {
     grid-template-columns: repeat(2, 1fr);
   }
+}
+
+/* 中奖记录展示 */
+.prize-count-badge {
+  color: #00ff88;
+  font-weight: bold;
+  font-size: 14px;
+}
+
+.prize-records-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.prize-record-item {
+  padding: 12px 16px;
+  background: rgba(0, 255, 136, 0.05);
+  border: 1px solid rgba(0, 255, 136, 0.15);
+  border-radius: var(--radius-md, 8px);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.prize-record-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.prize-level-tag {
+  padding: 2px 10px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: bold;
+  color: #0a0a1a;
+  background: linear-gradient(135deg, #00ff88, #00cc6a);
+}
+
+.prize-hit-info {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.prize-record-balls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.ball-group {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.ball-group-label {
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.4);
+  min-width: 48px;
+}
+
+.ball-row {
+  display: flex;
+  gap: 4px;
+}
+
+.ball-sep-lg {
+  color: rgba(255, 255, 255, 0.3);
+  margin: 0 4px;
+  font-size: 16px;
+}
+
+.ball-sep-sm {
+  color: rgba(255, 255, 255, 0.3);
+  margin: 0 2px;
+}
+
+.prize-record-actual {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding-top: 6px;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.actual-label {
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.4);
+  margin-right: 4px;
+}
+
+.actual-ball {
+  width: 20px;
+  height: 20px;
+  font-size: 10px;
+  opacity: 0.6;
 }
 </style>
