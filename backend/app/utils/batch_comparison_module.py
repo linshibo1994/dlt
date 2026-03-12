@@ -412,6 +412,9 @@ class BatchComparison:
                         back = sorted(compound_result.get('back_balls', []))[:2]
                         if len(front) == 5 and len(back) == 2:
                             return (front, back)
+                        logger_manager.warning(f"复式预测 {method} 号码数量不足，回退到频率分析")
+                    else:
+                        logger_manager.warning(f"复式预测 {method} 返回格式异常，回退到频率分析")
                 except Exception as e:
                     logger_manager.warning(f"复式预测 {method} 失败，回退到频率分析: {e}")
                 result = self.predictors['traditional'].frequency_predict(count=1, periods=periods)
@@ -443,7 +446,15 @@ class BatchComparison:
                 return None
 
             if result and len(result) > 0:
-                return result[0]
+                item = result[0]
+                # 部分方法返回 Dict（含 front_balls/back_balls），需转换为 Tuple
+                if isinstance(item, dict):
+                    front = item.get('front_balls', [])
+                    back = item.get('back_balls', [])
+                    if front and back:
+                        return (sorted(front)[:5], sorted(back)[:2])
+                    return None
+                return item
             else:
                 return None
 
