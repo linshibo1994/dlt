@@ -532,6 +532,9 @@ const getPrizeLevelFromNumber = (level: number): string => {
     4: '四等奖',
     5: '五等奖',
     6: '六等奖',
+    7: '七等奖',
+    8: '八等奖',
+    9: '九等奖',
     0: '-'
   }
   return levelMap[level] || '-'
@@ -547,21 +550,21 @@ const generateRandomNumbers = (count: number, min: number, max: number): number[
   return numbers.sort((a, b) => a - b)
 }
 
-// 获取中奖等级
+// 获取中奖等级（2019新规则，9个奖级）
 const getPrizeLevel = (frontHit: number, backHit: number): string => {
   if (frontHit === 5 && backHit === 2) return '一等奖'
   if (frontHit === 5 && backHit === 1) return '二等奖'
   if (frontHit === 5 && backHit === 0) return '三等奖'
-  if (frontHit === 4 && backHit === 2) return '三等奖'
-  if (frontHit === 4 && backHit === 1) return '四等奖'
-  if (frontHit === 3 && backHit === 2) return '四等奖'
-  if (frontHit === 4 && backHit === 0) return '五等奖'
-  if (frontHit === 3 && backHit === 1) return '五等奖'
-  if (frontHit === 2 && backHit === 2) return '五等奖'
-  if (frontHit === 3 && backHit === 0) return '六等奖'
-  if (frontHit === 2 && backHit === 1) return '六等奖'
-  if (frontHit === 1 && backHit === 2) return '六等奖'
-  if (frontHit === 0 && backHit === 2) return '六等奖'
+  if (frontHit === 4 && backHit === 2) return '四等奖'
+  if (frontHit === 4 && backHit === 1) return '五等奖'
+  if (frontHit === 3 && backHit === 2) return '六等奖'
+  if (frontHit === 4 && backHit === 0) return '六等奖'
+  if (frontHit === 3 && backHit === 1) return '七等奖'
+  if (frontHit === 2 && backHit === 2) return '八等奖'
+  if (frontHit === 3 && backHit === 0) return '八等奖'
+  if (frontHit === 2 && backHit === 1) return '九等奖'
+  if (frontHit === 1 && backHit === 2) return '九等奖'
+  if (frontHit === 0 && backHit === 2) return '九等奖'
   return '-'
 }
 
