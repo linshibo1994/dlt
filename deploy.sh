@@ -26,6 +26,7 @@ show_help() {
     echo "  restart   重启所有服务"
     echo "  logs      查看服务日志"
     echo "  build     重新构建镜像"
+    echo "  update    拉取最新代码并重新部署"
     echo "  status    查看服务状态"
     echo "  clean     清理未使用的镜像和容器"
     echo "  help      显示此帮助信息"
@@ -92,6 +93,32 @@ check_status() {
     docker compose ps
 }
 
+# 拉取最新代码并重新部署
+update_deploy() {
+    echo -e "${YELLOW}拉取最新代码...${NC}"
+    git pull origin main
+    if [ $? -ne 0 ]; then
+        echo -e "${RED}代码拉取失败，请检查网络或 git 配置${NC}"
+        exit 1
+    fi
+    echo -e "${GREEN}代码已更新到最新版本${NC}"
+    git log --oneline -1
+
+    echo ""
+    echo -e "${YELLOW}重新构建并部署...${NC}"
+    docker compose build --no-cache
+    docker compose up -d
+
+    # 自动清理废弃镜像和构建缓存
+    echo -e "${YELLOW}清理废弃镜像...${NC}"
+    docker image prune -f 2>/dev/null || true
+    docker builder prune -f 2>/dev/null || true
+
+    echo ""
+    echo -e "${GREEN}部署完成!${NC}"
+    docker compose ps
+}
+
 # 清理
 clean_up() {
     echo -e "${YELLOW}清理未使用的Docker资源...${NC}"
@@ -139,6 +166,9 @@ main() {
             ;;
         build)
             build_images
+            ;;
+        update)
+            update_deploy
             ;;
         status)
             check_status
