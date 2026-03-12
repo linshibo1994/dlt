@@ -15,7 +15,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 from backend.app.core import core_modules as cm
-from backend.app.utils.crawlers import update_data as crawler_update_data
+from backend.app.utils.crawlers import update_data as crawler_update_data, incremental_update_data
 
 from . import schemas
 from .dependencies import (
@@ -199,8 +199,8 @@ def get_data_stats(data_manager=Depends(get_data_manager), cache_manager=Depends
 def update_lottery_data(data_manager=Depends(get_data_manager)):
     """更新彩票数据（从官网爬取最新数据）"""
     try:
-        # 调用爬虫更新数据
-        updated_count = crawler_update_data(source="zhcw")
+        # 调用增量更新（只爬取最新数据）
+        updated_count = incremental_update_data(source="zhcw")
 
         # 重新加载数据
         data_manager.reload_data()

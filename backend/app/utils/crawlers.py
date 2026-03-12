@@ -847,6 +847,19 @@ def update_data(source: str = "zhcw") -> int:
     return crawler.crawl_all_data()
 
 
+def incremental_update_data(source: str = "zhcw") -> int:
+    """增量更新数据（只爬取最新几页）"""
+    if source == "zhcw":
+        crawler = ZhcwCrawler()
+    elif source == "500":
+        crawler = Crawler500()
+    else:
+        logger_manager.error(f"不支持的数据源: {source}")
+        return 0
+
+    return crawler.crawl_recent_data(2)
+
+
 if __name__ == "__main__":
     # 测试爬虫
     print("🕷️ 测试数据爬虫...")
