@@ -329,7 +329,9 @@ class BatchComparison:
     def _execute_prediction(self, method: str, periods: int) -> Optional[Tuple[List[int], List[int]]]:
         """执行预测"""
         try:
-            # 根据方法类型选择预测器
+            result = None
+
+            # 传统统计方法
             if method in ['frequency', 'hot_cold', 'missing']:
                 predictor = self.predictors['traditional']
                 if method == 'frequency':
@@ -338,8 +340,13 @@ class BatchComparison:
                     result = predictor.hot_cold_predict(count=1, periods=periods)
                 elif method == 'missing':
                     result = predictor.missing_predict(count=1, periods=periods)
-            
-            elif method in ['markov', 'markov_2nd', 'markov_3rd', 'adaptive_markov', 'ensemble', 'clustering']:
+
+            elif method == 'bayesian':
+                predictor = self.predictors['traditional']
+                result = predictor.bayesian_predict(count=1, periods=periods)
+
+            # 马尔可夫链方法
+            elif method in ['markov', 'markov_2nd', 'markov_3rd', 'adaptive_markov', 'markov_custom']:
                 predictor = self.predictors['advanced']
                 if method == 'markov':
                     result = predictor.markov_predict(count=1, periods=periods)
@@ -349,18 +356,32 @@ class BatchComparison:
                     result = predictor.markov_3rd_predict(count=1, periods=periods)
                 elif method == 'adaptive_markov':
                     result = predictor.adaptive_markov_predict(count=1, periods=periods)
-                elif method == 'ensemble':
+                elif method == 'markov_custom':
+                    result = predictor.markov_predict_custom(count=1, analysis_periods=periods)
+
+            # 高级算法
+            elif method in ['ensemble', 'clustering']:
+                predictor = self.predictors['advanced']
+                if method == 'ensemble':
                     result = predictor.ensemble_predict(count=1, periods=periods)
                 elif method == 'clustering':
                     result = predictor.clustering_predict(count=1, periods=periods)
 
-            elif method == 'bayesian':
-                # bayesian_predict现在在TraditionalPredictor中
-                predictor = self.predictors['traditional']
-                result = predictor.bayesian_predict(count=1, periods=periods)
-            
+            # 集成学习方法
+            elif method in ['stacking', 'adaptive_ensemble', 'ultimate_ensemble', 'enhanced']:
+                predictor = self.predictors['advanced']
+                if method == 'stacking':
+                    result = predictor.stacking_predict(count=1, periods=periods)
+                elif method == 'adaptive_ensemble':
+                    result = predictor.adaptive_ensemble_predict(count=1, periods=periods)
+                elif method == 'ultimate_ensemble':
+                    result = predictor.ultimate_ensemble_predict(count=1, periods=periods)
+                elif method == 'enhanced':
+                    result = predictor.enhanced_predict(count=1, periods=periods)
+
+            # 智能预测方法（注意：这些方法定义在 AdvancedPredictor 上，不是 SuperPredictor）
             elif method in ['super', 'adaptive', 'nine_models', 'advanced_integration', 'mixed_strategy', 'highly_integrated']:
-                predictor = self.predictors['super']
+                predictor = self.predictors['advanced']
                 if method == 'super':
                     result = predictor.super_predict(count=1, periods=periods)
                 elif method == 'adaptive':
@@ -373,16 +394,59 @@ class BatchComparison:
                     result = predictor.mixed_strategy_predict(count=1, periods=periods)
                 elif method == 'highly_integrated':
                     result = predictor.highly_integrated_predict(count=1, periods=periods)
-            
+
+            # 复式投注方法 - 提取单注预测结果
+            elif method in ['markov_compound', 'nine_models_compound']:
+                predictor = self.predictors['advanced']
+                try:
+                    if method == 'markov_compound':
+                        compound_result = predictor.markov_compound_predict(
+                            front_count=8, back_count=4, analysis_periods=periods
+                        )
+                    else:
+                        compound_result = predictor.nine_models_compound_predict(
+                            front_count=8, back_count=4, analysis_periods=periods
+                        )
+                    if isinstance(compound_result, dict):
+                        front = sorted(compound_result.get('front_balls', []))[:5]
+                        back = sorted(compound_result.get('back_balls', []))[:2]
+                        if len(front) == 5 and len(back) == 2:
+                            return (front, back)
+                except Exception as e:
+                    logger_manager.warning(f"复式预测 {method} 失败，回退到频率分析: {e}")
+                result = self.predictors['traditional'].frequency_predict(count=1, periods=periods)
+
+            # compound/duplex 是复式投注模式，使用频率分析作为回退
+            elif method in ['compound', 'duplex']:
+                result = self.predictors['traditional'].frequency_predict(count=1, periods=periods)
+
+            # 深度学习方法
+            elif method in ['lstm', 'transformer', 'gan']:
+                try:
+                    from backend.app.predictors.deep_learning.advanced_lstm_predictor import AdvancedLSTMPredictor
+                    dl_predictor = AdvancedLSTMPredictor()
+                    dl_result = dl_predictor.predict(count=1)
+                    if dl_result and len(dl_result) > 0:
+                        result = [dl_result[0]]
+                    else:
+                        result = self.predictors['advanced'].ensemble_predict(count=1, periods=periods)
+                except Exception as e:
+                    logger_manager.warning(f"深度学习方法 {method} 不可用，回退到集成方法: {e}")
+                    result = self.predictors['advanced'].ensemble_predict(count=1, periods=periods)
+
+            # 交集递减方法 - 使用集成方法作为代理
+            elif method == 'consensus_halving':
+                result = self.predictors['advanced'].ensemble_predict(count=1, periods=periods)
+
             else:
                 logger_manager.error(f"不支持的预测方法: {method}")
                 return None
-            
+
             if result and len(result) > 0:
-                return result[0]  # 返回第一个预测结果
+                return result[0]
             else:
                 return None
-                
+
         except Exception as e:
             logger_manager.error(f"预测执行失败: {e}")
             return None

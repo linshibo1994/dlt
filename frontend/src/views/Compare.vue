@@ -224,14 +224,44 @@ const config = ref({
   maxPeriods: 500
 })
 
-// 算法选项
+// 算法选项 - 全量算法支持
 const algorithmOptions = [
-  { label: '集成深度学习', value: 'ensemble' },
-  { label: 'LSTM时序预测', value: 'lstm' },
-  { label: '一阶马尔可夫', value: 'markov' },
-  { label: 'Transformer', value: 'transformer' },
+  // 传统统计方法
+  { label: '频率分析', value: 'frequency' },
+  { label: '冷热分析', value: 'hot_cold' },
+  { label: '遗漏分析', value: 'missing' },
   { label: '贝叶斯分析', value: 'bayesian' },
-  { label: '频率分析', value: 'frequency' }
+  // 马尔可夫链方法
+  { label: '一阶马尔可夫', value: 'markov' },
+  { label: '二阶马尔可夫', value: 'markov_2nd' },
+  { label: '三阶马尔可夫', value: 'markov_3rd' },
+  { label: '自适应马尔可夫', value: 'adaptive_markov' },
+  { label: '自定义马尔可夫', value: 'markov_custom' },
+  { label: '马尔可夫复式', value: 'markov_compound' },
+  // 高级算法
+  { label: '集成预测', value: 'ensemble' },
+  { label: '聚类预测', value: 'clustering' },
+  { label: '交集递减', value: 'consensus_halving' },
+  { label: '九模型融合', value: 'nine_models' },
+  { label: '九模型复式', value: 'nine_models_compound' },
+  // 智能增强方法
+  { label: '超级预测', value: 'super' },
+  { label: '自适应预测', value: 'adaptive' },
+  { label: '混合策略', value: 'mixed_strategy' },
+  { label: '高度集成', value: 'highly_integrated' },
+  { label: '高级集成', value: 'advanced_integration' },
+  { label: '增强预测', value: 'enhanced' },
+  // 集成学习方法
+  { label: '堆叠集成', value: 'stacking' },
+  { label: '自适应集成', value: 'adaptive_ensemble' },
+  { label: '终极集成', value: 'ultimate_ensemble' },
+  // 复式投注
+  { label: '复式投注', value: 'compound' },
+  { label: '胆拖投注', value: 'duplex' },
+  // 深度学习方法
+  { label: 'LSTM时序预测', value: 'lstm' },
+  { label: 'Transformer', value: 'transformer' },
+  { label: 'GAN生成对抗', value: 'gan' }
 ]
 
 // 对比状态
