@@ -265,8 +265,27 @@ cd dlt
 ./deploy.sh stop     # 停止所有服务
 ./deploy.sh restart  # 重启所有服务
 ./deploy.sh logs     # 查看服务日志
-./deploy.sh build    # 重新构建镜像
+./deploy.sh build    # 重新构建镜像（自动清理废弃镜像）
 ./deploy.sh status   # 查看服务状态
+./deploy.sh clean    # 手动清理 Docker 废弃资源
+```
+
+**磁盘清理：**
+
+每次执行 `./deploy.sh build` 时会自动清理废弃的 Docker 镜像和构建缓存。如需手动清理，可使用以下命令：
+
+```bash
+# 清理废弃镜像（dangling images，每次重新构建后残留的旧镜像）
+docker image prune -f
+
+# 清理构建缓存
+docker builder prune -f
+
+# 查看 Docker 磁盘占用详情
+docker system df
+
+# 一键清理所有未使用的 Docker 资源（镜像 + 缓存 + 网络）
+./deploy.sh clean
 ```
 
 ### 🖥️ 本地开发

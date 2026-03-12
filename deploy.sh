@@ -62,11 +62,28 @@ view_logs() {
     docker compose logs -f
 }
 
-# 构建镜像
+# 构建镜像（构建后自动清理废弃镜像和构建缓存）
 build_images() {
     echo -e "${GREEN}构建镜像...${NC}"
     docker compose build --no-cache
     echo -e "${GREEN}镜像构建完成!${NC}"
+
+    # 自动清理废弃镜像（dangling images）
+    DANGLING=$(docker images -f "dangling=true" -q 2>/dev/null)
+    if [ -n "$DANGLING" ]; then
+        DANGLING_SIZE=$(docker images -f "dangling=true" --format "{{.Size}}" | head -5)
+        echo -e "${YELLOW}清理废弃镜像...${NC}"
+        docker image prune -f
+        echo -e "${GREEN}废弃镜像已清理${NC}"
+    fi
+
+    # 自动清理构建缓存
+    CACHE_SIZE=$(docker builder du 2>/dev/null | tail -1 | awk '{print $NF}' || echo "0")
+    if [ "$CACHE_SIZE" != "0" ] && [ "$CACHE_SIZE" != "0B" ]; then
+        echo -e "${YELLOW}清理构建缓存...${NC}"
+        docker builder prune -f
+        echo -e "${GREEN}构建缓存已清理${NC}"
+    fi
 }
 
 # 查看状态
@@ -78,12 +95,28 @@ check_status() {
 # 清理
 clean_up() {
     echo -e "${YELLOW}清理未使用的Docker资源...${NC}"
-    echo -e "${RED}警告: 此操作将删除未使用的镜像、容器和网络${NC}"
+    echo ""
+
+    # 显示可清理资源概览
+    DANGLING_COUNT=$(docker images -f "dangling=true" -q 2>/dev/null | wc -l | tr -d ' ')
+    CACHE_INFO=$(docker builder du --verbose 2>/dev/null | tail -1 || echo "无法获取")
+    echo "  废弃镜像数量: ${DANGLING_COUNT}"
+    echo "  构建缓存: ${CACHE_INFO}"
+    echo ""
+
+    echo -e "${RED}警告: 此操作将删除废弃镜像、构建缓存和未使用的网络${NC}"
     read -p "确定要继续吗? (y/N) " -n 1 -r
     echo
     if [[ $REPLY =~ ^[Yy]$ ]]; then
-        docker system prune -f
-        echo -e "${GREEN}清理完成${NC}"
+        echo -e "${YELLOW}[1/3] 清理废弃镜像...${NC}"
+        docker image prune -f
+        echo -e "${YELLOW}[2/3] 清理构建缓存...${NC}"
+        docker builder prune -f
+        echo -e "${YELLOW}[3/3] 清理未使用的网络...${NC}"
+        docker network prune -f
+        echo ""
+        echo -e "${GREEN}清理完成! 当前磁盘使用:${NC}"
+        docker system df
     else
         echo "已取消"
     fi

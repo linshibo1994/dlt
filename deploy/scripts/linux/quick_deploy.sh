@@ -288,10 +288,15 @@ EOF
 deploy_services() {
     log_info "构建Docker镜像..."
     docker-compose build --no-cache
-    
+
+    # 自动清理构建产生的废弃镜像和缓存
+    log_info "清理废弃镜像和构建缓存..."
+    docker image prune -f 2>/dev/null || true
+    docker builder prune -f 2>/dev/null || true
+
     log_info "启动服务..."
     docker-compose up -d
-    
+
     log_success "服务启动完成"
 }
 
@@ -376,6 +381,10 @@ update_deployment() {
     # 重新构建和启动
     log_info "重新构建镜像"
     docker-compose build --no-cache dlt-prediction
+
+    # 自动清理废弃镜像
+    docker image prune -f 2>/dev/null || true
+    docker builder prune -f 2>/dev/null || true
 
     log_info "启动服务"
     docker-compose up -d
