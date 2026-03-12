@@ -6,13 +6,16 @@ from __future__ import annotations
 
 import logging
 import os
+import json
+import queue
+import threading
 import requests
 from datetime import datetime
 from typing import Any, Dict, List, Optional
 
 from fastapi import Depends, FastAPI, HTTPException, Query, status
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, StreamingResponse
 
 from backend.app.core import core_modules as cm
 from backend.app.utils.crawlers import update_data as crawler_update_data, incremental_update_data
@@ -367,6 +370,82 @@ def run_comparison(request: schemas.CompareRequest, manager=Depends(get_batch_co
 
     response = schemas.CompareResponseData(summary=summary, records=records)
     return build_response(response.dict(), "批量对比完成")
+
+
+@app.post("/api/compare/stream")
+def run_comparison_stream(request: schemas.CompareRequest, manager=Depends(get_batch_comparison)):
+    """SSE 流式批量对比，实时推送进度"""
+    config = BatchComparisonConfig(
+        target_issue=request.target_issue,
+        method=request.method,
+        analysis_periods=request.periods,
+        comparison_times=request.times,
+        random_periods=request.random_periods,
+        min_random_periods=request.min_periods,
+        max_random_periods=request.max_periods,
+        export_excel=request.export_excel,
+        show_progress=request.show_progress,
+    )
+
+    valid, error_msg = config.validate()
+    if not valid:
+        def error_stream():
+            payload = json.dumps({"type": "error", "message": error_msg}, ensure_ascii=False)
+            yield f"data: {payload}\n\n"
+        return StreamingResponse(error_stream(), media_type="text/event-stream")
+
+    def event_stream():
+        q = queue.Queue()
+
+        def progress_callback(current, total, message):
+            event = {"type": "progress", "current": current, "total": total, "message": message}
+            q.put(json.dumps(event, ensure_ascii=False))
+
+        def run_comparison():
+            try:
+                result = manager.execute(config, progress_callback=progress_callback)
+                # 构建最终结果
+                summary_data = result.get_summary()
+                summary = schemas.CompareSummary(**summary_data)
+                records = [
+                    schemas.ComparisonRecord(
+                        round_number=record.round_number,
+                        analysis_periods=record.analysis_periods,
+                        predicted_front=[int(x) for x in record.predicted_front],
+                        predicted_back=[int(x) for x in record.predicted_back],
+                        actual_front=[int(x) for x in record.actual_front],
+                        actual_back=[int(x) for x in record.actual_back],
+                        front_hits=record.front_hits,
+                        back_hits=record.back_hits,
+                        prize_level=record.prize_level,
+                        execution_time=record.execution_time,
+                        timestamp=record.timestamp.isoformat() if hasattr(record, 'timestamp') else str(record.timestamp),
+                    )
+                    for record in result.predictions
+                ]
+                resp = schemas.CompareResponseData(summary=summary, records=records)
+                final = {"type": "complete", "data": resp.dict()}
+                q.put(json.dumps(final, ensure_ascii=False))
+            except Exception as exc:
+                logger.exception("批量对比执行失败: %s", exc)
+                q.put(json.dumps({"type": "error", "message": str(exc)}, ensure_ascii=False))
+            finally:
+                q.put(None)  # 结束信号
+
+        thread = threading.Thread(target=run_comparison, daemon=True)
+        thread.start()
+
+        while True:
+            try:
+                event = q.get(timeout=120)
+                if event is None:
+                    break
+                yield f"data: {event}\n\n"
+            except queue.Empty:
+                # 发送心跳保持连接
+                yield f"data: {json.dumps({'type': 'heartbeat'})}\n\n"
+
+    return StreamingResponse(event_stream(), media_type="text/event-stream")
 
 
 # ==================== 系统接口 ====================

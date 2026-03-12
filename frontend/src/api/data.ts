@@ -31,5 +31,5 @@ export const getDataStats = () => {
 
 // Update lottery data (crawl from official website)
 export const updateLotteryData = () => {
-  return request.post<any, ApiResponse<DataUpdateResult>>('/data/update', {}, { timeout: 120000 })
+  return request.post<any, ApiResponse<DataUpdateResult>>('/data/update')
 }

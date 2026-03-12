@@ -425,7 +425,7 @@ const getRowClassName = (row: any) => {
   return ''
 }
 
-// 开始对比
+// 开始对比（SSE 流式进度）
 const startCompare = async () => {
   if (!config.value.targetIssue) {
     message.warning('请输入目标期号')
@@ -437,48 +437,84 @@ const startCompare = async () => {
   currentCompareIndex.value = 0
   compareResults.value = []
 
+  const payload: any = {
+    target_issue: config.value.targetIssue,
+    method: config.value.method,
+    periods: config.value.periods,
+    times: config.value.times,
+    random_periods: config.value.randomPeriods,
+    export_excel: false,
+    show_progress: false
+  }
+  if (config.value.randomPeriods) {
+    payload.min_periods = config.value.minPeriods
+    payload.max_periods = config.value.maxPeriods
+  }
+
   try {
-    // 调用后端 API 执行批量对比
-    const response = await executeBatchComparison({
-      target_issue: config.value.targetIssue,
-      method: config.value.method,
-      periods: config.value.periods,
-      times: config.value.times,
-      random_periods: config.value.randomPeriods,
-      min_periods: config.value.minPeriods,
-      max_periods: config.value.maxPeriods,
-      export_excel: false,
-      show_progress: false
+    const resp = await fetch('/api/compare/stream', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
     })
 
-    if (response.success && response.data) {
-      const { records, summary } = response.data
+    if (!resp.ok) {
+      message.error(`请求失败: ${resp.status}`)
+      isComparing.value = false
+      return
+    }
 
-      // 转换后端返回的数据格式
-      compareResults.value = (records || []).map((record: any, index: number) => ({
-        period: config.value.targetIssue,
-        actual: {
-          front: record.actual_front || summary?.actual_numbers?.front_balls || [],
-          back: record.actual_back || summary?.actual_numbers?.back_balls || []
-        },
-        predicted: {
-          front: record.predicted_front || [],
-          back: record.predicted_back || []
-        },
-        frontHit: record.front_hits || 0,
-        backHit: record.back_hits || 0,
-        prizeLevel: getPrizeLevelFromNumber(record.prize_level),
-        algorithm: algorithmOptions.find(a => a.value === config.value.method)?.label || config.value.method
-      }))
+    const reader = resp.body!.getReader()
+    const decoder = new TextDecoder()
+    let buffer = ''
 
-      compareProgress.value = 100
-      currentCompareIndex.value = records?.length || 0
-      message.success(`对比完成，共 ${records?.length || 0} 轮`)
+    while (true) {
+      const { done, value } = await reader.read()
+      if (done) break
 
-      // 初始化趋势图
-      setTimeout(() => initHitTrendChart(), 100)
-    } else {
-      message.error(response.message || '对比失败')
+      buffer += decoder.decode(value, { stream: true })
+      const lines = buffer.split('\n')
+      buffer = lines.pop() || ''
+
+      for (const line of lines) {
+        if (!line.startsWith('data: ')) continue
+        const jsonStr = line.slice(6).trim()
+        if (!jsonStr) continue
+
+        try {
+          const event = JSON.parse(jsonStr)
+
+          if (event.type === 'progress') {
+            currentCompareIndex.value = event.current
+            compareProgress.value = Math.round((event.current / event.total) * 100)
+          } else if (event.type === 'complete') {
+            const { records, summary } = event.data
+            compareResults.value = (records || []).map((record: any) => ({
+              period: config.value.targetIssue,
+              actual: {
+                front: record.actual_front || summary?.actual_numbers?.front_balls || [],
+                back: record.actual_back || summary?.actual_numbers?.back_balls || []
+              },
+              predicted: {
+                front: record.predicted_front || [],
+                back: record.predicted_back || []
+              },
+              frontHit: record.front_hits || 0,
+              backHit: record.back_hits || 0,
+              prizeLevel: getPrizeLevelFromNumber(record.prize_level),
+              algorithm: algorithmOptions.find(a => a.value === config.value.method)?.label || config.value.method
+            }))
+            compareProgress.value = 100
+            currentCompareIndex.value = records?.length || 0
+            message.success(`对比完成，共 ${records?.length || 0} 轮`)
+            setTimeout(() => initHitTrendChart(), 100)
+          } else if (event.type === 'error') {
+            message.error(`对比失败: ${event.message}`)
+          }
+        } catch {
+          // 忽略解析错误
+        }
+      }
     }
   } catch (error: any) {
     message.error(`对比出错: ${error.message || '未知错误'}`)

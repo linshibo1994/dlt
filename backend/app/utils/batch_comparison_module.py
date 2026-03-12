@@ -64,8 +64,11 @@ class BatchComparisonConfig:
             if self.min_random_periods >= self.max_random_periods:
                 return False, "随机期数范围设置不正确"
         else:
-            if self.analysis_periods <= 0 or self.analysis_periods > self.max_random_periods:
-                return False, "分析期数必须在1-{}之间".format(self.max_random_periods)
+            # 非随机模式下，用实际数据量作为上限
+            df = data_manager.get_data()
+            max_available = (len(df) - 1) if df is not None else 2000
+            if self.analysis_periods <= 0 or self.analysis_periods > max_available:
+                return False, "分析期数必须在1-{}之间".format(max_available)
         
         return True, ""
 
