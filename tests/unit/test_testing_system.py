@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import json
 from pathlib import Path
 
 from backend.testing import DltDataSource, DltRule, SessionConfig, TestEngine
@@ -64,6 +65,49 @@ def test_prediction_runner_parse_cli_output_inline_and_multiline():
     assert len(parsed_multiline) == 1
     assert parsed_multiline[0]["front_balls"] == [2, 4, 8, 10, 21]
     assert parsed_multiline[0]["back_balls"] == [9, 12]
+
+
+def test_prediction_runner_parse_compound_json_output():
+    runner = PredictionRunner(prefer_direct=False, fallback_subprocess=False)
+    payload = {
+        "mode": "compound",
+        "method": "compound",
+        "predictions": [],
+        "compound": {
+            "front_balls": [1, 2, 3, 4, 5, 6],
+            "back_balls": [1, 2, 3],
+            "method": "compound",
+        },
+    }
+    parsed = runner.parse_cli_output(json.dumps(payload, ensure_ascii=False))
+    assert parsed, "复式 JSON 输出应可展开为单注集合"
+    assert parsed[0]["front_balls"] == [1, 2, 3, 4, 5]
+    assert parsed[0]["back_balls"] == [1, 2]
+
+
+def test_prediction_runner_parse_duplex_from_details():
+    runner = PredictionRunner(prefer_direct=False, fallback_subprocess=False)
+    payload = {
+        "mode": "traditional",
+        "method": "duplex",
+        "predictions": [
+            {
+                "front_balls": [],
+                "back_balls": [],
+                "method": "duplex",
+                "details": {
+                    "front_dan": [1, 2],
+                    "front_tuo": [3, 4, 5, 6],
+                    "back_dan": [1],
+                    "back_tuo": [2, 3],
+                },
+            }
+        ],
+    }
+    parsed = runner.parse_cli_output(json.dumps(payload, ensure_ascii=False))
+    assert parsed, "胆拖结构应可展开为单注集合"
+    assert parsed[0]["front_balls"] == [1, 2, 3, 4, 5]
+    assert parsed[0]["back_balls"] == [1, 2]
 
 
 def test_test_engine_random_strategy_parameter_routing(tmp_path: Path):

@@ -12,6 +12,7 @@ import sys
 import os
 import random
 import json
+from itertools import combinations
 from collections import Counter
 from datetime import datetime
 from typing import List, Dict, Tuple
@@ -1660,8 +1661,8 @@ class DLTPredictorSystem:
             try:
                 import signal
                 signal.alarm(0)  # 确保取消超时
-            except Exception:
-                pass
+            except Exception as cancel_error:
+                logger_manager.warning(f"取消超时信号失败: {cancel_error}")
             print(f"{OutputStatus.WARNING} 高度集成预测超时或失败: {e}")
             print(f"{OutputStatus.INFO} 回退到复式预测...")
             return self._fallback_to_compound(args)
@@ -1891,35 +1892,7 @@ class DLTPredictorSystem:
         """以稳定 JSON 协议输出预测结果。"""
         normalized = []
         for item in predictions or []:
-            if isinstance(item, dict):
-                front = item.get('front_balls', item.get('front', []))
-                back = item.get('back_balls', item.get('back', []))
-                method = item.get('method', getattr(args, 'method', 'unknown'))
-                confidence = item.get('confidence')
-            elif isinstance(item, (list, tuple)) and len(item) == 2:
-                front, back = item
-                method = getattr(args, 'method', 'unknown')
-                confidence = None
-            else:
-                continue
-
-            try:
-                front_norm = [int(x) for x in front]
-                back_norm = [int(x) for x in back]
-            except Exception:
-                continue
-
-            if len(front_norm) != 5 or len(back_norm) != 2:
-                continue
-
-            normalized.append(
-                {
-                    'front_balls': sorted(front_norm),
-                    'back_balls': sorted(back_norm),
-                    'method': method,
-                    'confidence': confidence,
-                }
-            )
+            normalized.extend(self._expand_prediction_for_json(item, args))
 
         payload = {
             'mode': mode,
@@ -1929,6 +1902,119 @@ class DLTPredictorSystem:
             'predictions': normalized,
         }
         print(json.dumps(payload, ensure_ascii=False))
+
+    def _expand_prediction_for_json(self, item, args):
+        """将单式/复式/胆拖结果统一展开为 5+2 预测。"""
+        if item is None:
+            return []
+
+        results = []
+        method = getattr(args, 'method', 'unknown')
+        confidence = None
+
+        if isinstance(item, dict):
+            method = item.get('method', method)
+            confidence = item.get('confidence')
+            front = item.get('front_balls', item.get('front', []))
+            back = item.get('back_balls', item.get('back', []))
+            # 标准 5+2 单注
+            ticket = self._build_json_ticket(front, back, method, confidence)
+            if ticket:
+                return [ticket]
+
+            # 复式结构
+            results.extend(self._expand_compound_for_json(item, method, confidence))
+            # 胆拖结构
+            if not results:
+                results.extend(self._expand_duplex_for_json(item, method, confidence))
+            return results
+
+        if isinstance(item, (list, tuple)) and len(item) == 2:
+            ticket = self._build_json_ticket(item[0], item[1], method, confidence)
+            return [ticket] if ticket else []
+
+        return []
+
+    def _build_json_ticket(self, front_blob, back_blob, method, confidence):
+        try:
+            front = sorted(set(int(x) for x in front_blob))
+            back = sorted(set(int(x) for x in back_blob))
+        except Exception:
+            return None
+
+        if len(front) != 5 or len(back) != 2:
+            return None
+        if any(x < 1 or x > 35 for x in front):
+            return None
+        if any(x < 1 or x > 12 for x in back):
+            return None
+        return {
+            'front_balls': front,
+            'back_balls': back,
+            'method': method,
+            'confidence': confidence,
+        }
+
+    def _expand_compound_for_json(self, item, method, confidence):
+        front = item.get('front_balls', [])
+        back = item.get('back_balls', [])
+        try:
+            front_pool = sorted(set(int(x) for x in front if 1 <= int(x) <= 35))
+            back_pool = sorted(set(int(x) for x in back if 1 <= int(x) <= 12))
+        except Exception:
+            return []
+
+        if len(front_pool) < 5 or len(back_pool) < 2:
+            return []
+
+        results = []
+        # 控制输出规模，避免 JSON 过大
+        max_expand = 5000
+        for front_ticket in combinations(front_pool, 5):
+            for back_ticket in combinations(back_pool, 2):
+                ticket = self._build_json_ticket(front_ticket, back_ticket, method, confidence)
+                if ticket:
+                    results.append(ticket)
+                    if len(results) >= max_expand:
+                        return results
+        return results
+
+    def _expand_duplex_for_json(self, item, method, confidence):
+        try:
+            front_dan = sorted(set(int(x) for x in item.get('front_dan', [])))
+            front_tuo = sorted(set(int(x) for x in item.get('front_tuo', [])))
+            back_dan = sorted(set(int(x) for x in item.get('back_dan', [])))
+            back_tuo = sorted(set(int(x) for x in item.get('back_tuo', [])))
+        except Exception:
+            return []
+
+        front_dan = [x for x in front_dan if 1 <= x <= 35]
+        front_tuo = [x for x in front_tuo if 1 <= x <= 35 and x not in front_dan]
+        back_dan = [x for x in back_dan if 1 <= x <= 12]
+        back_tuo = [x for x in back_tuo if 1 <= x <= 12 and x not in back_dan]
+
+        need_front = 5 - len(front_dan)
+        need_back = 2 - len(back_dan)
+        if need_front < 0 or need_back < 0:
+            return []
+        if need_front > len(front_tuo) or need_back > len(back_tuo):
+            return []
+
+        results = []
+        max_expand = 5000
+        for front_extra in combinations(front_tuo, need_front):
+            for back_extra in combinations(back_tuo, need_back):
+                ticket = self._build_json_ticket(
+                    list(front_dan) + list(front_extra),
+                    list(back_dan) + list(back_extra),
+                    method,
+                    confidence,
+                )
+                if ticket:
+                    results.append(ticket)
+                    if len(results) >= max_expand:
+                        return results
+        return results
 
     def _output_compound_json(self, compound_result, args):
         """以 JSON 协议输出复式预测结果。"""

@@ -9,12 +9,20 @@ import re
 import subprocess
 import sys
 import time
+from itertools import combinations
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, Iterable, List, Optional, Tuple
 
 
 class PredictionRunner:
     """统一预测执行入口。"""
+    COMPOUND_LIKE_METHODS = {
+        "compound",
+        "duplex",
+        "markov_compound",
+        "nine_models_compound",
+        "highly_integrated",
+    }
 
     def __init__(
         self,
@@ -33,6 +41,7 @@ class PredictionRunner:
         self.prefer_direct = prefer_direct
         self.fallback_subprocess = fallback_subprocess
         self._predictor_service = predictor_service
+        self.max_expand_predictions = 5000
 
     @property
     def predictor_service(self):
@@ -83,6 +92,8 @@ class PredictionRunner:
         for key in ("missing_mode", "strategy", "performance_mode", "training_intensity"):
             if key in extra:
                 payload[key] = extra[key]
+        if method in self.COMPOUND_LIKE_METHODS and "compound_mode" not in extra:
+            payload["compound_mode"] = True
         return payload
 
     def _run_direct(self, method: str, periods: int, count: int, extra: Dict[str, Any], retry: int = 0) -> Dict[str, Any]:
@@ -90,7 +101,7 @@ class PredictionRunner:
         try:
             payload = self._build_payload(method, periods, count, extra)
             data = self.predictor_service.predict(payload)
-            predictions = self._normalize_predictions(data.get("predictions", []))
+            predictions = self._extract_predictions_from_payload(data, count_hint=count, method=method)
             return {
                 "success": bool(predictions),
                 "method": method,
@@ -242,7 +253,7 @@ class PredictionRunner:
             except json.JSONDecodeError:
                 continue
             if isinstance(data, dict):
-                normalized = self._normalize_predictions(data.get("predictions", []))
+                normalized = self._extract_predictions_from_payload(data, count_hint=50)
                 if normalized:
                     return normalized
 
@@ -253,12 +264,204 @@ class PredictionRunner:
                 data = json.loads(block)
             except Exception:
                 continue
-            if isinstance(data, dict) and isinstance(data.get("predictions"), list):
-                normalized = self._normalize_predictions(data["predictions"])
+            if isinstance(data, dict):
+                normalized = self._extract_predictions_from_payload(data, count_hint=50)
                 if normalized:
                     return normalized
 
         return []
+
+    def _extract_predictions_from_payload(
+        self,
+        payload: Any,
+        count_hint: int = 1,
+        method: str = "",
+    ) -> List[Dict[str, Any]]:
+        if not isinstance(payload, dict):
+            return []
+
+        predictions: List[Dict[str, Any]] = []
+        limit = self._resolve_expand_limit(count_hint)
+
+        candidates: List[Any] = []
+        if isinstance(payload.get("predictions"), list):
+            candidates.extend(payload["predictions"])
+        if isinstance(payload.get("data"), dict) and isinstance(payload["data"].get("predictions"), list):
+            candidates.extend(payload["data"]["predictions"])
+
+        # 先处理标准预测项（含 details 中的复式/胆拖）
+        for item in candidates:
+            predictions.extend(self._extract_predictions_from_item(item, limit=limit, method=method))
+            if len(predictions) >= limit:
+                return self._deduplicate(predictions)[:limit]
+
+        # 再处理 compound / duplex 顶层结构
+        predictions.extend(self._expand_compound_payload(payload.get("compound"), limit=limit, method=method))
+        if len(predictions) < limit:
+            predictions.extend(self._expand_compound_payload(payload, limit=limit, method=method))
+        if len(predictions) < limit:
+            predictions.extend(self._expand_duplex_payload(payload, limit=limit, method=method))
+
+        return self._deduplicate(predictions)[:limit]
+
+    def _extract_predictions_from_item(self, item: Any, limit: int, method: str = "") -> List[Dict[str, Any]]:
+        if not isinstance(item, dict):
+            return []
+
+        result: List[Dict[str, Any]] = []
+
+        # 标准 5+2 单注
+        ticket = self._build_ticket(
+            front_blob=item.get("front_balls") or item.get("front"),
+            back_blob=item.get("back_balls") or item.get("back"),
+            method=item.get("method") or method,
+            confidence=item.get("confidence"),
+        )
+        if ticket:
+            result.append(ticket)
+            return result
+
+        # details 中可能携带复式/胆拖结构
+        details = item.get("details")
+        if isinstance(details, dict):
+            result.extend(self._expand_compound_payload(details, limit=limit, method=item.get("method") or method))
+            if len(result) < limit:
+                result.extend(self._expand_duplex_payload(details, limit=limit, method=item.get("method") or method))
+
+        # item 本身可能是复式/胆拖结构
+        if len(result) < limit:
+            result.extend(self._expand_compound_payload(item, limit=limit, method=item.get("method") or method))
+        if len(result) < limit:
+            result.extend(self._expand_duplex_payload(item, limit=limit, method=item.get("method") or method))
+
+        return self._deduplicate(result)[:limit]
+
+    def _expand_compound_payload(self, payload: Any, limit: int, method: str = "") -> List[Dict[str, Any]]:
+        if not isinstance(payload, dict):
+            return []
+
+        result: List[Dict[str, Any]] = []
+        payload_method = payload.get("method") or method
+
+        # 情况1：直接携带 combinations 列表
+        combos = payload.get("combinations")
+        if isinstance(combos, list):
+            for combo in combos:
+                if not isinstance(combo, dict):
+                    continue
+                ticket = self._build_ticket(
+                    front_blob=combo.get("front_balls") or combo.get("front"),
+                    back_blob=combo.get("back_balls") or combo.get("back"),
+                    method=payload_method,
+                    confidence=payload.get("confidence"),
+                )
+                if ticket:
+                    result.append(ticket)
+                    if len(result) >= limit:
+                        return result
+
+        # 情况2：前后区大于 5+2 的复式集合，展开组合
+        front_pool = self._parse_number_pool(payload.get("front_balls"), min_num=1, max_num=35)
+        back_pool = self._parse_number_pool(payload.get("back_balls"), min_num=1, max_num=12)
+        if len(front_pool) >= 5 and len(back_pool) >= 2:
+            for front_ticket in combinations(front_pool, 5):
+                for back_ticket in combinations(back_pool, 2):
+                    ticket = self._build_ticket(
+                        front_blob=list(front_ticket),
+                        back_blob=list(back_ticket),
+                        method=payload_method,
+                        confidence=payload.get("confidence"),
+                    )
+                    if ticket:
+                        result.append(ticket)
+                        if len(result) >= limit:
+                            return result
+
+        return result
+
+    def _expand_duplex_payload(self, payload: Any, limit: int, method: str = "") -> List[Dict[str, Any]]:
+        if not isinstance(payload, dict):
+            return []
+
+        front_dan = self._parse_number_pool(payload.get("front_dan"), min_num=1, max_num=35)
+        front_tuo = self._parse_number_pool(payload.get("front_tuo"), min_num=1, max_num=35)
+        back_dan = self._parse_number_pool(payload.get("back_dan"), min_num=1, max_num=12)
+        back_tuo = self._parse_number_pool(payload.get("back_tuo"), min_num=1, max_num=12)
+
+        if not front_dan and not front_tuo:
+            return []
+        if not back_dan and not back_tuo:
+            return []
+
+        # 胆码与拖码去重（胆码优先）
+        front_tuo = [num for num in front_tuo if num not in set(front_dan)]
+        back_tuo = [num for num in back_tuo if num not in set(back_dan)]
+
+        need_front = 5 - len(front_dan)
+        need_back = 2 - len(back_dan)
+        if need_front < 0 or need_back < 0:
+            return []
+        if need_front > len(front_tuo) or need_back > len(back_tuo):
+            return []
+
+        result: List[Dict[str, Any]] = []
+        payload_method = payload.get("method") or method
+        for front_extra in combinations(front_tuo, need_front):
+            for back_extra in combinations(back_tuo, need_back):
+                front_ticket = sorted(front_dan + list(front_extra))
+                back_ticket = sorted(back_dan + list(back_extra))
+                ticket = self._build_ticket(
+                    front_blob=front_ticket,
+                    back_blob=back_ticket,
+                    method=payload_method,
+                    confidence=payload.get("confidence"),
+                )
+                if ticket:
+                    result.append(ticket)
+                    if len(result) >= limit:
+                        return result
+        return result
+
+    def _resolve_expand_limit(self, count_hint: int) -> int:
+        safe_hint = max(1, int(count_hint or 1))
+        # 单方法最多展开 count_hint*300 注，避免超大组合撑爆内存
+        return min(self.max_expand_predictions, max(50, safe_hint * 300))
+
+    def _build_ticket(self, front_blob: Any, back_blob: Any, method: str = "", confidence: Any = None) -> Optional[Dict[str, Any]]:
+        front = self._parse_number_blob(front_blob, expected=5, min_num=1, max_num=35)
+        back = self._parse_number_blob(back_blob, expected=2, min_num=1, max_num=12)
+        if not front or not back:
+            return None
+        ticket = {
+            "front_balls": front,
+            "back_balls": back,
+            "front_balls_text": ",".join(f"{n:02d}" for n in front),
+            "back_balls_text": ",".join(f"{n:02d}" for n in back),
+        }
+        if method:
+            ticket["method"] = method
+        if confidence is not None:
+            ticket["confidence"] = confidence
+        return ticket
+
+    @staticmethod
+    def _parse_number_pool(blob: Any, min_num: int, max_num: int) -> List[int]:
+        values: List[int] = []
+        if blob is None:
+            return values
+
+        if isinstance(blob, str):
+            values = [int(token) for token in re.findall(r"\d{1,2}", blob)]
+        elif isinstance(blob, Iterable) and not isinstance(blob, (bytes, bytearray, dict)):
+            for item in blob:
+                try:
+                    values.append(int(item))
+                except (TypeError, ValueError):
+                    continue
+        else:
+            return []
+
+        return sorted({num for num in values if min_num <= num <= max_num})
 
     def _parse_text_patterns(self, stdout: str) -> List[Dict[str, Any]]:
         predictions: List[Dict[str, Any]] = []
