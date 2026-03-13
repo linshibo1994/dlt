@@ -1,0 +1,108 @@
+{
+  "mcpServers": {
+    "gaode-maps": {
+      "command": "node",
+      "args": [
+        "/Users/linshibo/GithubProject/gaode/node_modules/.bin/ts-node",
+        "/Users/linshibo/GithubProject/gaode/src/index.ts"
+      ],
+      "env": {
+        "GAODE_API_KEY": "4a531af22a746d0698149ad72476d8d4"
+      }
+    },
+    "memory": {
+      "command": "/Users/linshibo/.npm-global/bin/mcp-server-memory",
+      "args": []
+    },
+    "sequential-thinking": {
+      "command": "/Users/linshibo/.npm-global/bin/mcp-server-sequential-thinking",
+      "args": []
+    },
+    "context7": {
+      "command": "/Users/linshibo/.npm-global/bin/context7-mcp",
+      "args": []
+    },
+    "playwright": {
+      "command": "/Users/linshibo/.npm-global/bin/playwright-mcp",
+      "args": []
+    },
+    "specs": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "specs-mcp"
+      ]
+    },
+    "browser-server": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-puppeteer"
+      ]
+    },
+    "cdm": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "chrome-devtools-mcp@latest"
+      ],
+      "env": {}
+    },
+    "cloudflare": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@cloudflare/mcp-server-cloudflare"
+      ],
+      "env": {}
+    },
+    "semgrep": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "mcp-server-semgrep"
+      ],
+      "env": {}
+    },
+    "ref-everything": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-everything"
+      ],
+      "env": {}
+    },
+    "replicate": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "replicate-mcp"
+      ],
+      "env": {
+        "REPLICATE_API_TOKEN": ""
+      }
+    },
+    "serena": {
+      "command": "uvx",
+      "args": [
+        "--from",
+        "git+https://github.com/oraios/serena",
+        "serena",
+        "start-mcp-server",
+        "--context",
+        "ide-assistant"
+      ],
+      "env": {}
+    },
+    "ace": {
+      "command": "/Users/linshibo/.npm-global/bin/auggie",
+      "args": [
+        "--mcp"
+      ],
+      "env": {
+        "AUGMENT_API_TOKEN": "sk-user-c3fc7ce38168aa564cff1d9146f30111b8ad6c4361ec6431e24fc3515f22ac78",
+        "AUGMENT_API_URL": "https://api.cubence.com/ace/"
+      }
+    }
+  }
+}

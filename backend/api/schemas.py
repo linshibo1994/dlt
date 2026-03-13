@@ -150,6 +150,56 @@ class CompareRequest(BaseModel):
     show_progress: bool = False
 
 
+TestingStrategyLiteral = Literal['progressive', 'random']
+TestingPrizeLiteral = Literal['一等奖', '二等奖', '三等奖', '四等奖', '五等奖', '六等奖', '七等奖', '八等奖', '九等奖']
+
+
+class TestingRequest(BaseModel):
+    """测试系统请求参数"""
+
+    methods: List[AlgorithmLiteral] = Field(default_factory=list)
+    strategy: TestingStrategyLiteral = Field('random')
+    target_prize: TestingPrizeLiteral = Field('六等奖')
+    periods_start: int = Field(50, ge=10, le=2748)
+    periods_end: int = Field(500, ge=10, le=2748)
+    count_start: int = Field(1, ge=1, le=100)
+    count_end: int = Field(1, ge=1, le=100)
+    max_tests: int = Field(20, ge=1, le=5000)
+    parallel: bool = Field(False)
+    workers: int = Field(4, ge=1, le=64)
+    seed: Optional[int] = Field(None)
+    target_issue: Optional[str] = Field(None, min_length=5)
+    progressive_step: int = Field(50, ge=1, le=1000)
+    timeout_seconds: int = Field(120, ge=10, le=3600)
+    retries: int = Field(1, ge=0, le=5)
+
+    @validator('methods')
+    def validate_methods(cls, value):
+        if not value:
+            raise ValueError('methods 不能为空')
+        return sorted(set(value))
+
+    @validator('periods_end')
+    def validate_periods_range(cls, value, values):
+        start = values.get('periods_start', 10)
+        if value < start:
+            raise ValueError('periods_end 必须大于等于 periods_start')
+        return value
+
+    @validator('count_end')
+    def validate_count_range(cls, value, values):
+        start = values.get('count_start', 1)
+        if value < start:
+            raise ValueError('count_end 必须大于等于 count_start')
+        return value
+
+
+class TestingOptionsResponse(BaseModel):
+    """测试系统可选项响应"""
+
+    available_methods: List[str]
+    target_prizes: List[str]
+
 class CompareSummary(BaseModel):
     """批量对比摘要"""
 

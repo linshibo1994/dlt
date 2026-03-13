@@ -27,6 +27,12 @@ const routes: RouteRecordRaw[] = [
     meta: { title: '批量对比', icon: 'GitCompareOutline' }
   },
   {
+    path: '/testing',
+    name: 'Testing',
+    component: () => import('@/views/Testing.vue'),
+    meta: { title: '测试系统', icon: 'FlaskOutline' }
+  },
+  {
     path: '/settings',
     name: 'Settings',
     component: () => import('@/views/Settings.vue'),

@@ -19,6 +19,7 @@ from fastapi.responses import JSONResponse, StreamingResponse
 
 from backend.app.core import core_modules as cm
 from backend.app.utils.crawlers import update_data as crawler_update_data, incremental_update_data
+from backend.testing import DltDataSource, DltRule, PredictionRunner, SessionConfig, TestEngine
 
 from . import schemas
 from .dependencies import (
@@ -68,6 +69,38 @@ def build_response(data: Any = None, message: str = "") -> schemas.ApiResponse:
 
 def raise_http_error(message: str, status_code: int = status.HTTP_400_BAD_REQUEST):
     raise HTTPException(status_code=status_code, detail=message)
+
+
+def _build_testing_engine(request: schemas.TestingRequest, event_callback=None) -> tuple[TestEngine, SessionConfig]:
+    runner = PredictionRunner(
+        timeout_seconds=request.timeout_seconds,
+        retries=request.retries,
+        prefer_direct=True,
+        fallback_subprocess=True,
+    )
+    engine = TestEngine(
+        rule=DltRule(),
+        runner=runner,
+        data_source=DltDataSource(),
+        results_dir="test_results",
+        event_callback=event_callback,
+        seed=request.seed,
+    )
+    cfg = SessionConfig(
+        methods=request.methods,
+        strategy=request.strategy,
+        target_prize=request.target_prize,
+        periods_start=request.periods_start,
+        periods_end=request.periods_end,
+        count_start=request.count_start,
+        count_end=request.count_end,
+        max_tests=request.max_tests,
+        parallel=request.parallel,
+        workers=request.workers,
+        progressive_step=request.progressive_step,
+        target_issue=request.target_issue,
+    )
+    return engine, cfg
 
 
 # ==================== 数据接口 ====================
@@ -444,6 +477,117 @@ def run_comparison_stream(request: schemas.CompareRequest, manager=Depends(get_b
             except queue.Empty:
                 # 发送心跳保持连接
                 yield f"data: {json.dumps({'type': 'heartbeat'})}\n\n"
+
+    return StreamingResponse(event_stream(), media_type="text/event-stream")
+
+
+# ==================== 测试系统接口 ====================
+
+@app.get("/api/testing/options", response_model=schemas.ApiResponse)
+def get_testing_options():
+    available_methods = sorted({item["id"] for item in ALGORITHM_DEFINITIONS})
+    target_prizes = DltRule().list_target_prizes()
+    response = schemas.TestingOptionsResponse(
+        available_methods=available_methods,
+        target_prizes=target_prizes,
+    )
+    return build_response(response.dict())
+
+
+@app.post("/api/testing/run", response_model=schemas.ApiResponse)
+def run_testing(request: schemas.TestingRequest):
+    try:
+        engine, cfg = _build_testing_engine(request)
+        summary = engine.run_session(cfg)
+        summary["tested_methods"] = cfg.methods
+        summary["successful_methods"] = [
+            item["method"] for item in summary.get("method_outcomes", []) if item.get("hit_target")
+        ]
+        return build_response(summary, "测试执行完成")
+    except ValueError as exc:
+        raise_http_error(str(exc))
+    except Exception as exc:
+        logger.exception("测试系统执行失败: %s", exc)
+        raise_http_error("测试系统执行失败，请检查日志", status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@app.get("/api/testing/stream")
+def run_testing_stream(
+    methods: str = Query(..., description="逗号分隔的方法列表"),
+    strategy: schemas.TestingStrategyLiteral = Query("random"),
+    target_prize: schemas.TestingPrizeLiteral = Query("六等奖"),
+    periods_start: int = Query(50, ge=10, le=2748),
+    periods_end: int = Query(500, ge=10, le=2748),
+    count_start: int = Query(1, ge=1, le=100),
+    count_end: int = Query(1, ge=1, le=100),
+    max_tests: int = Query(20, ge=1, le=5000),
+    parallel: bool = Query(False),
+    workers: int = Query(4, ge=1, le=64),
+    seed: Optional[int] = Query(None),
+    target_issue: Optional[str] = Query(None),
+    progressive_step: int = Query(50, ge=1, le=1000),
+    timeout_seconds: int = Query(120, ge=10, le=3600),
+    retries: int = Query(1, ge=0, le=5),
+):
+    try:
+        method_list = [item.strip() for item in methods.split(",") if item.strip()]
+        request = schemas.TestingRequest(
+            methods=method_list,
+            strategy=strategy,
+            target_prize=target_prize,
+            periods_start=periods_start,
+            periods_end=periods_end,
+            count_start=count_start,
+            count_end=count_end,
+            max_tests=max_tests,
+            parallel=parallel,
+            workers=workers,
+            seed=seed,
+            target_issue=target_issue,
+            progressive_step=progressive_step,
+            timeout_seconds=timeout_seconds,
+            retries=retries,
+        )
+    except Exception as exc:
+        def error_stream():
+            payload = json.dumps({"type": "error", "data": {"message": str(exc)}}, ensure_ascii=False)
+            yield f"data: {payload}\n\n"
+        return StreamingResponse(error_stream(), media_type="text/event-stream")
+
+    def event_stream():
+        q = queue.Queue()
+
+        def callback(event_type: str, payload: Dict[str, Any]):
+            if event_type == "complete":
+                payload = dict(payload)
+                payload["tested_methods"] = request.methods
+                payload["successful_methods"] = [
+                    item["method"] for item in payload.get("method_outcomes", []) if item.get("hit_target")
+                ]
+            q.put({"type": event_type, "data": payload})
+
+        def run_task():
+            try:
+                engine, cfg = _build_testing_engine(request, event_callback=callback)
+                engine.run_session(cfg)
+            except Exception as exc:
+                logger.exception("测试系统流式执行失败: %s", exc)
+                q.put({"type": "error", "data": {"message": str(exc)}})
+            finally:
+                q.put(None)
+
+        thread = threading.Thread(target=run_task, daemon=True)
+        thread.start()
+
+        while True:
+            try:
+                event = q.get(timeout=120)
+                if event is None:
+                    break
+                yield f"data: {json.dumps(event, ensure_ascii=False)}\n\n"
+            except queue.Empty:
+                heartbeat = {"type": "log", "data": {"message": "heartbeat"}}
+                yield f"data: {json.dumps(heartbeat, ensure_ascii=False)}\n\n"
 
     return StreamingResponse(event_stream(), media_type="text/event-stream")
 

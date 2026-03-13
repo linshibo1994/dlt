@@ -11,6 +11,7 @@ import argparse
 import sys
 import os
 import random
+import json
 from collections import Counter
 from datetime import datetime
 from typing import List, Dict, Tuple
@@ -622,6 +623,16 @@ class DLTPredictorSystem:
                     print(f"预测结果: {result['result']}")
                     print(f"使用方法: {result['method']}")
                     print(f"已缓存: {result['cached']}")
+                    if getattr(args, 'json_output', False):
+                        payload = {
+                            'mode': 'enhanced',
+                            'method': args.method,
+                            'periods': args.periods,
+                            'count': args.count,
+                            'predictions': [],
+                            'details': result,
+                        }
+                        print(json.dumps(payload, ensure_ascii=False))
                     return (True, [])
                 else:
                     print(f"{OutputStatus.ERROR} 增强预测失败: {result.get('error')}")
@@ -693,7 +704,10 @@ class DLTPredictorSystem:
                     
                     if predictions:
                         print(f"{OutputStatus.OK} {args.method.upper()}预测完成")
-                        self._display_enhanced_predictions(predictions, args.method)
+                        if getattr(args, 'json_output', False):
+                            self._output_predictions_json(predictions, args, mode='deep_learning')
+                        else:
+                            self._display_enhanced_predictions(predictions, args.method)
                         return (True, predictions)
                     else:
                         print(f"{OutputStatus.ERROR} {args.method}深度学习模型预测失败，尝试集成方法...")
@@ -753,7 +767,10 @@ class DLTPredictorSystem:
             
             if predictions:
                 print(f"{OutputStatus.OK} {args.method.upper()}预测完成")
-                self._display_enhanced_predictions(predictions, args.method)
+                if getattr(args, 'json_output', False):
+                    self._output_predictions_json(predictions, args, mode='deep_learning')
+                else:
+                    self._display_enhanced_predictions(predictions, args.method)
                 return (True, predictions)
             else:
                 print(f"{OutputStatus.ERROR} {args.method}预测失败，回退到传统方法...")
@@ -805,7 +822,10 @@ class DLTPredictorSystem:
                         predictions = formatted_predictions
                     
                     if predictions:
-                        self._display_enhanced_predictions(predictions, args.method)
+                        if getattr(args, 'json_output', False):
+                            self._output_predictions_json(predictions, args, mode='deep_learning')
+                        else:
+                            self._display_enhanced_predictions(predictions, args.method)
                         return (True, predictions)
                     else:
                         print(f"{OutputStatus.ERROR} {args.method}深度学习模型预测失败，尝试传统方法...")
@@ -819,7 +839,10 @@ class DLTPredictorSystem:
                 
                 if predictions:
                     print(f"{OutputStatus.OK} {args.method}预测完成")
-                    self._display_enhanced_predictions(predictions, args.method)
+                    if getattr(args, 'json_output', False):
+                        self._output_predictions_json(predictions, args, mode='deep_learning')
+                    else:
+                        self._display_enhanced_predictions(predictions, args.method)
                     return (True, predictions)
                 else:
                     print(f"{OutputStatus.ERROR} {args.method}预测失败，尝试传统方法...")
@@ -1864,6 +1887,70 @@ class DLTPredictorSystem:
         if hasattr(args, 'save') and args.save:
             self._save_predictions(predictions, args)
 
+    def _output_predictions_json(self, predictions, args, mode='traditional'):
+        """以稳定 JSON 协议输出预测结果。"""
+        normalized = []
+        for item in predictions or []:
+            if isinstance(item, dict):
+                front = item.get('front_balls', item.get('front', []))
+                back = item.get('back_balls', item.get('back', []))
+                method = item.get('method', getattr(args, 'method', 'unknown'))
+                confidence = item.get('confidence')
+            elif isinstance(item, (list, tuple)) and len(item) == 2:
+                front, back = item
+                method = getattr(args, 'method', 'unknown')
+                confidence = None
+            else:
+                continue
+
+            try:
+                front_norm = [int(x) for x in front]
+                back_norm = [int(x) for x in back]
+            except Exception:
+                continue
+
+            if len(front_norm) != 5 or len(back_norm) != 2:
+                continue
+
+            normalized.append(
+                {
+                    'front_balls': sorted(front_norm),
+                    'back_balls': sorted(back_norm),
+                    'method': method,
+                    'confidence': confidence,
+                }
+            )
+
+        payload = {
+            'mode': mode,
+            'method': getattr(args, 'method', 'unknown'),
+            'periods': getattr(args, 'periods', None),
+            'count': getattr(args, 'count', None),
+            'predictions': normalized,
+        }
+        print(json.dumps(payload, ensure_ascii=False))
+
+    def _output_compound_json(self, compound_result, args):
+        """以 JSON 协议输出复式预测结果。"""
+        payload = {
+            'mode': 'compound',
+            'method': getattr(args, 'method', 'compound'),
+            'periods': getattr(args, 'periods', None),
+            'count': getattr(args, 'count', None),
+            'compound': {
+                'front_balls': list(getattr(compound_result, 'front_balls', [])),
+                'back_balls': list(getattr(compound_result, 'back_balls', [])),
+                'front_count': getattr(compound_result, 'front_count', None),
+                'back_count': getattr(compound_result, 'back_count', None),
+                'total_combinations': getattr(compound_result, 'total_combinations', None),
+                'total_cost': getattr(compound_result, 'total_cost', None),
+                'confidence': getattr(compound_result, 'confidence', None),
+                'method': getattr(compound_result, 'method', getattr(args, 'method', 'compound')),
+            },
+            'predictions': [],
+        }
+        print(json.dumps(payload, ensure_ascii=False))
+
     def _display_single_prediction(self, index, pred, args):
         """
         显示单个预测结果
@@ -2137,7 +2224,10 @@ class DLTPredictorSystem:
             if hasattr(args, 'compound') and args.compound:
                 compound_result = self._handle_compound_prediction(args)
                 if compound_result:
-                    self._display_compound_result(compound_result)
+                    if getattr(args, 'json_output', False):
+                        self._output_compound_json(compound_result, args)
+                    else:
+                        self._display_compound_result(compound_result)
                     return
                 # 如果复式预测失败，会打印回退消息并继续到单式预测
             
@@ -2146,7 +2236,10 @@ class DLTPredictorSystem:
             
             # 显示预测结果
             if predictions:
-                self._display_prediction_results(predictions, args)
+                if getattr(args, 'json_output', False):
+                    self._output_predictions_json(predictions, args, mode='traditional')
+                else:
+                    self._display_prediction_results(predictions, args)
             else:
                 print(f"{OutputStatus.WARNING} 没有生成预测结果")
         
@@ -3064,6 +3157,7 @@ def main():
     predict_parser.add_argument('--front-tuo', type=int, default=6, help='前区拖码数量')
     predict_parser.add_argument('--back-tuo', type=int, default=4, help='后区拖码数量')
     predict_parser.add_argument('--save', help='保存预测结果')
+    predict_parser.add_argument('--json-output', action='store_true', help='以 JSON 格式输出预测结果（适用于外部系统解析）')
 
     # ==================== 加速功能参数 ====================
     predict_parser.add_argument('--acceleration', choices=['auto', 'cpu', 'cpu_multi', 'gpu', 'gpu_cuda'],
