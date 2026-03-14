@@ -335,6 +335,7 @@
                     </td>
                   </tr>
                   </template>
+                </template>
               </tbody>
             </table>
           </div>
