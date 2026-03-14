@@ -574,7 +574,7 @@ def run_testing_stream(
                 engine.run_session(cfg)
             except Exception as exc:
                 logger.exception("测试系统流式执行失败: %s", exc)
-                q.put({"type": "error", "data": {"message": str(exc)}})
+                q.put({"type": "error_event", "data": {"message": str(exc)}})
             finally:
                 q.put(None)
 

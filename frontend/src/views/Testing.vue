@@ -294,8 +294,8 @@
                     <td>{{ formatRate(item.winning_rate) }}</td>
                     <td :class="item.best_prize ? 'prize-cell' : ''">{{ item.best_prize || '未中奖' }}</td>
                   </tr>
+                  <template v-if="expandedMethods.has(item.method)">
                   <tr
-                    v-if="expandedMethods.has(item.method)"
                     v-for="(win, wi) in methodWinnings(item.method)"
                     :key="item.method + '-win-' + wi"
                     class="winning-detail-row"
@@ -334,7 +334,7 @@
                       </div>
                     </td>
                   </tr>
-                </template>
+                  </template>
               </tbody>
             </table>
           </div>
@@ -345,7 +345,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
+import { computed, nextTick, onMounted, onUnmounted, ref } from 'vue'
 import GlassCard from '@/components/common/GlassCard.vue'
 import { getTestingOptions, createTestingStream } from '@/api/testing'
 import type { MethodInfo } from '@/types/testing'
@@ -354,8 +354,7 @@ import type {
   TestingRunResult,
   SseLogEvent,
   SseProgressEvent,
-  SseWinningEvent,
-  SseCompleteEvent
+  SseWinningEvent
 } from '@/types/testing'
 
 interface MethodStatRow {
@@ -534,13 +533,17 @@ const toggleSelectAll = () => {
   }
 }
 
-const stopTesting = () => {
+const cleanupStream = () => {
   if (eventSource) {
     eventSource.close()
     eventSource = null
   }
   isRunning.value = false
   currentProgress.value = null
+}
+
+const stopTesting = () => {
+  cleanupStream()
   pushLog('测试已手动停止', 'warning')
 }
 
@@ -581,15 +584,15 @@ const startTesting = () => {
     try {
       const data: SseProgressEvent = JSON.parse(e.data)
       currentProgress.value = data
-      liveStats.value.total++
     } catch { /* 忽略 */ }
   })
 
   eventSource.addEventListener('result', (e: MessageEvent) => {
     try {
       const data = JSON.parse(e.data)
-      if (data.has_winning) {
-        liveStats.value.winning += (data.total_prizes as number) || 1
+      liveStats.value.total++
+      if (data.winning_count > 0) {
+        liveStats.value.winning += data.winning_count
       }
     } catch { /* 忽略 */ }
   })
@@ -637,7 +640,7 @@ const startTesting = () => {
     } catch {
       pushLog('测试已结束', 'info')
     }
-    stopTesting()
+    cleanupStream()
   })
 
   eventSource.addEventListener('error_event', (e: MessageEvent) => {
@@ -647,7 +650,7 @@ const startTesting = () => {
     } catch {
       pushLog('发生未知错误', 'error')
     }
-    stopTesting()
+    cleanupStream()
   })
 
   eventSource.onerror = () => {
@@ -662,10 +665,6 @@ const startTesting = () => {
     }
   }
 }
-
-watch(logLines, () => {
-  nextTick(scrollToBottom)
-})
 
 onMounted(() => {
   loadMethods()
