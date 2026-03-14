@@ -1,16 +1,14 @@
 import request from './index'
 import type { ApiResponse } from '@/types'
-import type { TestingOptions, TestingRequest, TestingSummary } from '@/types/testing'
+import type { TestingOptions, TestingRunParams } from '@/types/testing'
 
+// 获取测试选项（方法列表+奖级列表）
 export const getTestingOptions = () => {
   return request.get<any, ApiResponse<TestingOptions>>('/testing/options')
 }
 
-export const runTesting = (data: TestingRequest) => {
-  return request.post<any, ApiResponse<TestingSummary>>('/testing/run', data)
-}
-
-export const createTestingStreamUrl = (data: TestingRequest): string => {
+// 创建 SSE 流式测试连接
+export const createTestingStream = (data: TestingRunParams): EventSource => {
   const params = new URLSearchParams()
   params.set('methods', data.methods.join(','))
   params.set('strategy', data.strategy)
@@ -27,5 +25,10 @@ export const createTestingStreamUrl = (data: TestingRequest): string => {
   if (typeof data.progressive_step === 'number') params.set('progressive_step', String(data.progressive_step))
   if (typeof data.timeout_seconds === 'number') params.set('timeout_seconds', String(data.timeout_seconds))
   if (typeof data.retries === 'number') params.set('retries', String(data.retries))
-  return `/api/testing/stream?${params.toString()}`
+  return new EventSource(`/api/testing/stream?${params.toString()}`)
+}
+
+// 同步运行测试（备用）
+export const runTesting = (data: TestingRunParams) => {
+  return request.post<any, ApiResponse<any>>('/testing/run', data)
 }

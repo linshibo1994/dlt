@@ -485,13 +485,15 @@ def run_comparison_stream(request: schemas.CompareRequest, manager=Depends(get_b
 
 @app.get("/api/testing/options", response_model=schemas.ApiResponse)
 def get_testing_options():
-    available_methods = sorted({item["id"] for item in ALGORITHM_DEFINITIONS})
+    methods = [
+        {"id": item["id"], "name": item["name"], "category": item["category"]}
+        for item in ALGORITHM_DEFINITIONS
+    ]
     target_prizes = DltRule().list_target_prizes()
-    response = schemas.TestingOptionsResponse(
-        available_methods=available_methods,
-        target_prizes=target_prizes,
-    )
-    return build_response(response.dict())
+    return build_response({
+        "methods": methods,
+        "target_prizes": target_prizes,
+    })
 
 
 @app.post("/api/testing/run", response_model=schemas.ApiResponse)
@@ -550,8 +552,8 @@ def run_testing_stream(
         )
     except Exception as exc:
         def error_stream():
-            payload = json.dumps({"type": "error", "data": {"message": str(exc)}}, ensure_ascii=False)
-            yield f"data: {payload}\n\n"
+            payload = json.dumps({"message": str(exc)}, ensure_ascii=False)
+            yield f"event: error_event\ndata: {payload}\n\n"
         return StreamingResponse(error_stream(), media_type="text/event-stream")
 
     def event_stream():
@@ -584,10 +586,11 @@ def run_testing_stream(
                 event = q.get(timeout=120)
                 if event is None:
                     break
-                yield f"data: {json.dumps(event, ensure_ascii=False)}\n\n"
+                event_type = event.get("type", "message")
+                event_data = json.dumps(event.get("data", {}), ensure_ascii=False)
+                yield f"event: {event_type}\ndata: {event_data}\n\n"
             except queue.Empty:
-                heartbeat = {"type": "log", "data": {"message": "heartbeat"}}
-                yield f"data: {json.dumps(heartbeat, ensure_ascii=False)}\n\n"
+                yield f"event: log\ndata: {json.dumps({'message': 'heartbeat', 'level': 'debug'}, ensure_ascii=False)}\n\n"
 
     return StreamingResponse(event_stream(), media_type="text/event-stream")
 
