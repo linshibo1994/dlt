@@ -10134,6 +10134,8 @@ class CompoundPredictor:
         self.data_file = data_file
         self.df = data_manager.get_data()
         self.advanced_predictor = AdvancedPredictor(data_file)
+        self.traditional_predictor = TraditionalPredictor(data_file)
+        self._missing_mode_override = 'auto'
 
         if self.df is None:
             logger_manager.error("数据未加载")

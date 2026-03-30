@@ -1418,7 +1418,10 @@ class DLTPredictorSystem:
         
         elif args.method == 'ensemble':
             results = self.predictors['advanced'].ensemble_predict(args.count, args.periods)
-        
+
+        elif args.method == 'nine_models':
+            results = self.predictors['advanced'].nine_models_predict(count=args.count, periods=args.periods)
+
         return [{'front_balls': r[0], 'back_balls': r[1], 'method': args.method} for r in results]
 
     def _handle_bayesian_prediction(self, args, acceleration_config) -> list:
