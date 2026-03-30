@@ -61,6 +61,7 @@ import {
   HomeOutline,
   DiceOutline,
   BarChartOutline,
+  TimeOutline,
   GitCompareOutline,
   FlaskOutline,
   SettingsOutline,
@@ -75,6 +76,7 @@ const menuItems = [
   { path: '/', label: '系统概览', icon: HomeOutline },
   { path: '/predict', label: '号码预测', icon: DiceOutline },
   { path: '/analysis', label: '数据分析', icon: BarChartOutline },
+  { path: '/history', label: '历史数据', icon: TimeOutline },
   { path: '/compare', label: '批量对比', icon: GitCompareOutline },
   { path: '/testing', label: '测试系统', icon: FlaskOutline },
   { path: '/settings', label: '系统设置', icon: SettingsOutline }

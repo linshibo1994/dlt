@@ -16,7 +16,7 @@ export const getLatestData = () => {
 
 // Get history data with pagination
 export const getHistoryData = (page: number = 1, pageSize: number = 50) => {
-  return request.get<any, ApiResponse<{ items: LotteryResult[]; total: number; page: number; page_size: number }>>('/data/history', {
+  return request.get<any, ApiResponse<{ records: LotteryResult[]; total: number; page: number; page_size: number }>>('/data/history', {
     params: {
       page,
       page_size: pageSize
