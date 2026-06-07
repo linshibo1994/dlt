@@ -10,6 +10,7 @@ if [[ -f "${MAINTENANCE_ENV_FILE}" ]]; then
   source "${MAINTENANCE_ENV_FILE}"
 fi
 
+PYTHON_BIN="${PYTHON_BIN:-python3}"
 NIGHTLY_MAINTENANCE_LOG_FILE="${NIGHTLY_MAINTENANCE_LOG_FILE:-${PROJECT_ROOT}/logs/maintenance/nightly_maintenance.log}"
 as_abs_path() {
   local path="$1"
@@ -29,6 +30,12 @@ log() {
 
 main() {
   log "开始执行夜间维护任务..."
+  log "开始更新最新开奖结果..."
+  if "${PYTHON_BIN}" "${PROJECT_ROOT}/scripts/auto_update_latest_data.py" --once >> "${NIGHTLY_MAINTENANCE_LOG_FILE}" 2>&1; then
+    log "最新开奖结果更新完成"
+  else
+    log "最新开奖结果更新失败，继续执行后续维护任务"
+  fi
   MAINTENANCE_ENV_FILE="${MAINTENANCE_ENV_FILE}" "${SCRIPT_DIR}/cleanup_local_artifacts.sh"
   MAINTENANCE_ENV_FILE="${MAINTENANCE_ENV_FILE}" "${SCRIPT_DIR}/cleanup_docker_resources.sh"
   log "夜间维护任务执行完成"

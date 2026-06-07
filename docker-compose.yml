@@ -21,6 +21,10 @@ services:
     environment:
       - PYTHONPATH=/app:/app/backend/app/core:/app/backend/app
       - ENV=production
+      - TZ=Asia/Shanghai
+      - DLT_AUTO_UPDATE_ENABLED=true
+      - DLT_AUTO_UPDATE_TIME=00:01
+      - DLT_AUTO_UPDATE_SOURCE=zhcw
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:6000/api/system/health"]
       interval: 30s

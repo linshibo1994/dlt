@@ -11,9 +11,19 @@
 </template>
 
 <script setup lang="ts">
+import { onMounted } from 'vue'
 import { darkTheme } from 'naive-ui'
 import type { GlobalThemeOverrides } from 'naive-ui'
 import AppLayout from './components/layout/AppLayout.vue'
+import { useDataStore } from './stores/data'
+
+const dataStore = useDataStore()
+
+onMounted(() => {
+  dataStore.autoUpdateLatestData().catch((error) => {
+    console.error('自动更新最新开奖结果失败:', error)
+  })
+})
 
 // 自定义主题覆盖，匹配赛博朋克风格
 const themeOverrides: GlobalThemeOverrides = {

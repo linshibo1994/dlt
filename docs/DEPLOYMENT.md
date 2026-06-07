@@ -139,6 +139,32 @@ docker-compose logs -f dlt-prediction
 docker-compose down
 ```
 
+### 最新开奖结果自动更新
+
+根目录 `docker-compose.yml` 的后端服务默认启用自动更新：
+
+```bash
+TZ=Asia/Shanghai
+DLT_AUTO_UPDATE_ENABLED=true
+DLT_AUTO_UPDATE_TIME=00:01
+DLT_AUTO_UPDATE_SOURCE=zhcw
+```
+
+服务启动后会在每天北京时间 00:01 增量拉取最新开奖结果；前端页面首次打开或刷新时，也会自动调用一次增量更新接口，确保页面展示最新期号。
+
+如需在传统服务器上单独安装 cron 定时任务：
+
+```bash
+cp scripts/maintenance.env.example scripts/maintenance.env
+./scripts/install_nightly_maintenance_cron.sh
+```
+
+也可以手动执行一次：
+
+```bash
+python3 scripts/auto_update_latest_data.py --once
+```
+
 ## 🖥️ **传统服务器部署**
 
 ### 自动部署脚本

@@ -7,6 +7,11 @@ export interface DataUpdateResult {
   total_periods: number
   latest_issue: string | null
   latest_date: string | null
+  source?: string | null
+  reason?: string | null
+  updated_at?: string | null
+  skipped?: boolean
+  message?: string
 }
 
 // Get latest lottery data

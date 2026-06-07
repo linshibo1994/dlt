@@ -285,3 +285,8 @@ class DataUpdateResponse(BaseModel):
     total_periods: int
     latest_issue: Optional[str] = None
     latest_date: Optional[str] = None
+    source: Optional[str] = None
+    reason: Optional[str] = None
+    updated_at: Optional[str] = None
+    skipped: bool = False
+    message: str = ''

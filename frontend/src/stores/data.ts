@@ -10,6 +10,8 @@ export const useDataStore = defineStore('data', () => {
   const isLoading = ref(false)
   const isUpdating = ref(false)
   const lastUpdateResult = ref<DataUpdateResult | null>(null)
+  const hasAutoUpdated = ref(false)
+  let autoUpdatePromise: Promise<{ success: boolean; message: string; data?: DataUpdateResult }> | null = null
 
   // 获取数据状态
   const fetchStatus = async () => {
@@ -59,14 +61,49 @@ export const useDataStore = defineStore('data', () => {
     }
   }
 
+  // 页面打开或浏览器刷新时自动增量更新一次
+  const autoUpdateLatestData = async (): Promise<{ success: boolean; message: string; data?: DataUpdateResult }> => {
+    if (autoUpdatePromise) {
+      return autoUpdatePromise
+    }
+
+    if (hasAutoUpdated.value) {
+      return {
+        success: true,
+        message: '已完成本次页面自动更新',
+        data: lastUpdateResult.value || undefined
+      }
+    }
+
+    hasAutoUpdated.value = true
+    autoUpdatePromise = updateData()
+      .then((result) => {
+        if (!result.success) {
+          hasAutoUpdated.value = false
+        }
+        return result
+      })
+      .catch((error) => {
+        hasAutoUpdated.value = false
+        throw error
+      })
+      .finally(() => {
+        autoUpdatePromise = null
+      })
+
+    return autoUpdatePromise
+  }
+
   return {
     status,
     latestResult,
     isLoading,
     isUpdating,
     lastUpdateResult,
+    hasAutoUpdated,
     fetchStatus,
     fetchLatestResult,
-    updateData
+    updateData,
+    autoUpdateLatestData
   }
 })

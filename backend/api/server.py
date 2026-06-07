@@ -18,7 +18,11 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, StreamingResponse
 
 from backend.app.core import core_modules as cm
-from backend.app.utils.crawlers import update_data as crawler_update_data, incremental_update_data
+from backend.api.data_update_service import (
+    start_daily_update_scheduler_from_env,
+    stop_daily_update_scheduler,
+    update_latest_lottery_data,
+)
 from backend.testing import DltDataSource, DltRule, PredictionRunner, SessionConfig, TestEngine
 
 from . import schemas
@@ -57,6 +61,16 @@ app.add_middleware(
 )
 
 _predictor_service = PredictorService()
+
+
+@app.on_event("startup")
+def start_background_tasks():
+    start_daily_update_scheduler_from_env()
+
+
+@app.on_event("shutdown")
+def stop_background_tasks():
+    stop_daily_update_scheduler()
 
 
 def get_predictor_service_instance() -> PredictorService:
@@ -235,33 +249,15 @@ def get_data_stats(data_manager=Depends(get_data_manager), cache_manager=Depends
 def update_lottery_data(data_manager=Depends(get_data_manager)):
     """更新彩票数据（从官网爬取最新数据）"""
     try:
-        # 调用增量更新（只爬取最新数据）
-        updated_count = incremental_update_data(source="zhcw")
-
-        # 重新加载数据
-        data_manager.reload_data()
-
-        # 获取更新后的统计信息
-        df = data_manager.get_data()
-        latest_issue = None
-        latest_date = None
-        total_periods = 0
-
-        if df is not None and len(df) > 0:
-            total_periods = len(df)
-            latest = df.iloc[0]
-            latest_issue = str(latest.get('issue', ''))
-            latest_date = str(latest.get('date', ''))
-
-        response = schemas.DataUpdateResponse(
-            updated_count=updated_count,
-            total_periods=total_periods,
-            latest_issue=latest_issue,
-            latest_date=latest_date,
+        result = update_latest_lottery_data(
+            data_manager=data_manager,
+            source=os.getenv("DLT_AUTO_UPDATE_SOURCE", "zhcw"),
+            reason="api",
+            blocking=False,
         )
+        response = schemas.DataUpdateResponse(**result.to_dict())
 
-        message = f"数据更新成功，新增 {updated_count} 期数据" if updated_count > 0 else "数据已是最新，无需更新"
-        return build_response(response.dict(), message)
+        return build_response(response.dict(), result.message)
 
     except Exception as exc:
         logger.exception("数据更新失败: %s", exc)

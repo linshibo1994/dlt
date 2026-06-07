@@ -23,6 +23,10 @@ services:
       - STREAMLIT_SERVER_HEADLESS=true
       - STREAMLIT_SERVER_ENABLE_CORS=false
       - STREAMLIT_SERVER_ENABLE_XSRF_PROTECTION=false
+      - TZ=Asia/Shanghai
+      - DLT_AUTO_UPDATE_ENABLED=true
+      - DLT_AUTO_UPDATE_TIME=00:01
+      - DLT_AUTO_UPDATE_SOURCE=zhcw
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8501/_stcore/health"]
       interval: 30s

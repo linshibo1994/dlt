@@ -35,6 +35,7 @@ RUN pip install --no-cache-dir --upgrade pip && \
 COPY backend/ ./backend/
 COPY config/ ./config/
 COPY data/ ./data/
+COPY scripts/ ./scripts/
 
 # 创建必要的目录
 RUN mkdir -p cache logs models output
