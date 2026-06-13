@@ -1712,46 +1712,40 @@ class AdvancedPredictor:
 
     def _generate_markov_sequence(self, transitions: Dict, target_count: int,
                                 min_num: int, max_num: int, periods: int, sequence_index: int = 0) -> List[int]:
-        """生成真正的马尔可夫链序列"""
+        """基于最近一期状态生成马尔可夫预测号码"""
         try:
             import numpy as np
+            import random
 
-            # 获取初始状态，为每个序列使用不同的初始状态
-            initial_state = self._get_initial_markov_state(min_num, max_num, sequence_index)
+            current_states = self._get_current_markov_states(min_num, max_num, sequence_index)
+            state_distribution = self._build_markov_distribution_from_states(
+                transitions, current_states, min_num, max_num
+            )
 
-            # 马尔可夫链状态序列生成
-            sequence = []
-            current_state = initial_state
-            max_iterations = target_count * 3  # 防止无限循环
-            iterations = 0
+            if not state_distribution:
+                return random.sample(range(min_num, max_num + 1), target_count)
 
-            while len(sequence) < target_count and iterations < max_iterations:
-                iterations += 1
+            states = sorted(state_distribution.keys())
+            probabilities = np.array([state_distribution[state] for state in states], dtype=float)
+            prob_sum = probabilities.sum()
+            if prob_sum <= 0:
+                probabilities = np.ones(len(states), dtype=float) / len(states)
+            else:
+                probabilities = probabilities / prob_sum
 
-                # 为每次迭代添加额外的随机性
-                import time
-                iteration_seed = int(time.time() * 1000000) + sequence_index * 10000 + iterations
-                np.random.seed(iteration_seed % 2**32)
+            if len(states) >= target_count:
+                try:
+                    selected = np.random.choice(states, size=target_count, replace=False, p=probabilities)
+                    return [int(num) for num in selected]
+                except Exception:
+                    ranked_states = sorted(
+                        state_distribution.items(), key=lambda item: item[1], reverse=True
+                    )
+                    candidate_pool = [int(num) for num, _ in ranked_states[:target_count * 3]]
+                    if len(candidate_pool) >= target_count:
+                        return random.sample(candidate_pool, target_count)
 
-                # 根据当前状态和转移概率选择下一个状态
-                next_state = self._markov_state_transition(current_state, transitions)
-
-                if next_state is not None and next_state not in sequence:
-                    sequence.append(next_state)
-                    current_state = next_state
-                else:
-                    # 如果转移失败，随机选择一个新状态
-                    available_states = [num for num in range(min_num, max_num + 1)
-                                      if num not in sequence]
-                    if available_states:
-                        # 添加更多随机性
-                        random_seed = int(time.time() * 1000000) + sequence_index * 5000 + iterations * 100
-                        np.random.seed(random_seed % 2**32)
-                        current_state = np.random.choice(available_states)
-                        if current_state not in sequence:
-                            sequence.append(current_state)
-
-            # 如果序列不足，用概率最高的状态补充
+            sequence = [int(num) for num in states[:target_count]]
             if len(sequence) < target_count:
                 sequence.extend(self._supplement_markov_sequence(
                     sequence, transitions, target_count - len(sequence), min_num, max_num
@@ -1763,6 +1757,57 @@ class AdvancedPredictor:
             logger_manager.error(f"生成马尔可夫序列失败: {e}")
             import random
             return random.sample(range(min_num, max_num + 1), target_count)
+
+    def _get_current_markov_states(self, min_num: int, max_num: int, sequence_index: int = 0) -> List[int]:
+        """获取当前预测条件状态，默认使用最新一期对应分区的全部号码"""
+        try:
+            if self.df is None or len(self.df) == 0:
+                return list(range(min_num, min(min_num + 5, max_num + 1)))
+
+            row_index = min(max(sequence_index, 0), len(self.df) - 1)
+            front_balls, back_balls = data_manager.parse_balls(self.df.iloc[row_index])
+            balls = front_balls if max_num == 35 else back_balls
+            states = [int(ball) for ball in balls if min_num <= int(ball) <= max_num]
+            if states:
+                return states
+        except Exception as e:
+            logger_manager.debug(f"获取马尔可夫当前状态失败: {e}")
+
+        return list(range(min_num, min(min_num + 5, max_num + 1)))
+
+    def _build_markov_distribution_from_states(self, transitions: Dict, current_states: List[int],
+                                               min_num: int, max_num: int) -> Dict[int, float]:
+        """将当前期多个号码的转移行融合为下期号码概率分布"""
+        distribution = defaultdict(float)
+
+        for state in current_states:
+            row = transitions.get(state) or transitions.get(str(state)) or {}
+            if not isinstance(row, dict):
+                continue
+            for next_state, prob in row.items():
+                try:
+                    next_int = int(next_state)
+                    if min_num <= next_int <= max_num:
+                        distribution[next_int] += float(prob)
+                except (TypeError, ValueError):
+                    continue
+
+        if not distribution:
+            for row in transitions.values():
+                if not isinstance(row, dict):
+                    continue
+                for next_state, prob in row.items():
+                    try:
+                        next_int = int(next_state)
+                        if min_num <= next_int <= max_num:
+                            distribution[next_int] += float(prob)
+                    except (TypeError, ValueError):
+                        continue
+
+        total = sum(distribution.values())
+        if total <= 0:
+            return {}
+        return {num: score / total for num, score in distribution.items()}
 
     def _generate_diverse_markov_sequence(self, transitions, target_count, min_num, max_num, sequence_index):
         """生成多样化的马尔可夫序列

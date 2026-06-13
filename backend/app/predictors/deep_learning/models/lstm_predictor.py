@@ -21,6 +21,7 @@ from sklearn.metrics import mean_squared_error, mean_absolute_error
 from typing import List, Tuple, Dict, Any, Optional
 import joblib
 import os
+import json
 import math
 from datetime import datetime
 
@@ -94,12 +95,15 @@ class LSTMPredictor(BaseDeepLearningModel, CompoundPredictorMixin):
         self.metadata = metadata
 
         # 模型参数
-        self.sequence_length = self.config_params.get('sequence_length', 30)
+        self.sequence_length = self.config_params.get('sequence_length', 50)
         self.lstm_units = self.config_params.get('lstm_units', [128, 64, 32])
         self.dropout_rate = self.config_params.get('dropout_rate', 0.2)
         self.learning_rate = self.config_params.get('learning_rate', 0.001)
-        self.batch_size = self.config_params.get('batch_size', 32)
-        self.epochs = self.config_params.get('epochs', 100)
+        self.batch_size = self.config_params.get('batch_size', 64)
+        self.epochs = self.config_params.get('epochs', 200)
+        # 单独 LSTM 默认不启用“智能早停”，避免复用集成/优化场景的早停策略。
+        self.enable_early_stopping = self.config_params.get('enable_early_stopping', False)
+        self.early_stopping_patience = self.config_params.get('early_stopping_patience', 20)
 
         # 高级LSTM参数
         self.use_bidirectional = self.config_params.get('use_bidirectional', True)
@@ -122,6 +126,8 @@ class LSTMPredictor(BaseDeepLearningModel, CompoundPredictorMixin):
         # 模型保存目录
         self.model_dir = self.config_params.get('model_dir', 'artifacts/models/lstm')
         os.makedirs(self.model_dir, exist_ok=True)
+        self.model_cache_version = 2
+        self.model_data_order = 'chronological_ascending'
 
         logger_manager.info("增强LSTM预测器初始化完成")
 
@@ -141,16 +147,68 @@ class LSTMPredictor(BaseDeepLearningModel, CompoundPredictorMixin):
         return LearningRateScheduler(scheduler, verbose=0)
 
     def _get_advanced_callbacks(self):
-        """获取高级回调函数，包含智能早停机制"""
-        callbacks = create_intelligent_callbacks(
-            patience=20,  # 连续20次相同结果时停止（按要求调整）
-            min_delta=1e-6,
-            monitor='val_loss',
-            reduce_lr_patience=10
-        )
+        """获取训练回调函数"""
+        if self.enable_early_stopping:
+            callbacks = create_intelligent_callbacks(
+                patience=self.early_stopping_patience,
+                min_delta=1e-6,
+                monitor='val_loss',
+                reduce_lr_patience=10
+            )
+        else:
+            callbacks = [
+                ReduceLROnPlateau(
+                    monitor='val_loss',
+                    factor=0.5,
+                    patience=10,
+                    min_lr=1e-7,
+                    verbose=0
+                )
+            ]
         callbacks.append(self._create_learning_rate_scheduler())
 
         return callbacks
+
+    def _order_lottery_dataframe(self, data: pd.DataFrame, ascending: bool = True) -> pd.DataFrame:
+        """
+        按开奖时间排序数据。
+
+        DataManager 统一返回期号降序（最新在前），但 LSTM 训练序列必须是时间正序：
+        旧数据 -> 新数据。这里集中兜底，避免不同入口传入不同顺序。
+        """
+        if data is None or data.empty:
+            return data
+
+        ordered = data.copy()
+
+        if 'issue' in ordered.columns:
+            issue_series = pd.to_numeric(ordered['issue'], errors='coerce')
+            if issue_series.notna().any():
+                return (
+                    ordered.assign(_issue_num=issue_series)
+                    .sort_values('_issue_num', ascending=ascending)
+                    .drop(columns=['_issue_num'])
+                    .reset_index(drop=True)
+                )
+            return ordered.sort_values('issue', ascending=ascending).reset_index(drop=True)
+
+        if 'date' in ordered.columns:
+            date_series = pd.to_datetime(ordered['date'], errors='coerce')
+            if date_series.notna().any():
+                return (
+                    ordered.assign(_date_sort=date_series)
+                    .sort_values('_date_sort', ascending=ascending)
+                    .drop(columns=['_date_sort'])
+                    .reset_index(drop=True)
+                )
+
+        return ordered.reset_index(drop=True)
+
+    def _latest_chronological_window(self, data: pd.DataFrame, window_size: int = None) -> pd.DataFrame:
+        """获取最新 N 期，并保持时间正序。"""
+        window_size = window_size or self.sequence_length
+        ordered = self._order_lottery_dataframe(data, ascending=True)
+        return ordered.tail(window_size).reset_index(drop=True)
 
     def _configure_gpu(self):
         """配置GPU设备"""
@@ -297,6 +355,7 @@ class LSTMPredictor(BaseDeepLearningModel, CompoundPredictorMixin):
                 else:
                     raise ValueError(f"数据维度不正确，期望至少7列，实际{data.shape[1]}列")
             elif isinstance(data, pd.DataFrame):
+                data = self._order_lottery_dataframe(data, ascending=True)
                 # 提取前区和后区号码
                 front_numbers = []
                 back_numbers = []
@@ -362,13 +421,7 @@ class LSTMPredictor(BaseDeepLearningModel, CompoundPredictorMixin):
             output_dim=2  # 后区2个号码
         )
 
-        # 训练回调，包含智能早停机制
-        callbacks = create_intelligent_callbacks(
-            patience=20,  # 连续20次相同结果时停止
-            min_delta=1e-6,
-            monitor='val_loss',
-            reduce_lr_patience=10
-        )
+        callbacks = self._get_advanced_callbacks()
 
         # 训练前区模型
         logger_manager.info("训练前区LSTM模型")
@@ -684,7 +737,7 @@ class LSTMPredictor(BaseDeepLearningModel, CompoundPredictorMixin):
 
             elif isinstance(data, pd.DataFrame):
                 # 准备最近的序列数据
-                recent_data = data.head(self.sequence_length).iloc[::-1].reset_index(drop=True)
+                recent_data = self._latest_chronological_window(data, self.sequence_length)
 
                 # 提取号码 - 使用data_manager的parse_balls方法
                 import core_modules as cm
@@ -835,13 +888,22 @@ class LSTMPredictor(BaseDeepLearningModel, CompoundPredictorMixin):
     def save_models(self) -> bool:
         """保存模型"""
         try:
-            # 保存Keras模型
-            self.front_model.save(os.path.join(self.model_dir, 'front_lstm_model.h5'))
-            self.back_model.save(os.path.join(self.model_dir, 'back_lstm_model.h5'))
+            # 保存Keras模型。优先使用 Keras 3 原生格式，避免旧 HDF5 编译配置反序列化问题。
+            self.front_model.save(os.path.join(self.model_dir, 'front_lstm_model.keras'))
+            self.back_model.save(os.path.join(self.model_dir, 'back_lstm_model.keras'))
             
             # 保存缩放器
             joblib.dump(self.front_scaler, os.path.join(self.model_dir, 'front_scaler.pkl'))
             joblib.dump(self.back_scaler, os.path.join(self.model_dir, 'back_scaler.pkl'))
+
+            metadata = {
+                'cache_version': self.model_cache_version,
+                'data_order': self.model_data_order,
+                'sequence_length': self.sequence_length,
+                'saved_at': datetime.now().isoformat()
+            }
+            with open(os.path.join(self.model_dir, 'model_metadata.json'), 'w', encoding='utf-8') as f:
+                json.dump(metadata, f, ensure_ascii=False, indent=2)
             
             logger_manager.info("LSTM模型保存成功")
             return True
@@ -853,18 +915,50 @@ class LSTMPredictor(BaseDeepLearningModel, CompoundPredictorMixin):
     def load_models(self) -> bool:
         """加载模型"""
         try:
-            front_model_path = os.path.join(self.model_dir, 'front_lstm_model.h5')
-            back_model_path = os.path.join(self.model_dir, 'back_lstm_model.h5')
+            model_pairs = [
+                (
+                    os.path.join(self.model_dir, 'front_lstm_model.keras'),
+                    os.path.join(self.model_dir, 'back_lstm_model.keras')
+                ),
+                (
+                    os.path.join(self.model_dir, 'front_lstm_model.h5'),
+                    os.path.join(self.model_dir, 'back_lstm_model.h5')
+                )
+            ]
             front_scaler_path = os.path.join(self.model_dir, 'front_scaler.pkl')
             back_scaler_path = os.path.join(self.model_dir, 'back_scaler.pkl')
-            
-            if not all(os.path.exists(p) for p in [front_model_path, back_model_path, front_scaler_path, back_scaler_path]):
+
+            selected_pair = next(
+                ((front_path, back_path) for front_path, back_path in model_pairs
+                 if os.path.exists(front_path) and os.path.exists(back_path)),
+                None
+            )
+
+            if selected_pair is None or not all(os.path.exists(p) for p in [front_scaler_path, back_scaler_path]):
                 logger_manager.warning("LSTM模型文件不存在")
                 return False
+
+            metadata_path = os.path.join(self.model_dir, 'model_metadata.json')
+            if not os.path.exists(metadata_path):
+                logger_manager.warning("LSTM模型缺少元数据，将重新训练以修正时间序列方向")
+                return False
+
+            with open(metadata_path, 'r', encoding='utf-8') as f:
+                metadata = json.load(f)
+
+            if (
+                metadata.get('cache_version') != self.model_cache_version or
+                metadata.get('data_order') != self.model_data_order or
+                metadata.get('sequence_length') != self.sequence_length
+            ):
+                logger_manager.warning("LSTM模型元数据不匹配，将重新训练")
+                return False
+
+            front_model_path, back_model_path = selected_pair
             
-            # 加载模型
-            self.front_model = tf.keras.models.load_model(front_model_path)
-            self.back_model = tf.keras.models.load_model(back_model_path)
+            # compile=False 可兼容旧模型中 loss='mse' 的 Keras 3 反序列化问题。
+            self.front_model = tf.keras.models.load_model(front_model_path, compile=False)
+            self.back_model = tf.keras.models.load_model(back_model_path, compile=False)
             
             # 加载缩放器
             self.front_scaler = joblib.load(front_scaler_path)

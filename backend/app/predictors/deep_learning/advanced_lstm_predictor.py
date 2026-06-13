@@ -27,12 +27,17 @@ from core_modules import logger_manager, data_manager, cache_manager
 # 导入enhanced_deep_learning模块
 if TENSORFLOW_AVAILABLE:
     try:
-        from enhanced_deep_learning.models.lstm_predictor import LSTMPredictor
-        from enhanced_deep_learning.models import ModelMetadata
+        from backend.app.predictors.deep_learning.models.lstm_predictor import LSTMPredictor
+        from backend.app.predictors.deep_learning.models import ModelMetadata
         ENHANCED_LSTM_AVAILABLE = True
     except ImportError:
-        ENHANCED_LSTM_AVAILABLE = False
-        logger_manager.warning("Enhanced LSTM模块导入失败，将使用简化实现")
+        try:
+            from enhanced_deep_learning.models.lstm_predictor import LSTMPredictor
+            from enhanced_deep_learning.models import ModelMetadata
+            ENHANCED_LSTM_AVAILABLE = True
+        except ImportError:
+            ENHANCED_LSTM_AVAILABLE = False
+            logger_manager.warning("Enhanced LSTM模块导入失败，将使用简化实现")
 else:
     ENHANCED_LSTM_AVAILABLE = False
 
@@ -83,7 +88,10 @@ class AdvancedLSTMPredictor:
                 'attention_heads': 8,
                 'l1_reg': 0.005,
                 'l2_reg': 0.005,
-                'gradient_clip_norm': 1.0
+                'gradient_clip_norm': 1.0,
+                # 高级/集成入口使用独立缓存，避免覆盖单独 lstm CLI 的模型文件。
+                'model_dir': self.model_cache_dir,
+                'enable_early_stopping': True
             }
             
             metadata = ModelMetadata(

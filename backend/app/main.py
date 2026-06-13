@@ -620,21 +620,11 @@ class DLTPredictorSystem:
                     count=args.count
                 )
                 if result.get('success'):
-                    print(f"{OutputStatus.OK} 增强预测完成")
-                    print(f"预测结果: {result['result']}")
-                    print(f"使用方法: {result['method']}")
-                    print(f"已缓存: {result['cached']}")
-                    if getattr(args, 'json_output', False):
-                        payload = {
-                            'mode': 'enhanced',
-                            'method': args.method,
-                            'periods': args.periods,
-                            'count': args.count,
-                            'predictions': [],
-                            'details': result,
-                        }
-                        print(json.dumps(payload, ensure_ascii=False))
-                    return (True, [])
+                    print(f"{OutputStatus.OK} 增强引擎已执行 (方法: {result.get('method', 'auto')}, 缓存: {result.get('cached', False)})")
+                    # 使用超级预测器生成标准格式的预测结果
+                    raw_results = self.predictors['super'].predict_super(count=args.count, periods=args.periods)
+                    predictions = [{'front_balls': r[0], 'back_balls': r[1], 'method': 'enhanced', 'confidence': 0.5} for r in raw_results]
+                    return (True, predictions)
                 else:
                     print(f"{OutputStatus.ERROR} 增强预测失败: {result.get('error')}")
                     print(f"{OutputStatus.INFO} 回退到传统预测方法...")
@@ -823,10 +813,6 @@ class DLTPredictorSystem:
                         predictions = formatted_predictions
                     
                     if predictions:
-                        if getattr(args, 'json_output', False):
-                            self._output_predictions_json(predictions, args, mode='deep_learning')
-                        else:
-                            self._display_enhanced_predictions(predictions, args.method)
                         return (True, predictions)
                     else:
                         print(f"{OutputStatus.ERROR} {args.method}深度学习模型预测失败，尝试传统方法...")
@@ -839,11 +825,6 @@ class DLTPredictorSystem:
                 predictions = self._handle_ensemble_prediction(args)
                 
                 if predictions:
-                    print(f"{OutputStatus.OK} {args.method}预测完成")
-                    if getattr(args, 'json_output', False):
-                        self._output_predictions_json(predictions, args, mode='deep_learning')
-                    else:
-                        self._display_enhanced_predictions(predictions, args.method)
                     return (True, predictions)
                 else:
                     print(f"{OutputStatus.ERROR} {args.method}预测失败，尝试传统方法...")
@@ -1002,7 +983,10 @@ class DLTPredictorSystem:
                 predictor = LSTMPredictor()
                 return predictor.predict_compound(compound_config)
             elif args.method == 'transformer':
-                from enhanced_deep_learning.models.transformer_predictor import TransformerPredictor
+                try:
+                    from backend.app.predictors.deep_learning.models.transformer_predictor import TransformerPredictor
+                except ImportError:
+                    from enhanced_deep_learning.models.transformer_predictor import TransformerPredictor
                 predictor = TransformerPredictor()
                 return predictor.predict_compound(compound_config)
             elif args.method == 'gan':
@@ -1073,12 +1057,22 @@ class DLTPredictorSystem:
             # 自适应预测 - 使用AdvancedPredictor的adaptive_predict方法
             results = self.predictors['advanced'].adaptive_predict(args.count, args.periods)
             predictions = [{'front_balls': r[0], 'back_balls': r[1], 'method': 'adaptive'} for r in results]
+
+        elif args.method == 'enhanced':
+            # 增强系统不可用时的回退预测，使用超级预测器
+            results = self.predictors['super'].predict_super(count=args.count, periods=args.periods)
+            predictions = [{'front_balls': r[0], 'back_balls': r[1], 'method': 'enhanced'} for r in results]
         
         elif args.method == 'compound':
             predictions = self._handle_compound_method(args)
         
         elif args.method == 'duplex':
             predictions = self._handle_duplex_method(args)
+
+        elif args.method == 'lstm':
+            # LSTM深度学习不可用时的回退预测，使用超级预测器
+            results = self.predictors['super'].predict_super(count=args.count, periods=args.periods)
+            predictions = [{'front_balls': r[0], 'back_balls': r[1], 'method': 'lstm'} for r in results]
         
         elif args.method in ['transformer', 'gan', 'stacking', 'adaptive_ensemble', 'ultimate_ensemble']:
             predictions = self._handle_integration_methods(args)
@@ -2299,14 +2293,14 @@ class DLTPredictorSystem:
         # 增强预测模式
         if use_enhanced:
             success, predictions = self._handle_enhanced_prediction(args, acceleration_config)
-            if success:
-                return
+            if not success:
+                predictions = []
         
         # 深度学习预测（独立于增强功能，但不在复式预测模式下）
         elif use_deep_learning and not (hasattr(args, 'compound') and args.compound):
             success, predictions = self._handle_deep_learning_prediction(args, acceleration_config)
-            if success:
-                return
+            if not success:
+                predictions = []
         
         try:
             # 复式预测模式

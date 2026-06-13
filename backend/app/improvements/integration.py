@@ -522,8 +522,10 @@ class IntegratedPredictor:
 
             # 尝试使用enhanced_deep_learning模块的Transformer实现
             try:
-                from enhanced_deep_learning.models.transformer_predictor import TransformerPredictor
-                from enhanced_deep_learning.models.base_model import ModelMetadata
+                try:
+                    from backend.app.predictors.deep_learning.models.transformer_predictor import TransformerPredictor
+                except ImportError:
+                    from enhanced_deep_learning.models.transformer_predictor import TransformerPredictor
 
                 # 配置Transformer参数
                 config = {

@@ -1534,17 +1534,17 @@ class AdvancedAnalyzer:
         decay_half_life = max(1.0, decay_half_life)
         decay_min_weight = min(max(decay_min_weight, 0.0), 1.0)
 
-        method_name = "markov_analysis"
+        method_name = "markov_analysis_v2"
         if decay_enabled:
             hl_tag = f"{decay_half_life:.2f}".replace('.', 'p')
             min_tag = f"{decay_min_weight:.2f}".replace('.', 'p')
-            method_name = f"markov_analysis_decay_hl{hl_tag}_min{min_tag}"
+            method_name = f"markov_analysis_v2_decay_hl{hl_tag}_min{min_tag}"
         cached_result = smart_cache_manager.load_cache("analysis", method_name, periods)
         if cached_result:
             return cached_result
         
-        # 数据是降序排列（最新在前），使用head()获取最新数据
-        df_subset = self.df.head(periods)
+        # 数据是降序排列（最新在前），构建转移矩阵时必须改成旧 -> 新。
+        df_subset = self.df.head(periods).iloc[::-1].reset_index(drop=True)
 
         # 根据n_jobs决定是否使用并行化
         if n_jobs == 1:
@@ -1590,7 +1590,8 @@ class AdvancedAnalyzer:
         for i in range(len(df_subset) - 1):
             weight = 1.0
             if decay_enabled:
-                weight = 0.5 ** (i / decay_half_life)
+                age = max(0, len(df_subset) - 2 - i)
+                weight = 0.5 ** (age / decay_half_life)
                 if weight < decay_min_weight:
                     weight = decay_min_weight
 
@@ -1632,7 +1633,8 @@ class AdvancedAnalyzer:
             # 并行计算每个块的转移矩阵
             results = Parallel(n_jobs=n_jobs)(
                 delayed(self._compute_chunk_transitions)(
-                    chunk, start_index, decay_enabled, decay_half_life, decay_min_weight
+                    chunk, start_index, decay_enabled, decay_half_life,
+                    decay_min_weight, len(df_subset) - 1
                 )
                 for chunk, start_index in chunks
             )
@@ -1654,10 +1656,13 @@ class AdvancedAnalyzer:
 
         except ImportError:
             logger_manager.warning("joblib未安装，使用单线程计算")
-            return self._compute_transitions_single(df_subset)
+            return self._compute_transitions_single(
+                df_subset, decay_enabled, decay_half_life, decay_min_weight
+            )
 
     def _compute_chunk_transitions(self, chunk, start_index=0, decay_enabled=False,
-                                   decay_half_life=200.0, decay_min_weight=0.2):
+                                   decay_half_life=200.0, decay_min_weight=0.2,
+                                   total_transitions=None):
         """计算数据块的转移矩阵"""
         front_transitions = defaultdict(lambda: defaultdict(int))
         back_transitions = defaultdict(lambda: defaultdict(int))
@@ -1666,7 +1671,11 @@ class AdvancedAnalyzer:
             weight = 1.0
             if decay_enabled:
                 global_index = start_index + i
-                weight = 0.5 ** (global_index / decay_half_life)
+                if total_transitions is None:
+                    age = max(0, len(chunk) - 2 - i)
+                else:
+                    age = max(0, total_transitions - 1 - global_index)
+                weight = 0.5 ** (age / decay_half_life)
                 if weight < decay_min_weight:
                     weight = decay_min_weight
 

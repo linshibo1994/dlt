@@ -19,6 +19,7 @@ import sys
 import time
 import random
 import math
+import ast
 import numpy as np
 import pandas as pd
 import yaml
@@ -85,10 +86,10 @@ class EnhancedMarkovAnalyzer:
         # 检查参数有效性
         max_order = min(max(1, max_order), 3)  # 限制在1-3之间
 
-        method_name = "multi_order_markov_analysis_v2"
+        method_name = "multi_order_markov_analysis_v3"
         cached_result = smart_cache_manager.load_cache("analysis", method_name, periods, max_order=max_order)
         if cached_result:
-            return cached_result
+            return self._restore_cached_result(cached_result)
 
         df_subset = self.df.head(periods)
 
@@ -104,7 +105,6 @@ class EnhancedMarkovAnalyzer:
             result['orders'][order] = order_result
 
         # 缓存前去除 _raw 键（包含 tuple/int 键，无法 JSON 序列化）
-        raw_keys = [k for k in list(result['orders'].get(1, {}).keys()) if k.endswith('_raw')]
         cache_result = {
             'orders': {},
             'analysis_periods': periods,
@@ -114,6 +114,118 @@ class EnhancedMarkovAnalyzer:
             cache_result['orders'][o] = {k: v for k, v in o_result.items() if not k.endswith('_raw')}
 
         smart_cache_manager.save_cache("analysis", method_name, cache_result, periods, max_order=max_order)
+        return result
+
+    def _restore_cached_result(self, cached_result: Dict) -> Dict:
+        """恢复 JSON 缓存中的整数键和 tuple 条件键"""
+        if not isinstance(cached_result, dict):
+            return cached_result
+
+        restored = dict(cached_result)
+        orders = restored.get('orders', {})
+        if not isinstance(orders, dict):
+            return restored
+
+        restored_orders = {}
+        for order_key, order_result in orders.items():
+            try:
+                order_int = int(order_key)
+            except (TypeError, ValueError):
+                order_int = order_key
+
+            if not isinstance(order_result, dict):
+                restored_orders[order_int] = order_result
+                continue
+
+            normalized = dict(order_result)
+            normalized['front_ball_probs_raw'] = self._int_nested_dict(
+                normalized.get('front_ball_probs_raw') or normalized.get('front_ball_probs')
+            )
+            normalized['back_ball_probs_raw'] = self._int_nested_dict(
+                normalized.get('back_ball_probs_raw') or normalized.get('back_ball_probs')
+            )
+            normalized['front_pair_probs_raw'] = self._tuple_nested_dict(
+                normalized.get('front_pair_probs_raw') or normalized.get('front_pair_probs')
+            )
+            normalized['back_pair_probs_raw'] = self._tuple_nested_dict(
+                normalized.get('back_pair_probs_raw') or normalized.get('back_pair_probs')
+            )
+            normalized['front_triple_probs_raw'] = self._tuple_nested_dict(
+                normalized.get('front_triple_probs_raw') or normalized.get('front_triple_probs')
+            )
+            normalized['back_triple_probs_raw'] = self._tuple_nested_dict(
+                normalized.get('back_triple_probs_raw') or normalized.get('back_triple_probs')
+            )
+            normalized['front_cooccurrence_raw'] = self._int_nested_dict(
+                normalized.get('front_cooccurrence_raw') or normalized.get('front_cooccurrence')
+            )
+            normalized['back_cooccurrence_raw'] = self._int_nested_dict(
+                normalized.get('back_cooccurrence_raw') or normalized.get('back_cooccurrence')
+            )
+            normalized['front_freq_probs_raw'] = self._int_float_dict(
+                normalized.get('front_freq_probs_raw') or normalized.get('front_freq_probs')
+            )
+            normalized['back_freq_probs_raw'] = self._int_float_dict(
+                normalized.get('back_freq_probs_raw') or normalized.get('back_freq_probs')
+            )
+            restored_orders[order_int] = normalized
+
+        restored['orders'] = restored_orders
+        return restored
+
+    @staticmethod
+    def _int_float_dict(data: Dict) -> Dict[int, float]:
+        result = {}
+        if not isinstance(data, dict):
+            return result
+        for key, value in data.items():
+            try:
+                result[int(key)] = float(value)
+            except (TypeError, ValueError):
+                continue
+        return result
+
+    @classmethod
+    def _int_nested_dict(cls, data: Dict) -> Dict[int, Dict[int, float]]:
+        result = {}
+        if not isinstance(data, dict):
+            return result
+        for key, value in data.items():
+            if not isinstance(value, dict):
+                continue
+            try:
+                result[int(key)] = cls._int_float_dict(value)
+            except (TypeError, ValueError):
+                continue
+        return result
+
+    @staticmethod
+    def _parse_tuple_key(key) -> Optional[Tuple[int, ...]]:
+        if isinstance(key, tuple):
+            return tuple(int(item) for item in key)
+        if isinstance(key, list):
+            return tuple(int(item) for item in key)
+        try:
+            parsed = ast.literal_eval(str(key))
+        except (SyntaxError, ValueError):
+            return None
+        if isinstance(parsed, (tuple, list)):
+            try:
+                return tuple(int(item) for item in parsed)
+            except (TypeError, ValueError):
+                return None
+        return None
+
+    @classmethod
+    def _tuple_nested_dict(cls, data: Dict) -> Dict[Tuple[int, ...], Dict[int, float]]:
+        result = {}
+        if not isinstance(data, dict):
+            return result
+        for key, value in data.items():
+            tuple_key = cls._parse_tuple_key(key)
+            if tuple_key is None or not isinstance(value, dict):
+                continue
+            result[tuple_key] = cls._int_float_dict(value)
         return result
 
     def _analyze_nth_order_markov(self, df_subset, order=1) -> Dict:
@@ -165,6 +277,8 @@ class EnhancedMarkovAnalyzer:
         # --- 二阶球对转移矩阵（order >= 2 时构建） ---
         front_pair_trans = defaultdict(lambda: defaultdict(float))
         back_pair_trans = defaultdict(lambda: defaultdict(float))
+        front_triple_trans = defaultdict(lambda: defaultdict(float))
+        back_triple_trans = defaultdict(lambda: defaultdict(float))
 
         if order >= 2:
             for i in range(data_len - 2):
@@ -182,6 +296,25 @@ class EnhancedMarkovAnalyzer:
                         pair_key = (a, b)
                         for c in all_backs[i + 2]:
                             back_pair_trans[pair_key][c] += w
+
+        # --- 三阶球组三元转移矩阵（order >= 3 时构建） ---
+        if order >= 3:
+            for i in range(data_len - 3):
+                w = self._decay_weight(data_len - 4 - i, decay_enabled, decay_half_life, decay_min_weight)
+                # triple_key = (更早期球, 中间期球, 最近期球)
+                for a in all_fronts[i]:
+                    for b in all_fronts[i + 1]:
+                        for c in all_fronts[i + 2]:
+                            triple_key = (a, b, c)
+                            for d in all_fronts[i + 3]:
+                                front_triple_trans[triple_key][d] += w
+
+                for a in all_backs[i]:
+                    for b in all_backs[i + 1]:
+                        for c in all_backs[i + 2]:
+                            triple_key = (a, b, c)
+                            for d in all_backs[i + 3]:
+                                back_triple_trans[triple_key][d] += w
 
         # --- 共现矩阵 ---
         front_cooccur = defaultdict(lambda: defaultdict(float))
@@ -212,10 +345,14 @@ class EnhancedMarkovAnalyzer:
 
         front_pair_probs_raw = self._transitions_to_probs(front_pair_trans, alpha, num_front_balls)
         back_pair_probs_raw = self._transitions_to_probs(back_pair_trans, alpha, num_back_balls)
+        front_triple_probs_raw = self._transitions_to_probs(front_triple_trans, alpha, num_front_balls)
+        back_triple_probs_raw = self._transitions_to_probs(back_triple_trans, alpha, num_back_balls)
 
         # 将 tuple 键转为字符串以支持 JSON 缓存序列化，运行时使用 _pair_probs_raw
         front_pair_probs = {str(k): {str(bk): bv for bk, bv in v.items()} for k, v in front_pair_probs_raw.items()}
         back_pair_probs = {str(k): {str(bk): bv for bk, bv in v.items()} for k, v in back_pair_probs_raw.items()}
+        front_triple_probs = {str(k): {str(bk): bv for bk, bv in v.items()} for k, v in front_triple_probs_raw.items()}
+        back_triple_probs = {str(k): {str(bk): bv for bk, bv in v.items()} for k, v in back_triple_probs_raw.items()}
 
         # 单球转移概率也转换键为字符串（缓存序列化需要）
         front_ball_probs_ser = {str(k): {str(bk): bv for bk, bv in v.items()} for k, v in front_ball_probs.items()}
@@ -293,6 +430,11 @@ class EnhancedMarkovAnalyzer:
             'back_pair_probs': back_pair_probs,
             'front_pair_probs_raw': front_pair_probs_raw,
             'back_pair_probs_raw': back_pair_probs_raw,
+            # 新增: 球组三元转移概率（三阶，tuple键原始版本供预测使用）
+            'front_triple_probs': front_triple_probs,
+            'back_triple_probs': back_triple_probs,
+            'front_triple_probs_raw': front_triple_probs_raw,
+            'back_triple_probs_raw': back_triple_probs_raw,
             # 新增: 共现矩阵（原始dict版本供预测使用）
             'front_cooccurrence': front_cooccur_serializable,
             'back_cooccurrence': back_cooccur_serializable,
@@ -373,8 +515,7 @@ class EnhancedMarkovPredictor:
     def multi_order_markov_predict(self, count=1, periods=500, order=1) -> List[Tuple[List[int], List[int]]]:
         """多阶马尔可夫链预测
 
-        对于 order=2，使用优化的单球级别建模+多步融合+共现加成+区间约束
-        对于 order=1 和 order=3，保持原有逻辑兼容
+        使用单球级别建模，按阶数融合最近1-3期条件状态、全局先验和共现约束。
 
         Args:
             count: 预测注数
@@ -394,12 +535,84 @@ class EnhancedMarkovPredictor:
 
         order_result = markov_result['orders'][order]
 
-        # order=2 时使用优化路径
+        if order == 1:
+            return self._predict_1st_order_optimized(count, periods, order_result)
+
         if order == 2:
             return self._predict_2nd_order_optimized(count, periods, order_result, markov_result)
 
-        # order=1 或 order=3 保持原有逻辑
+        if order == 3:
+            return self._predict_3rd_order_optimized(count, periods, order_result, markov_result)
+
         return self._predict_legacy(count, periods, order, order_result)
+
+    def _recent_periods(self, period_count: int) -> Tuple[List[List[int]], List[List[int]]]:
+        """获取最近 period_count 期号码，返回顺序为最新 -> 更早"""
+        recent_fronts = []
+        recent_backs = []
+
+        try:
+            usable_count = min(period_count, len(self.df) if self.df is not None else 0)
+            for i in range(usable_count):
+                front, back = data_manager.parse_balls(self.df.iloc[i])
+                recent_fronts.append([int(ball) for ball in front])
+                recent_backs.append([int(ball) for ball in back])
+        except Exception as e:
+            logger_manager.debug(f"获取最近期号码失败: {e}")
+
+        default_fronts = [
+            [1, 2, 3, 4, 5],
+            [6, 7, 8, 9, 10],
+            [11, 12, 13, 14, 15],
+        ]
+        default_backs = [
+            [1, 2],
+            [3, 4],
+            [5, 6],
+        ]
+
+        while len(recent_fronts) < period_count:
+            recent_fronts.append(default_fronts[len(recent_fronts) % len(default_fronts)])
+        while len(recent_backs) < period_count:
+            recent_backs.append(default_backs[len(recent_backs) % len(default_backs)])
+
+        return recent_fronts[:period_count], recent_backs[:period_count]
+
+    def _predict_1st_order_optimized(self, count: int, periods: int,
+                                      order_result: Dict) -> List[Tuple[List[int], List[int]]]:
+        """一阶马尔可夫预测：融合最近一期单球转移和全局频率先验"""
+        posterior_mix = self._config.get('posterior_mix', 0.15)
+
+        front_ball_probs = order_result.get('front_ball_probs_raw', order_result.get('front_ball_probs', {}))
+        back_ball_probs = order_result.get('back_ball_probs_raw', order_result.get('back_ball_probs', {}))
+        front_cooccur = order_result.get('front_cooccurrence_raw', order_result.get('front_cooccurrence', {}))
+        back_cooccur = order_result.get('back_cooccurrence_raw', order_result.get('back_cooccurrence', {}))
+        front_freq = order_result.get('front_freq_probs_raw', order_result.get('front_freq_probs', {}))
+        back_freq = order_result.get('back_freq_probs_raw', order_result.get('back_freq_probs', {}))
+
+        latest_front, latest_back = self._recent_periods(1)
+
+        predictions = []
+        for i in range(count):
+            strategy_seed = int(time.time() * 1000000) + i * 1000
+
+            front_dist = self._build_fused_distribution(
+                latest_front, front_ball_probs, {}, front_freq, front_cooccur, 35, posterior_mix
+            )
+            back_dist = self._build_fused_distribution(
+                latest_back, back_ball_probs, {}, back_freq, back_cooccur, 12, posterior_mix
+            )
+
+            front_balls = self._select_balls_with_strategy(
+                front_dist, 5, 35, i, strategy_seed, front_cooccur, apply_zone_constraint=True
+            )
+            back_balls = self._select_balls_with_strategy(
+                back_dist, 2, 12, i, strategy_seed + 500, back_cooccur, apply_zone_constraint=False
+            )
+
+            predictions.append((sorted(front_balls), sorted(back_balls)))
+
+        return predictions
 
     def _predict_2nd_order_optimized(self, count: int, periods: int,
                                       order_result: Dict, full_result: Dict) -> List[Tuple[List[int], List[int]]]:
@@ -424,18 +637,7 @@ class EnhancedMarkovPredictor:
         front_ball_probs_1st = order1_result.get('front_ball_probs_raw', order1_result.get('front_ball_probs', front_ball_probs))
         back_ball_probs_1st = order1_result.get('back_ball_probs_raw', order1_result.get('back_ball_probs', back_ball_probs))
 
-        # 获取最近2期号码作为条件
-        recent_fronts = []
-        recent_backs = []
-        for i in range(min(2, len(self.df))):
-            front, back = data_manager.parse_balls(self.df.iloc[i])
-            recent_fronts.append(front)
-            recent_backs.append(back)
-
-        if len(recent_fronts) < 2:
-            recent_fronts = [[1, 2, 3, 4, 5], [6, 7, 8, 9, 10]]
-        if len(recent_backs) < 2:
-            recent_backs = [[1, 2], [3, 4]]
+        recent_fronts, recent_backs = self._recent_periods(2)
 
         predictions = []
         for i in range(count):
@@ -454,6 +656,51 @@ class EnhancedMarkovPredictor:
             )
 
             # 根据策略选择号码
+            front_balls = self._select_balls_with_strategy(
+                front_dist, 5, 35, i, strategy_seed, front_cooccur, apply_zone_constraint=True
+            )
+            back_balls = self._select_balls_with_strategy(
+                back_dist, 2, 12, i, strategy_seed + 500, back_cooccur, apply_zone_constraint=False
+            )
+
+            predictions.append((sorted(front_balls), sorted(back_balls)))
+
+        return predictions
+
+    def _predict_3rd_order_optimized(self, count: int, periods: int,
+                                      order_result: Dict, full_result: Dict) -> List[Tuple[List[int], List[int]]]:
+        """三阶马尔可夫预测：融合一阶、二阶、三阶条件概率和全局先验"""
+        posterior_mix = self._config.get('posterior_mix', 0.15)
+
+        order1_result = full_result.get('orders', {}).get(1, {})
+        order2_result = full_result.get('orders', {}).get(2, {})
+
+        front_ball_probs = order1_result.get('front_ball_probs_raw', order_result.get('front_ball_probs_raw', {}))
+        back_ball_probs = order1_result.get('back_ball_probs_raw', order_result.get('back_ball_probs_raw', {}))
+        front_pair_probs = order2_result.get('front_pair_probs_raw', order_result.get('front_pair_probs_raw', {}))
+        back_pair_probs = order2_result.get('back_pair_probs_raw', order_result.get('back_pair_probs_raw', {}))
+        front_triple_probs = order_result.get('front_triple_probs_raw', order_result.get('front_triple_probs', {}))
+        back_triple_probs = order_result.get('back_triple_probs_raw', order_result.get('back_triple_probs', {}))
+        front_cooccur = order_result.get('front_cooccurrence_raw', order_result.get('front_cooccurrence', {}))
+        back_cooccur = order_result.get('back_cooccurrence_raw', order_result.get('back_cooccurrence', {}))
+        front_freq = order_result.get('front_freq_probs_raw', order_result.get('front_freq_probs', {}))
+        back_freq = order_result.get('back_freq_probs_raw', order_result.get('back_freq_probs', {}))
+
+        recent_fronts, recent_backs = self._recent_periods(3)
+
+        predictions = []
+        for i in range(count):
+            strategy_seed = int(time.time() * 1000000) + i * 1000
+
+            front_dist = self._build_third_order_fused_distribution(
+                recent_fronts, front_ball_probs, front_pair_probs, front_triple_probs,
+                front_freq, 35, posterior_mix
+            )
+            back_dist = self._build_third_order_fused_distribution(
+                recent_backs, back_ball_probs, back_pair_probs, back_triple_probs,
+                back_freq, 12, posterior_mix
+            )
+
             front_balls = self._select_balls_with_strategy(
                 front_dist, 5, 35, i, strategy_seed, front_cooccur, apply_zone_constraint=True
             )
@@ -492,9 +739,14 @@ class EnhancedMarkovPredictor:
         last_period = recent_periods[0] if recent_periods else []
         step1_dist = defaultdict(float)
         for ball in last_period:
-            if ball in ball_probs_1st:
-                for target, prob in ball_probs_1st[ball].items():
-                    step1_dist[target] += prob
+            row = ball_probs_1st.get(ball) or ball_probs_1st.get(str(ball)) or {}
+            for target, prob in row.items():
+                try:
+                    target_int = int(target)
+                    if 1 <= target_int <= max_ball:
+                        step1_dist[target_int] += float(prob)
+                except (TypeError, ValueError):
+                    continue
         # 归一化
         s1_total = sum(step1_dist.values()) or 1.0
         for ball in range(1, max_ball + 1):
@@ -507,14 +759,20 @@ class EnhancedMarkovPredictor:
             for a in recent_periods[1]:  # 较早一期
                 for b in recent_periods[0]:  # 最近一期
                     pair_key = (a, b)
-                    if pair_key in pair_probs:
-                        for target, prob in pair_probs[pair_key].items():
-                            step2_dist[target] += prob
+                    row = pair_probs.get(pair_key) or pair_probs.get(str(pair_key)) or {}
+                    for target, prob in row.items():
+                        try:
+                            target_int = int(target)
+                            if 1 <= target_int <= max_ball:
+                                step2_dist[target_int] += float(prob)
+                        except (TypeError, ValueError):
+                            continue
         s2_total = sum(step2_dist.values()) or 1.0
         for ball in range(1, max_ball + 1):
             dist[ball] += w_2nd * (step2_dist.get(ball, 0) / s2_total)
 
         # 3. 全局频率先验
+        freq_probs = self._normalize_flat_distribution(freq_probs, max_ball)
         f_total = sum(freq_probs.values()) or 1.0
         for ball in range(1, max_ball + 1):
             dist[ball] += w_prior * (freq_probs.get(ball, 0) / f_total)
@@ -522,6 +780,101 @@ class EnhancedMarkovPredictor:
         # 最终归一化
         total = sum(dist.values()) or 1.0
         return {b: p / total for b, p in dist.items()}
+
+    def _build_third_order_fused_distribution(self, recent_periods: List[List[int]],
+                                               ball_probs_1st: Dict, pair_probs: Dict,
+                                               triple_probs: Dict, freq_probs: Dict,
+                                               max_ball: int, posterior_mix: float) -> Dict[int, float]:
+        """构建三阶融合概率分布"""
+        weights = {
+            'first': 0.25,
+            'second': 0.30,
+            'third': 0.30,
+            'prior': posterior_mix,
+        }
+        total_weight = sum(weights.values()) or 1.0
+        weights = {key: value / total_weight for key, value in weights.items()}
+
+        dist = defaultdict(float)
+
+        step1_dist = defaultdict(float)
+        for ball in (recent_periods[0] if recent_periods else []):
+            row = ball_probs_1st.get(ball) or ball_probs_1st.get(str(ball)) or {}
+            for target, prob in row.items():
+                try:
+                    target_int = int(target)
+                    if 1 <= target_int <= max_ball:
+                        step1_dist[target_int] += float(prob)
+                except (TypeError, ValueError):
+                    continue
+        self._add_weighted_distribution(dist, step1_dist, max_ball, weights['first'])
+
+        step2_dist = defaultdict(float)
+        if len(recent_periods) >= 2:
+            for a in recent_periods[1]:
+                for b in recent_periods[0]:
+                    pair_key = (a, b)
+                    row = pair_probs.get(pair_key) or pair_probs.get(str(pair_key)) or {}
+                    for target, prob in row.items():
+                        try:
+                            target_int = int(target)
+                            if 1 <= target_int <= max_ball:
+                                step2_dist[target_int] += float(prob)
+                        except (TypeError, ValueError):
+                            continue
+        self._add_weighted_distribution(dist, step2_dist, max_ball, weights['second'])
+
+        step3_dist = defaultdict(float)
+        if len(recent_periods) >= 3:
+            for a in recent_periods[2]:
+                for b in recent_periods[1]:
+                    for c in recent_periods[0]:
+                        triple_key = (a, b, c)
+                        row = triple_probs.get(triple_key) or triple_probs.get(str(triple_key)) or {}
+                        for target, prob in row.items():
+                            try:
+                                target_int = int(target)
+                                if 1 <= target_int <= max_ball:
+                                    step3_dist[target_int] += float(prob)
+                            except (TypeError, ValueError):
+                                continue
+        self._add_weighted_distribution(dist, step3_dist, max_ball, weights['third'])
+
+        freq_dist = self._normalize_flat_distribution(freq_probs, max_ball)
+        self._add_weighted_distribution(dist, freq_dist, max_ball, weights['prior'])
+
+        total = sum(dist.values())
+        if total <= 0:
+            uniform = 1.0 / max_ball
+            return {ball: uniform for ball in range(1, max_ball + 1)}
+        return {ball: dist.get(ball, 0.0) / total for ball in range(1, max_ball + 1)}
+
+    @staticmethod
+    def _normalize_flat_distribution(distribution: Dict, max_ball: int) -> Dict[int, float]:
+        normalized = defaultdict(float)
+        if isinstance(distribution, dict):
+            for ball, prob in distribution.items():
+                try:
+                    ball_int = int(ball)
+                    if 1 <= ball_int <= max_ball:
+                        normalized[ball_int] += float(prob)
+                except (TypeError, ValueError):
+                    continue
+
+        total = sum(normalized.values())
+        if total <= 0:
+            uniform = 1.0 / max_ball
+            return {ball: uniform for ball in range(1, max_ball + 1)}
+        return {ball: normalized.get(ball, 0.0) / total for ball in range(1, max_ball + 1)}
+
+    @staticmethod
+    def _add_weighted_distribution(target: Dict[int, float], source: Dict[int, float],
+                                   max_ball: int, weight: float) -> None:
+        total = sum(source.values())
+        if total <= 0:
+            return
+        for ball in range(1, max_ball + 1):
+            target[ball] += weight * (source.get(ball, 0.0) / total)
 
     def _select_balls_with_strategy(self, dist: Dict[int, float], num_balls: int,
                                      max_ball: int, strategy_index: int, seed: int,

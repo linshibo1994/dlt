@@ -7,6 +7,7 @@ Transformer预测器
 """
 
 import os
+import json
 import numpy as np
 import pandas as pd
 import tensorflow as tf
@@ -14,6 +15,7 @@ from typing import List, Tuple, Dict, Any, Optional
 from tensorflow.keras import layers, Model, optimizers
 from tensorflow.keras.callbacks import EarlyStopping, ReduceLROnPlateau, LearningRateScheduler
 from sklearn.preprocessing import StandardScaler
+import joblib
 from datetime import datetime
 import math
 
@@ -103,6 +105,9 @@ class TransformerPredictor(BaseDeepPredictor, CompoundPredictorMixin):
         # 添加缺失的序列和特征维度参数
         self.sequence_length = self.config_params.get('sequence_length', 20)
         self.feature_dim = self.config_params.get('feature_dim', 7)  # 5前区 + 2后区
+        # 单独 Transformer 默认不启用智能早停；集成/高级场景可通过配置显式启用。
+        self.enable_early_stopping = self.config_params.get('enable_early_stopping', False)
+        self.early_stopping_patience = self.config_params.get('early_stopping_patience', 20)
 
         # 模型和缩放器
         self.front_model = None
@@ -121,9 +126,167 @@ class TransformerPredictor(BaseDeepPredictor, CompoundPredictorMixin):
         self.model_dir = self.config_params.get('model_dir', 'artifacts/models/transformer')
         import os
         os.makedirs(self.model_dir, exist_ok=True)
+        self.model_cache_version = 2
+        self.model_data_order = 'chronological_ascending'
 
         logger_manager.info(f"初始化增强Transformer预测器: d_model={self.d_model}, heads={self.num_heads}, "
                           f"encoder_layers={self.num_encoder_layers}, decoder_layers={self.num_decoder_layers}")
+
+    def _order_lottery_dataframe(self, data: pd.DataFrame, ascending: bool = True) -> pd.DataFrame:
+        """
+        按开奖时间排序数据。
+
+        Transformer 的位置编码只表达“序列中的第几个位置”，不会自动纠正数据倒序。
+        DataManager 返回期号降序，因此训练和预测都要先转为旧数据 -> 新数据。
+        """
+        if data is None or data.empty:
+            return data
+
+        ordered = data.copy()
+        if 'issue' in ordered.columns:
+            issue_series = pd.to_numeric(ordered['issue'], errors='coerce')
+            if issue_series.notna().any():
+                return (
+                    ordered.assign(_issue_num=issue_series)
+                    .sort_values('_issue_num', ascending=ascending)
+                    .drop(columns=['_issue_num'])
+                    .reset_index(drop=True)
+                )
+            return ordered.sort_values('issue', ascending=ascending).reset_index(drop=True)
+
+        if 'date' in ordered.columns:
+            date_series = pd.to_datetime(ordered['date'], errors='coerce')
+            if date_series.notna().any():
+                return (
+                    ordered.assign(_date_sort=date_series)
+                    .sort_values('_date_sort', ascending=ascending)
+                    .drop(columns=['_date_sort'])
+                    .reset_index(drop=True)
+                )
+
+        return ordered.reset_index(drop=True)
+
+    def _latest_chronological_window(self, data: pd.DataFrame, window_size: int = None) -> pd.DataFrame:
+        """获取最新 N 期，并保持时间正序。"""
+        window_size = window_size or self.sequence_length
+        ordered = self._order_lottery_dataframe(data, ascending=True)
+        return ordered.tail(window_size).reset_index(drop=True)
+
+    def _build_feature_vector(self, front_balls: List[int], back_balls: List[int]) -> List[float]:
+        """构造与训练阶段一致的 21 维特征。"""
+        front_balls = sorted([int(x) for x in front_balls])
+        back_balls = sorted([int(x) for x in back_balls])
+
+        feature_vector = front_balls + back_balls
+
+        front_sum = sum(front_balls)
+        back_sum = sum(back_balls)
+        total_sum = front_sum + back_sum
+        front_mean = float(np.mean(front_balls))
+        back_mean = float(np.mean(back_balls))
+        front_std = float(np.std(front_balls))
+        back_std = float(np.std(back_balls))
+        span = max(front_balls) - min(front_balls)
+
+        odd_count = sum(1 for x in front_balls if x % 2 == 1)
+        even_count = 5 - odd_count
+        big_count = sum(1 for x in front_balls if x > 17)
+        small_count = 5 - big_count
+        consecutive_count = self._count_consecutive(front_balls)
+        prime_count = sum(1 for x in front_balls if self._is_prime(x))
+
+        return (
+            feature_vector +
+            [front_sum, back_sum, total_sum, front_mean, back_mean, front_std, back_std, span] +
+            [odd_count, even_count, big_count, small_count, consecutive_count, prime_count]
+        )
+
+    def _extract_features_from_dataframe(self, data: pd.DataFrame) -> np.ndarray:
+        """从开奖数据中提取训练和预测共用特征。"""
+        if data is None or data.empty:
+            return np.empty((0, self.feature_dim), dtype=np.float32)
+
+        import core_modules as cm
+        ordered = self._order_lottery_dataframe(data, ascending=True)
+        features = []
+
+        for _, row in ordered.iterrows():
+            front_balls, back_balls = cm.data_manager.parse_balls(row)
+            if len(front_balls) == 5 and len(back_balls) == 2:
+                features.append(self._build_feature_vector(front_balls, back_balls))
+
+        if not features:
+            return np.empty((0, self.feature_dim), dtype=np.float32)
+
+        return np.array(features, dtype=np.float32)
+
+    def _prepare_sequences(self, features: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
+        """准备 Transformer 输入序列和下一期标签。"""
+        X, y = [], []
+        for i in range(self.sequence_length, len(features)):
+            X.append(features[i - self.sequence_length:i])
+            y.append(features[i][:7])
+        return np.array(X, dtype=np.float32), np.array(y, dtype=np.float32)
+
+    def _prepare_training_batch_data(
+        self,
+        data: pd.DataFrame,
+        batch_size: int,
+        validation_split: float
+    ) -> Dict[str, Any]:
+        """准备训练数据，并保存训练时使用的 scaler。"""
+        features = self._extract_features_from_dataframe(data)
+        if len(features) <= self.sequence_length:
+            raise ValueError(f"Transformer训练数据不足，需要超过{self.sequence_length}期，实际{len(features)}期")
+
+        self.feature_dim = features.shape[1]
+        self.scaler = StandardScaler()
+        features_scaled = self.scaler.fit_transform(features)
+
+        X, y = self._prepare_sequences(features_scaled)
+        if len(X) == 0:
+            raise ValueError(f"序列数据不足，无法准备Transformer训练数据，序列长度: {self.sequence_length}")
+
+        split_idx = max(1, int(len(X) * (1 - validation_split)))
+        if split_idx >= len(X):
+            split_idx = len(X) - 1
+
+        X_train, X_val = X[:split_idx], X[split_idx:]
+        y_train, y_val = y[:split_idx], y[split_idx:]
+
+        train_dataset = tf.data.Dataset.from_tensor_slices((X_train, y_train))
+        train_dataset = train_dataset.shuffle(buffer_size=len(X_train)).batch(batch_size)
+
+        val_dataset = tf.data.Dataset.from_tensor_slices((X_val, y_val))
+        val_dataset = val_dataset.batch(batch_size)
+
+        logger_manager.info(f"Transformer批处理数据准备完成: {len(X_train)} 训练样本, {len(X_val)} 验证样本")
+
+        return {
+            'train_dataset': train_dataset,
+            'val_dataset': val_dataset,
+            'X_train': X_train,
+            'y_train': y_train,
+            'X_val': X_val,
+            'y_val': y_val,
+            'feature_dim': self.feature_dim,
+            'sequence_length': self.sequence_length,
+            'batch_size': batch_size
+        }
+
+    def _count_consecutive(self, numbers: List[int]) -> int:
+        """计算连续号码数量。"""
+        sorted_nums = sorted(numbers)
+        return sum(1 for i in range(len(sorted_nums) - 1) if sorted_nums[i + 1] - sorted_nums[i] == 1)
+
+    def _is_prime(self, n: int) -> bool:
+        """判断是否为质数。"""
+        if n < 2:
+            return False
+        for i in range(2, int(n ** 0.5) + 1):
+            if n % i == 0:
+                return False
+        return True
 
     def _configure_gpu(self):
         """配置GPU设备"""
@@ -222,8 +385,8 @@ class TransformerPredictor(BaseDeepPredictor, CompoundPredictorMixin):
                 metrics=['mae', 'mape']
             )
 
-            # 打印模型摘要
-            model.summary()
+            if self.config_params.get('show_model_summary', False):
+                model.summary()
 
             return model
         except Exception as e:
@@ -390,18 +553,29 @@ class TransformerPredictor(BaseDeepPredictor, CompoundPredictorMixin):
         )
 
     def _get_advanced_callbacks(self):
-        """获取高级回调函数，包含智能早停机制"""
-        callbacks = create_intelligent_callbacks(
-            patience=20,  # 连续20次相同结果时停止（按要求调整）
-            min_delta=1e-6,
-            monitor='val_loss',
-            reduce_lr_patience=10
-        )
+        """获取训练回调函数。"""
+        if self.enable_early_stopping:
+            callbacks = create_intelligent_callbacks(
+                patience=self.early_stopping_patience,
+                min_delta=1e-6,
+                monitor='val_loss',
+                reduce_lr_patience=10
+            )
+        else:
+            callbacks = [
+                ReduceLROnPlateau(
+                    monitor='val_loss',
+                    factor=0.5,
+                    patience=10,
+                    min_lr=1e-7,
+                    verbose=0
+                )
+            ]
         callbacks.append(self._create_learning_rate_scheduler())
         return callbacks
     
     @handle_model_error
-    def train(self, epochs=None, validation_split=0.2, batch_size=None):
+    def train(self, epochs=None, validation_split=0.2, batch_size=None, data: pd.DataFrame = None):
         """
         训练Transformer模型
         
@@ -413,8 +587,7 @@ class TransformerPredictor(BaseDeepPredictor, CompoundPredictorMixin):
         Returns:
             训练是否成功
         """
-        from ..data.data_manager import DeepLearningDataManager
-        from .training_utils import get_callbacks, TrainingVisualizer
+        from .training_utils import TrainingVisualizer
         
         if epochs is None:
             epochs = self.config_params.get('epochs', 100)
@@ -436,12 +609,13 @@ class TransformerPredictor(BaseDeepPredictor, CompoundPredictorMixin):
         logger_manager.info(f"开始训练Transformer模型: epochs={epochs}, batch_size={batch_size}")
         
         try:
-            # 创建数据管理器
-            data_manager = DeepLearningDataManager()
-            
-            # 准备批处理数据
-            batch_data = data_manager.prepare_batch_data(
-                sequence_length=self.sequence_length,
+            if data is None:
+                data = core_data_manager.get_data()
+            if data is None or len(data) == 0:
+                raise ValueError("无法获取Transformer训练数据")
+
+            batch_data = self._prepare_training_batch_data(
+                data=data,
                 batch_size=batch_size,
                 validation_split=validation_split
             )
@@ -453,8 +627,7 @@ class TransformerPredictor(BaseDeepPredictor, CompoundPredictorMixin):
             if self.model is None:
                 self.model = self._build_model()
             
-            # 获取回调函数
-            callbacks = get_callbacks(self.name, self.model_dir)
+            callbacks = self._get_advanced_callbacks()
             
             # 训练模型
             history = self.model.fit(
@@ -476,7 +649,6 @@ class TransformerPredictor(BaseDeepPredictor, CompoundPredictorMixin):
 
             # 保存scaler
             try:
-                import joblib
                 scaler_path = os.path.join(self.model_dir, f'{self.name}_scaler.pkl')
                 joblib.dump(self.scaler, scaler_path)
                 logger_manager.info(f"Scaler已保存到: {scaler_path}")
@@ -510,33 +682,19 @@ class TransformerPredictor(BaseDeepPredictor, CompoundPredictorMixin):
         if not self.is_trained:
             if not self._load_model():
                 logger_manager.info(f"{self.name}模型未训练，开始训练...")
-                if not self.train():
+                if not self.train(data=data):
                     logger_manager.error(f"{self.name}模型训练失败")
                     return []
         
         # 获取最近的序列数据 - 使用传入的数据或从数据管理器获取
         if data is not None:
-            recent_data = data.head(self.sequence_length).iloc[::-1].reset_index(drop=True)
+            recent_data = self._latest_chronological_window(data, self.sequence_length)
         else:
             # 从数据管理器获取数据
             all_data = core_data_manager.get_data()
-            recent_data = all_data.head(self.sequence_length).iloc[::-1].reset_index(drop=True)
+            recent_data = self._latest_chronological_window(all_data, self.sequence_length)
 
-        # 提取特征 - 使用data_manager的parse_balls方法
-        import core_modules as cm
-        features = []
-
-        for _, row in recent_data.iterrows():
-            front_balls, back_balls = cm.data_manager.parse_balls(row)
-            if len(front_balls) == 5 and len(back_balls) == 2:
-                # 基础特征：前5个号码 + 后2个号码
-                feature_vector = front_balls + back_balls
-
-                # 扩展特征到所需维度
-                while len(feature_vector) < self.feature_dim:
-                    feature_vector.append(sum(feature_vector) / len(feature_vector))
-
-                features.append(feature_vector[:self.feature_dim])
+        features = self._extract_features_from_dataframe(recent_data)
 
         if len(features) < self.sequence_length:
             logger_manager.warning(f"Transformer数据不足，需要{self.sequence_length}期，实际{len(features)}期")
@@ -596,7 +754,8 @@ class TransformerPredictor(BaseDeepPredictor, CompoundPredictorMixin):
             predictions.append((front_balls, back_balls))
             
             # 更新输入序列用于下一次预测
-            new_feature = np.concatenate([pred_original, recent_scaled[-1, 7:]])
+            new_feature = self._build_feature_vector(front_balls, back_balls)
+            new_feature = self.scaler.transform(np.array([new_feature], dtype=np.float32))[0]
             input_sequence = np.roll(input_sequence, -1, axis=1)
             input_sequence[0, -1] = new_feature
             
@@ -884,35 +1043,51 @@ class TransformerPredictor(BaseDeepPredictor, CompoundPredictorMixin):
     def _load_model(self) -> bool:
         """加载已训练的模型"""
         try:
-            import os
-            model_path = os.path.join(self.model_dir, f'{self.name}_best.h5')
+            model_paths = [
+                os.path.join(self.model_dir, f'{self.name}_best.keras'),
+                os.path.join(self.model_dir, f'{self.name}_best.h5')
+            ]
             scaler_path = os.path.join(self.model_dir, f'{self.name}_scaler.pkl')
+            metadata_path = os.path.join(self.model_dir, f'{self.name}_metadata.json')
 
-            if os.path.exists(model_path):
-                from tensorflow.keras.models import load_model
-                self.model = load_model(model_path)
-
-                # 加载scaler
-                try:
-                    import joblib
-                    if os.path.exists(scaler_path):
-                        self.scaler = joblib.load(scaler_path)
-                        logger_manager.info(f"Scaler已从 {scaler_path} 加载")
-                    else:
-                        logger_manager.warning("Scaler文件不存在，将使用新的scaler")
-                        from sklearn.preprocessing import StandardScaler
-                        self.scaler = StandardScaler()
-                except Exception as e:
-                    logger_manager.warning(f"加载scaler失败: {e}，将使用新的scaler")
-                    from sklearn.preprocessing import StandardScaler
-                    self.scaler = StandardScaler()
-
-                self.is_trained = True
-                logger_manager.info("Transformer模型加载成功")
-                return True
-            else:
+            model_path = next((path for path in model_paths if os.path.exists(path)), None)
+            if model_path is None:
                 logger_manager.warning("Transformer模型文件不存在")
                 return False
+
+            if not os.path.exists(metadata_path):
+                logger_manager.warning("Transformer模型缺少元数据，将重新训练以修正序列方向和特征配置")
+                return False
+
+            with open(metadata_path, 'r', encoding='utf-8') as f:
+                metadata = json.load(f)
+
+            if (
+                metadata.get('cache_version') != self.model_cache_version or
+                metadata.get('data_order') != self.model_data_order or
+                metadata.get('sequence_length') != self.sequence_length
+            ):
+                logger_manager.warning("Transformer模型元数据不匹配，将重新训练")
+                return False
+
+            from tensorflow.keras.models import load_model
+            self.model = load_model(model_path, compile=False)
+            self.feature_dim = int(metadata.get('feature_dim', self.feature_dim))
+
+            try:
+                if os.path.exists(scaler_path):
+                    self.scaler = joblib.load(scaler_path)
+                    logger_manager.info(f"Scaler已从 {scaler_path} 加载")
+                else:
+                    logger_manager.warning("Scaler文件不存在，将重新训练")
+                    return False
+            except Exception as e:
+                logger_manager.warning(f"加载scaler失败: {e}，将重新训练")
+                return False
+
+            self.is_trained = True
+            logger_manager.info("Transformer模型加载成功")
+            return True
 
         except Exception as e:
             logger_manager.error(f"Transformer模型加载失败: {e}")
@@ -922,7 +1097,7 @@ class TransformerPredictor(BaseDeepPredictor, CompoundPredictorMixin):
         """内部保存模型方法"""
         try:
             if filepath is None:
-                filepath = os.path.join(self.model_dir, f'{self.name}_best.h5')
+                filepath = os.path.join(self.model_dir, f'{self.name}_best.keras')
 
             # 确保目录存在
             os.makedirs(os.path.dirname(filepath), exist_ok=True)
@@ -930,6 +1105,16 @@ class TransformerPredictor(BaseDeepPredictor, CompoundPredictorMixin):
             # 保存模型
             if self.model is not None:
                 self.model.save(filepath)
+                metadata = {
+                    'cache_version': self.model_cache_version,
+                    'data_order': self.model_data_order,
+                    'sequence_length': self.sequence_length,
+                    'feature_dim': self.feature_dim,
+                    'saved_at': datetime.now().isoformat()
+                }
+                metadata_path = os.path.join(self.model_dir, f'{self.name}_metadata.json')
+                with open(metadata_path, 'w', encoding='utf-8') as f:
+                    json.dump(metadata, f, ensure_ascii=False, indent=2)
                 logger_manager.info(f"Transformer模型已保存到: {filepath}")
                 return True
             else:
