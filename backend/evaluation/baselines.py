@@ -6,6 +6,7 @@ import math
 import re
 from collections import Counter
 from collections.abc import Mapping
+from numbers import Integral
 from typing import Any, Callable, Dict, Iterable, List, Sequence
 
 
@@ -41,9 +42,15 @@ def parse_numbers(
     numbers: List[int] = []
     try:
         for item in raw_numbers:
-            if isinstance(item, bool):
+            if isinstance(item, str):
+                normalized_item = item.strip()
+                if not re.fullmatch(r"[+-]?\d+", normalized_item):
+                    raise ValueError
+                numbers.append(int(normalized_item))
+            elif isinstance(item, bool) or not isinstance(item, Integral):
                 raise ValueError
-            numbers.append(int(item))
+            else:
+                numbers.append(int(item))
     except (TypeError, ValueError):
         raise ValueError(f"{area}号码必须包含 {expected} 个唯一整数") from None
 

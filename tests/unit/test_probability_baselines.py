@@ -5,6 +5,7 @@ from random import Random
 import pytest
 
 from backend.evaluation import DirichletBaseline, UniformBaseline, parse_numbers
+from backend.evaluation.baselines import _generate_unique_tickets
 
 
 TRAINING_DRAWS = [
@@ -63,6 +64,39 @@ def test_baseline_names_and_parse_numbers_are_public():
     assert UniformBaseline.name == "uniform"
     assert DirichletBaseline.name == "dirichlet"
     assert parse_numbers("01, 02,03", expected=3, minimum=1, maximum=35) == [1, 2, 3]
+    assert parse_numbers([1, 2, 3], expected=3, minimum=1, maximum=35) == [1, 2, 3]
+
+
+@pytest.mark.parametrize(
+    "invalid_front",
+    [
+        [1, 2, 3, 4, 35.9],
+        [1, 2, 3, 4, 35.0],
+        "01,02,03,04,35.0",
+        [1, 2, 3, 4, True],
+        [1, 2, 3, 4, None],
+    ],
+    ids=["fractional-float", "integral-float", "decimal-string", "bool", "none"],
+)
+def test_baseline_rejects_non_integer_historical_numbers(invalid_front):
+    invalid_draw = dict(TRAINING_DRAWS[0], front_balls=invalid_front)
+
+    with pytest.raises(ValueError, match="前区号码必须包含 5 个唯一整数"):
+        UniformBaseline().generate([invalid_draw], count=1, rng=Random(1))
+
+
+def test_unique_ticket_generation_raises_after_max_attempts():
+    attempts = 0
+
+    def constant_ticket_factory():
+        nonlocal attempts
+        attempts += 1
+        return {"front_balls": [1, 2, 3, 4, 5], "back_balls": [1, 2]}
+
+    with pytest.raises(ValueError, match="在 1000 次尝试内无法生成 2 张互不重复的票"):
+        _generate_unique_tickets(count=2, candidate_factory=constant_ticket_factory)
+
+    assert attempts == 1000
 
 
 def test_dirichlet_probabilities_include_unseen_numbers_and_use_formula():
