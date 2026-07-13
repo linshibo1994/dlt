@@ -31,6 +31,8 @@ if BACKEND_APP_DIR not in sys.path:
 # 设置环境变量
 os.environ['DLT_PROJECT_ROOT'] = PROJECT_ROOT
 
+BASELINE_PREDICT_METHODS = frozenset({'uniform', 'dirichlet'})
+
 # 设置 Matplotlib 缓存目录，避免不可写路径警告
 if not os.environ.get('MPLCONFIGDIR'):
     mpl_cache_dir = os.path.join(PROJECT_ROOT, 'artifacts', 'mplconfig')
@@ -61,6 +63,21 @@ def setup_paths():
                 return yaml.safe_load(f)
     except ImportError:
         pass
+    return None
+
+
+def _baseline_predict_method(arguments):
+    """提取需要由轻量概率基线处理的预测方法。"""
+    for index, argument in enumerate(arguments):
+        candidate = None
+        if argument in ('-m', '--method'):
+            if index + 1 < len(arguments):
+                candidate = arguments[index + 1]
+        elif argument.startswith('--method=') or argument.startswith('-m='):
+            candidate = argument.split('=', 1)[1]
+
+        if candidate in BASELINE_PREDICT_METHODS:
+            return candidate
     return None
 
 
@@ -137,6 +154,11 @@ def main():
             from backend.evaluation.cli import main as evaluation_main
             sys.exit(evaluation_main(sys.argv[2:]))
 
+        # 让概率基线兼容现有 predict -m/-p/-c 命令形式。
+        if first_arg == 'predict' and _baseline_predict_method(sys.argv[2:]):
+            from backend.evaluation.cli import main as evaluation_main
+            sys.exit(evaluation_main(['predict', *sys.argv[2:]]))
+
         # 模式选择：--mode 或 -m 作为第一个参数
         if first_arg in ['--mode', '-m'] and len(sys.argv) >= 3:
             mode = sys.argv[2]
@@ -210,8 +232,11 @@ def print_help():
   python main.py predict -m frequency -p 500 -c 5
   python main.py predict -m lstm -p 1000 -c 1
 
+概率基线预测示例：
+  python main.py predict -m dirichlet -p 500 -c 5
+  python main.py predict -m uniform -p 500 -c 5
+
 评估命令示例：
-  python main.py evaluate predict --method dirichlet --periods 500 --count 5
   python main.py evaluate walk-forward --methods uniform,dirichlet --draws 30
 
 数据命令示例：

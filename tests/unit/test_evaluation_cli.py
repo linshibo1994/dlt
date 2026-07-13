@@ -54,6 +54,16 @@ def test_build_parser_exposes_documented_defaults_and_normalizes_methods():
     }
 
 
+def test_predict_parser_accepts_existing_cli_short_options():
+    parsed = cli.build_parser().parse_args(
+        ["predict", "-m", "dirichlet", "-p", "20", "-c", "1"]
+    )
+
+    assert parsed.method == "dirichlet"
+    assert parsed.periods == 20
+    assert parsed.count == 1
+
+
 def test_predict_json_output_is_a_single_parseable_object(capsys):
     exit_code = cli.main(
         [
@@ -135,13 +145,43 @@ def test_root_evaluate_json_commands_are_clean(arguments):
     assert "gpu" not in (completed.stdout + completed.stderr).lower()
 
 
+@pytest.mark.parametrize("method", ["uniform", "dirichlet"])
+def test_root_predict_alias_uses_probability_baseline(method):
+    completed = run_root(
+        "predict",
+        "-m",
+        method,
+        "-p",
+        "20",
+        "-c",
+        "1",
+        "--json-output",
+    )
+
+    payload = json.loads(completed.stdout)
+
+    assert completed.returncode == 0
+    assert completed.stderr == ""
+    assert payload["method"] == method
+    assert len(payload["tickets"]) == 1
+    assert "gpu" not in completed.stdout.lower()
+
+
+def test_baseline_predict_method_detection_preserves_existing_methods():
+    from main import _baseline_predict_method
+
+    assert _baseline_predict_method(["-m", "dirichlet", "-c", "1"]) == "dirichlet"
+    assert _baseline_predict_method(["--method=uniform"]) == "uniform"
+    assert _baseline_predict_method(["-m", "hot_cold", "-c", "1"]) is None
+
+
 def test_root_help_lists_evaluate_command_and_examples():
     completed = run_root("--help")
 
     assert completed.returncode == 0
     assert completed.stderr == ""
     assert "evaluate" in completed.stdout
-    assert "python main.py evaluate predict" in completed.stdout
+    assert "python main.py predict -m dirichlet" in completed.stdout
     assert "python main.py evaluate walk-forward" in completed.stdout
 
 

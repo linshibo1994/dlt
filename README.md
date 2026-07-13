@@ -904,13 +904,13 @@ python main.py compare --issue 25103 -m frequency -p 150 -t 60 --export
 
 ```bash
 # Dirichlet 平滑频率基线，使用最新 500 期生成 5 注
-python main.py evaluate predict --method dirichlet --periods 500 --count 5 --seed 42 --alpha 1.0
+python main.py predict -m dirichlet -p 500 -c 5 --seed 42 --alpha 1.0
 
 # 均匀随机基线
-python main.py evaluate predict --method uniform --periods 500 --count 5 --seed 42
+python main.py predict -m uniform -p 500 -c 5 --seed 42
 
 # 输出纯 JSON
-python main.py evaluate predict --method dirichlet --periods 500 --count 5 --seed 42 --json-output
+python main.py predict -m dirichlet -p 500 -c 5 --seed 42 --json-output
 ```
 
 ### 无泄漏滚动评估

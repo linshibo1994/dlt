@@ -45,8 +45,8 @@ def _methods(value):
 
 
 def _add_shared_arguments(parser):
-    parser.add_argument("--periods", type=_positive_int, default=500, help="训练期数")
-    parser.add_argument("--count", type=_ticket_count, default=5, help="每期票数")
+    parser.add_argument("-p", "--periods", type=_positive_int, default=500, help="训练期数")
+    parser.add_argument("-c", "--count", type=_ticket_count, default=5, help="每期票数")
     parser.add_argument("--seed", type=int, default=42, help="随机种子")
     parser.add_argument("--alpha", type=float, default=1.0, help="狄利克雷平滑参数")
     parser.add_argument(
@@ -66,6 +66,7 @@ def build_parser():
 
     predict_parser = subparsers.add_parser("predict", help="生成下一期基线号码")
     predict_parser.add_argument(
+        "-m",
         "--method",
         choices=SUPPORTED_METHODS,
         default="dirichlet",
