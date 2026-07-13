@@ -2,6 +2,7 @@
 
 import csv
 import random
+from collections import UserList
 from dataclasses import FrozenInstanceError
 from pathlib import Path
 from random import Random
@@ -119,6 +120,15 @@ def test_config_defensively_copies_list_methods_to_tuple():
     assert config.methods == ("uniform", "dirichlet")
 
 
+def test_config_defensively_copies_non_string_sequence_methods():
+    methods = UserList(["uniform", "dirichlet"])
+
+    config = EvaluationConfig(methods=methods)
+    methods.append("uniform")
+
+    assert config.methods == ("uniform", "dirichlet")
+
+
 def test_evaluation_case_defensively_copies_target_and_training():
     target = make_draw(1003)
     training = [make_draw(1002), make_draw(1001)]
@@ -207,6 +217,14 @@ def test_build_cases_rejects_duplicate_issue():
         WalkForwardEvaluator().build_cases(draws, config)
 
 
+def test_build_cases_rejects_numerically_duplicate_issue():
+    draws = [make_draw(1001), dict(make_draw(1002), issue="01001")]
+    config = EvaluationConfig(methods=("uniform",), draws=1, periods=1, count=1)
+
+    with pytest.raises(ValueError, match="期号 01001 重复"):
+        WalkForwardEvaluator().build_cases(draws, config)
+
+
 @pytest.mark.parametrize(
     ("draws", "message"),
     [
@@ -278,6 +296,7 @@ def test_build_cases_cases_do_not_change_when_input_draws_are_mutated():
     [
         ((), "methods 不能为空"),
         (("markov",), "methods 仅支持 uniform、dirichlet"),
+        ("uniform", "methods 必须为非空的方法序列"),
         (None, "methods 必须为非空的方法序列"),
     ],
 )
@@ -559,6 +578,24 @@ def test_run_strict_csv_rejects_missing_required_header(tmp_path):
         WalkForwardEvaluator(data_source=source).run(config)
 
 
+def test_run_strict_csv_accepts_utf8_bom_crlf_and_quoted_fields(tmp_path):
+    source = write_raw_csv(
+        tmp_path,
+        "\ufeffissue,date,front_balls,back_balls\r\n"
+        '1002,2026-01-02,"01,02,03,04,05","01,02"\r\n'
+        '1001,2026-01-01,"06,07,08,09,10","03,04"\r\n',
+    )
+    config = EvaluationConfig(methods=("uniform",), draws=1, periods=1, count=1)
+
+    result = WalkForwardEvaluator(data_source=source).run(config)
+
+    assert result["data"] == {
+        "latest_issue": "1002",
+        "available_draws": 2,
+        "evaluated_draws": 1,
+    }
+
+
 @pytest.mark.parametrize(
     ("invalid_row", "reason"),
     [
@@ -628,6 +665,19 @@ def test_run_strict_csv_rejects_duplicate_issue_with_line_number(tmp_path):
     config = EvaluationConfig(methods=("uniform",), draws=1, periods=1, count=1)
 
     with pytest.raises(ValueError, match="CSV 第 4 行：期号 1002 重复"):
+        WalkForwardEvaluator(data_source=source).run(config)
+
+
+def test_run_strict_csv_rejects_numerically_duplicate_issue(tmp_path):
+    source = write_raw_csv(
+        tmp_path,
+        "issue,date,front_balls,back_balls\n"
+        '1002,2026-01-02,"01,02,03,04,05","01,02"\n'
+        '01002,2026-01-01,"06,07,08,09,10","03,04"\n',
+    )
+    config = EvaluationConfig(methods=("uniform",), draws=1, periods=1, count=1)
+
+    with pytest.raises(ValueError, match="CSV 第 3 行：期号 01002 重复"):
         WalkForwardEvaluator(data_source=source).run(config)
 
 

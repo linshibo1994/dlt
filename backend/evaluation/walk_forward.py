@@ -35,7 +35,9 @@ class EvaluationConfig:
     alpha: float = 1.0
 
     def __post_init__(self):
-        if isinstance(self.methods, (list, tuple)):
+        if isinstance(self.methods, Sequence) and not isinstance(
+            self.methods, (str, bytes)
+        ):
             object.__setattr__(self, "methods", tuple(self.methods))
 
 
@@ -173,12 +175,13 @@ class WalkForwardEvaluator:
         for position, row in enumerate(rows, start=1):
             draw = _normalize_draw(row, f"第 {position} 条开奖记录")
             issue = draw["issue"]
-            if issue in issue_positions:
+            issue_key = int(issue)
+            if issue_key in issue_positions:
                 raise ValueError(
                     f"第 {position} 条开奖记录：期号 {issue} 重复，"
-                    f"首次出现在第 {issue_positions[issue]} 条"
+                    f"首次出现在第 {issue_positions[issue_key]} 条"
                 )
-            issue_positions[issue] = position
+            issue_positions[issue_key] = position
             normalized.append(draw)
 
         normalized.sort(
@@ -195,7 +198,7 @@ class WalkForwardEvaluator:
 
         normalized = []
         issue_lines = {}
-        with path.open("r", encoding="utf-8", newline="") as file_obj:
+        with path.open("r", encoding="utf-8-sig", newline="") as file_obj:
             reader = csv.reader(file_obj)
             try:
                 headers = next(reader)
@@ -226,12 +229,13 @@ class WalkForwardEvaluator:
                     f"CSV 第 {line_number} 行",
                 )
                 issue = draw["issue"]
-                if issue in issue_lines:
+                issue_key = int(issue)
+                if issue_key in issue_lines:
                     raise ValueError(
                         f"CSV 第 {line_number} 行：期号 {issue} 重复，"
-                        f"首次出现在 CSV 第 {issue_lines[issue]} 行"
+                        f"首次出现在 CSV 第 {issue_lines[issue_key]} 行"
                     )
-                issue_lines[issue] = line_number
+                issue_lines[issue_key] = line_number
                 normalized.append(draw)
 
         normalized.sort(
