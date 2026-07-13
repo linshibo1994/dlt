@@ -250,6 +250,10 @@ class WalkForwardEvaluator:
             return self._read_strict_csv(data_file)
         return self.data_source.load_all()
 
+    def load_draws(self):
+        """严格读取并按最新到最旧归一化开奖记录。"""
+        return self._normalize_draws(self._load_draws())
+
     @staticmethod
     def _validate_case_boundary(case: EvaluationCase):
         target_date = date.fromisoformat(case.target["date"])
@@ -291,7 +295,7 @@ class WalkForwardEvaluator:
     def run(self, config: EvaluationConfig):
         """运行滚动评估并返回可复现、可审计的结构化结果。"""
         normalized_methods, normalized_alpha = self._validate_config(config)
-        draws = self._normalize_draws(self._load_draws())
+        draws = self.load_draws()
         cases = self.build_cases(draws, config)
         method_summaries = {}
         raw_averages = {}

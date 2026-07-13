@@ -8,11 +8,14 @@ from .walk_forward import (
     derive_seed,
     match_ticket,
 )
+from .prediction import BaselinePredictor, PredictionConfig
 
 __all__ = [
+    "BaselinePredictor",
     "DirichletBaseline",
     "EvaluationCase",
     "EvaluationConfig",
+    "PredictionConfig",
     "UniformBaseline",
     "WalkForwardEvaluator",
     "derive_seed",
