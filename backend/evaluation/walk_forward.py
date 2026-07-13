@@ -2,19 +2,25 @@
 
 from __future__ import annotations
 
+import csv
 import hashlib
+import re
 from collections import Counter
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
+from datetime import date
+from pathlib import Path
 from random import Random
 from typing import Dict, Tuple
 
-from backend.testing import DltDataSource
+from backend.testing.data_source import DltDataSource
 
 from .baselines import DirichletBaseline, UniformBaseline, parse_numbers
 
 
 SUPPORTED_METHODS = ("uniform", "dirichlet")
+REQUIRED_DRAW_FIELDS = ("issue", "date", "front_balls", "back_balls")
+DATE_PATTERN = re.compile(r"\d{4}-\d{2}-\d{2}")
 
 
 @dataclass(frozen=True)
@@ -28,6 +34,10 @@ class EvaluationConfig:
     seed: int = 42
     alpha: float = 1.0
 
+    def __post_init__(self):
+        if isinstance(self.methods, (list, tuple)):
+            object.__setattr__(self, "methods", tuple(self.methods))
+
 
 @dataclass(frozen=True)
 class EvaluationCase:
@@ -35,6 +45,14 @@ class EvaluationCase:
 
     target: Dict[str, str]
     training: Tuple[Dict[str, str], ...]
+
+    def __post_init__(self):
+        object.__setattr__(self, "target", dict(self.target))
+        object.__setattr__(
+            self,
+            "training",
+            tuple(dict(row) for row in self.training),
+        )
 
 
 def derive_seed(seed, method, issue):
@@ -63,11 +81,52 @@ def _sorted_distribution(distribution):
     }
 
 
+def _format_numbers(numbers):
+    return ",".join(f"{number:02d}" for number in numbers)
+
+
+def _normalize_draw(row, location):
+    prefix = f"{location}："
+    if not isinstance(row, Mapping):
+        raise ValueError(f"{prefix}必须为字段映射")
+
+    missing_fields = [field for field in REQUIRED_DRAW_FIELDS if field not in row]
+    if missing_fields:
+        raise ValueError(f"{prefix}缺少必需字段：{'、'.join(missing_fields)}")
+
+    raw_issue = row["issue"]
+    issue = raw_issue if isinstance(raw_issue, str) else ""
+    if not re.fullmatch(r"[0-9]+", issue):
+        raise ValueError(f"{prefix}期号 issue 必须为纯数字")
+
+    raw_date = row["date"]
+    draw_date = raw_date if isinstance(raw_date, str) else ""
+    try:
+        if not DATE_PATTERN.fullmatch(draw_date):
+            raise ValueError
+        date.fromisoformat(draw_date)
+    except ValueError:
+        raise ValueError(f"{prefix}date 必须为有效的 YYYY-MM-DD") from None
+
+    try:
+        front_balls = parse_numbers(row["front_balls"], 5, 1, 35)
+        back_balls = parse_numbers(row["back_balls"], 2, 1, 12)
+    except ValueError as exc:
+        raise ValueError(f"{prefix}{exc}") from exc
+
+    return {
+        "issue": issue,
+        "date": draw_date,
+        "front_balls": _format_numbers(front_balls),
+        "back_balls": _format_numbers(back_balls),
+    }
+
+
 class WalkForwardEvaluator:
     """使用显式历史切片运行概率基线评估。"""
 
     def __init__(self, data_source=None):
-        self.data_source = data_source or DltDataSource()
+        self.data_source = DltDataSource() if data_source is None else data_source
 
     @staticmethod
     def _validate_config(config: EvaluationConfig):
@@ -102,28 +161,133 @@ class WalkForwardEvaluator:
         normalized_alpha = DirichletBaseline(config.alpha).alpha
         return normalized_methods, normalized_alpha
 
+    @staticmethod
+    def _normalize_draws(draws):
+        try:
+            rows = list(draws)
+        except TypeError:
+            raise ValueError("开奖记录必须为可迭代数据") from None
+
+        normalized = []
+        issue_positions = {}
+        for position, row in enumerate(rows, start=1):
+            draw = _normalize_draw(row, f"第 {position} 条开奖记录")
+            issue = draw["issue"]
+            if issue in issue_positions:
+                raise ValueError(
+                    f"第 {position} 条开奖记录：期号 {issue} 重复，"
+                    f"首次出现在第 {issue_positions[issue]} 条"
+                )
+            issue_positions[issue] = position
+            normalized.append(draw)
+
+        normalized.sort(
+            key=lambda item: (item["date"], int(item["issue"])),
+            reverse=True,
+        )
+        return normalized
+
+    @staticmethod
+    def _read_strict_csv(data_file):
+        path = Path(data_file)
+        if not path.exists():
+            raise FileNotFoundError(f"开奖数据文件不存在: {path}")
+
+        normalized = []
+        issue_lines = {}
+        with path.open("r", encoding="utf-8", newline="") as file_obj:
+            reader = csv.reader(file_obj)
+            try:
+                headers = next(reader)
+            except StopIteration:
+                headers = []
+
+            missing_headers = [
+                field for field in REQUIRED_DRAW_FIELDS if field not in headers
+            ]
+            if missing_headers:
+                raise ValueError(
+                    f"CSV 缺少必需表头：{'、'.join(missing_headers)}"
+                )
+            if len(set(headers)) != len(headers):
+                raise ValueError("CSV 表头包含重复字段")
+
+            for values in reader:
+                line_number = reader.line_num
+                if not values:
+                    raise ValueError(f"CSV 第 {line_number} 行：数据行不能为空")
+                if len(values) != len(headers):
+                    raise ValueError(
+                        f"CSV 第 {line_number} 行：字段数量与表头不一致"
+                    )
+
+                draw = _normalize_draw(
+                    dict(zip(headers, values)),
+                    f"CSV 第 {line_number} 行",
+                )
+                issue = draw["issue"]
+                if issue in issue_lines:
+                    raise ValueError(
+                        f"CSV 第 {line_number} 行：期号 {issue} 重复，"
+                        f"首次出现在 CSV 第 {issue_lines[issue]} 行"
+                    )
+                issue_lines[issue] = line_number
+                normalized.append(draw)
+
+        normalized.sort(
+            key=lambda item: (item["date"], int(item["issue"])),
+            reverse=True,
+        )
+        return normalized
+
+    def _load_draws(self):
+        data_file = getattr(self.data_source, "data_file", None)
+        if data_file is not None:
+            return self._read_strict_csv(data_file)
+        return self.data_source.load_all()
+
+    @staticmethod
+    def _validate_case_boundary(case: EvaluationCase):
+        target_date = date.fromisoformat(case.target["date"])
+        target_issue = int(case.target["issue"])
+        for training_draw in case.training:
+            if date.fromisoformat(training_draw["date"]) >= target_date:
+                raise ValueError(
+                    f"目标期 {case.target['issue']}：训练日期必须早于目标日期，"
+                    f"训练期为 {training_draw['issue']}"
+                )
+            if int(training_draw["issue"]) >= target_issue:
+                raise ValueError(
+                    f"目标期 {case.target['issue']}：训练期号必须早于目标期号，"
+                    f"训练期为 {training_draw['issue']}"
+                )
+
     def build_cases(self, draws, config: EvaluationConfig):
         """按倒序开奖记录构造严格无泄漏的评估案例。"""
         self._validate_config(config)
+        normalized_draws = self._normalize_draws(draws)
         required = config.draws + config.periods
-        if len(draws) < required:
+        if len(normalized_draws) < required:
             raise ValueError(
-                f"数据不足：至少需要 {required} 期，当前只有 {len(draws)} 期"
+                f"数据不足：至少需要 {required} 期，当前只有 {len(normalized_draws)} 期"
             )
-        return [
+        cases = [
             EvaluationCase(
-                target=draws[index],
+                target=normalized_draws[index],
                 training=tuple(
-                    draws[index + 1 : index + 1 + config.periods]
+                    normalized_draws[index + 1 : index + 1 + config.periods]
                 ),
             )
             for index in range(config.draws)
         ]
+        for case in cases:
+            self._validate_case_boundary(case)
+        return cases
 
     def run(self, config: EvaluationConfig):
         """运行滚动评估并返回可复现、可审计的结构化结果。"""
         normalized_methods, normalized_alpha = self._validate_config(config)
-        draws = self.data_source.load_all()
+        draws = self._normalize_draws(self._load_draws())
         cases = self.build_cases(draws, config)
         method_summaries = {}
         raw_averages = {}

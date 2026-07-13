@@ -9,7 +9,11 @@ from random import Random
 import pytest
 
 from backend import evaluation
-from backend.evaluation.walk_forward import EvaluationConfig, WalkForwardEvaluator
+from backend.evaluation.walk_forward import (
+    EvaluationCase,
+    EvaluationConfig,
+    WalkForwardEvaluator,
+)
 from backend.testing import DltDataSource
 
 
@@ -33,6 +37,13 @@ def write_csv(tmp_path: Path, issues):
         )
         writer.writeheader()
         writer.writerows(make_draw(issue) for issue in issues)
+    return DltDataSource(str(csv_file))
+
+
+def write_raw_csv(tmp_path: Path, content: str):
+    """写入用于严格读取测试的原始 CSV。"""
+    csv_file = tmp_path / "strict_dlt_data.csv"
+    csv_file.write_text(content, encoding="utf-8")
     return DltDataSource(str(csv_file))
 
 
@@ -99,6 +110,27 @@ def test_public_api_exports_frozen_config_with_documented_defaults():
         assert name in evaluation.__all__
 
 
+def test_config_defensively_copies_list_methods_to_tuple():
+    methods = ["uniform", "dirichlet"]
+
+    config = EvaluationConfig(methods=methods)
+    methods.append("uniform")
+
+    assert config.methods == ("uniform", "dirichlet")
+
+
+def test_evaluation_case_defensively_copies_target_and_training():
+    target = make_draw(1003)
+    training = [make_draw(1002), make_draw(1001)]
+
+    case = EvaluationCase(target=target, training=tuple(training))
+    target["issue"] = "9999"
+    training[0]["issue"] = "9998"
+
+    assert case.target["issue"] == "1003"
+    assert [row["issue"] for row in case.training] == ["1002", "1001"]
+
+
 def test_derive_seed_uses_stable_sha256_vector():
     assert evaluation.derive_seed(42, "uniform", "1008") == 14892183828196736113
     assert evaluation.derive_seed(42, "uniform", "1008") == evaluation.derive_seed(
@@ -147,6 +179,98 @@ def test_build_cases_rejects_insufficient_data():
         WalkForwardEvaluator().build_cases(draws, config)
 
     assert str(exc_info.value) == "数据不足：至少需要 5 期，当前只有 4 期"
+
+
+def test_build_cases_normalizes_unsorted_draws_from_newest_to_oldest():
+    draws = [
+        make_draw(1002),
+        make_draw(1005),
+        make_draw(1001),
+        make_draw(1004),
+        make_draw(1003),
+    ]
+    config = EvaluationConfig(methods=("uniform",), draws=2, periods=2, count=1)
+
+    cases = WalkForwardEvaluator().build_cases(draws, config)
+
+    assert [case.target["issue"] for case in cases] == ["1005", "1004"]
+    assert [row["issue"] for row in cases[0].training] == ["1004", "1003"]
+    assert [row["issue"] for row in cases[1].training] == ["1003", "1002"]
+
+
+def test_build_cases_rejects_duplicate_issue():
+    duplicate = dict(make_draw(1002), date="2026-01-01")
+    draws = [make_draw(1003), make_draw(1002), duplicate, make_draw(1001)]
+    config = EvaluationConfig(methods=("uniform",), draws=1, periods=2, count=1)
+
+    with pytest.raises(ValueError, match="期号 1002 重复"):
+        WalkForwardEvaluator().build_cases(draws, config)
+
+
+@pytest.mark.parametrize(
+    ("draws", "message"),
+    [
+        (
+            [
+                dict(make_draw(1002), date="2026-01-03"),
+                dict(make_draw(1001), date="2026-01-03"),
+            ],
+            "训练日期必须早于目标日期",
+        ),
+        (
+            [
+                dict(make_draw(1001), date="2026-01-03"),
+                dict(make_draw(1002), date="2026-01-02"),
+            ],
+            "训练期号必须早于目标期号",
+        ),
+    ],
+)
+def test_build_cases_explicitly_rejects_non_earlier_training_rows(draws, message):
+    config = EvaluationConfig(methods=("uniform",), draws=1, periods=1, count=1)
+
+    with pytest.raises(ValueError, match=message):
+        WalkForwardEvaluator().build_cases(draws, config)
+
+
+@pytest.mark.parametrize(
+    ("field", "value", "message"),
+    [
+        ("issue", "10A2", "期号 issue 必须为纯数字"),
+        ("issue", " 1002", "期号 issue 必须为纯数字"),
+        ("date", "2026-02-30", "date 必须为有效的 YYYY-MM-DD"),
+        ("date", "2026-01-02 ", "date 必须为有效的 YYYY-MM-DD"),
+        ("front_balls", "01,02,03,04,36", "前区号码范围必须为 1..35"),
+        ("back_balls", "01,13", "后区号码范围必须为 1..12"),
+    ],
+)
+def test_build_cases_strictly_validates_rows(field, value, message):
+    invalid_target = dict(make_draw(1002), **{field: value})
+    config = EvaluationConfig(methods=("uniform",), draws=1, periods=1, count=1)
+
+    with pytest.raises(ValueError, match=message):
+        WalkForwardEvaluator().build_cases([invalid_target, make_draw(1001)], config)
+
+
+def test_build_cases_rejects_missing_required_field():
+    invalid_target = make_draw(1002)
+    del invalid_target["back_balls"]
+    config = EvaluationConfig(methods=("uniform",), draws=1, periods=1, count=1)
+
+    with pytest.raises(ValueError, match="缺少必需字段：back_balls"):
+        WalkForwardEvaluator().build_cases([invalid_target, make_draw(1001)], config)
+
+
+def test_build_cases_cases_do_not_change_when_input_draws_are_mutated():
+    draws = [make_draw(issue) for issue in range(1004, 1000, -1)]
+    config = EvaluationConfig(methods=("uniform",), draws=1, periods=2, count=1)
+
+    cases = WalkForwardEvaluator().build_cases(draws, config)
+    draws[0]["issue"] = "9999"
+    draws[1]["issue"] = "9998"
+
+    assert cases[0].target["issue"] == "1004"
+    assert [row["issue"] for row in cases[0].training] == ["1003", "1002"]
 
 
 @pytest.mark.parametrize(
@@ -420,3 +544,102 @@ def test_run_rejects_insufficient_csv_data(tmp_path):
 
     with pytest.raises(ValueError, match="数据不足"):
         WalkForwardEvaluator(data_source=source).run(config)
+
+
+def test_run_strict_csv_rejects_missing_required_header(tmp_path):
+    source = write_raw_csv(
+        tmp_path,
+        "issue,date,front_balls\n"
+        '1002,2026-01-02,"01,02,03,04,05"\n'
+        '1001,2026-01-01,"01,02,03,04,05"\n',
+    )
+    config = EvaluationConfig(methods=("uniform",), draws=1, periods=1, count=1)
+
+    with pytest.raises(ValueError, match="CSV 缺少必需表头：back_balls"):
+        WalkForwardEvaluator(data_source=source).run(config)
+
+
+@pytest.mark.parametrize(
+    ("invalid_row", "reason"),
+    [
+        (
+            '10A2,2026-01-02,"01,02,03,04,05","01,02"',
+            "期号 issue 必须为纯数字",
+        ),
+        (
+            '1002,2026-02-30,"01,02,03,04,05","01,02"',
+            "date 必须为有效的 YYYY-MM-DD",
+        ),
+        (
+            '1002,2026-01-02,"01,02,03,04,36","01,02"',
+            "前区号码范围必须为 1..35",
+        ),
+        (
+            '1002,2026-01-02,"01,02,03,04,05","01,13"',
+            "后区号码范围必须为 1..12",
+        ),
+        (
+            '1002,2026-01-02,"01,02,03,04,05",',
+            "后区号码必须包含 2 个唯一整数",
+        ),
+    ],
+)
+def test_run_strict_csv_rejects_bad_physical_row_with_line_number(
+    tmp_path, invalid_row, reason
+):
+    source = write_raw_csv(
+        tmp_path,
+        "issue,date,front_balls,back_balls\n"
+        '1003,2026-01-03,"01,02,03,04,05","01,02"\n'
+        f"{invalid_row}\n"
+        '1001,2026-01-01,"01,02,03,04,05","01,02"\n',
+    )
+    config = EvaluationConfig(methods=("uniform",), draws=1, periods=1, count=1)
+
+    with pytest.raises(ValueError) as exc_info:
+        WalkForwardEvaluator(data_source=source).run(config)
+
+    assert "CSV 第 3 行" in str(exc_info.value)
+    assert reason in str(exc_info.value)
+
+
+def test_run_strict_csv_rejects_blank_physical_data_line(tmp_path):
+    source = write_raw_csv(
+        tmp_path,
+        "issue,date,front_balls,back_balls\n"
+        '1003,2026-01-03,"01,02,03,04,05","01,02"\n'
+        "\n"
+        '1001,2026-01-01,"01,02,03,04,05","01,02"\n',
+    )
+    config = EvaluationConfig(methods=("uniform",), draws=1, periods=1, count=1)
+
+    with pytest.raises(ValueError, match="CSV 第 3 行：数据行不能为空"):
+        WalkForwardEvaluator(data_source=source).run(config)
+
+
+def test_run_strict_csv_rejects_duplicate_issue_with_line_number(tmp_path):
+    source = write_raw_csv(
+        tmp_path,
+        "issue,date,front_balls,back_balls\n"
+        '1003,2026-01-03,"01,02,03,04,05","01,02"\n'
+        '1002,2026-01-02,"01,02,03,04,05","01,02"\n'
+        '1002,2026-01-01,"01,02,03,04,05","01,02"\n',
+    )
+    config = EvaluationConfig(methods=("uniform",), draws=1, periods=1, count=1)
+
+    with pytest.raises(ValueError, match="CSV 第 4 行：期号 1002 重复"):
+        WalkForwardEvaluator(data_source=source).run(config)
+
+
+def test_run_strictly_validates_injected_source_without_data_file():
+    class InjectedSource:
+        def load_all(self):
+            return [
+                dict(make_draw(1002), date="2026-02-30"),
+                make_draw(1001),
+            ]
+
+    config = EvaluationConfig(methods=("uniform",), draws=1, periods=1, count=1)
+
+    with pytest.raises(ValueError, match="date 必须为有效的 YYYY-MM-DD"):
+        WalkForwardEvaluator(data_source=InjectedSource()).run(config)
