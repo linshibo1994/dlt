@@ -152,6 +152,9 @@ artifacts/cache/
 artifacts/logs/
 artifacts/models/
 artifacts/reports/
+
+# Codex 隔离开发工作区
+.worktrees/
 # serena
 .serena
 #
