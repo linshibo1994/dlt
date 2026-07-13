@@ -896,6 +896,40 @@ python main.py compare --issue 25103 -m frequency -p 200 -t 30
 python main.py compare --issue 25103 -m frequency -p 150 -t 60 --export
 ```
 
+## 概率基线选号与无泄漏评估
+
+该功能提供可复现的均匀随机基线和 Dirichlet 平滑频率基线。下一期选号使用最新的已知历史数据；滚动评估对每个目标期只使用其之前的数据，避免未来数据泄漏。
+
+### 下一期基线选号
+
+```bash
+# Dirichlet 平滑频率基线，使用最新 500 期生成 5 注
+python main.py evaluate predict --method dirichlet --periods 500 --count 5 --seed 42 --alpha 1.0
+
+# 均匀随机基线
+python main.py evaluate predict --method uniform --periods 500 --count 5 --seed 42
+
+# 输出纯 JSON
+python main.py evaluate predict --method dirichlet --periods 500 --count 5 --seed 42 --json-output
+```
+
+### 无泄漏滚动评估
+
+```bash
+python main.py evaluate walk-forward --methods uniform,dirichlet --draws 10 --periods 500 --count 3 --seed 42
+```
+
+- `--method`：选号方法，支持 `uniform`、`dirichlet`。
+- `--methods`：滚动评估的方法列表，以逗号分隔。
+- `--periods`：每次使用的历史训练期数。
+- `--draws`：滚动评估的目标期数。
+- `--count`：每个目标期或下一期生成的注数，范围 1-100。
+- `--seed`：随机种子；参数相同时结果可复现。
+- `--alpha`：Dirichlet 平滑系数，必须为可计算的有限正数。
+- `--json-output`：输出可直接解析的 JSON。
+
+滚动结果中的 `2+1` 表示前区命中 2 个、后区命中 1 个。结果只报告命中组合，不映射奖级，因为历史数据跨越 2019 年九奖级和 2026 年七奖级规则。概率基线仅用于选号演示和历史比较，不代表未来中奖概率。
+
 ## 🖥️ 图形用户界面 (Vue 3)
 
 ### 🚀 启动方式
