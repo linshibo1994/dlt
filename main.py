@@ -11,6 +11,7 @@
     python main.py --mode gui      # 图形界面模式
     python main.py --mode api      # API服务模式
     python main.py predict ...     # 直接执行预测命令
+    python main.py evaluate ...    # 概率基线评估命令
     python main.py data status     # 直接执行数据命令
 """
 
@@ -131,6 +132,11 @@ def main():
     if len(sys.argv) >= 2:
         first_arg = sys.argv[1]
 
+        # 概率基线评估必须在加载旧 CLI 之前分流，避免非必要初始化输出
+        if first_arg == 'evaluate':
+            from backend.evaluation.cli import main as evaluation_main
+            sys.exit(evaluation_main(sys.argv[2:]))
+
         # 模式选择：--mode 或 -m 作为第一个参数
         if first_arg in ['--mode', '-m'] and len(sys.argv) >= 3:
             mode = sys.argv[2]
@@ -196,12 +202,17 @@ def print_help():
   system          系统管理
   compare         批量预测对比
   enhanced        增强功能
+  evaluate        概率基线预测与无泄漏滚动评估
   version         显示版本信息
 
 预测命令示例：
   python main.py predict -m markov -p 800 -c 3
   python main.py predict -m frequency -p 500 -c 5
   python main.py predict -m lstm -p 1000 -c 1
+
+评估命令示例：
+  python main.py evaluate predict --method dirichlet --periods 500 --count 5
+  python main.py evaluate walk-forward --methods uniform,dirichlet --draws 30
 
 数据命令示例：
   python main.py data status
