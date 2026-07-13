@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** 新增可复现的均匀随机与 Dirichlet 概率基线，并通过严格只读目标期之前数据的滚动评估命令进行历史比较。
+**Goal:** 新增可复现的均匀随机与 Dirichlet 概率基线，既能生成下一期候选号码，也能通过严格只读目标期之前数据的滚动评估进行历史比较。
 
 **Architecture:** 新功能放在轻量的 `backend/evaluation` 包中，不依赖现有全局预测器。根入口在加载旧后端系统前直接分发 `evaluate`，保证启动快速且 `--json-output` 不混入初始化日志。
 
@@ -15,10 +15,12 @@
 - `backend/evaluation/__init__.py`：导出概率基线、配置与评估器公共接口。
 - `backend/evaluation/baselines.py`：解析历史开奖、计算平滑概率并生成合法唯一票据。
 - `backend/evaluation/walk_forward.py`：构造无泄漏训练窗口、派生随机种子并汇总命中指标。
+- `backend/evaluation/prediction.py`：使用最新已知历史窗口生成下一期基线候选票据。
 - `backend/evaluation/cli.py`：参数解析、校验、文本/JSON 输出和退出码。
 - `main.py`：在旧后端初始化前分发 `evaluate` 命令并更新根帮助。
 - `tests/unit/test_probability_baselines.py`：基线算法的确定性、合法性和平滑测试。
 - `tests/unit/test_walk_forward_evaluation.py`：时间边界、指标和错误处理测试。
+- `tests/unit/test_baseline_prediction.py`：下一期选号的窗口、确定性和票据测试。
 - `tests/unit/test_evaluation_cli.py`：CLI 参数、纯 JSON 与根入口测试。
 - `README.md`：原理、命令、参数、结果解释与限制。
 
@@ -268,7 +270,112 @@ git add backend/evaluation tests/unit/test_walk_forward_evaluation.py
 git commit -m "feat: 实现无泄漏滚动评估器"
 ```
 
-### Task 3: 轻量 CLI 与根入口
+### Task 3: 下一期概率基线选号
+
+**Files:**
+- Create: `backend/evaluation/prediction.py`
+- Modify: `backend/evaluation/walk_forward.py`
+- Modify: `backend/evaluation/__init__.py`
+- Create: `tests/unit/test_baseline_prediction.py`
+
+- [ ] **Step 1: 写最新历史窗口与确定性失败测试**
+
+```python
+from backend.evaluation.prediction import BaselinePredictor, PredictionConfig
+
+
+def test_prediction_uses_latest_history_window_and_is_reproducible(tmp_path):
+    source = write_csv(tmp_path, issues=range(1010, 1000, -1))
+    config = PredictionConfig(method="dirichlet", periods=5, count=3, seed=42, alpha=1.0)
+    predictor = BaselinePredictor(data_source=source)
+    first = predictor.predict(config)
+    second = predictor.predict(config)
+    assert first == second
+    assert first["data"] == {
+        "latest_issue": "1010",
+        "training_newest_issue": "1010",
+        "training_oldest_issue": "1006",
+        "training_periods": 5,
+        "available_draws": 10,
+    }
+    assert len(first["tickets"]) == 3
+    assert first["method"] == "dirichlet"
+    assert "不代表未来中奖概率" in first["disclaimer"]
+```
+
+- [ ] **Step 2: 运行测试并确认 RED**
+
+Run: `python -m pytest tests/unit/test_baseline_prediction.py -v`
+
+Expected: FAIL，错误为缺少 `backend.evaluation.prediction`。
+
+- [ ] **Step 3: 实现选号配置与服务**
+
+```python
+@dataclass(frozen=True)
+class PredictionConfig:
+    method: str = "dirichlet"
+    periods: int = 500
+    count: int = 5
+    seed: int = 42
+    alpha: float = 1.0
+
+
+class BaselinePredictor:
+    def __init__(self, data_source=None):
+        self.evaluator = WalkForwardEvaluator(data_source=data_source)
+
+    def predict(self, config):
+        self.validate_config(config)
+        draws = self.evaluator.load_draws()
+        if len(draws) < config.periods:
+            raise ValueError(f"数据不足：至少需要 {config.periods} 期，当前只有 {len(draws)} 期")
+        training = draws[:config.periods]
+        baseline = UniformBaseline() if config.method == "uniform" else DirichletBaseline(config.alpha)
+        rng = Random(derive_seed(config.seed, config.method, f"{draws[0]['issue']}:next"))
+        tickets = baseline.generate(training, config.count, rng)
+        return build_prediction_result(config, draws, training, tickets)
+```
+
+`WalkForwardEvaluator.load_draws()` 必须复用已经实现的严格 CSV 读取与规范化，不复制读取逻辑。结果顶层字段为 `config`、`data`、`method`、`tickets`、`disclaimer`，不包含置信度、时间戳或耗时。
+
+- [ ] **Step 4: 写两种方法、非法配置和数据不足测试**
+
+```python
+@pytest.mark.parametrize("method", ["uniform", "dirichlet"])
+def test_prediction_methods_return_valid_unique_tickets(tmp_path, method):
+    result = BaselinePredictor(write_csv(tmp_path, range(1010, 1000, -1))).predict(
+        PredictionConfig(method=method, periods=5, count=5, seed=7, alpha=1.0)
+    )
+    assert len(result["tickets"]) == 5
+    assert len({(tuple(ticket["front_balls"]), tuple(ticket["back_balls"])) for ticket in result["tickets"]}) == 5
+
+
+@pytest.mark.parametrize("field,value", [
+    ("method", "unknown"), ("periods", 0), ("count", 0),
+    ("count", 101), ("seed", True), ("alpha", 0),
+])
+def test_prediction_rejects_invalid_config(tmp_path, field, value):
+    values = {"method": "dirichlet", "periods": 5, "count": 1, "seed": 42, "alpha": 1.0}
+    values[field] = value
+    with pytest.raises(ValueError):
+        BaselinePredictor(write_csv(tmp_path, range(1010, 1000, -1))).predict(PredictionConfig(**values))
+```
+
+- [ ] **Step 5: 运行选号与既有评估测试**
+
+Run: `python -m pytest tests/unit/test_baseline_prediction.py tests/unit/test_walk_forward_evaluation.py tests/unit/test_probability_baselines.py -v`
+
+Expected: PASS。
+
+- [ ] **Step 6: 提交下一期选号服务**
+
+```bash
+git add backend/evaluation tests/unit/test_baseline_prediction.py
+git commit -m "feat: 添加下一期概率基线选号"
+```
+
+### Task 4: 轻量 CLI 与根入口
 
 **Files:**
 - Create: `backend/evaluation/cli.py`
@@ -283,7 +390,7 @@ import subprocess
 import sys
 
 
-def test_evaluation_cli_json_output_is_parseable(capsys):
+def test_walk_forward_cli_json_output_is_parseable(capsys):
     exit_code = evaluation_main([
         "walk-forward", "--methods", "uniform,dirichlet", "--draws", "1",
         "--periods", "5", "--count", "1", "--seed", "42", "--json-output",
@@ -291,6 +398,17 @@ def test_evaluation_cli_json_output_is_parseable(capsys):
     assert exit_code == 0
     payload = json.loads(capsys.readouterr().out)
     assert payload["config"]["methods"] == ["uniform", "dirichlet"]
+
+
+def test_predict_cli_json_output_is_parseable(capsys):
+    exit_code = evaluation_main([
+        "predict", "--method", "dirichlet", "--periods", "5",
+        "--count", "3", "--seed", "42", "--alpha", "1.0", "--json-output",
+    ])
+    assert exit_code == 0
+    payload = json.loads(capsys.readouterr().out)
+    assert payload["method"] == "dirichlet"
+    assert len(payload["tickets"]) == 3
 
 
 def test_root_main_dispatches_evaluate_without_legacy_initialization():
@@ -325,15 +443,25 @@ def main(argv=None):
     parser = build_parser()
     args = parser.parse_args(argv)
     try:
-        config = EvaluationConfig(
-            methods=args.methods,
-            draws=args.draws,
-            periods=args.periods,
-            count=args.count,
-            seed=args.seed,
-            alpha=args.alpha,
-        )
-        result = WalkForwardEvaluator().run(config)
+        if args.evaluation_action == "predict":
+            config = PredictionConfig(
+                method=args.method,
+                periods=args.periods,
+                count=args.count,
+                seed=args.seed,
+                alpha=args.alpha,
+            )
+            result = BaselinePredictor().predict(config)
+        else:
+            config = EvaluationConfig(
+                methods=args.methods,
+                draws=args.draws,
+                periods=args.periods,
+                count=args.count,
+                seed=args.seed,
+                alpha=args.alpha,
+            )
+            result = WalkForwardEvaluator().run(config)
     except (FileNotFoundError, ValueError) as exc:
         print(f"评估失败: {exc}", file=sys.stderr)
         return 2
@@ -344,7 +472,7 @@ def main(argv=None):
     return 0
 ```
 
-`build_parser` 注册 `walk-forward`、`--methods`、`--draws`、`--periods`、`--count`、`--seed`、`--alpha` 和 `--json-output`。正整数与 1 至 100 的票数分别使用独立 argparse 类型校验器。
+`build_parser` 注册 `predict` 与 `walk-forward`。`predict` 使用 `--method`，`walk-forward` 使用 `--methods` 和 `--draws`，两者共享 `--periods`、`--count`、`--seed`、`--alpha`、`--json-output`。正整数与 1 至 100 的票数分别使用独立 argparse 类型校验器。
 
 - [ ] **Step 4: 根入口在旧系统前分发 evaluate**
 
@@ -368,6 +496,10 @@ Run: `python -m pytest tests/unit/test_evaluation_cli.py tests/unit/test_walk_fo
 
 Expected: PASS。
 
+Run: `python main.py evaluate predict --help`
+
+Expected: 返回码 0，帮助中包含 `--method`、`--periods`、`--count`、`--seed`、`--alpha`。
+
 Run: `python main.py evaluate walk-forward --help`
 
 Expected: 返回码 0，帮助中包含 `--methods`、`--draws`、`--periods`、`--count`、`--seed`、`--alpha`。
@@ -379,7 +511,7 @@ git add backend/evaluation main.py tests/unit/test_evaluation_cli.py
 git commit -m "feat: 接入无泄漏滚动评估命令"
 ```
 
-### Task 4: README 使用文档
+### Task 5: README 使用文档
 
 **Files:**
 - Modify: `README.md`
@@ -402,6 +534,7 @@ git commit -m "feat: 接入无泄漏滚动评估命令"
 ```bash
 python main.py evaluate walk-forward --methods uniform,dirichlet --draws 30 --periods 500 --count 5 --seed 42 --alpha 1.0
 python main.py evaluate walk-forward --draws 10 --periods 300 --count 3 --json-output
+python main.py evaluate predict --method dirichlet --periods 500 --count 5 --seed 42 --alpha 1.0
 ```
 ```
 
@@ -409,7 +542,7 @@ python main.py evaluate walk-forward --draws 10 --periods 300 --count 3 --json-o
 
 - [ ] **Step 2: 校验 README 命令与免责声明**
 
-Run: `rg -n "evaluate walk-forward|uniform|dirichlet|不代表未来中奖概率|2019|2026" README.md`
+Run: `rg -n "evaluate predict|evaluate walk-forward|uniform|dirichlet|不代表未来中奖概率|2019|2026" README.md`
 
 Expected: 所有关键内容均可定位。
 
@@ -424,7 +557,7 @@ git add README.md
 git commit -m "docs: 补充无泄漏滚动评估用法"
 ```
 
-### Task 5: 真实流程验证、审查与最终提交
+### Task 6: 真实流程验证、审查与最终提交
 
 **Files:**
 - Review: all files changed since `4f92c67`
@@ -453,13 +586,26 @@ python -m json.tool /tmp/dlt-evaluation-first.json > /dev/null
 
 临时文件不得加入 Git。
 
-- [ ] **Step 3: 运行文本模式真实流程**
+- [ ] **Step 3: 运行真实下一期选号并验证复现**
+
+```bash
+python main.py evaluate predict --method dirichlet --periods 500 --count 5 --seed 42 --alpha 1.0 --json-output > /tmp/dlt-prediction-first.json
+python main.py evaluate predict --method dirichlet --periods 500 --count 5 --seed 42 --alpha 1.0 --json-output > /tmp/dlt-prediction-second.json
+cmp /tmp/dlt-prediction-first.json /tmp/dlt-prediction-second.json
+python -m json.tool /tmp/dlt-prediction-first.json > /dev/null
+```
+
+- [ ] **Step 4: 运行文本模式真实流程**
 
 Run: `python main.py evaluate walk-forward --methods uniform,dirichlet --draws 10 --periods 500 --count 3 --seed 42 --alpha 1.0`
 
 Expected: 返回码 0，显示方法摘要、命中组合、训练窗口审计信息与免责声明。
 
-- [ ] **Step 4: 执行代码 review 自检**
+Run: `python main.py evaluate predict --method dirichlet --periods 500 --count 5 --seed 42 --alpha 1.0`
+
+Expected: 返回码 0，显示 5 注合法候选号码、训练窗口和免责声明。
+
+- [ ] **Step 5: 执行代码 review 自检**
 
 Run:
 
@@ -470,20 +616,20 @@ git diff --check 4f92c67..HEAD
 git status --short
 ```
 
-检查行为回归、未来数据泄漏、随机复现、参数错误、无关改动、敏感信息和 README 命令一致性。修复任何重要问题后重新运行 Task 5 的测试和真实流程。
+检查行为回归、未来数据泄漏、随机复现、参数错误、无关改动、敏感信息和 README 命令一致性。修复任何重要问题后重新运行 Task 6 的测试和真实流程。
 
-- [ ] **Step 5: 请求独立代码审查并处理反馈**
+- [ ] **Step 6: 请求独立代码审查并处理反馈**
 
 以 `4f92c67` 为基线、当前 HEAD 为结果，要求审查者重点检查数据截止边界、概率抽样、确定性、CLI 退出码和测试覆盖。修复 Critical/Important 问题并重新验证。
 
-- [ ] **Step 6: 提交审查修复（仅在有改动时）**
+- [ ] **Step 7: 提交审查修复（仅在有改动时）**
 
 ```bash
-git add backend/evaluation main.py README.md tests/unit/test_probability_baselines.py tests/unit/test_walk_forward_evaluation.py tests/unit/test_evaluation_cli.py
+git add backend/evaluation main.py README.md tests/unit/test_probability_baselines.py tests/unit/test_walk_forward_evaluation.py tests/unit/test_baseline_prediction.py tests/unit/test_evaluation_cli.py
 git commit -m "fix: 修正滚动评估审查问题"
 ```
 
-- [ ] **Step 7: 报告最终状态，不推送开发提交**
+- [ ] **Step 8: 报告最终状态，不推送开发提交**
 
 Run:
 
