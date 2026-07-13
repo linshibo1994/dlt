@@ -14,6 +14,7 @@ FRONT_POOL_SIZE = 35
 FRONT_BALLS_PER_DRAW = 5
 BACK_POOL_SIZE = 12
 BACK_BALLS_PER_DRAW = 2
+_ALPHA_ERROR = "alpha 必须为可计算的有限正数"
 
 
 def _area_name(expected: int, minimum: int, maximum: int) -> str:
@@ -121,11 +122,28 @@ def _smoothed_probabilities(
     alpha: float,
 ) -> Dict[int, float]:
     counts = Counter(number for row in rows for number in row[field])
-    denominator = len(rows) * balls_per_draw + alpha * pool_size
-    return {
-        number: (counts[number] + alpha) / denominator
+    observation_count = len(rows) * balls_per_draw
+    # 同时缩放历史计数和 alpha，避免先计算 alpha * pool_size 发生溢出。
+    scale = max(float(observation_count), alpha)
+    scaled_alpha = alpha / scale
+    if not math.isfinite(scaled_alpha) or scaled_alpha <= 0:
+        raise ValueError(_ALPHA_ERROR)
+
+    weights = {
+        number: counts[number] / scale + scaled_alpha
         for number in range(1, pool_size + 1)
     }
+    total_weight = math.fsum(weights.values())
+    probabilities = {
+        number: weight / total_weight
+        for number, weight in weights.items()
+    }
+    if any(
+        not math.isfinite(probability) or probability <= 0
+        for probability in probabilities.values()
+    ):
+        raise ValueError(_ALPHA_ERROR)
+    return probabilities
 
 
 def _weighted_sample_without_replacement(
@@ -134,18 +152,32 @@ def _weighted_sample_without_replacement(
     rng: Any,
 ) -> List[int]:
     numbers = list(probabilities)
-    weights = [probabilities[number] for number in numbers]
+    try:
+        weights = [float(probabilities[number]) for number in numbers]
+    except (TypeError, ValueError, OverflowError):
+        raise ValueError("权重必须为有限非负数") from None
+    if any(not math.isfinite(weight) or weight < 0 for weight in weights):
+        raise ValueError("权重必须为有限非负数")
+    total_weight = sum(weights)
+    if not math.isfinite(total_weight) or total_weight <= 0:
+        raise ValueError("权重总和必须为有限正数")
+
     selected: List[int] = []
 
     for _ in range(count):
-        threshold = rng.random() * sum(weights)
+        total_weight = sum(weights)
+        if not math.isfinite(total_weight) or total_weight <= 0:
+            raise ValueError("权重总和必须为有限正数")
+        threshold = rng.random() * total_weight
         cumulative = 0.0
-        selected_index = len(numbers) - 1
+        selected_index = None
         for index, weight in enumerate(weights):
             cumulative += weight
             if threshold < cumulative:
                 selected_index = index
                 break
+        if selected_index is None:
+            raise ValueError("权重抽样失败：随机阈值超出有效权重范围")
         selected.append(numbers.pop(selected_index))
         weights.pop(selected_index)
 
@@ -178,9 +210,13 @@ class DirichletBaseline:
         try:
             normalized_alpha = float(alpha)
         except (TypeError, ValueError):
-            raise ValueError("alpha 必须大于 0") from None
-        if not math.isfinite(normalized_alpha) or normalized_alpha <= 0:
-            raise ValueError("alpha 必须大于 0")
+            raise ValueError(_ALPHA_ERROR) from None
+        if (
+            not math.isfinite(normalized_alpha)
+            or normalized_alpha <= 0
+            or normalized_alpha / max(FRONT_POOL_SIZE, BACK_POOL_SIZE) <= 0
+        ):
+            raise ValueError(_ALPHA_ERROR)
         self.alpha = normalized_alpha
 
     def probabilities(self, training_draws):

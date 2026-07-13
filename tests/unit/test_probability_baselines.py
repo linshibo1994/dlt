@@ -1,11 +1,16 @@
 """概率基线算法测试。"""
 
+import math
+import re
 from random import Random
 
 import pytest
 
 from backend.evaluation import DirichletBaseline, UniformBaseline, parse_numbers
-from backend.evaluation.baselines import _generate_unique_tickets
+from backend.evaluation.baselines import (
+    _generate_unique_tickets,
+    _weighted_sample_without_replacement,
+)
 
 
 TRAINING_DRAWS = [
@@ -114,10 +119,72 @@ def test_dirichlet_probabilities_include_unseen_numbers_and_use_formula():
     assert sum(probabilities["back"].values()) == pytest.approx(1.0)
 
 
-@pytest.mark.parametrize("alpha", [0, -1, -0.5])
-def test_dirichlet_rejects_non_positive_alpha(alpha):
-    with pytest.raises(ValueError, match="alpha 必须大于 0"):
+def test_dirichlet_probabilities_remain_positive_and_finite_for_large_alpha():
+    probabilities = DirichletBaseline(alpha=1e308).probabilities(TRAINING_DRAWS)
+
+    for area in ("front", "back"):
+        values = probabilities[area].values()
+        assert all(math.isfinite(value) and value > 0 for value in values)
+        assert sum(values) == pytest.approx(1.0)
+
+
+@pytest.mark.parametrize(
+    "alpha",
+    [0, -1, -0.5, float("inf"), float("nan"), 5e-324],
+    ids=["zero", "negative-int", "negative-float", "inf", "nan", "underflow"],
+)
+def test_dirichlet_rejects_uncalculable_alpha(alpha):
+    with pytest.raises(ValueError) as exc_info:
         DirichletBaseline(alpha=alpha)
+
+    assert str(exc_info.value) == "alpha 必须为可计算的有限正数"
+
+
+@pytest.mark.parametrize(
+    ("weights", "message"),
+    [
+        ({1: -0.1, 2: 1.0}, "权重必须为有限非负数"),
+        ({1: float("inf"), 2: 1.0}, "权重必须为有限非负数"),
+        ({1: float("nan"), 2: 1.0}, "权重必须为有限非负数"),
+        ({1: 0.0, 2: 0.0}, "权重总和必须为有限正数"),
+        ({1: 1e308, 2: 1e308}, "权重总和必须为有限正数"),
+    ],
+    ids=["negative", "inf", "nan", "zero-total", "infinite-total"],
+)
+def test_weighted_sample_rejects_invalid_weights(weights, message):
+    with pytest.raises(ValueError) as exc_info:
+        _weighted_sample_without_replacement(weights, count=1, rng=Random(1))
+
+    assert str(exc_info.value) == message
+
+
+def test_dirichlet_generate_uses_weights_deterministically_without_replacement():
+    biased_draws = [
+        {"front_balls": [31, 32, 33, 34, 35], "back_balls": [11, 12]}
+        for _ in range(100)
+    ]
+
+    class ScriptedRandom:
+        def __init__(self):
+            self.calls = 0
+
+        def random(self):
+            self.calls += 1
+            return 0.23
+
+    first_rng = ScriptedRandom()
+    second_rng = ScriptedRandom()
+    baseline = DirichletBaseline(alpha=1.0)
+
+    first = baseline.generate(biased_draws, count=1, rng=first_rng)
+    second = baseline.generate(biased_draws, count=1, rng=second_rng)
+
+    assert first == second == [
+        {"front_balls": [31, 32, 33, 34, 35], "back_balls": [11, 12]}
+    ]
+    assert len(set(first[0]["front_balls"])) == 5
+    assert len(set(first[0]["back_balls"])) == 2
+    assert first_rng.calls == second_rng.calls == 7
 
 
 @pytest.mark.parametrize(
@@ -153,5 +220,5 @@ def test_baseline_rejects_invalid_count(baseline, count):
 def test_baseline_rejects_invalid_historical_numbers(baseline, field, value, message):
     invalid_draw = dict(TRAINING_DRAWS[0], **{field: value})
 
-    with pytest.raises(ValueError, match=message):
+    with pytest.raises(ValueError, match=re.escape(message)):
         baseline.generate([invalid_draw], count=1, rng=Random(1))
